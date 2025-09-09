@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { OCRUpload } from "@/components/OCRUpload";
 import { Navigation } from "@/components/Navigation";
+import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
 
 const Index = () => {
@@ -15,11 +16,12 @@ const Index = () => {
         return <OCRUpload />;
       case 'integrations':
         return <IntegrationSetup />;
+      case 'settings':
+        return <Settings />;
       case 'calendar':
       case 'tasks':
       case 'courses':
       case 'analytics':
-      case 'settings':
         return (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
