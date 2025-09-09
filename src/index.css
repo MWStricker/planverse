@@ -2,41 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* CourseConnect Design System - Academic productivity focused */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    /* Academic Blues - Primary palette */
+    --primary: 213 94% 68%;  /* Bright academic blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-muted: 213 94% 78%;
+    --primary-dark: 213 94% 58%;
+    
+    /* Energetic Orange - Accent for priorities */
+    --accent: 25 95% 62%;  /* Vibrant orange */
+    --accent-foreground: 0 0% 100%;
+    --accent-muted: 25 95% 72%;
+    
+    /* Success Green - For completed items */
+    --success: 142 76% 46%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 76% 86%;
+    
+    /* Warning Yellow - For urgent items */
+    --warning: 48 96% 62%;
+    --warning-foreground: 213 94% 18%;
+    --warning-muted: 48 96% 92%;
+    
+    /* Backgrounds and neutrals */
+    --background: 213 27% 98%;
+    --foreground: 213 94% 18%;
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 213 94% 18%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 213 94% 18%;
+    
+    --secondary: 213 27% 94%;
+    --secondary-foreground: 213 94% 18%;
+    
+    --muted: 213 27% 96%;
+    --muted-foreground: 213 15% 46%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 213 27% 88%;
+    --input: 213 27% 92%;
+    --ring: 213 94% 68%;
+    
+    /* CourseConnect specific tokens */
+    --course-cs: 271 81% 65%;      /* Computer Science purple */
+    --course-math: 142 76% 46%;    /* Math green */
+    --course-english: 25 95% 62%;  /* English orange */
+    --course-science: 213 94% 68%; /* Science blue */
+    --course-other: 213 15% 66%;   /* Other subjects gray */
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-muted)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(var(--primary) / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(var(--primary) / 0.1), 0 4px 6px -2px hsl(var(--primary) / 0.05);
+    --shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 

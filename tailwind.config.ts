@@ -22,6 +22,8 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          muted: "hsl(var(--primary-muted))",
+          dark: "hsl(var(--primary-dark))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -38,6 +40,17 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          muted: "hsl(var(--accent-muted))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          muted: "hsl(var(--success-muted))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+          muted: "hsl(var(--warning-muted))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -46,6 +59,13 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        course: {
+          cs: "hsl(var(--course-cs))",
+          math: "hsl(var(--course-math))",
+          english: "hsl(var(--course-english))",
+          science: "hsl(var(--course-science))",
+          other: "hsl(var(--course-other))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
