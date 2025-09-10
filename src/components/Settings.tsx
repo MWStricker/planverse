@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AccountIntegration {
   id: string;
@@ -75,6 +77,24 @@ export const Settings = () => {
     studyReminders: true,
     syncErrors: false,
   });
+  const { signOut, user } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      });
+    } catch (error) {
+      toast({
+        title: "Sign out failed",
+        description: "An error occurred while signing out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -106,6 +126,7 @@ export const Settings = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'privacy', label: 'Privacy & Security', icon: Shield },
+    { id: 'signout', label: 'Sign Out', icon: LogOut },
   ];
 
   const renderAccountLinking = () => (
@@ -330,6 +351,49 @@ export const Settings = () => {
     </div>
   );
 
+  const renderSignOut = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium text-foreground">Email</h4>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-foreground">Account Status</h4>
+              <Badge variant="default">Active</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Sign Out</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Signing out will end your current session and redirect you to the sign-in page.
+            </p>
+            <Button 
+              variant="destructive" 
+              onClick={handleSignOut}
+              className="w-full"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'accounts':
@@ -340,6 +404,8 @@ export const Settings = () => {
         return renderComingSoon('Profile Settings');
       case 'privacy':
         return renderComingSoon('Privacy & Security');
+      case 'signout':
+        return renderSignOut();
       default:
         return renderAccountLinking();
     }

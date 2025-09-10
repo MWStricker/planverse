@@ -1,12 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dashboard } from "@/components/Dashboard";
 import { OCRUpload } from "@/components/OCRUpload";
 import { Navigation } from "@/components/Navigation";
 import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const renderPage = () => {
     switch (currentPage) {
