@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64 } = await req.json();
+    const { imageBase64, mimeType } = await req.json();
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
     if (!OPENAI_API_KEY) {
@@ -59,13 +59,14 @@ serve(async (req) => {
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:image/jpeg;base64,${imageBase64}`
+                  url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`
                 }
               }
             ]
           }
         ],
         temperature: 0.1,
+        response_format: { type: 'json_object' },
       }),
     });
 

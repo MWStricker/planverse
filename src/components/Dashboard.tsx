@@ -138,7 +138,7 @@ export const Dashboard = () => {
 
           // Call our AI OCR edge function
           const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
-            body: { imageBase64: base64Data }
+            body: { imageBase64: base64Data, mimeType: file.type }
           });
 
           if (error) {
