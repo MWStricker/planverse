@@ -89,9 +89,22 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
               <p className="text-sm font-medium text-foreground truncate">
                 {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
               </p>
+              {(() => {
+                const currentSchool = liveEditedProfile.school || profile?.school;
+                const university = currentSchool ? getUniversityById(currentSchool) : null;
+                return university?.logo ? (
+                  <img 
+                    src={university.logo} 
+                    alt={university.shortName} 
+                    className="w-6 h-6 object-contain"
+                  />
+                ) : null;
+              })()}
+            </div>
             <p className="text-xs text-muted-foreground truncate">
               {(() => {
                 const currentMajor = liveEditedProfile.major || profile?.major;
