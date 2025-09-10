@@ -658,8 +658,19 @@ export const Settings = () => {
               <div className="space-y-2">
                 <Label htmlFor="major">Major/Field of Study</Label>
                 <Select 
-                  value={editedProfile.major} 
-                  onValueChange={(value) => handleProfileChange('major', value)}
+                  value={editedProfile.major && ['computer-science', 'engineering', 'mathematics', 'physics', 'chemistry', 'biology', 'business', 'economics', 'psychology', 'english', 'history', 'art', 'music'].includes(editedProfile.major) ? editedProfile.major : 'other'} 
+                  onValueChange={(value) => {
+                    if (value === 'other') {
+                      // Keep the current value if it's custom, or clear if selecting other for first time
+                      if (!['computer-science', 'engineering', 'mathematics', 'physics', 'chemistry', 'biology', 'business', 'economics', 'psychology', 'english', 'history', 'art', 'music'].includes(editedProfile.major || '')) {
+                        return; // Keep current custom value
+                      } else {
+                        handleProfileChange('major', ''); // Clear for new custom input
+                      }
+                    } else {
+                      handleProfileChange('major', value);
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your major" />
@@ -678,9 +689,19 @@ export const Settings = () => {
                     <SelectItem value="history">History</SelectItem>
                     <SelectItem value="art">Art</SelectItem>
                     <SelectItem value="music">Music</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="other">Other (Type your own)</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                {/* Show text input when "other" is selected or when value is not in predefined list */}
+                {(!editedProfile.major || !['computer-science', 'engineering', 'mathematics', 'physics', 'chemistry', 'biology', 'business', 'economics', 'psychology', 'english', 'history', 'art', 'music'].includes(editedProfile.major)) && (
+                  <Input
+                    placeholder="Enter your major/field of study"
+                    value={editedProfile.major || ''}
+                    onChange={(e) => handleProfileChange('major', e.target.value)}
+                    className="mt-2"
+                  />
+                )}
               </div>
               
               <div className="space-y-2">
