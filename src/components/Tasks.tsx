@@ -1,13 +1,23 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, Clock, AlertTriangle, BookOpen, Calendar, Plus, Filter, Search } from "lucide-react";
+import { CheckCircle, Clock, AlertTriangle, BookOpen, Calendar, Plus, Filter, Search, CalendarIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -21,6 +31,19 @@ interface Task {
   created_at: string;
   event_type?: string;
 }
+
+const taskFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  course_name: z.string().optional(),
+  due_date: z.date({
+    required_error: "Due date is required",
+  }),
+  due_time: z.string().min(1, "Time is required"),
+  priority: z.enum(["low", "medium", "high", "critical"], {
+    required_error: "Priority is required",
+  }),
+});
 
 const PRIORITY_KEYWORDS = {
   critical: ['exam', 'test', 'quiz', 'midterm', 'final'],
@@ -36,8 +59,76 @@ export const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof taskFormSchema>>({
+    resolver: zodResolver(taskFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      course_name: "",
+      priority: "medium",
+    },
+  });
+
+  const onSubmitTask = async (values: z.infer<typeof taskFormSchema>) => {
+    if (!user) return;
+
+    const priorityMap = {
+      low: 1,
+      medium: 2,
+      high: 3,
+      critical: 4,
+    };
+
+    // Combine date and time
+    const dueDateTime = new Date(values.due_date);
+    const [hours, minutes] = values.due_time.split(':');
+    dueDateTime.setHours(parseInt(hours), parseInt(minutes));
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          title: values.title,
+          description: values.description || null,
+          course_name: values.course_name || null,
+          due_date: dueDateTime.toISOString(),
+          priority_score: priorityMap[values.priority],
+          completion_status: 'pending',
+          source_provider: 'manual'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create task",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Task created successfully",
+        });
+        setIsAddDialogOpen(false);
+        form.reset();
+        fetchTasks(); // Refresh tasks
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Function to calculate priority based on keywords and due date
   const calculatePriority = (title: string, description: string = '', dueDate?: string): number => {
@@ -298,10 +389,187 @@ export const Tasks = () => {
             Manage your tasks synced from connected integrations
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-accent text-white">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Task
-        </Button>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-primary to-accent text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Task</DialogTitle>
+              <DialogDescription>
+                Create a new task with due date, time, and priority level.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Task Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter task title..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Enter task description..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="course_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Course (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter course name..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="due_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Due Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "MMM dd, yyyy")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) =>
+                                date < new Date()
+                              }
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="due_time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Due Time</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="time" 
+                            placeholder="12:00" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority Level</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              Low Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="medium">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-blue-500" />
+                              Medium Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="high">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-orange-500" />
+                              High Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="critical">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              Critical Priority
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
+                    Create Task
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Filters */}
