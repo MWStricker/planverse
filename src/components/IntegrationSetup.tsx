@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Integration {
   id: string;
@@ -24,7 +26,7 @@ const integrations: Integration[] = [
     icon: '📅',
     status: 'disconnected',
     features: ['Bi-directional sync', 'Event creation', 'Free time detection'],
-    requiresBackend: true,
+    requiresBackend: false,
   },
   {
     id: 'apple-calendar',
@@ -57,6 +59,55 @@ const integrations: Integration[] = [
 
 export const IntegrationSetup = () => {
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { toast } = useToast();
+
+  const handleGoogleCalendarConnect = async () => {
+    try {
+      setIsConnecting(true);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/calendar',
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        console.error('Google OAuth error:', error);
+        toast({
+          title: "Connection Failed",
+          description: error.message || "Failed to connect to Google Calendar. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Connection Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleConnect = (integrationId: string) => {
+    if (integrationId === 'google-calendar') {
+      handleGoogleCalendarConnect();
+    } else {
+      toast({
+        title: "Coming Soon",
+        description: `${integrations.find(i => i.id === integrationId)?.name} integration will be available soon.`,
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -83,13 +134,12 @@ export const IntegrationSetup = () => {
         </p>
       </div>
 
-      {/* Backend Required Notice */}
-      <Alert className="border-accent/20 bg-accent/5">
-        <Lock className="h-4 w-4" />
+      {/* Integration Notice */}
+      <Alert className="border-primary/20 bg-primary/5">
+        <CheckCircle className="h-4 w-4" />
         <AlertDescription className="text-foreground">
-          <strong>Backend integration required:</strong> To connect external services like Google Calendar and Canvas LMS, 
-          this app needs backend functionality for secure OAuth authentication and API management. 
-          Connect to Supabase to enable these powerful integrations.
+          <strong>Google Calendar integration ready!</strong> Click "Connect Now" on Google Calendar to start syncing your events.
+          Other integrations like Canvas LMS will require additional backend setup.
         </AlertDescription>
       </Alert>
 
@@ -143,9 +193,11 @@ export const IntegrationSetup = () => {
                 ) : (
                   <Button 
                     className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
+                    onClick={() => handleConnect(integration.id)}
+                    disabled={isConnecting && integration.id === 'google-calendar'}
                   >
                     <Zap className="h-4 w-4 mr-2" />
-                    Connect Now
+                    {isConnecting && integration.id === 'google-calendar' ? 'Connecting...' : 'Connect Now'}
                   </Button>
                 )}
 
