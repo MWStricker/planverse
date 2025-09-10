@@ -614,10 +614,9 @@ export const Tasks = () => {
                               selected={field.value}
                               onSelect={field.onChange}
                               disabled={(date) => {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                tomorrow.setHours(0, 0, 0, 0);
-                                return date < tomorrow;
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                return date < today;
                               }}
                               initialFocus
                               className={cn("p-3 pointer-events-auto")}
@@ -802,10 +801,9 @@ export const Tasks = () => {
                               selected={field.value}
                               onSelect={field.onChange}
                               disabled={(date) => {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                tomorrow.setHours(0, 0, 0, 0);
-                                return date < tomorrow;
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                return date < today;
                               }}
                               initialFocus
                               className={cn("p-3 pointer-events-auto")}
