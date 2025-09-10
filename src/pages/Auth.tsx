@@ -23,10 +23,23 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
+        console.log('User already authenticated, redirecting to dashboard...');
         navigate("/");
       }
     };
+    
+    // Also listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change in Auth page:', event, session?.user?.email);
+      if (session && event === 'SIGNED_IN') {
+        console.log('User signed in, redirecting to dashboard...');
+        navigate("/");
+      }
+    });
+    
     checkUser();
+    
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -98,17 +111,29 @@ const Auth = () => {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting Google OAuth flow...');
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
-        }
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
       });
 
+      console.log('Google OAuth response:', { data, error });
+
       if (error) {
-        setError(error.message);
+        console.error('Google OAuth error:', error);
+        setError(`Google sign-in failed: ${error.message}`);
+      } else {
+        console.log('Google OAuth initiated successfully');
+        // The redirect will happen automatically
       }
     } catch (err) {
+      console.error('Unexpected Google OAuth error:', err);
       setError("Failed to sign in with Google. Please try again.");
     } finally {
       setLoading(false);
