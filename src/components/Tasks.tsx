@@ -527,7 +527,7 @@ export const Tasks = () => {
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-black text-white hover:bg-gray-800 border border-white">
+            <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all px-8">
               <Plus className="h-4 w-4 mr-2" />
               Add Task
             </Button>
