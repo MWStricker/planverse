@@ -45,6 +45,7 @@ interface WeatherData {
 const Calendar = () => {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showAllTasks, setShowAllTasks] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
@@ -143,7 +144,7 @@ const Calendar = () => {
     if (user) {
       fetchData();
     }
-  }, [user, currentDate]);
+  }, [user, currentDate, showAllTasks]);
 
   // Ensure weather loads once geolocation resolves (even after initial render)
   useEffect(() => {
@@ -156,13 +157,20 @@ const Calendar = () => {
     setLoading(true);
     try {
       // Fetch all data in parallel for better performance
-      const [tasksResult, eventsResult, sessionsResult] = await Promise.allSettled([
-        supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user?.id)
+      const tasksQuery = supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user?.id);
+      
+      // Only apply date filter if not showing all tasks
+      if (!showAllTasks) {
+        tasksQuery
           .gte('due_date', calendarStart.toISOString())
-          .lte('due_date', calendarEnd.toISOString()),
+          .lte('due_date', calendarEnd.toISOString());
+      }
+
+      const [tasksResult, eventsResult, sessionsResult] = await Promise.allSettled([
+        tasksQuery,
         
         supabase
           .from('events')
@@ -368,6 +376,14 @@ const Calendar = () => {
           {format(currentDate, 'MMMM yyyy')}
         </h1>
         <div className="flex gap-2 items-center">
+          <Button 
+            variant={showAllTasks ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setShowAllTasks(!showAllTasks)}
+            className="flex items-center gap-2"
+          >
+            📅 {showAllTasks ? "Current Month" : "All Tasks"}
+          </Button>
           <Button 
             variant="outline" 
             size="sm" 
