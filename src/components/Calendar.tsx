@@ -62,7 +62,7 @@ const Calendar = () => {
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   useEffect(() => {
-    // Get user's location with high accuracy
+    // Get user's location with shorter timeout for faster loading
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -73,21 +73,13 @@ const Calendar = () => {
         },
         (error) => {
           console.error('Error getting location:', error);
-          // More accurate fallback locations based on common cities
-          const fallbackLocations = [
-            { lat: 40.7128, lon: -74.0060, name: "New York City" },
-            { lat: 34.0522, lon: -118.2437, name: "Los Angeles" },
-            { lat: 41.8781, lon: -87.6298, name: "Chicago" },
-            { lat: 29.7604, lon: -95.3698, name: "Houston" },
-            { lat: 39.7392, lon: -104.9903, name: "Denver" }
-          ];
-          // Default to New York City
-          setUserLocation(fallbackLocations[0]);
+          // Faster fallback to default location
+          setUserLocation({ lat: 40.7128, lon: -74.0060 });
         },
         {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // Cache location for 5 minutes
+          enableHighAccuracy: false, // Faster, less accurate location
+          timeout: 5000, // Reduced timeout
+          maximumAge: 600000 // Cache location for 10 minutes
         }
       );
     } else {
@@ -96,44 +88,55 @@ const Calendar = () => {
   }, []);
 
   useEffect(() => {
-    if (user && userLocation) {
+    if (user) {
       fetchData();
     }
-  }, [user, currentDate, userLocation]);
+  }, [user, currentDate]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch tasks
-      const { data: tasksData } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user?.id)
-        .gte('due_date', calendarStart.toISOString())
-        .lte('due_date', calendarEnd.toISOString());
+      // Fetch all data in parallel for better performance
+      const [tasksResult, eventsResult, sessionsResult] = await Promise.allSettled([
+        supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user?.id)
+          .gte('due_date', calendarStart.toISOString())
+          .lte('due_date', calendarEnd.toISOString()),
+        
+        supabase
+          .from('events')
+          .select('*')
+          .eq('user_id', user?.id)
+          .gte('start_time', calendarStart.toISOString())
+          .lte('start_time', calendarEnd.toISOString()),
+        
+        supabase
+          .from('study_sessions')
+          .select('*')
+          .eq('user_id', user?.id)
+          .gte('start_time', calendarStart.toISOString())
+          .lte('start_time', calendarEnd.toISOString())
+      ]);
 
-      // Fetch events
-      const { data: eventsData } = await supabase
-        .from('events')
-        .select('*')
-        .eq('user_id', user?.id)
-        .gte('start_time', calendarStart.toISOString())
-        .lte('start_time', calendarEnd.toISOString());
+      // Set data from successful requests
+      if (tasksResult.status === 'fulfilled') {
+        setTasks(tasksResult.value.data || []);
+      }
+      if (eventsResult.status === 'fulfilled') {
+        setEvents(eventsResult.value.data || []);
+      }
+      if (sessionsResult.status === 'fulfilled') {
+        setStudySessions(sessionsResult.value.data || []);
+      }
 
-      // Fetch study sessions
-      const { data: sessionsData } = await supabase
-        .from('study_sessions')
-        .select('*')
-        .eq('user_id', user?.id)
-        .gte('start_time', calendarStart.toISOString())
-        .lte('start_time', calendarEnd.toISOString());
-
-      setTasks(tasksData || []);
-      setEvents(eventsData || []);
-      setStudySessions(sessionsData || []);
-
-      // Fetch weather data for each day
-      await fetchWeatherData();
+      // Fetch weather data in parallel (don't block calendar render)
+      if (userLocation) {
+        fetchWeatherData().catch(error => 
+          console.error('Weather fetch failed:', error)
+        );
+      }
     } catch (error) {
       console.error('Error fetching calendar data:', error);
     } finally {
@@ -281,9 +284,10 @@ const Calendar = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Loading Calendar...</h2>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <h2 className="text-lg font-semibold text-foreground">Loading Calendar...</h2>
         </div>
       </div>
     );
