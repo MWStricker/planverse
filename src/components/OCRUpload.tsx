@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { imageFileToBase64Compressed } from "@/lib/utils";
+import { ocrExtractText } from "@/lib/ocr";
+
 
 interface ParsedEvent {
   id: string;
@@ -86,16 +88,32 @@ export const OCRUpload = () => {
           throw new Error('Failed to process image');
         }
 
-          if (response.success && response.events) {
+          if (response.success && Array.isArray(response.events) && response.events.length > 0) {
             setParsedEvents(response.events);
             toast({
               title: "Schedule parsed successfully!",
               description: `Found ${response.events.length} events in your image.`,
             });
           } else {
-            const msg = response.error || 'No events found in image';
-            toast({ title: 'No events found', description: msg, variant: 'destructive' });
-            return;
+            // Fallback: client-side OCR to text then AI structuring
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const text = await ocrExtractText(file);
+            const { data: textResponse, error: textError } = await supabase.functions.invoke('ai-image-ocr', {
+              body: { text, timeZone: tz, currentDate: new Date().toISOString() }
+            });
+
+            if (textError) {
+              throw new Error('Fallback processing failed');
+            }
+
+            if (textResponse.success && Array.isArray(textResponse.events) && textResponse.events.length > 0) {
+              setParsedEvents(textResponse.events);
+              toast({ title: 'Schedule parsed (OCR fallback)', description: `Found ${textResponse.events.length} events.`, });
+            } else {
+              const msg = textResponse.error || 'No events found in image/text';
+              toast({ title: 'No events found', description: msg, variant: 'destructive' });
+              return;
+            }
           }
       } catch (error) {
         console.error('Error processing image:', error);

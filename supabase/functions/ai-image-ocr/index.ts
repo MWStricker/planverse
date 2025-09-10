@@ -14,7 +14,7 @@ serve(async (req) => {
   const tStart = Date.now();
 
   try {
-    const { imageBase64, mimeType, timeZone, currentDate } = await req.json();
+    const { imageBase64, mimeType, text, timeZone, currentDate } = await req.json();
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
     if (!OPENAI_API_KEY) {
@@ -26,28 +26,66 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You extract academic schedule items from an image and return STRICT JSON only.\n\n- Today (for context): ${nowIso}\n- User timezone: ${tz}\n\nRules for dates/times:\n1) Always return dates as ISO YYYY-MM-DD (never MM/DD).\n2) Infer YEAR from the image (e.g., "Fall 2025", "2025-2026") or, if missing, choose the nearest FUTURE date within the next 12 months from today.\n3) If the image shows a month/week grid, align day-of-week with the date you output.\n4) Times must be 24h HH:MM.\n5) If start or end time is missing, estimate reasonably but keep it plausible.\n6) Keep locations short.\n7) Only include events you are confident about (confidence ≥ 60).\n\nReturn ONLY a JSON object in this exact structure:\n{\n  "events": [\n    {\n      "id": "unique_id",\n      "title": "event name",\n      "date": "YYYY-MM-DD",\n      "startTime": "HH:MM",\n      "endTime": "HH:MM",\n      "location": "location",\n      "recurrence": "optional recurrence pattern",\n      "confidence": number_0_to_100\n    }\n  ]\n}`;
+    const systemPrompt = `You extract academic schedule items and MUST return via the provided function tool.\n\n- Today (for context): ${nowIso}\n- User timezone: ${tz}\n\nRules for dates/times:\n1) Dates: ISO YYYY-MM-DD only.\n2) Infer YEAR from the image/text (e.g., "Fall 2025"), else pick the nearest FUTURE date within 12 months.\n3) Align day-of-week with any month/week grid present.\n4) Times: 24h HH:MM.\n5) If a time is missing, choose a plausible default (start 08:00, end 17:00).\n6) Keep locations short.\n7) Only include items with confidence ≥ 60.\n`;
 
-    const userContent = [
+    const tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'return_events',
+          description: 'Return extracted events as strict JSON',
+          parameters: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              events: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    id: { type: 'string' },
+                    title: { type: 'string' },
+                    date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+                    startTime: { type: 'string', pattern: '^\\d{2}:\\d{2}$' },
+                    endTime: { type: 'string', pattern: '^\\d{2}:\\d{2}$' },
+                    location: { type: 'string' },
+                    recurrence: { type: 'string' },
+                    confidence: { type: 'number', minimum: 0, maximum: 100 },
+                  },
+                  required: ['title','date','startTime','endTime','location','confidence']
+                }
+              }
+            },
+            required: ['events']
+          }
+        }
+      }
+    ];
+
+    const userImageContent = [
       { type: 'text', text: 'Extract all schedule information from this image. Be precise with dates and years.' },
       { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } }
     ];
 
-    async function callOpenAI(model: string, paramsType: 'legacy' | 'new'): Promise<Response> {
+    const userTextContent = `Extract all schedule information with precise dates and years from this text:\n\n${text || ''}`;
+
+    async function callOpenAI(model: string, paramsType: 'legacy' | 'new', useText: boolean): Promise<Response> {
       const body: any = {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent as any },
+          { role: 'user', content: useText ? userTextContent : (userImageContent as any) },
         ],
-        response_format: { type: 'json_object' },
+        tools,
+        tool_choice: { type: 'function', function: { name: 'return_events' } },
       };
 
       if (paramsType === 'legacy') {
         body.max_tokens = 600;
         body.temperature = 0.1;
       } else {
-        body.max_completion_tokens = 600; // newer models
+        body.max_completion_tokens = 600;
       }
 
       return fetch('https://api.openai.com/v1/chat/completions', {
@@ -60,12 +98,15 @@ serve(async (req) => {
       });
     }
 
-    // Try fast, cheap legacy model first
-    let response = await callOpenAI('gpt-4o-mini', 'legacy');
+    // Decide if we are using image or text path
+    const useText = typeof text === 'string' && text.trim().length > 0;
 
-    // Fallbacks for reliability
-    if (!response.ok) response = await callOpenAI('o4-mini-2025-04-16', 'new');
-    if (!response.ok) response = await callOpenAI('gpt-4.1-2025-04-14', 'new');
+    // Try fast path first
+    let response = await callOpenAI('gpt-4o-mini', 'legacy', useText);
+
+    // Fallbacks
+    if (!response.ok) response = await callOpenAI('o4-mini-2025-04-16', 'new', useText);
+    if (!response.ok) response = await callOpenAI('gpt-4.1-2025-04-14', 'new', useText);
 
     if (!response.ok) {
       const errText = await response.text();
@@ -77,60 +118,29 @@ serve(async (req) => {
 
     const aiData = await response.json();
 
-    // Robust JSON recovery
-    function extractFromToolCall(data: any): any | null {
-      try {
-        const toolArgs = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-        if (typeof toolArgs === 'string') {
-          return JSON.parse(toolArgs);
-        }
-      } catch { /* ignore */ }
-      return null;
-    }
-
-    function cleanCodeFences(s: string): string {
-      return (s || '').replace(/```json\s*|```/g, '').trim();
-    }
-
-    function balancedJsonExtract(s: string): any | null {
-      const str = s || '';
-      const start = str.indexOf('{');
-      if (start === -1) return null;
-      let depth = 0;
-      let inStr = false;
-      let esc = false;
-      for (let i = start; i < str.length; i++) {
-        const ch = str[i];
-        if (inStr) {
-          if (!esc && ch === '"') inStr = false;
-          esc = !esc && ch === '\\';
-        } else {
-          if (ch === '"') inStr = true;
-          else if (ch === '{') depth++;
-          else if (ch === '}') {
-            depth--;
-            if (depth === 0) {
-              const candidate = str.slice(start, i + 1);
-              try { return JSON.parse(candidate); } catch { /* try next */ }
-            }
-          }
-        }
+    // Prefer function/tool call output
+    let parsed: any = null;
+    try {
+      const toolCalls = aiData?.choices?.[0]?.message?.tool_calls || [];
+      const fnCall = toolCalls.find((tc: any) => tc?.function?.name === 'return_events');
+      if (fnCall?.function?.arguments) {
+        parsed = JSON.parse(fnCall.function.arguments);
       }
-      return null;
-    }
+    } catch (_) { /* ignore */ }
 
-    const content = aiData?.choices?.[0]?.message?.content ?? '';
-
-    let parsed = extractFromToolCall(aiData);
+    // Fallback to content JSON extraction if needed
     if (!parsed) {
-      const cleaned = cleanCodeFences(content);
-      try { parsed = JSON.parse(cleaned); } catch { /* ignore */ }
-      if (!parsed) parsed = balancedJsonExtract(cleaned);
+      const content = aiData?.choices?.[0]?.message?.content ?? '';
+      try { parsed = JSON.parse(String(content)); } catch { /* try to salvage */ }
+      if (!parsed) {
+        const cleaned = String(content).replace(/```json\s*|```/g, '').trim();
+        try { parsed = JSON.parse(cleaned); } catch { /* ignore */ }
+      }
     }
 
     if (!parsed) {
       const durationMs = Date.now() - tStart;
-      return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', raw: content, events: [], durationMs }), {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', events: [], durationMs }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -143,8 +153,8 @@ serve(async (req) => {
         id: event.id || `extracted_${Date.now()}_${index}`,
         title: String(event.title || '').trim().slice(0, 120),
         date: event.date,
-        startTime: String(event.startTime || '00:00').slice(0, 5),
-        endTime: String(event.endTime || '23:59').slice(0, 5),
+        startTime: String(event.startTime || '08:00').slice(0, 5),
+        endTime: String(event.endTime || '17:00').slice(0, 5),
         location: String(event.location || '').trim().slice(0, 120),
         recurrence: event.recurrence || null,
         confidence: Number.isFinite(event.confidence) ? Math.max(0, Math.min(100, Number(event.confidence))) : 60,
