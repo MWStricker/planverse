@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, Clock, AlertTriangle, BookOpen, Calendar, Plus, Filter, Search, CalendarIcon, Edit2 } from "lucide-react";
+import { CheckCircle, Clock, AlertTriangle, BookOpen, Calendar, Plus, Filter, Search, CalendarIcon, Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -415,6 +415,41 @@ export const Tasks = () => {
       }
     } catch (error) {
       console.error('Unexpected error:', error);
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error deleting task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete task",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Task deleted successfully",
+        });
+        setIsEditDialogOpen(false);
+        setEditingTask(null);
+        fetchTasks(); // Refresh tasks
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -839,17 +874,30 @@ export const Tasks = () => {
                   )}
                 />
 
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
-                    Update Task
-                  </Button>
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                  <div className="flex gap-2 sm:mr-auto">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => editingTask && deleteTask(editingTask.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Task
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
+                      Update Task
+                    </Button>
+                  </div>
                 </DialogFooter>
               </form>
             </Form>
