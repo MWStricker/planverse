@@ -100,10 +100,19 @@ export default {
             height: "0",
           },
         },
+        "scroll-text": {
+          "0%": {
+            transform: "translateX(0%)",
+          },
+          "100%": {
+            transform: "translateX(-100%)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "scroll-text": "scroll-text 3s linear infinite",
       },
     },
   },
