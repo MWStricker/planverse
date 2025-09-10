@@ -104,8 +104,11 @@ export default {
           "0%": {
             transform: "translateX(0%)",
           },
-          "50%": {
+          "25%": {
             transform: "translateX(-75%)",
+          },
+          "50%": {
+            transform: "translateX(0%)",
           },
           "100%": {
             transform: "translateX(0%)",
