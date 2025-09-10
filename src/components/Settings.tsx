@@ -98,6 +98,19 @@ export const Settings = () => {
     timezone: 'America/New_York'
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [majorError, setMajorError] = useState('');
+
+  // Simple profanity filter - add more words as needed
+  const profanityList = [
+    'damn', 'hell', 'shit', 'fuck', 'bitch', 'ass', 'crap', 'piss', 'bastard', 'idiot', 'stupid'
+  ];
+
+  const containsProfanity = (text: string): boolean => {
+    const lowercaseText = text.toLowerCase();
+    return profanityList.some(word => 
+      lowercaseText.includes(word.toLowerCase())
+    );
+  };
 
   const handleSignOut = async () => {
     try {
@@ -138,6 +151,16 @@ export const Settings = () => {
   }, [profile]);
 
   const handleProfileChange = (field: string, value: string) => {
+    // Special validation for major field
+    if (field === 'major') {
+      if (containsProfanity(value)) {
+        setMajorError('Please use appropriate language for your major field.');
+        return; // Don't update the value
+      } else {
+        setMajorError(''); // Clear error if text is clean
+      }
+    }
+    
     setEditedProfile(prev => ({ ...prev, [field]: value }));
     setHasUnsavedChanges(true);
   };
@@ -695,12 +718,17 @@ export const Settings = () => {
                 
                 {/* Show text input when "other" is selected or when value is not in predefined list */}
                 {(!editedProfile.major || !['computer-science', 'engineering', 'mathematics', 'physics', 'chemistry', 'biology', 'business', 'economics', 'psychology', 'english', 'history', 'art', 'music'].includes(editedProfile.major)) && (
-                  <Input
-                    placeholder="Enter your major/field of study"
-                    value={editedProfile.major || ''}
-                    onChange={(e) => handleProfileChange('major', e.target.value)}
-                    className="mt-2"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Enter your major/field of study"
+                      value={editedProfile.major || ''}
+                      onChange={(e) => handleProfileChange('major', e.target.value)}
+                      className={`mt-2 ${majorError ? 'border-red-500' : ''}`}
+                    />
+                    {majorError && (
+                      <p className="text-sm text-red-500">{majorError}</p>
+                    )}
+                  </div>
                 )}
               </div>
               
