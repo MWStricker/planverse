@@ -7,11 +7,11 @@ interface HeaderProps {
 export const Header = ({ className = "" }: HeaderProps) => {
   return (
     <header className={`w-full bg-card border-b border-border ${className} relative`}>
-      <div className="fixed top-16 left-0 w-48 h-48 overflow-hidden flex items-start justify-start z-50">
+      <div className="fixed top-4 left-4 w-32 h-32 overflow-hidden flex items-center justify-center z-50 bg-white/90 rounded-lg shadow-sm">
         <img 
           src="/lovable-uploads/a3ff9ac9-6bac-424f-a880-22b8b42de5c3.png" 
           alt="CourseConnect Logo" 
-          className="w-32 h-32 object-cover object-center"
+          className="w-24 h-24 object-contain"
         />
       </div>
       
