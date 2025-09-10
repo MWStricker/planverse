@@ -9,6 +9,21 @@ import michiganLogo from '@/assets/university-logos/michigan.png';
 import texasLogo from '@/assets/university-logos/texas.png';
 import floridaLogo from '@/assets/university-logos/florida.png';
 import gatechLogo from '@/assets/university-logos/gatech.png';
+import alabamaLogo from '@/assets/university-logos/alabama.png';
+import asuLogo from '@/assets/university-logos/asu.png';
+import auburnLogo from '@/assets/university-logos/auburn.png';
+import coloradoLogo from '@/assets/university-logos/colorado.png';
+import uconnLogo from '@/assets/university-logos/uconn.png';
+import fsuLogo from '@/assets/university-logos/fsu.png';
+import georgiaLogo from '@/assets/university-logos/georgia.png';
+import iowaLogo from '@/assets/university-logos/iowa.png';
+import iowaStateLogo from '@/assets/university-logos/iowa-state.png';
+import lsuLogo from '@/assets/university-logos/lsu.png';
+import marylandLogo from '@/assets/university-logos/maryland.png';
+import michiganStateLogo from '@/assets/university-logos/michigan-state.png';
+import minnesotaLogo from '@/assets/university-logos/minnesota.png';
+import uncLogo from '@/assets/university-logos/unc.png';
+import ohioStateLogo from '@/assets/university-logos/ohio-state.png';
 
 export interface University {
   id: string;
@@ -25,16 +40,16 @@ const createUniversity = (data: University): University => data;
 
 export const universities: University[] = [
   // PUBLIC UNIVERSITIES IN ALPHABETICAL ORDER
-  createUniversity({ id: 'alabama', name: 'University of Alabama', shortName: 'Alabama', type: 'state', state: 'AL', isPublic: true }),
+  createUniversity({ id: 'alabama', name: 'University of Alabama', shortName: 'Alabama', logo: alabamaLogo, type: 'state', state: 'AL', isPublic: true }),
   createUniversity({ id: 'alabama-birmingham', name: 'University of Alabama at Birmingham', shortName: 'UAB', type: 'state', state: 'AL', isPublic: true }),
   createUniversity({ id: 'alabama-huntsville', name: 'University of Alabama in Huntsville', shortName: 'UAH', type: 'state', state: 'AL', isPublic: true }),
   createUniversity({ id: 'alaska-anchorage', name: 'University of Alaska Anchorage', shortName: 'UAA', type: 'state', state: 'AK', isPublic: true }),
   createUniversity({ id: 'alaska-fairbanks', name: 'University of Alaska Fairbanks', shortName: 'UAF', type: 'state', state: 'AK', isPublic: true }),
   createUniversity({ id: 'arizona', name: 'University of Arizona', shortName: 'Arizona', type: 'state', state: 'AZ', isPublic: true }),
-  createUniversity({ id: 'arizona-state', name: 'Arizona State University', shortName: 'ASU', type: 'state', state: 'AZ', isPublic: true }),
+  createUniversity({ id: 'arizona-state', name: 'Arizona State University', shortName: 'ASU', logo: asuLogo, type: 'state', state: 'AZ', isPublic: true }),
   createUniversity({ id: 'arkansas', name: 'University of Arkansas', shortName: 'Arkansas', type: 'state', state: 'AR', isPublic: true }),
   createUniversity({ id: 'arkansas-little-rock', name: 'University of Arkansas at Little Rock', shortName: 'UALR', type: 'state', state: 'AR', isPublic: true }),
-  createUniversity({ id: 'auburn', name: 'Auburn University', shortName: 'Auburn', type: 'state', state: 'AL', isPublic: true }),
+  createUniversity({ id: 'auburn', name: 'Auburn University', shortName: 'Auburn', logo: auburnLogo, type: 'state', state: 'AL', isPublic: true }),
   createUniversity({ id: 'ball-state', name: 'Ball State University', shortName: 'Ball State', type: 'state', state: 'IN', isPublic: true }),
   createUniversity({ id: 'boise-state', name: 'Boise State University', shortName: 'Boise State', type: 'state', state: 'ID', isPublic: true }),
   createUniversity({ id: 'bowling-green', name: 'Bowling Green State University', shortName: 'BGSU', type: 'state', state: 'OH', isPublic: true }),
@@ -50,19 +65,19 @@ export const universities: University[] = [
   createUniversity({ id: 'central-michigan', name: 'Central Michigan University', shortName: 'Central Michigan', type: 'state', state: 'MI', isPublic: true }),
   createUniversity({ id: 'cincinnati', name: 'University of Cincinnati', shortName: 'Cincinnati', type: 'state', state: 'OH', isPublic: true }),
   createUniversity({ id: 'clemson', name: 'Clemson University', shortName: 'Clemson', type: 'state', state: 'SC', isPublic: true }),
-  createUniversity({ id: 'colorado', name: 'University of Colorado Boulder', shortName: 'CU Boulder', type: 'state', state: 'CO', isPublic: true }),
+  createUniversity({ id: 'colorado', name: 'University of Colorado Boulder', shortName: 'CU Boulder', logo: coloradoLogo, type: 'state', state: 'CO', isPublic: true }),
   createUniversity({ id: 'colorado-denver', name: 'University of Colorado Denver', shortName: 'CU Denver', type: 'state', state: 'CO', isPublic: true }),
   createUniversity({ id: 'colorado-state', name: 'Colorado State University', shortName: 'Colorado State', type: 'state', state: 'CO', isPublic: true }),
-  createUniversity({ id: 'connecticut', name: 'University of Connecticut', shortName: 'UConn', type: 'state', state: 'CT', isPublic: true }),
+  createUniversity({ id: 'connecticut', name: 'University of Connecticut', shortName: 'UConn', logo: uconnLogo, type: 'state', state: 'CT', isPublic: true }),
   createUniversity({ id: 'delaware', name: 'University of Delaware', shortName: 'Delaware', type: 'state', state: 'DE', isPublic: true }),
   createUniversity({ id: 'eastern-michigan', name: 'Eastern Michigan University', shortName: 'Eastern Michigan', type: 'state', state: 'MI', isPublic: true }),
   createUniversity({ id: 'florida', name: 'University of Florida', shortName: 'UF', logo: floridaLogo, type: 'state', state: 'FL', isPublic: true }),
   createUniversity({ id: 'florida-atlantic', name: 'Florida Atlantic University', shortName: 'FAU', type: 'state', state: 'FL', isPublic: true }),
   createUniversity({ id: 'florida-international', name: 'Florida International University', shortName: 'FIU', type: 'state', state: 'FL', isPublic: true }),
-  createUniversity({ id: 'florida-state', name: 'Florida State University', shortName: 'FSU', type: 'state', state: 'FL', isPublic: true }),
+  createUniversity({ id: 'florida-state', name: 'Florida State University', shortName: 'FSU', logo: fsuLogo, type: 'state', state: 'FL', isPublic: true }),
   createUniversity({ id: 'fresno-state', name: 'California State University, Fresno', shortName: 'Fresno State', type: 'state', state: 'CA', isPublic: true }),
   createUniversity({ id: 'george-mason', name: 'George Mason University', shortName: 'George Mason', type: 'state', state: 'VA', isPublic: true }),
-  createUniversity({ id: 'georgia', name: 'University of Georgia', shortName: 'UGA', type: 'state', state: 'GA', isPublic: true }),
+  createUniversity({ id: 'georgia', name: 'University of Georgia', shortName: 'UGA', logo: georgiaLogo, type: 'state', state: 'GA', isPublic: true }),
   createUniversity({ id: 'georgia-southern', name: 'Georgia Southern University', shortName: 'Georgia Southern', type: 'state', state: 'GA', isPublic: true }),
   createUniversity({ id: 'georgia-state', name: 'Georgia State University', shortName: 'Georgia State', type: 'state', state: 'GA', isPublic: true }),
   createUniversity({ id: 'georgia-tech', name: 'Georgia Institute of Technology', shortName: 'Georgia Tech', logo: gatechLogo, type: 'state', state: 'GA', isPublic: true }),
@@ -72,21 +87,21 @@ export const universities: University[] = [
   createUniversity({ id: 'illinois-chicago', name: 'University of Illinois at Chicago', shortName: 'UIC', type: 'state', state: 'IL', isPublic: true }),
   createUniversity({ id: 'illinois-urbana', name: 'University of Illinois at Urbana-Champaign', shortName: 'UIUC', type: 'state', state: 'IL', isPublic: true }),
   createUniversity({ id: 'indiana', name: 'Indiana University Bloomington', shortName: 'Indiana', type: 'state', state: 'IN', isPublic: true }),
-  createUniversity({ id: 'iowa', name: 'University of Iowa', shortName: 'Iowa', type: 'state', state: 'IA', isPublic: true }),
-  createUniversity({ id: 'iowa-state', name: 'Iowa State University', shortName: 'Iowa State', type: 'state', state: 'IA', isPublic: true }),
+  createUniversity({ id: 'iowa', name: 'University of Iowa', shortName: 'Iowa', logo: iowaLogo, type: 'state', state: 'IA', isPublic: true }),
+  createUniversity({ id: 'iowa-state', name: 'Iowa State University', shortName: 'Iowa State', logo: iowaStateLogo, type: 'state', state: 'IA', isPublic: true }),
   createUniversity({ id: 'james-madison', name: 'James Madison University', shortName: 'JMU', type: 'state', state: 'VA', isPublic: true }),
   createUniversity({ id: 'kansas', name: 'University of Kansas', shortName: 'Kansas', type: 'state', state: 'KS', isPublic: true }),
   createUniversity({ id: 'kansas-state', name: 'Kansas State University', shortName: 'K-State', type: 'state', state: 'KS', isPublic: true }),
   createUniversity({ id: 'kent-state', name: 'Kent State University', shortName: 'Kent State', type: 'state', state: 'OH', isPublic: true }),
   createUniversity({ id: 'kentucky', name: 'University of Kentucky', shortName: 'Kentucky', type: 'state', state: 'KY', isPublic: true }),
-  createUniversity({ id: 'louisiana-state', name: 'Louisiana State University', shortName: 'LSU', type: 'state', state: 'LA', isPublic: true }),
+  createUniversity({ id: 'louisiana-state', name: 'Louisiana State University', shortName: 'LSU', logo: lsuLogo, type: 'state', state: 'LA', isPublic: true }),
   createUniversity({ id: 'maine', name: 'University of Maine', shortName: 'Maine', type: 'state', state: 'ME', isPublic: true }),
-  createUniversity({ id: 'maryland', name: 'University of Maryland, College Park', shortName: 'Maryland', type: 'state', state: 'MD', isPublic: true }),
+  createUniversity({ id: 'maryland', name: 'University of Maryland, College Park', shortName: 'Maryland', logo: marylandLogo, type: 'state', state: 'MD', isPublic: true }),
   createUniversity({ id: 'massachusetts-amherst', name: 'University of Massachusetts Amherst', shortName: 'UMass Amherst', type: 'state', state: 'MA', isPublic: true }),
   createUniversity({ id: 'massachusetts-boston', name: 'University of Massachusetts Boston', shortName: 'UMass Boston', type: 'state', state: 'MA', isPublic: true }),
   createUniversity({ id: 'michigan', name: 'University of Michigan', shortName: 'Michigan', logo: michiganLogo, type: 'state', state: 'MI', isPublic: true }),
-  createUniversity({ id: 'michigan-state', name: 'Michigan State University', shortName: 'Michigan State', type: 'state', state: 'MI', isPublic: true }),
-  createUniversity({ id: 'minnesota', name: 'University of Minnesota Twin Cities', shortName: 'Minnesota', type: 'state', state: 'MN', isPublic: true }),
+  createUniversity({ id: 'michigan-state', name: 'Michigan State University', shortName: 'Michigan State', logo: michiganStateLogo, type: 'state', state: 'MI', isPublic: true }),
+  createUniversity({ id: 'minnesota', name: 'University of Minnesota Twin Cities', shortName: 'Minnesota', logo: minnesotaLogo, type: 'state', state: 'MN', isPublic: true }),
   createUniversity({ id: 'mississippi', name: 'University of Mississippi', shortName: 'Ole Miss', type: 'state', state: 'MS', isPublic: true }),
   createUniversity({ id: 'mississippi-state', name: 'Mississippi State University', shortName: 'Mississippi State', type: 'state', state: 'MS', isPublic: true }),
   createUniversity({ id: 'missouri', name: 'University of Missouri', shortName: 'Mizzou', type: 'state', state: 'MO', isPublic: true }),
@@ -100,7 +115,7 @@ export const universities: University[] = [
   createUniversity({ id: 'new-hampshire', name: 'University of New Hampshire', shortName: 'UNH', type: 'state', state: 'NH', isPublic: true }),
   createUniversity({ id: 'new-mexico', name: 'University of New Mexico', shortName: 'UNM', type: 'state', state: 'NM', isPublic: true }),
   createUniversity({ id: 'new-mexico-state', name: 'New Mexico State University', shortName: 'NMSU', type: 'state', state: 'NM', isPublic: true }),
-  createUniversity({ id: 'north-carolina', name: 'University of North Carolina at Chapel Hill', shortName: 'UNC', type: 'state', state: 'NC', isPublic: true }),
+  createUniversity({ id: 'north-carolina', name: 'University of North Carolina at Chapel Hill', shortName: 'UNC', logo: uncLogo, type: 'state', state: 'NC', isPublic: true }),
   createUniversity({ id: 'north-carolina-charlotte', name: 'University of North Carolina at Charlotte', shortName: 'UNC Charlotte', type: 'state', state: 'NC', isPublic: true }),
   createUniversity({ id: 'north-carolina-greensboro', name: 'University of North Carolina at Greensboro', shortName: 'UNCG', type: 'state', state: 'NC', isPublic: true }),
   createUniversity({ id: 'north-carolina-state', name: 'North Carolina State University', shortName: 'NC State', type: 'state', state: 'NC', isPublic: true }),
@@ -108,7 +123,7 @@ export const universities: University[] = [
   createUniversity({ id: 'north-dakota-state', name: 'North Dakota State University', shortName: 'NDSU', type: 'state', state: 'ND', isPublic: true }),
   createUniversity({ id: 'northern-arizona', name: 'Northern Arizona University', shortName: 'NAU', type: 'state', state: 'AZ', isPublic: true }),
   createUniversity({ id: 'northern-illinois', name: 'Northern Illinois University', shortName: 'NIU', type: 'state', state: 'IL', isPublic: true }),
-  createUniversity({ id: 'ohio-state', name: 'Ohio State University', shortName: 'Ohio State', type: 'state', state: 'OH', isPublic: true }),
+  createUniversity({ id: 'ohio-state', name: 'Ohio State University', shortName: 'Ohio State', logo: ohioStateLogo, type: 'state', state: 'OH', isPublic: true }),
   createUniversity({ id: 'ohio-university', name: 'Ohio University', shortName: 'Ohio University', type: 'state', state: 'OH', isPublic: true }),
   createUniversity({ id: 'oklahoma', name: 'University of Oklahoma', shortName: 'Oklahoma', type: 'state', state: 'OK', isPublic: true }),
   createUniversity({ id: 'oklahoma-state', name: 'Oklahoma State University', shortName: 'Oklahoma State', type: 'state', state: 'OK', isPublic: true }),
