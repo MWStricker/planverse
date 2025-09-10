@@ -110,6 +110,13 @@ export const usePreferences = () => {
     // Apply theme
     root.setAttribute('data-theme', prefs.theme);
     
+    // Special handling for dark theme
+    if (prefs.theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    
     // Apply bold text
     if (prefs.boldText) {
       root.style.setProperty('--font-weight-normal', '600');
