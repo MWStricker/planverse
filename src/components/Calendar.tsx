@@ -32,9 +32,12 @@ interface StudySession {
 }
 
 interface WeatherData {
-  temperature: number;
-  condition: string;
+  temp: number;
+  description: string;
   icon: string;
+  humidity: number;
+  windSpeed: number;
+  location?: string;
 }
 
 const Calendar = () => {
@@ -43,7 +46,10 @@ const Calendar = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
-  const [weather, setWeather] = useState<{ [key: string]: WeatherData }>({});
+  const [weather, setWeather] = useState<{ current?: WeatherData; forecast: { [key: string]: WeatherData } }>({
+    forecast: {}
+  });
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Calculate proper calendar grid (6 weeks)
@@ -54,10 +60,32 @@ const Calendar = () => {
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   useEffect(() => {
-    if (user) {
+    // Get user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Fallback to a default location (e.g., New York)
+          setUserLocation({ lat: 40.7128, lon: -74.0060 });
+        }
+      );
+    } else {
+      // Fallback to a default location
+      setUserLocation({ lat: 40.7128, lon: -74.0060 });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && userLocation) {
       fetchData();
     }
-  }, [user, currentDate]);
+  }, [user, currentDate, userLocation]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -100,29 +128,54 @@ const Calendar = () => {
   };
 
   const fetchWeatherData = async () => {
-    // Mock weather data for now - in production, integrate with weather API
-    const mockWeather: { [key: string]: WeatherData } = {};
-    calendarDays.forEach((day, index) => {
-      const dateKey = format(day, 'yyyy-MM-dd');
-      const conditions = ['sunny', 'cloudy', 'rainy', 'snowy'];
-      const temps = [65, 72, 68, 58, 75, 70, 63];
-      mockWeather[dateKey] = {
-        temperature: temps[index % temps.length],
-        condition: conditions[index % conditions.length],
-        icon: conditions[index % conditions.length]
-      };
-    });
-    setWeather(mockWeather);
+    if (!userLocation) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('get-weather', {
+        body: { 
+          lat: userLocation.lat, 
+          lon: userLocation.lon 
+        }
+      });
+
+      if (error) {
+        console.error('Error fetching weather:', error);
+        return;
+      }
+
+      // Process the weather data
+      const forecastData: { [key: string]: WeatherData } = {};
+      
+      if (data.forecast) {
+        data.forecast.forEach((day: any) => {
+          const date = new Date(day.date);
+          const dateKey = format(date, 'yyyy-MM-dd');
+          forecastData[dateKey] = {
+            temp: Math.round(day.temp),
+            description: day.description,
+            icon: day.icon,
+            humidity: day.humidity,
+            windSpeed: day.windSpeed
+          };
+        });
+      }
+
+      setWeather({
+        current: data.current,
+        forecast: forecastData
+      });
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+    }
   };
 
-  const getWeatherIcon = (condition: string) => {
-    switch (condition) {
-      case 'sunny': return <Sun className="h-4 w-4 text-yellow-500" />;
-      case 'cloudy': return <Cloud className="h-4 w-4 text-gray-500" />;
-      case 'rainy': return <CloudRain className="h-4 w-4 text-blue-500" />;
-      case 'snowy': return <Snowflake className="h-4 w-4 text-blue-200" />;
-      default: return <Sun className="h-4 w-4 text-yellow-500" />;
-    }
+  const getWeatherIcon = (iconCode: string) => {
+    // OpenWeatherMap icon codes
+    if (iconCode.includes('01')) return <Sun className="h-4 w-4 text-yellow-500" />; // clear sky
+    if (iconCode.includes('02') || iconCode.includes('03') || iconCode.includes('04')) return <Cloud className="h-4 w-4 text-gray-500" />; // clouds
+    if (iconCode.includes('09') || iconCode.includes('10')) return <CloudRain className="h-4 w-4 text-blue-500" />; // rain
+    if (iconCode.includes('13')) return <Snowflake className="h-4 w-4 text-blue-200" />; // snow
+    return <Sun className="h-4 w-4 text-yellow-500" />; // default
   };
 
   const getPriorityColor = (priority: number) => {
@@ -218,7 +271,7 @@ const Calendar = () => {
           const dayTasks = getTasksForDay(day);
           const dayEvents = getEventsForDay(day);
           const daySessions = getSessionsForDay(day);
-          const dayWeather = weather[format(day, 'yyyy-MM-dd')];
+          const dayWeather = weather.forecast[format(day, 'yyyy-MM-dd')];
           const highestPriority = Math.max(...dayTasks.map(t => t.priority_score || 0), 0);
           const isCurrentMonth = isSameMonth(day, currentDate);
 
@@ -244,9 +297,9 @@ const Calendar = () => {
                   </span>
                   {dayWeather && isCurrentMonth && (
                     <div className="flex items-center gap-1">
-                      {getWeatherIcon(dayWeather.condition)}
+                      {getWeatherIcon(dayWeather.icon)}
                       <span className="text-xs text-muted-foreground">
-                        {dayWeather.temperature}°
+                        {dayWeather.temp}°C
                       </span>
                     </div>
                   )}
@@ -302,6 +355,32 @@ const Calendar = () => {
           );
         })}
       </div>
+
+      {/* Current Weather Display */}
+      {weather.current && (
+        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">
+                {getWeatherIcon(weather.current.icon)}
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-foreground">
+                  {weather.current.temp}°C
+                </div>
+                <div className="text-sm text-muted-foreground capitalize">
+                  {weather.current.description}
+                </div>
+              </div>
+            </div>
+            {weather.current.location && (
+              <div className="text-sm text-muted-foreground">
+                📍 {weather.current.location}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Legend */}
       <div className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground">
