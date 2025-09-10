@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useProfileEditing } from "@/hooks/useProfileEditing";
 
 interface NavigationProps {
   currentPage: string;
@@ -15,6 +16,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   const [notifications] = useState(3);
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { liveEditedProfile } = useProfileEditing();
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -84,15 +86,18 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {profile?.display_name || user?.email?.split('@')[0] || 'User'}
+              {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {profile?.major ? 
-                (profile.major.includes('-') ? 
-                  profile.major.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-                  profile.major) : 
-                'Student'
-              }
+              {(() => {
+                const currentMajor = liveEditedProfile.major || profile?.major;
+                if (!currentMajor) return 'Student';
+                
+                // Format predefined majors with proper capitalization
+                return currentMajor.includes('-') ? 
+                  currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                  currentMajor;
+              })()}
             </p>
           </div>
         </div>

@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useProfile } from "@/hooks/useProfile";
+import { useProfileEditing } from "@/hooks/useProfileEditing";
 
 interface AccountIntegration {
   id: string;
@@ -87,6 +88,7 @@ export const Settings = () => {
   const { toast } = useToast();
   const { preferences, updatePreference } = usePreferences();
   const { profile, loading: profileLoading, uploading, updateProfile, uploadAvatar } = useProfile();
+  const { updateLiveProfile } = useProfileEditing();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Local state for profile editing
@@ -100,16 +102,28 @@ export const Settings = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [majorError, setMajorError] = useState('');
 
-  // Simple profanity filter - add more words as needed
+  // Comprehensive profanity filter
   const profanityList = [
-    'damn', 'hell', 'shit', 'fuck', 'bitch', 'ass', 'crap', 'piss', 'bastard', 'idiot', 'stupid'
+    'damn', 'hell', 'shit', 'fuck', 'bitch', 'ass', 'crap', 'piss', 'bastard', 'idiot', 'stupid',
+    'asshole', 'dumbass', 'jackass', 'dickhead', 'motherfucker', 'bullshit', 'goddamn', 'jesus christ',
+    'wtf', 'stfu', 'gtfo', 'fml', 'omfg', 'lmfao', 'rotfl', 'dildo', 'penis', 'vagina', 'boobs',
+    'tits', 'cock', 'dick', 'pussy', 'whore', 'slut', 'hooker', 'prostitute', 'sex', 'porn',
+    'retard', 'retarded', 'gay', 'faggot', 'homo', 'lesbian', 'dyke', 'tranny', 'nigger', 'nigga',
+    'spic', 'wetback', 'chink', 'gook', 'jap', 'kike', 'wop', 'honky', 'cracker', 'redneck'
   ];
 
   const containsProfanity = (text: string): boolean => {
-    const lowercaseText = text.toLowerCase();
-    return profanityList.some(word => 
-      lowercaseText.includes(word.toLowerCase())
-    );
+    const lowercaseText = text.toLowerCase().replace(/[^a-z\s]/g, ''); // Remove special chars
+    return profanityList.some(word => {
+      // Check for whole word matches and common letter substitutions
+      const pattern = new RegExp(`\\b${word.replace(/./g, char => {
+        const substitutions: {[key: string]: string} = {
+          'a': '[a@4]', 'e': '[e3]', 'i': '[i1!]', 'o': '[o0]', 's': '[s5$]', 't': '[t7]'
+        };
+        return substitutions[char] || char;
+      })}\\b`, 'i');
+      return pattern.test(lowercaseText);
+    });
   };
 
   const handleSignOut = async () => {
@@ -163,6 +177,9 @@ export const Settings = () => {
     
     setEditedProfile(prev => ({ ...prev, [field]: value }));
     setHasUnsavedChanges(true);
+    
+    // Update live profile context for instant navigation updates
+    updateLiveProfile(field, value);
   };
 
   const handleSaveProfile = async () => {

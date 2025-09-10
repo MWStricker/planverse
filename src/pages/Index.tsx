@@ -9,6 +9,7 @@ import Calendar from "@/components/Calendar";
 import { Tasks } from "@/components/Tasks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
+import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
@@ -69,14 +70,16 @@ const Index = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <div className="w-64 flex-shrink-0">
-        <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
+    <ProfileEditingProvider>
+      <div className="flex h-screen bg-background">
+        <div className="w-64 flex-shrink-0">
+          <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
+        </div>
+        <div className="flex-1 overflow-auto">
+          {renderPage()}
+        </div>
       </div>
-      <div className="flex-1 overflow-auto">
-        {renderPage()}
-      </div>
-    </div>
+    </ProfileEditingProvider>
   );
 };
 
