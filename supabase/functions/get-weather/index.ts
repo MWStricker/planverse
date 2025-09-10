@@ -61,70 +61,87 @@ serve(async (req) => {
 
     const forecast = await forecastResponse.json();
 
-    // Process forecast data to get daily summaries with better weather predictions
+    // Process forecast data with enhanced accuracy and time-based selection
     const dailyForecast = [];
     const dailyData = new Map();
 
-    // Group forecast data by date and find the most representative weather for each day
+    // Group forecast data by date and prioritize daytime hours for more accurate daily weather
     forecast.list.forEach((item: any) => {
       const date = new Date(item.dt * 1000);
       const dateKey = date.toDateString();
+      const hour = date.getHours();
       
       if (!dailyData.has(dateKey)) {
         dailyData.set(dateKey, {
           date: dateKey,
-          temps: [],
-          conditions: [],
-          icons: [],
-          humidity: [],
-          windSpeed: [],
+          allTemps: [],
+          daytimeData: [],
+          allData: [],
           weatherCounts: new Map()
         });
       }
       
       const dayData = dailyData.get(dateKey);
-      dayData.temps.push(item.main.temp);
-      dayData.conditions.push(item.weather[0].description);
-      dayData.icons.push(item.weather[0].icon);
-      dayData.humidity.push(item.main.humidity);
-      dayData.windSpeed.push(item.wind.speed);
       
-      // Count weather conditions to find the most common one for the day
+      // Store all temperature data for accurate min/max calculation
+      dayData.allTemps.push(item.main.temp);
+      dayData.allData.push({
+        temp: item.main.temp,
+        condition: item.weather[0].main,
+        description: item.weather[0].description,
+        icon: item.weather[0].icon,
+        humidity: item.main.humidity,
+        windSpeed: item.wind.speed,
+        hour: hour,
+        timestamp: item.dt
+      });
+      
+      // Prioritize daytime hours (9 AM to 6 PM) for weather condition selection
+      if (hour >= 9 && hour <= 18) {
+        dayData.daytimeData.push({
+          temp: item.main.temp,
+          condition: item.weather[0].main,
+          description: item.weather[0].description,
+          icon: item.weather[0].icon,
+          humidity: item.main.humidity,
+          windSpeed: item.wind.speed,
+          hour: hour
+        });
+      }
+      
+      // Count weather conditions for overall trend
       const weatherKey = item.weather[0].main;
       dayData.weatherCounts.set(weatherKey, (dayData.weatherCounts.get(weatherKey) || 0) + 1);
     });
 
-    // Process each day to get the most representative weather
+    // Process each day to get the most accurate weather representation
     dailyData.forEach((dayData, dateKey) => {
-      // Find the most common weather condition for the day
-      let mostCommonWeather = '';
-      let maxCount = 0;
-      dayData.weatherCounts.forEach((count, weather) => {
-        if (count > maxCount) {
-          maxCount = count;
-          mostCommonWeather = weather;
-        }
-      });
+      let representativeWeather;
       
-      // Find the icon that corresponds to the most common weather
-      let representativeIcon = dayData.icons[0];
-      for (let i = 0; i < dayData.conditions.length; i++) {
-        if (dayData.conditions[i].toLowerCase().includes(mostCommonWeather.toLowerCase())) {
-          representativeIcon = dayData.icons[i];
-          break;
-        }
+      // Use daytime data if available for more accurate daily conditions
+      if (dayData.daytimeData.length > 0) {
+        // Prefer midday conditions (12-15) for most accurate daily weather
+        const midDayData = dayData.daytimeData.filter(d => d.hour >= 12 && d.hour <= 15);
+        representativeWeather = midDayData.length > 0 
+          ? midDayData[Math.floor(midDayData.length / 2)]
+          : dayData.daytimeData[Math.floor(dayData.daytimeData.length / 2)];
+      } else {
+        // Fallback to all available data
+        representativeWeather = dayData.allData[Math.floor(dayData.allData.length / 2)];
       }
       
-      dailyForecast.push({
-        date: dateKey,
-        temp: Math.round(dayData.temps.reduce((a, b) => a + b, 0) / dayData.temps.length), // Average temp
-        maxTemp: Math.round(Math.max(...dayData.temps)),
-        minTemp: Math.round(Math.min(...dayData.temps)),
-        description: mostCommonWeather,
-        icon: representativeIcon,
-        humidity: Math.round(dayData.humidity.reduce((a, b) => a + b, 0) / dayData.humidity.length),
-        windSpeed: Math.round(dayData.windSpeed.reduce((a, b) => a + b, 0) / dayData.windSpeed.length * 10) / 10,
-      });
+      if (representativeWeather) {
+        dailyForecast.push({
+          date: dateKey,
+          temp: Math.round(representativeWeather.temp),
+          maxTemp: Math.round(Math.max(...dayData.allTemps)),
+          minTemp: Math.round(Math.min(...dayData.allTemps)),
+          description: representativeWeather.condition,
+          icon: representativeWeather.icon,
+          humidity: Math.round(representativeWeather.humidity),
+          windSpeed: Math.round(representativeWeather.windSpeed * 10) / 10,
+        });
+      }
     });
 
     const weatherData = {

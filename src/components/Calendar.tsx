@@ -62,7 +62,7 @@ const Calendar = () => {
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   useEffect(() => {
-    // Get user's location
+    // Get user's location with high accuracy
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -73,12 +73,24 @@ const Calendar = () => {
         },
         (error) => {
           console.error('Error getting location:', error);
-          // Fallback to a default location (e.g., New York)
-          setUserLocation({ lat: 40.7128, lon: -74.0060 });
+          // More accurate fallback locations based on common cities
+          const fallbackLocations = [
+            { lat: 40.7128, lon: -74.0060, name: "New York City" },
+            { lat: 34.0522, lon: -118.2437, name: "Los Angeles" },
+            { lat: 41.8781, lon: -87.6298, name: "Chicago" },
+            { lat: 29.7604, lon: -95.3698, name: "Houston" },
+            { lat: 39.7392, lon: -104.9903, name: "Denver" }
+          ];
+          // Default to New York City
+          setUserLocation(fallbackLocations[0]);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // Cache location for 5 minutes
         }
       );
     } else {
-      // Fallback to a default location
       setUserLocation({ lat: 40.7128, lon: -74.0060 });
     }
   }, []);
@@ -174,17 +186,29 @@ const Calendar = () => {
   };
 
   const getWeatherIcon = (iconCode: string) => {
-    // OpenWeatherMap icon codes - more detailed mapping for better forecast representation
-    if (iconCode.includes('01')) return <Sun className="h-4 w-4 text-yellow-500" />; // clear sky
-    if (iconCode.includes('02')) return <Cloud className="h-4 w-4 text-gray-400" />; // few clouds
-    if (iconCode.includes('03')) return <Cloud className="h-4 w-4 text-gray-500" />; // scattered clouds
-    if (iconCode.includes('04')) return <Cloud className="h-4 w-4 text-gray-600" />; // broken clouds
-    if (iconCode.includes('09')) return <CloudRain className="h-4 w-4 text-blue-500" />; // shower rain
-    if (iconCode.includes('10')) return <CloudRain className="h-4 w-4 text-blue-600" />; // rain
-    if (iconCode.includes('11')) return <CloudRain className="h-4 w-4 text-purple-500" />; // thunderstorm
-    if (iconCode.includes('13')) return <Snowflake className="h-4 w-4 text-blue-200" />; // snow
-    if (iconCode.includes('50')) return <Cloud className="h-4 w-4 text-gray-300" />; // mist/fog
-    return <Sun className="h-4 w-4 text-yellow-500" />; // default
+    // More precise OpenWeatherMap icon mapping for better accuracy
+    const iconMap: { [key: string]: JSX.Element } = {
+      '01d': <Sun className="h-4 w-4 text-yellow-500" />, // clear sky day
+      '01n': <Sun className="h-4 w-4 text-yellow-400" />, // clear sky night
+      '02d': <Cloud className="h-4 w-4 text-gray-400" />, // few clouds day
+      '02n': <Cloud className="h-4 w-4 text-gray-500" />, // few clouds night
+      '03d': <Cloud className="h-4 w-4 text-gray-500" />, // scattered clouds
+      '03n': <Cloud className="h-4 w-4 text-gray-600" />,
+      '04d': <Cloud className="h-4 w-4 text-gray-600" />, // broken clouds
+      '04n': <Cloud className="h-4 w-4 text-gray-700" />,
+      '09d': <CloudRain className="h-4 w-4 text-blue-500" />, // shower rain
+      '09n': <CloudRain className="h-4 w-4 text-blue-600" />,
+      '10d': <CloudRain className="h-4 w-4 text-blue-500" />, // rain
+      '10n': <CloudRain className="h-4 w-4 text-blue-600" />,
+      '11d': <CloudRain className="h-4 w-4 text-purple-500" />, // thunderstorm
+      '11n': <CloudRain className="h-4 w-4 text-purple-600" />,
+      '13d': <Snowflake className="h-4 w-4 text-blue-200" />, // snow
+      '13n': <Snowflake className="h-4 w-4 text-blue-300" />,
+      '50d': <Cloud className="h-4 w-4 text-gray-300" />, // mist
+      '50n': <Cloud className="h-4 w-4 text-gray-400" />
+    };
+    
+    return iconMap[iconCode] || <Sun className="h-4 w-4 text-yellow-500" />;
   };
 
   const getPriorityColor = (priority: number) => {
