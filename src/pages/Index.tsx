@@ -6,6 +6,7 @@ import { Navigation } from "@/components/Navigation";
 import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
 import Calendar from "@/components/Calendar";
+import { Tasks } from "@/components/Tasks";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -45,6 +46,7 @@ const Index = () => {
       case 'calendar':
         return <Calendar />;
       case 'tasks':
+        return <Tasks />;
       case 'courses':
       case 'analytics':
         return (
