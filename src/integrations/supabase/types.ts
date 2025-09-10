@@ -17,12 +17,14 @@ export type Database = {
       calendar_connections: {
         Row: {
           access_token: string | null
+          access_token_enc: string | null
           created_at: string
           id: string
           is_active: boolean | null
           provider: string
           provider_id: string | null
           refresh_token: string | null
+          refresh_token_enc: string | null
           sync_settings: Json | null
           token_expires_at: string | null
           updated_at: string
@@ -30,12 +32,14 @@ export type Database = {
         }
         Insert: {
           access_token?: string | null
+          access_token_enc?: string | null
           created_at?: string
           id?: string
           is_active?: boolean | null
           provider: string
           provider_id?: string | null
           refresh_token?: string | null
+          refresh_token_enc?: string | null
           sync_settings?: Json | null
           token_expires_at?: string | null
           updated_at?: string
@@ -43,12 +47,14 @@ export type Database = {
         }
         Update: {
           access_token?: string | null
+          access_token_enc?: string | null
           created_at?: string
           id?: string
           is_active?: boolean | null
           provider?: string
           provider_id?: string | null
           refresh_token?: string | null
+          refresh_token_enc?: string | null
           sync_settings?: Json | null
           token_expires_at?: string | null
           updated_at?: string
