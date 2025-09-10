@@ -73,6 +73,7 @@ export const Tasks = () => {
       title: "",
       description: "",
       course_name: "",
+      due_date: new Date(),
       due_time: "12:00",
       priority: "none",
     },
@@ -229,6 +230,7 @@ export const Tasks = () => {
       title: "",
       description: "",
       course_name: "",
+      due_date: new Date(),
       due_time: "12:00",
       priority: "none",
     });
