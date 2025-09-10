@@ -14,7 +14,7 @@ interface NavigationProps {
 }
 
 export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
-  const [notifications] = useState(3);
+  const [notifications] = useState(0);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { liveEditedProfile } = useProfileEditing();
