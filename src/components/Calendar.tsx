@@ -436,12 +436,6 @@ const Calendar = () => {
                   )}
                 </div>
 
-                {/* Priority Indicator */}
-                {highestPriority > 0 && isCurrentMonth && (
-                  <div className="flex items-center gap-1">
-                    <div className={`w-2 h-2 rounded-full ${getPriorityColor(highestPriority)}`} />
-                  </div>
-                )}
 
                 {/* Only show content for current month days */}
                 {isCurrentMonth && (
