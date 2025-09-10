@@ -136,7 +136,7 @@ export const Dashboard = () => {
       try {
         // Call our AI OCR edge function
         const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
-          body: { imageBase64: base64, mimeType }
+          body: { imageBase64: base64, mimeType, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, currentDate: new Date().toISOString() }
         });
 
         if (error) {
