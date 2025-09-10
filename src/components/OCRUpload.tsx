@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { imageFileToBase64Compressed } from "@/lib/utils";
 import { ocrExtractText } from "@/lib/ocr";
+import { fromZonedTime } from "date-fns-tz";
 
 
 interface ParsedEvent {
@@ -218,13 +219,16 @@ export const OCRUpload = () => {
     }
 
     try {
-      // Parse the date and time without timezone conversion to avoid day shifts
+      // Parse parts and build timezone-aware datetimes
       const datePart = String(event.date || '').slice(0, 10); // YYYY-MM-DD
       const startTimePart = String(event.startTime || '00:00').slice(0, 5); // HH:MM
       const endTimePart = String(event.endTime || '00:00').slice(0, 5); // HH:MM
-      
-      const startTimeISO = `${datePart}T${startTimePart}:00.000Z`;
-      const endTimeISO = `${datePart}T${endTimePart}:00.000Z`;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const start = fromZonedTime(new Date(`${datePart}T${startTimePart}:00`), tz);
+      const end = fromZonedTime(new Date(`${datePart}T${endTimePart}:00`), tz);
+
+      const startTimeISO = start.toISOString();
+      const endTimeISO = end.toISOString();
 
       // Add to events table
       const { error } = await supabase
@@ -277,11 +281,12 @@ export const OCRUpload = () => {
     }
 
     try {
-      // Parse the date and time
       const datePart = String(task.dueDate || '').slice(0, 10); // YYYY-MM-DD
       const timePart = String(task.dueTime || '23:59').slice(0, 5); // HH:MM
-      
-      const dueDateTime = `${datePart}T${timePart}:00.000Z`;
+      // Build timezone-aware due datetime
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const start = fromZonedTime(new Date(`${datePart}T${timePart}:00`), tz);
+      const dueDateTime = start.toISOString();
 
       // Add to tasks table
       const { error } = await supabase
