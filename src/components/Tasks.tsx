@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, Clock, AlertTriangle, BookOpen, Calendar, Plus, Filter, Search, CalendarIcon } from "lucide-react";
+import { CheckCircle, Clock, AlertTriangle, BookOpen, Calendar, Plus, Filter, Search, CalendarIcon, Edit2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +60,8 @@ export const Tasks = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -69,6 +71,7 @@ export const Tasks = () => {
       title: "",
       description: "",
       course_name: "",
+      due_time: "12:00",
       priority: "medium",
     },
   });
@@ -117,6 +120,60 @@ export const Tasks = () => {
           description: "Task created successfully",
         });
         setIsAddDialogOpen(false);
+        resetForm();
+        fetchTasks(); // Refresh tasks
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const onEditTask = async (values: z.infer<typeof taskFormSchema>) => {
+    if (!user || !editingTask) return;
+
+    const priorityMap = {
+      low: 1,
+      medium: 2,
+      high: 3,
+      critical: 4,
+    };
+
+    // Combine date and time
+    const dueDateTime = new Date(values.due_date);
+    const [hours, minutes] = values.due_time.split(':');
+    dueDateTime.setHours(parseInt(hours), parseInt(minutes));
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          title: values.title,
+          description: values.description || null,
+          course_name: values.course_name || null,
+          due_date: dueDateTime.toISOString(),
+          priority_score: priorityMap[values.priority],
+        })
+        .eq('id', editingTask.id);
+
+      if (error) {
+        console.error('Error updating task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update task",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Task updated successfully",
+        });
+        setIsEditDialogOpen(false);
+        setEditingTask(null);
         form.reset();
         fetchTasks(); // Refresh tasks
       }
@@ -128,6 +185,49 @@ export const Tasks = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    
+    // Convert priority score back to string
+    const priorityMap: { [key: number]: "low" | "medium" | "high" | "critical" } = {
+      1: "low",
+      2: "medium", 
+      3: "high",
+      4: "critical"
+    };
+
+    // Parse due date and time
+    let dueDate: Date | undefined;
+    let dueTime = "12:00";
+    
+    if (task.due_date) {
+      dueDate = new Date(task.due_date);
+      dueTime = dueDate.toTimeString().slice(0, 5); // Get HH:MM format
+    }
+
+    form.reset({
+      title: task.title,
+      description: task.description || "",
+      course_name: task.course_name || "",
+      due_date: dueDate,
+      due_time: dueTime,
+      priority: priorityMap[task.priority_score || 2] || "medium",
+    });
+    
+    setIsEditDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    form.reset({
+      title: "",
+      description: "",
+      course_name: "",
+      due_time: "12:00",
+      priority: "medium",
+    });
+    setEditingTask(null);
   };
 
   // Function to calculate priority based on keywords and due date
@@ -558,12 +658,197 @@ export const Tasks = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsAddDialogOpen(false)}
+                    onClick={() => {
+                      setIsAddDialogOpen(false);
+                      resetForm();
+                    }}
                   >
                     Cancel
                   </Button>
                   <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
                     Create Task
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Task Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Task</DialogTitle>
+              <DialogDescription>
+                Update task details, due date, time, and priority level.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onEditTask)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Task Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter task title..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Enter task description..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="course_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Course (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter course name..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="due_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Due Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "MMM dd, yyyy")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) =>
+                                date < new Date()
+                              }
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="due_time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Due Time</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="time" 
+                            placeholder="12:00" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority Level</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              Low Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="medium">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-blue-500" />
+                              Medium Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="high">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-orange-500" />
+                              High Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="critical">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              Critical Priority
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
+                    Update Task
                   </Button>
                 </DialogFooter>
               </form>
@@ -733,6 +1018,18 @@ export const Tasks = () => {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Edit button for tasks (not events) */}
+                  {item.type === 'task' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditTask(item as Task)}
+                      className="flex-shrink-0"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
