@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -91,9 +94,108 @@ const todaySchedule: ScheduleEvent[] = [
 ];
 
 export const Dashboard = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const completedTasks = mockTasks.filter(task => task.completed).length;
   const totalTasks = mockTasks.length;
   const completionRate = Math.round((completedTasks / totalTasks) * 100);
+
+  // Define suggested study blocks
+  const suggestedStudyBlocks = [
+    {
+      id: 'morning-focus',
+      title: 'Morning Focus',
+      time: '10:30 AM - 12:00 PM',
+      location: 'Library',
+      description: 'Work on Data Structures Project',
+      priority: 'Optimal',
+      startTime: '10:30',
+      endTime: '12:00',
+      date: new Date().toISOString().split('T')[0], // Today
+    },
+    {
+      id: 'afternoon-review',
+      title: 'Afternoon Review', 
+      time: '3:30 PM - 5:00 PM',
+      location: 'Study Hall',
+      description: 'Calculus Problem Set',
+      priority: 'Good',
+      startTime: '15:30',
+      endTime: '17:00',
+      date: new Date().toISOString().split('T')[0], // Today
+    },
+    {
+      id: 'evening-prep',
+      title: 'Evening Prep',
+      time: '7:00 PM - 8:30 PM', 
+      location: 'Dorm',
+      description: 'Review Chemistry Notes',
+      priority: 'Alternative',
+      startTime: '19:00',
+      endTime: '20:30',
+      date: new Date().toISOString().split('T')[0], // Today
+    }
+  ];
+
+  const handleAcceptStudyBlock = async (studyBlock: any) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to accept study blocks",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create the study session with proper date/time formatting
+      const today = new Date();
+      const [startHour, startMinute] = studyBlock.startTime.split(':');
+      const [endHour, endMinute] = studyBlock.endTime.split(':');
+      
+      const startTime = new Date(today);
+      startTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
+      
+      const endTime = new Date(today);
+      endTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
+
+      const { data, error } = await supabase
+        .from('study_sessions')
+        .insert({
+          user_id: user.id,
+          title: studyBlock.title,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          location: studyBlock.location,
+          notes: studyBlock.description,
+          session_type: 'study',
+          is_confirmed: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating study session:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add study block to calendar",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Study Block Added!",
+          description: `${studyBlock.title} has been added to your calendar`,
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error", 
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -277,44 +379,40 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-foreground">Morning Focus</h4>
-                  <Badge className="bg-primary text-primary-foreground">Optimal</Badge>
+              {suggestedStudyBlocks.map((block, index) => (
+                <div key={block.id} className={`p-4 rounded-lg ${
+                  index === 0 
+                    ? 'bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20'
+                    : index === 1
+                      ? 'bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20'
+                      : 'bg-gradient-to-br from-muted/50 to-muted border border-border'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-foreground">{block.title}</h4>
+                    <Badge className={
+                      block.priority === 'Optimal' 
+                        ? 'bg-primary text-primary-foreground'
+                        : block.priority === 'Good'
+                          ? 'bg-secondary text-secondary-foreground'
+                          : 'bg-outline text-foreground'
+                    }>
+                      {block.priority}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">{block.time} • {block.location}</p>
+                  <p className="text-sm text-foreground mb-3">{block.description}</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      className={index === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground'}
+                      onClick={() => handleAcceptStudyBlock(block)}
+                    >
+                      Accept
+                    </Button>
+                    <Button size="sm" variant="outline">Modify</Button>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">10:30 AM - 12:00 PM • Library</p>
-                <p className="text-sm text-foreground mb-3">Work on Data Structures Project</p>
-                <div className="flex gap-2">
-                  <Button size="sm" className="bg-primary text-primary-foreground">Accept</Button>
-                  <Button size="sm" variant="outline">Modify</Button>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-lg bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-foreground">Afternoon Review</h4>
-                  <Badge variant="secondary">Good</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">3:30 PM - 5:00 PM • Study Hall</p>
-                <p className="text-sm text-foreground mb-3">Calculus Problem Set</p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">Accept</Button>
-                  <Button size="sm" variant="outline">Modify</Button>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-lg bg-gradient-to-br from-muted/50 to-muted border border-border">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-foreground">Evening Prep</h4>
-                  <Badge variant="outline">Alternative</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">7:00 PM - 8:30 PM • Dorm</p>
-                <p className="text-sm text-foreground mb-3">Review Chemistry Notes</p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">Accept</Button>
-                  <Button size="sm" variant="outline">Modify</Button>
-                </div>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
