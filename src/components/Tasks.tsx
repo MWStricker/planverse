@@ -38,6 +38,7 @@ const taskFormSchema = z.object({
   course_name: z.string().optional(),
   due_date: z.date({
     required_error: "Due date is required",
+    invalid_type_error: "Please select a valid date",
   }),
   due_time: z.string().min(1, "Time is required"),
   priority: z.enum(["low", "medium", "high", "critical"], {
@@ -612,7 +613,10 @@ export const Tasks = () => {
                             <CalendarComponent
                               mode="single"
                               selected={field.value}
-                              onSelect={field.onChange}
+                              onSelect={(date) => {
+                                console.log('Date selected:', date);
+                                field.onChange(date);
+                              }}
                               disabled={(date) => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
@@ -799,7 +803,10 @@ export const Tasks = () => {
                             <CalendarComponent
                               mode="single"
                               selected={field.value}
-                              onSelect={field.onChange}
+                              onSelect={(date) => {
+                                console.log('Date selected (edit):', date);
+                                field.onChange(date);
+                              }}
                               disabled={(date) => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
