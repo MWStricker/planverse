@@ -97,7 +97,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                   <img 
                     src={university.logo} 
                     alt={university.shortName} 
-                    className="w-4 h-4 object-contain"
+                    className="w-6 h-6 object-contain"
                   />
                 ) : null;
               })()}
