@@ -31,9 +31,9 @@ serve(async (req) => {
       });
     }
 
-    // Fetch current weather
+    // Fetch current weather (in Fahrenheit)
     const currentWeatherResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=metric`
+      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=imperial`
     );
 
     if (!currentWeatherResponse.ok) {
@@ -46,9 +46,9 @@ serve(async (req) => {
 
     const currentWeather = await currentWeatherResponse.json();
 
-    // Fetch 5-day forecast
+    // Fetch 5-day forecast (in Fahrenheit) - this gives us up to 5 days with 3-hour intervals
     const forecastResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=metric`
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=imperial`
     );
 
     if (!forecastResponse.ok) {
@@ -61,26 +61,70 @@ serve(async (req) => {
 
     const forecast = await forecastResponse.json();
 
-    // Process forecast data to get daily summaries
+    // Process forecast data to get daily summaries with better weather predictions
     const dailyForecast = [];
     const dailyData = new Map();
 
+    // Group forecast data by date and find the most representative weather for each day
     forecast.list.forEach((item: any) => {
-      const date = new Date(item.dt * 1000).toDateString();
-      if (!dailyData.has(date)) {
-        dailyData.set(date, {
-          date: date,
-          temp: item.main.temp,
-          description: item.weather[0].description,
-          icon: item.weather[0].icon,
-          humidity: item.main.humidity,
-          windSpeed: item.wind.speed,
+      const date = new Date(item.dt * 1000);
+      const dateKey = date.toDateString();
+      
+      if (!dailyData.has(dateKey)) {
+        dailyData.set(dateKey, {
+          date: dateKey,
+          temps: [],
+          conditions: [],
+          icons: [],
+          humidity: [],
+          windSpeed: [],
+          weatherCounts: new Map()
         });
       }
+      
+      const dayData = dailyData.get(dateKey);
+      dayData.temps.push(item.main.temp);
+      dayData.conditions.push(item.weather[0].description);
+      dayData.icons.push(item.weather[0].icon);
+      dayData.humidity.push(item.main.humidity);
+      dayData.windSpeed.push(item.wind.speed);
+      
+      // Count weather conditions to find the most common one for the day
+      const weatherKey = item.weather[0].main;
+      dayData.weatherCounts.set(weatherKey, (dayData.weatherCounts.get(weatherKey) || 0) + 1);
     });
 
-    dailyData.forEach((value) => {
-      dailyForecast.push(value);
+    // Process each day to get the most representative weather
+    dailyData.forEach((dayData, dateKey) => {
+      // Find the most common weather condition for the day
+      let mostCommonWeather = '';
+      let maxCount = 0;
+      dayData.weatherCounts.forEach((count, weather) => {
+        if (count > maxCount) {
+          maxCount = count;
+          mostCommonWeather = weather;
+        }
+      });
+      
+      // Find the icon that corresponds to the most common weather
+      let representativeIcon = dayData.icons[0];
+      for (let i = 0; i < dayData.conditions.length; i++) {
+        if (dayData.conditions[i].toLowerCase().includes(mostCommonWeather.toLowerCase())) {
+          representativeIcon = dayData.icons[i];
+          break;
+        }
+      }
+      
+      dailyForecast.push({
+        date: dateKey,
+        temp: Math.round(dayData.temps.reduce((a, b) => a + b, 0) / dayData.temps.length), // Average temp
+        maxTemp: Math.round(Math.max(...dayData.temps)),
+        minTemp: Math.round(Math.min(...dayData.temps)),
+        description: mostCommonWeather,
+        icon: representativeIcon,
+        humidity: Math.round(dayData.humidity.reduce((a, b) => a + b, 0) / dayData.humidity.length),
+        windSpeed: Math.round(dayData.windSpeed.reduce((a, b) => a + b, 0) / dayData.windSpeed.length * 10) / 10,
+      });
     });
 
     const weatherData = {
@@ -92,7 +136,7 @@ serve(async (req) => {
         windSpeed: currentWeather.wind.speed,
         location: currentWeather.name,
       },
-      forecast: dailyForecast.slice(0, 5), // Next 5 days
+      forecast: dailyForecast, // All available forecast days (up to 5 days)
     };
 
     return new Response(JSON.stringify(weatherData), {

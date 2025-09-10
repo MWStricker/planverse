@@ -33,6 +33,8 @@ interface StudySession {
 
 interface WeatherData {
   temp: number;
+  maxTemp?: number;
+  minTemp?: number;
   description: string;
   icon: string;
   humidity: number;
@@ -151,7 +153,9 @@ const Calendar = () => {
           const date = new Date(day.date);
           const dateKey = format(date, 'yyyy-MM-dd');
           forecastData[dateKey] = {
-            temp: Math.round(day.temp),
+            temp: day.temp,
+            maxTemp: day.maxTemp,
+            minTemp: day.minTemp,
             description: day.description,
             icon: day.icon,
             humidity: day.humidity,
@@ -170,11 +174,16 @@ const Calendar = () => {
   };
 
   const getWeatherIcon = (iconCode: string) => {
-    // OpenWeatherMap icon codes
+    // OpenWeatherMap icon codes - more detailed mapping for better forecast representation
     if (iconCode.includes('01')) return <Sun className="h-4 w-4 text-yellow-500" />; // clear sky
-    if (iconCode.includes('02') || iconCode.includes('03') || iconCode.includes('04')) return <Cloud className="h-4 w-4 text-gray-500" />; // clouds
-    if (iconCode.includes('09') || iconCode.includes('10')) return <CloudRain className="h-4 w-4 text-blue-500" />; // rain
+    if (iconCode.includes('02')) return <Cloud className="h-4 w-4 text-gray-400" />; // few clouds
+    if (iconCode.includes('03')) return <Cloud className="h-4 w-4 text-gray-500" />; // scattered clouds
+    if (iconCode.includes('04')) return <Cloud className="h-4 w-4 text-gray-600" />; // broken clouds
+    if (iconCode.includes('09')) return <CloudRain className="h-4 w-4 text-blue-500" />; // shower rain
+    if (iconCode.includes('10')) return <CloudRain className="h-4 w-4 text-blue-600" />; // rain
+    if (iconCode.includes('11')) return <CloudRain className="h-4 w-4 text-purple-500" />; // thunderstorm
     if (iconCode.includes('13')) return <Snowflake className="h-4 w-4 text-blue-200" />; // snow
+    if (iconCode.includes('50')) return <Cloud className="h-4 w-4 text-gray-300" />; // mist/fog
     return <Sun className="h-4 w-4 text-yellow-500" />; // default
   };
 
@@ -299,7 +308,10 @@ const Calendar = () => {
                     <div className="flex items-center gap-1">
                       {getWeatherIcon(dayWeather.icon)}
                       <span className="text-xs text-muted-foreground">
-                        {dayWeather.temp}°C
+                        {dayWeather.maxTemp && dayWeather.minTemp 
+                          ? `${dayWeather.maxTemp}°/${dayWeather.minTemp}°F`
+                          : `${dayWeather.temp}°F`
+                        }
                       </span>
                     </div>
                   )}
@@ -366,7 +378,7 @@ const Calendar = () => {
               </div>
               <div>
                 <div className="text-lg font-semibold text-foreground">
-                  {weather.current.temp}°C
+                  {weather.current.temp}°F
                 </div>
                 <div className="text-sm text-muted-foreground capitalize">
                   {weather.current.description}
