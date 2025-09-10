@@ -25,8 +25,8 @@ export const AnalogClock = () => {
       <div className="text-center">
         <div className="text-lg font-mono font-bold text-foreground mb-1 tracking-wide">
           {time.toLocaleTimeString('en-US', {
-            hour12: false,
-            hour: '2-digit',
+            hour12: true,
+            hour: 'numeric',
             minute: '2-digit',
             second: '2-digit'
           })}
