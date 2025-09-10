@@ -88,7 +88,9 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
             </p>
             <p className="text-xs text-muted-foreground truncate">
               {profile?.major ? 
-                profile.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                (profile.major.includes('-') ? 
+                  profile.major.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                  profile.major) : 
                 'Student'
               }
             </p>
