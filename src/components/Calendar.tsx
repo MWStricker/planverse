@@ -48,10 +48,38 @@ const Calendar = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
-  const [weather, setWeather] = useState<{ current?: WeatherData; forecast: { [key: string]: WeatherData } }>({
-    forecast: {}
+  const [weather, setWeather] = useState<{ current?: WeatherData; forecast: { [key: string]: WeatherData } }>(() => {
+    // Load cached weather data from localStorage on component mount
+    try {
+      const cached = localStorage.getItem('weather-data');
+      if (cached) {
+        const parsedData = JSON.parse(cached);
+        // Check if data is less than 30 minutes old
+        if (parsedData.timestamp && Date.now() - parsedData.timestamp < 30 * 60 * 1000) {
+          return { current: parsedData.current, forecast: parsedData.forecast };
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cached weather data:', error);
+    }
+    return { forecast: {} };
   });
-  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(() => {
+    // Load cached location from localStorage
+    try {
+      const cached = localStorage.getItem('user-location');
+      if (cached) {
+        const parsedLocation = JSON.parse(cached);
+        // Use cached location if it's less than 1 hour old
+        if (parsedLocation.timestamp && Date.now() - parsedLocation.timestamp < 60 * 60 * 1000) {
+          return { lat: parsedLocation.lat, lon: parsedLocation.lon };
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cached location:', error);
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
 
   // Calculate proper calendar grid (6 weeks)
@@ -62,19 +90,41 @@ const Calendar = () => {
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   useEffect(() => {
-    // Get user's location with shorter timeout for faster loading
-    if (navigator.geolocation) {
+    // Get user's location with caching and shorter timeout for faster loading
+    if (!userLocation && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const location = {
             lat: position.coords.latitude,
             lon: position.coords.longitude
-          });
+          };
+          setUserLocation(location);
+          
+          // Cache location with timestamp
+          try {
+            localStorage.setItem('user-location', JSON.stringify({
+              ...location,
+              timestamp: Date.now()
+            }));
+          } catch (error) {
+            console.error('Error caching location:', error);
+          }
         },
         (error) => {
           console.error('Error getting location:', error);
-          // Faster fallback to default location
-          setUserLocation({ lat: 40.7128, lon: -74.0060 });
+          // Faster fallback to default location (New York)
+          const defaultLocation = { lat: 40.7128, lon: -74.0060 };
+          setUserLocation(defaultLocation);
+          
+          // Cache default location
+          try {
+            localStorage.setItem('user-location', JSON.stringify({
+              ...defaultLocation,
+              timestamp: Date.now()
+            }));
+          } catch (error) {
+            console.error('Error caching default location:', error);
+          }
         },
         {
           enableHighAccuracy: false, // Faster, less accurate location
@@ -82,10 +132,12 @@ const Calendar = () => {
           maximumAge: 600000 // Cache location for 10 minutes
         }
       );
-    } else {
-      setUserLocation({ lat: 40.7128, lon: -74.0060 });
+    } else if (!userLocation) {
+      // If geolocation is not available, use default location
+      const defaultLocation = { lat: 40.7128, lon: -74.0060 };
+      setUserLocation(defaultLocation);
     }
-  }, []);
+  }, [userLocation]);
 
   useEffect(() => {
     if (user) {
@@ -209,6 +261,11 @@ const Calendar = () => {
     }
   };
 
+  // Function to manually refresh weather
+  const refreshWeather = async () => {
+    await fetchWeatherData();
+  };
+
   const getWeatherIcon = (iconCode: string) => {
     // More precise OpenWeatherMap icon mapping for better accuracy
     const iconMap: { [key: string]: JSX.Element } = {
@@ -306,7 +363,16 @@ const Calendar = () => {
         <h1 className="text-3xl font-bold text-foreground">
           {format(currentDate, 'MMMM yyyy')}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refreshWeather}
+            className="flex items-center gap-2"
+          >
+            <Thermometer className="h-4 w-4" />
+            Refresh Weather
+          </Button>
           <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -419,7 +485,7 @@ const Calendar = () => {
 
       {/* Current Weather Display */}
       {weather.current && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg">
+        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-2xl">
@@ -434,11 +500,21 @@ const Calendar = () => {
                 </div>
               </div>
             </div>
-            {weather.current.location && (
-              <div className="text-sm text-muted-foreground">
-                📍 {weather.current.location}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {weather.current.location && (
+                <div className="text-sm text-muted-foreground">
+                  📍 {weather.current.location}
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshWeather}
+                className="h-8 w-8 p-0"
+              >
+                <Thermometer className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       )}
