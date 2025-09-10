@@ -5,6 +5,7 @@ import { OCRUpload } from "@/components/OCRUpload";
 import { Navigation } from "@/components/Navigation";
 import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
+import Calendar from "@/components/Calendar";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -42,6 +43,7 @@ const Index = () => {
       case 'settings':
         return <Settings />;
       case 'calendar':
+        return <Calendar />;
       case 'tasks':
       case 'courses':
       case 'analytics':
