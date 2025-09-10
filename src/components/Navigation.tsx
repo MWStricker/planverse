@@ -30,7 +30,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   return (
     <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Logo */}
-      <div className="px-4 pt-0 pb-4 border-b border-border">
+      <div className="p-4 pt-1 border-b border-border">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 overflow-hidden rounded-lg mt-1">
             <img 
