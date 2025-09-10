@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap } from "lucide-react";
+import { useState, useRef } from "react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/hooks/usePreferences";
+import { useProfile } from "@/hooks/useProfile";
 
 interface AccountIntegration {
   id: string;
@@ -82,6 +86,8 @@ export const Settings = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
   const { preferences, updatePreference } = usePreferences();
+  const { profile, loading: profileLoading, uploading, updateProfile, uploadAvatar } = useProfile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSignOut = async () => {
     try {
@@ -479,6 +485,217 @@ export const Settings = () => {
     </div>
   );
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await uploadAvatar(file);
+  };
+
+  const renderProfile = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Profile Settings</h2>
+        <p className="text-muted-foreground">
+          Manage your personal information and academic details
+        </p>
+      </div>
+
+      {profileLoading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <>
+          {/* Avatar Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Profile Picture
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-6">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback className="text-lg">
+                    {profile?.display_name?.charAt(0)?.toUpperCase() || 
+                     user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="space-y-2">
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploading ? 'Uploading...' : 'Upload Photo'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    JPG, PNG or WebP. Max size 5MB.
+                  </p>
+                </div>
+              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </CardContent>
+          </Card>
+
+          {/* Personal Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Personal Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="display_name">Display Name</Label>
+                <Input
+                  id="display_name"
+                  value={profile?.display_name || ''}
+                  onChange={(e) => updateProfile({ display_name: e.target.value })}
+                  placeholder="Enter your display name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Email cannot be changed from this page
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Academic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🎓 Academic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="school">School/University</Label>
+                <Input
+                  id="school"
+                  value={profile?.school || ''}
+                  onChange={(e) => updateProfile({ school: e.target.value })}
+                  placeholder="e.g. University of California, Berkeley"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="major">Major/Field of Study</Label>
+                <Select 
+                  value={profile?.major || ''} 
+                  onValueChange={(value) => updateProfile({ major: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your major" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="computer-science">Computer Science</SelectItem>
+                    <SelectItem value="engineering">Engineering</SelectItem>
+                    <SelectItem value="mathematics">Mathematics</SelectItem>
+                    <SelectItem value="physics">Physics</SelectItem>
+                    <SelectItem value="chemistry">Chemistry</SelectItem>
+                    <SelectItem value="biology">Biology</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="economics">Economics</SelectItem>
+                    <SelectItem value="psychology">Psychology</SelectItem>
+                    <SelectItem value="english">English</SelectItem>
+                    <SelectItem value="history">History</SelectItem>
+                    <SelectItem value="art">Art</SelectItem>
+                    <SelectItem value="music">Music</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="campus_location">Campus Location</Label>
+                <Input
+                  id="campus_location"
+                  value={profile?.campus_location || ''}
+                  onChange={(e) => updateProfile({ campus_location: e.target.value })}
+                  placeholder="e.g. Main Campus, Downtown Campus"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Timezone Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🌍 Location & Time
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="timezone">Timezone</Label>
+                <Select 
+                  value={profile?.timezone || 'America/New_York'} 
+                  onValueChange={(value) => updateProfile({ timezone: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                    <SelectItem value="America/Chicago">Central Time</SelectItem>
+                    <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska Time</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii Time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+
   const renderComingSoon = (title: string) => (
     <div className="flex items-center justify-center h-64">
       <div className="text-center">
@@ -540,7 +757,7 @@ export const Settings = () => {
       case 'notifications':
         return renderNotifications();
       case 'profile':
-        return renderComingSoon('Profile Settings');
+        return renderProfile();
       case 'privacy':
         return renderComingSoon('Privacy & Security');
       case 'signout':
