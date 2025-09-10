@@ -107,10 +107,133 @@ export const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error analyzing user data:', error);
-      // No fallback to mock data
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file (PNG, JPG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    toast({
+      title: "Processing image...",
+      description: "AI is extracting schedule information",
+    });
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const base64 = e.target?.result as string;
+          const base64Data = base64.split(',')[1];
+
+          // Call our AI OCR edge function
+          const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
+            body: { imageBase64: base64Data }
+          });
+
+          if (error) {
+            console.error('OCR Error:', error);
+            throw new Error('Failed to process image');
+          }
+
+          if (response.success && response.events && response.events.length > 0) {
+            // Add all extracted events to the database
+            const eventsToInsert = response.events.map((event: any) => {
+              const eventDate = new Date(event.date);
+              const [startHour, startMinute] = event.startTime.split(':').map(Number);
+              const [endHour, endMinute] = event.endTime.split(':').map(Number);
+              
+              const startTime = new Date(eventDate);
+              startTime.setHours(startHour, startMinute, 0, 0);
+              
+              const endTime = new Date(eventDate);
+              endTime.setHours(endHour, endMinute, 0, 0);
+
+              return {
+                user_id: user!.id,
+                title: event.title,
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString(),
+                location: event.location || '',
+                description: `Extracted from image with ${event.confidence}% confidence`,
+                event_type: 'class',
+                source_provider: 'ocr_upload',
+                recurrence_rule: event.recurrence || null
+              };
+            });
+
+            const { error: insertError } = await supabase
+              .from('events')
+              .insert(eventsToInsert);
+
+            if (insertError) {
+              console.error('Error inserting events:', insertError);
+              throw new Error('Failed to save events to calendar');
+            }
+
+            toast({
+              title: "Schedule uploaded successfully!",
+              description: `Added ${response.events.length} events to your calendar`,
+            });
+
+            // Refresh the dashboard data
+            await analyzeUserData();
+          } else {
+            throw new Error('No events found in image');
+          }
+        } catch (error) {
+          console.error('Error processing image:', error);
+          toast({
+            title: "Processing failed",
+            description: "Failed to extract schedule from image. Please try again.",
+            variant: "destructive",
+          });
+          setIsAnalyzing(false);
+        }
+      };
+
+      reader.onerror = () => {
+        toast({
+          title: "File read error",
+          description: "Failed to read the image file.",
+          variant: "destructive",
+        });
+        setIsAnalyzing(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('File upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+      setIsAnalyzing(false);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleImageUpload(file);
+      }
+    };
+    input.click();
   };
 
   // Empty suggested study blocks for testing
@@ -210,9 +333,9 @@ export const Dashboard = () => {
             <p className="text-muted-foreground">Here's your day at a glance</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={triggerFileUpload} disabled={isAnalyzing}>
               <Upload className="h-4 w-4 mr-2" />
-              Upload Schedule
+              {isAnalyzing ? "Processing..." : "Upload Schedule"}
             </Button>
             <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all">
               <Plus className="h-4 w-4 mr-2" />
