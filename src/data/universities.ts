@@ -24,6 +24,7 @@ import michiganStateLogo from '@/assets/university-logos/michigan-state.png';
 import minnesotaLogo from '@/assets/university-logos/minnesota.png';
 import uncLogo from '@/assets/university-logos/unc.png';
 import ohioStateLogo from '@/assets/university-logos/ohio-state.png';
+import coloradoStateLogo from '@/assets/university-logos/colorado-state.png';
 
 export interface University {
   id: string;
@@ -67,7 +68,7 @@ export const universities: University[] = [
   createUniversity({ id: 'clemson', name: 'Clemson University', shortName: 'Clemson', type: 'state', state: 'SC', isPublic: true }),
   createUniversity({ id: 'colorado', name: 'University of Colorado Boulder', shortName: 'CU Boulder', logo: coloradoLogo, type: 'state', state: 'CO', isPublic: true }),
   createUniversity({ id: 'colorado-denver', name: 'University of Colorado Denver', shortName: 'CU Denver', type: 'state', state: 'CO', isPublic: true }),
-  createUniversity({ id: 'colorado-state', name: 'Colorado State University', shortName: 'Colorado State', type: 'state', state: 'CO', isPublic: true }),
+  createUniversity({ id: 'colorado-state', name: 'Colorado State University', shortName: 'Colorado State', logo: coloradoStateLogo, type: 'state', state: 'CO', isPublic: true }),
   createUniversity({ id: 'connecticut', name: 'University of Connecticut', shortName: 'UConn', logo: uconnLogo, type: 'state', state: 'CT', isPublic: true }),
   createUniversity({ id: 'delaware', name: 'University of Delaware', shortName: 'Delaware', type: 'state', state: 'DE', isPublic: true }),
   createUniversity({ id: 'eastern-michigan', name: 'Eastern Michigan University', shortName: 'Eastern Michigan', type: 'state', state: 'MI', isPublic: true }),
