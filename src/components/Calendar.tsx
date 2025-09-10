@@ -313,6 +313,70 @@ const Calendar = () => {
     }
   };
 
+  const deleteEvent = async (eventId: string) => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) {
+        console.error('Error deleting event:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete event",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Event deleted successfully",
+        });
+        // Update local state
+        setEvents(events.filter(event => event.id !== eventId));
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteStudySession = async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('study_sessions')
+        .delete()
+        .eq('id', sessionId);
+
+      if (error) {
+        console.error('Error deleting study session:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete study session",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Study session deleted successfully",
+        });
+        // Update local state
+        setStudySessions(studySessions.filter(session => session.id !== sessionId));
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   const deleteTask = async (taskId: string) => {
     try {
       const { error } = await supabase
@@ -582,16 +646,54 @@ const Calendar = () => {
 
                     {/* Events */}
                     {dayEvents.map(event => (
-                      <Badge key={event.id} variant="outline" className="text-xs w-full justify-start truncate">
-                        📅 {event.title}
-                      </Badge>
+                      <Popover key={event.id}>
+                        <PopoverTrigger asChild>
+                          <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors">
+                            <Badge variant="outline" className="text-xs w-full justify-start truncate">
+                              📅 {event.title}
+                            </Badge>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="start">
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start h-8 text-destructive hover:text-destructive"
+                              onClick={() => deleteEvent(event.id)}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Delete Event
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     ))}
 
                     {/* Study Sessions */}
                     {daySessions.map(session => (
-                      <Badge key={session.id} variant="default" className="text-xs w-full justify-start truncate">
-                        📚 {session.title}
-                      </Badge>
+                      <Popover key={session.id}>
+                        <PopoverTrigger asChild>
+                          <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors">
+                            <Badge variant="default" className="text-xs w-full justify-start truncate">
+                              📚 {session.title}
+                            </Badge>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="start">
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start h-8 text-destructive hover:text-destructive"
+                              onClick={() => deleteStudySession(session.id)}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Delete Session
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     ))}
                   </div>
                 )}
