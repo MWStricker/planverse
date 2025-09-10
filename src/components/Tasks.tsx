@@ -54,6 +54,7 @@ const PRIORITY_KEYWORDS = {
 };
 
 export const Tasks = () => {
+  const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -414,11 +415,26 @@ export const Tasks = () => {
           variant: "destructive",
         });
       } else {
+        // Update local state
         setTasks(tasks.map(task => 
           task.id === taskId 
             ? { ...task, completion_status: newStatus }
             : task
         ));
+
+        // If task was completed, show completion state for 5 seconds then remove
+        if (newStatus === 'completed') {
+          setCompletingTasks(prev => new Set(prev).add(taskId));
+          
+          setTimeout(() => {
+            setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+            setCompletingTasks(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(taskId);
+              return newSet;
+            });
+          }, 5000);
+        }
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -1085,7 +1101,11 @@ export const Tasks = () => {
           </Card>
         ) : (
           sortedItems.map((item) => (
-            <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${item.completion_status === 'completed' ? 'opacity-60' : ''}`}>
+            <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${
+              item.completion_status === 'completed' ? 'opacity-60' : ''
+            } ${
+              completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
+            }`}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
                   <Button
@@ -1107,6 +1127,9 @@ export const Tasks = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className={`font-medium ${item.completion_status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                         {item.title}
+                        {completingTasks.has(item.id) && (
+                          <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
+                        )}
                       </h3>
                       <Badge variant={getPriorityColor(item.priority)} className="flex items-center gap-1">
                         {getPriorityIcon(item.priority)}

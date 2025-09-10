@@ -49,6 +49,7 @@ const Calendar = () => {
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showAllTasks, setShowAllTasks] = useState(false);
+  const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
@@ -302,6 +303,20 @@ const Calendar = () => {
             ? { ...task, completion_status: newStatus }
             : task
         ));
+
+        // If task was completed, remove from calendar after 5 seconds
+        if (newStatus === 'completed') {
+          setCompletingTasks(prev => new Set(prev).add(taskId));
+          
+          setTimeout(() => {
+            setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+            setCompletingTasks(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(taskId);
+              return newSet;
+            });
+          }, 5000);
+        }
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -610,11 +625,16 @@ const Calendar = () => {
                     {dayTasks.map(task => (
                       <Popover key={task.id}>
                         <PopoverTrigger asChild>
-                          <div className="flex items-center gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors">
+                          <div className={`flex items-center gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors ${
+                            completingTasks.has(task.id) ? 'bg-green-100 animate-pulse' : ''
+                          }`}>
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
-                            <Badge variant="secondary" className={`text-xs w-fit justify-start overflow-hidden group ${task.completion_status === 'completed' ? 'opacity-60 line-through' : ''}`}>
+                            <Badge variant="secondary" className={`text-xs w-fit justify-start overflow-hidden group ${
+                              task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
+                            } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
                               <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
                                 📝 <span className="whitespace-nowrap text-xs">{task.title}</span>
+                                {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
                               </div>
                             </Badge>
                           </div>
