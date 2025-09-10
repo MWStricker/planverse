@@ -86,15 +86,17 @@ export const OCRUpload = () => {
           throw new Error('Failed to process image');
         }
 
-        if (response.success && response.events) {
-          setParsedEvents(response.events);
-          toast({
-            title: "Schedule parsed successfully!",
-            description: `Found ${response.events.length} events in your image.`,
-          });
-        } else {
-          throw new Error('No events found in image');
-        }
+          if (response.success && response.events) {
+            setParsedEvents(response.events);
+            toast({
+              title: "Schedule parsed successfully!",
+              description: `Found ${response.events.length} events in your image.`,
+            });
+          } else {
+            const msg = response.error || 'No events found in image';
+            toast({ title: 'No events found', description: msg, variant: 'destructive' });
+            return;
+          }
       } catch (error) {
         console.error('Error processing image:', error);
         toast({

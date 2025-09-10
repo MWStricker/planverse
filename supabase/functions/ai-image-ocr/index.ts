@@ -57,7 +57,11 @@ Return ONLY a JSON object in this exact structure:\n{\n  "events": [\n    {\n   
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
+      const durationMs = Date.now() - tStart;
+      console.error('OpenAI API error:', response.status, response.statusText, errText);
+      return new Response(JSON.stringify({ success: false, error: `OpenAI API error: ${response.status} ${response.statusText}`, details: errText, events: [], durationMs }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const aiData = await response.json();
@@ -68,7 +72,10 @@ Return ONLY a JSON object in this exact structure:\n{\n  "events": [\n    {\n   
       parsedEvents = JSON.parse(content);
     } catch (error) {
       console.error('Failed to parse AI response:', content);
-      throw new Error('Invalid response format from AI');
+      const durationMs = Date.now() - tStart;
+      return new Response(JSON.stringify({ success: false, error: 'Invalid response format from AI', events: [], durationMs }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (parsedEvents.events) {
@@ -92,12 +99,13 @@ Return ONLY a JSON object in this exact structure:\n{\n  "events": [\n    {\n   
 
   } catch (error: any) {
     console.error('Error in AI OCR:', error);
+    const durationMs = Date.now() - tStart;
     return new Response(JSON.stringify({
       success: false,
-      error: error.message,
-      events: []
+      error: error.message || 'Unexpected error',
+      events: [],
+      durationMs
     }), {
-      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

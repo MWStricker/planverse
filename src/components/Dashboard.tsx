@@ -185,7 +185,10 @@ export const Dashboard = () => {
           // Refresh the dashboard data
           await analyzeUserData();
         } else {
-          throw new Error('No events found in image');
+          const msg = response.error || 'No events found in image';
+          toast({ title: 'No events found', description: msg, variant: 'destructive' });
+          setIsAnalyzing(false);
+          return;
         }
       } catch (error) {
         console.error('Error processing image:', error);
