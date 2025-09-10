@@ -10,8 +10,7 @@ import { Tasks } from "@/components/Tasks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
 import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
-import { Loader2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -76,14 +75,7 @@ const Index = () => {
         <div className="w-64 flex-shrink-0">
           <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
         </div>
-        <div className="flex-1 overflow-auto relative">
-          <Button 
-            className="fixed top-4 right-4 z-50 bg-black text-white hover:bg-gray-800 border border-white"
-            onClick={() => setCurrentPage('tasks')}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
+        <div className="flex-1 overflow-auto">
           {renderPage()}
         </div>
       </div>
