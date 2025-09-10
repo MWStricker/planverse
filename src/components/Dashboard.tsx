@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 interface Task {
   id: string;
@@ -96,9 +97,64 @@ const todaySchedule: ScheduleEvent[] = [
 export const Dashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [aiSchedule, setAiSchedule] = useState<any>(null);
+  const [aiPriorities, setAiPriorities] = useState<any[]>([]);
+  const [aiStudyBlocks, setAiStudyBlocks] = useState<any[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
   const completedTasks = mockTasks.filter(task => task.completed).length;
   const totalTasks = mockTasks.length;
   const completionRate = Math.round((completedTasks / totalTasks) * 100);
+
+  // Fetch and analyze data on component mount
+  useEffect(() => {
+    if (user) {
+      analyzeUserData();
+    }
+  }, [user]);
+
+  const analyzeUserData = async () => {
+    if (!user) return;
+    
+    setIsAnalyzing(true);
+    try {
+      // Fetch user's events, tasks, and study sessions
+      const [eventsResult, tasksResult, studySessionsResult] = await Promise.all([
+        supabase.from('events').select('*').eq('user_id', user.id),
+        supabase.from('tasks').select('*').eq('user_id', user.id),
+        supabase.from('study_sessions').select('*').eq('user_id', user.id)
+      ]);
+
+      const userData = {
+        events: eventsResult.data || [],
+        tasks: tasksResult.data || [],
+        studySessions: studySessionsResult.data || []
+      };
+
+      // Get AI analysis for daily schedule
+      const { data: scheduleAnalysis } = await supabase.functions.invoke('ai-schedule-analyzer', {
+        body: {
+          analysisType: 'daily_schedule',
+          data: userData
+        }
+      });
+
+      if (scheduleAnalysis?.success) {
+        const analysis = scheduleAnalysis.analysis;
+        setAiSchedule(analysis.todaySchedule || todaySchedule);
+        setAiPriorities(analysis.priorityInsights || mockTasks);
+        setAiStudyBlocks(analysis.studyBlockSuggestions || suggestedStudyBlocks);
+      }
+    } catch (error) {
+      console.error('Error analyzing user data:', error);
+      // Fall back to mock data
+      setAiSchedule(todaySchedule);
+      setAiPriorities(mockTasks);
+      setAiStudyBlocks(suggestedStudyBlocks);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Define suggested study blocks
   const suggestedStudyBlocks = [
@@ -311,7 +367,13 @@ export const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {todaySchedule.map((event) => (
+              {isAnalyzing ? (
+                <div className="flex items-center justify-center py-4">
+                  <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
+                  <span className="text-sm text-muted-foreground">AI analyzing your schedule...</span>
+                </div>
+              ) : (
+                (aiSchedule || todaySchedule).map((event: any) => (
                 <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                   <div className={`w-3 h-3 rounded-full ${
                     event.type === 'class' ? `bg-${event.courseColor}` :
@@ -329,7 +391,7 @@ export const Dashboard = () => {
                     </Badge>
                   )}
                 </div>
-              ))}
+              )))}
             </CardContent>
           </Card>
 
@@ -345,7 +407,13 @@ export const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {mockTasks.map((task, index) => (
+              {isAnalyzing ? (
+                <div className="flex items-center justify-center py-4">
+                  <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
+                  <span className="text-sm text-muted-foreground">AI prioritizing your tasks...</span>
+                </div>
+              ) : (
+                (aiPriorities.length > 0 ? aiPriorities : mockTasks).map((task: any, index: number) => (
                 <div 
                   key={task.id} 
                   className={`flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md ${
@@ -385,7 +453,7 @@ export const Dashboard = () => {
                     )}
                   </div>
                 </div>
-              ))}
+              )))}
             </CardContent>
           </Card>
         </div>
@@ -402,8 +470,14 @@ export const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {suggestedStudyBlocks.map((block, index) => (
+            {isAnalyzing ? (
+              <div className="flex items-center justify-center py-8">
+                <Brain className="h-8 w-8 animate-pulse text-primary mr-3" />
+                <span className="text-muted-foreground">AI optimizing your study blocks...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(aiStudyBlocks.length > 0 ? aiStudyBlocks : suggestedStudyBlocks).map((block: any, index: number) => (
                 <div key={block.id} className={`p-4 rounded-lg ${
                   index === 0 
                     ? 'bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20'
@@ -436,8 +510,9 @@ export const Dashboard = () => {
                     <Button size="sm" variant="outline">Modify</Button>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

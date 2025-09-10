@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ParsedEvent {
   id: string;
@@ -53,6 +55,7 @@ export const OCRUpload = () => {
   const [parsedEvents, setParsedEvents] = useState<ParsedEvent[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -67,15 +70,64 @@ export const OCRUpload = () => {
     setSelectedFile(file);
     setIsProcessing(true);
 
-    // Simulate OCR processing
-    setTimeout(() => {
-      setParsedEvents(mockParsedEvents);
-      setIsProcessing(false);
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const base64 = e.target?.result as string;
+          const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+
+          // Call our AI OCR edge function
+          const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
+            body: { imageBase64: base64Data }
+          });
+
+          if (error) {
+            console.error('OCR Error:', error);
+            throw new Error('Failed to process image');
+          }
+
+          if (response.success && response.events) {
+            setParsedEvents(response.events);
+            toast({
+              title: "Schedule parsed successfully!",
+              description: `Found ${response.events.length} events in your image.`,
+            });
+          } else {
+            throw new Error('No events found in image');
+          }
+        } catch (error) {
+          console.error('Error processing image:', error);
+          toast({
+            title: "Processing failed",
+            description: "Failed to extract schedule from image. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+
+      reader.onerror = () => {
+        toast({
+          title: "File read error",
+          description: "Failed to read the image file.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('File upload error:', error);
       toast({
-        title: "Schedule parsed successfully!",
-        description: `Found ${mockParsedEvents.length} events in your image.`,
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
       });
-    }, 2000);
+      setIsProcessing(false);
+    }
   }, [toast]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -105,12 +157,66 @@ export const OCRUpload = () => {
     }
   }, [handleFileUpload]);
 
-  const addToCalendar = (event: ParsedEvent) => {
-    toast({
-      title: "Event added!",
-      description: `${event.title} has been added to your calendar.`,
-    });
-    setParsedEvents(prev => prev.filter(e => e.id !== event.id));
+  const addToCalendar = async (event: ParsedEvent) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to add events",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Parse the date and time
+      const eventDate = new Date(event.date);
+      const [startHour, startMinute] = event.startTime.split(':').map(Number);
+      const [endHour, endMinute] = event.endTime.split(':').map(Number);
+      
+      const startTime = new Date(eventDate);
+      startTime.setHours(startHour, startMinute, 0, 0);
+      
+      const endTime = new Date(eventDate);
+      endTime.setHours(endHour, endMinute, 0, 0);
+
+      // Add to events table
+      const { error } = await supabase
+        .from('events')
+        .insert({
+          user_id: user.id,
+          title: event.title,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          location: event.location,
+          description: `Extracted from image with ${event.confidence}% confidence`,
+          event_type: 'class',
+          source_provider: 'ocr_upload',
+          recurrence_rule: event.recurrence || null
+        });
+
+      if (error) {
+        console.error('Error adding event:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add event to calendar",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Event added!",
+        description: `${event.title} has been added to your calendar.`,
+      });
+      setParsedEvents(prev => prev.filter(e => e.id !== event.id));
+    } catch (error) {
+      console.error('Error adding to calendar:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add event to calendar",
+        variant: "destructive",
+      });
+    }
   };
 
   const rejectEvent = (event: ParsedEvent) => {
