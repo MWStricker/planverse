@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
+import { usePreferences } from "@/hooks/usePreferences";
 
 interface AccountIntegration {
   id: string;
@@ -79,6 +81,7 @@ export const Settings = () => {
   });
   const { signOut, user } = useAuth();
   const { toast } = useToast();
+  const { preferences, updatePreference } = usePreferences();
 
   const handleSignOut = async () => {
     try {
@@ -123,6 +126,7 @@ export const Settings = () => {
 
   const tabs = [
     { id: 'accounts', label: 'Account Linking', icon: Link },
+    { id: 'preferences', label: 'System Preferences', icon: Palette },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'privacy', label: 'Privacy & Security', icon: Shield },
@@ -342,6 +346,139 @@ export const Settings = () => {
     </div>
   );
 
+  const renderSystemPreferences = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">System Preferences</h2>
+        <p className="text-muted-foreground">
+          Customize your app experience with themes, fonts, and display options
+        </p>
+      </div>
+
+      {/* Theme Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            App Theme
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { id: 'default', name: 'Default', colors: ['bg-blue-500', 'bg-purple-500'], icon: '🎨' },
+              { id: 'dark', name: 'Dark Mode', colors: ['bg-gray-800', 'bg-gray-600'], icon: '🌙' },
+              { id: 'warm', name: 'Warm', colors: ['bg-orange-500', 'bg-red-500'], icon: '🔥' },
+              { id: 'ocean', name: 'Ocean', colors: ['bg-cyan-500', 'bg-blue-600'], icon: '🌊' },
+              { id: 'forest', name: 'Forest', colors: ['bg-green-600', 'bg-emerald-500'], icon: '🌲' },
+              { id: 'sunset', name: 'Sunset', colors: ['bg-pink-500', 'bg-purple-600'], icon: '🌅' },
+            ].map((theme) => (
+              <Button
+                key={theme.id}
+                variant={preferences.theme === theme.id ? 'default' : 'outline'}
+                className={`h-20 flex flex-col items-center justify-center gap-2 ${
+                  preferences.theme === theme.id ? 'ring-2 ring-primary' : ''
+                }`}
+                onClick={() => updatePreference('theme', theme.id as any)}
+              >
+                <div className="flex gap-1">
+                  {theme.colors.map((color, index) => (
+                    <div key={index} className={`w-4 h-4 rounded-full ${color}`} />
+                  ))}
+                </div>
+                <span className="text-xs font-medium">
+                  {theme.icon} {theme.name}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Text Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Type className="h-5 w-5" />
+            Text Preferences
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-foreground">Bold Text</h4>
+              <p className="text-sm text-muted-foreground">Make text throughout the app bolder for better readability</p>
+            </div>
+            <Switch 
+              checked={preferences.boldText} 
+              onCheckedChange={(checked) => updatePreference('boldText', checked)}
+            />
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-medium text-foreground">Text Size</h4>
+              <p className="text-sm text-muted-foreground">Adjust the size of text throughout the app</p>
+            </div>
+            <Select 
+              value={preferences.textSize} 
+              onValueChange={(value) => updatePreference('textSize', value as any)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">Small - Compact text for more content</SelectItem>
+                <SelectItem value="medium">Medium - Standard readable text</SelectItem>
+                <SelectItem value="large">Large - Larger text for better readability</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Display Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="h-5 w-5" />
+            Display Preferences
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert className="border-accent/20 bg-accent/5">
+            <Zap className="h-4 w-4" />
+            <AlertDescription className="text-foreground">
+              <strong>Performance Tip:</strong> Preferences are saved automatically and applied instantly. 
+              Changes sync across all your devices when signed in.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+            <div>
+              <h5 className="font-medium text-foreground mb-2">Current Settings:</h5>
+              <ul className="space-y-1">
+                <li>• Theme: {preferences.theme.charAt(0).toUpperCase() + preferences.theme.slice(1)}</li>
+                <li>• Bold Text: {preferences.boldText ? 'Enabled' : 'Disabled'}</li>
+                <li>• Text Size: {preferences.textSize.charAt(0).toUpperCase() + preferences.textSize.slice(1)}</li>
+              </ul>
+            </div>
+            <div>
+              <h5 className="font-medium text-foreground mb-2">Quick Preview:</h5>
+              <div className={`p-3 rounded-lg border ${preferences.boldText ? 'font-semibold' : ''}`}>
+                <p style={{ fontSize: preferences.textSize === 'small' ? '0.875rem' : preferences.textSize === 'large' ? '1.125rem' : '1rem' }}>
+                  This is how your text will appear with your current preferences.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderComingSoon = (title: string) => (
     <div className="flex items-center justify-center h-64">
       <div className="text-center">
@@ -398,6 +535,8 @@ export const Settings = () => {
     switch (activeTab) {
       case 'accounts':
         return renderAccountLinking();
+      case 'preferences':
+        return renderSystemPreferences();
       case 'notifications':
         return renderNotifications();
       case 'profile':

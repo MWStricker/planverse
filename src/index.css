@@ -133,9 +133,46 @@
 @layer base {
   * {
     @apply border-border;
+    font-size: var(--base-font-size, 1rem);
   }
 
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Theme Variations */
+[data-theme="dark"] {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 84% 4.9%;
+}
+
+[data-theme="warm"] {
+  --primary: 24 74% 58%;
+  --accent: 10 78% 54%;
+  --background: 43 100% 96%;
+  --foreground: 20 14.3% 4.1%;
+}
+
+[data-theme="ocean"] {
+  --primary: 199 89% 48%;
+  --accent: 187 85% 53%;
+  --background: 185 100% 97%;
+  --foreground: 199 18% 13%;
+}
+
+[data-theme="forest"] {
+  --primary: 142 71% 45%;
+  --accent: 159 64% 52%;
+  --background: 138 100% 96%;
+  --foreground: 140 10% 14%;
+}
+
+[data-theme="sunset"] {
+  --primary: 316 73% 52%;
+  --accent: 270 91% 65%;
+  --background: 330 100% 97%;
+  --foreground: 316 16% 12%;
 }
