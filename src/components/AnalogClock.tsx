@@ -23,7 +23,7 @@ export const AnalogClock = () => {
     <div className="flex flex-col items-center p-3 bg-card/50 border border-border rounded-lg backdrop-blur-sm">
       {/* Digital time */}
       <div className="text-center">
-        <div className="text-lg font-mono font-bold text-foreground mb-1 tracking-wide">
+        <div className="text-lg font-bold text-foreground mb-1 tracking-wide">
           {time.toLocaleTimeString('en-US', {
             hour12: true,
             hour: 'numeric',
