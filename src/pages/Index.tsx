@@ -8,12 +8,16 @@ import { IntegrationSetup } from "@/components/IntegrationSetup";
 import Calendar from "@/components/Calendar";
 import { Tasks } from "@/components/Tasks";
 import { useAuth } from "@/hooks/useAuth";
+import { usePreferences } from "@/hooks/usePreferences";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  
+  // Initialize user preferences on app load
+  usePreferences();
 
   useEffect(() => {
     if (!loading && !user) {
