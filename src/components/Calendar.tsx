@@ -488,15 +488,15 @@ const Calendar = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 mb-4">
+      <div className="grid grid-cols-7 gap-1 mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center font-semibold text-muted-foreground p-2">
+          <div key={day} className="text-center font-semibold text-muted-foreground p-1">
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((day, index) => {
           const dayTasks = getTasksForDay(day);
           const dayEvents = getEventsForDay(day);
@@ -506,14 +506,14 @@ const Calendar = () => {
           const isCurrentMonth = isSameMonth(day, currentDate);
 
           return (
-            <Card key={index} className={`min-h-[240px] max-h-[240px] p-2 transition-all duration-200 ${
+            <Card key={index} className={`min-h-[240px] max-h-[240px] p-1 transition-all duration-200 ${
               isToday(day) 
                 ? 'ring-2 ring-primary bg-primary/5' 
                 : isCurrentMonth 
                   ? 'bg-card hover:bg-accent/50' 
                   : 'bg-muted/30'
             }`}>
-              <CardContent className="p-0 space-y-1 h-full flex flex-col">
+              <CardContent className="p-0 space-y-0.5 h-full flex flex-col">
                 {/* Date and Weather */}
                 <div className="flex items-center justify-between text-sm">
                   <span className={`font-semibold ${
@@ -541,12 +541,12 @@ const Calendar = () => {
 
                 {/* Only show content for current month days */}
                 {isCurrentMonth && (
-                  <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+                  <div className="flex-1 overflow-y-auto space-y-0.5 min-h-0">
                     {/* Tasks with individual priority indicators - ALL tasks shown */}
                     {dayTasks.map(task => (
                       <Popover key={task.id}>
                         <PopoverTrigger asChild>
-                          <div className="flex items-center gap-1 cursor-pointer hover:bg-accent/50 rounded p-1 transition-colors">
+                          <div className="flex items-center gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors">
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
                             <Badge variant="secondary" className={`text-xs w-fit justify-start overflow-hidden group ${task.completion_status === 'completed' ? 'opacity-60 line-through' : ''}`}>
                               <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
