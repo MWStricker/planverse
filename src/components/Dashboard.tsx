@@ -159,7 +159,8 @@ export const Dashboard = () => {
       const endTime = new Date(today);
       endTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
 
-      const { data, error } = await supabase
+      // Create the study session
+      const { data: sessionData, error: sessionError } = await supabase
         .from('study_sessions')
         .insert({
           user_id: user.id,
@@ -174,19 +175,42 @@ export const Dashboard = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating study session:', error);
+      if (sessionError) {
+        console.error('Error creating study session:', sessionError);
         toast({
           title: "Error",
           description: "Failed to add study block to calendar",
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Study Block Added!",
-          description: `${studyBlock.title} has been added to your calendar`,
-        });
+        return;
       }
+
+      // Also create a corresponding task
+      const { data: taskData, error: taskError } = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          title: studyBlock.title,
+          description: studyBlock.description,
+          due_date: endTime.toISOString(),
+          priority_score: 2, // Medium priority for study blocks
+          completion_status: 'pending',
+          source_provider: 'study_block',
+          course_name: studyBlock.location // Use location as course context
+        })
+        .select()
+        .single();
+
+      if (taskError) {
+        console.error('Error creating task:', taskError);
+        // Don't fail the whole operation, just log the error
+        console.log('Study session created but task creation failed');
+      }
+
+      toast({
+        title: "Study Block Added!",
+        description: `${studyBlock.title} has been added to your calendar and tasks`,
+      });
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({
