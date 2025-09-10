@@ -622,7 +622,12 @@ export const Tasks = () => {
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Due Date</FormLabel>
-                        <Popover>
+                        <Popover onOpenChange={(open) => {
+                          // If closing and no date selected, auto-select today
+                          if (!open && !field.value) {
+                            field.onChange(new Date());
+                          }
+                        }}>
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
