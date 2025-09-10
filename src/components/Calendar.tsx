@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
@@ -126,10 +126,33 @@ const Calendar = () => {
   };
 
   const getPriorityColor = (priority: number) => {
-    if (priority >= 8) return "bg-red-500";
-    if (priority >= 6) return "bg-orange-500";
-    if (priority >= 4) return "bg-yellow-500";
-    return "bg-green-500";
+    switch (priority) {
+      case 4: return "bg-red-500"; // Critical
+      case 3: return "bg-orange-500"; // High
+      case 2: return "bg-yellow-500"; // Medium
+      case 1: return "bg-green-500"; // Low
+      default: return "bg-blue-500"; // Default
+    }
+  };
+
+  const getPriorityLabel = (priority: number) => {
+    switch (priority) {
+      case 4: return "Critical";
+      case 3: return "High";
+      case 2: return "Medium"; 
+      case 1: return "Low";
+      default: return "Medium";
+    }
+  };
+
+  const getPriorityIcon = (priority: number) => {
+    switch (priority) {
+      case 4: return <AlertTriangle className="h-3 w-3 text-red-500" />;
+      case 3: return <Clock className="h-3 w-3 text-orange-500" />;
+      case 2: return <BookOpen className="h-3 w-3 text-yellow-600" />;
+      case 1: return <CheckCircle className="h-3 w-3 text-green-500" />;
+      default: return <BookOpen className="h-3 w-3 text-blue-500" />;
+    }
   };
 
   const getTasksForDay = (day: Date) => {
@@ -233,18 +256,23 @@ const Calendar = () => {
                 {highestPriority > 0 && isCurrentMonth && (
                   <div className="flex items-center gap-1">
                     <div className={`w-2 h-2 rounded-full ${getPriorityColor(highestPriority)}`} />
-                    <span className="text-xs text-muted-foreground">P{Math.round(highestPriority)}</span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {getPriorityLabel(highestPriority)}
+                    </span>
                   </div>
                 )}
 
                 {/* Only show content for current month days */}
                 {isCurrentMonth && (
                   <>
-                    {/* Tasks */}
+                    {/* Tasks with individual priority indicators */}
                     {dayTasks.slice(0, 2).map(task => (
-                      <Badge key={task.id} variant="secondary" className="text-xs w-full justify-start truncate">
-                        📝 {task.title}
-                      </Badge>
+                      <div key={task.id} className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
+                        <Badge variant="secondary" className="text-xs flex-1 justify-start truncate">
+                          📝 {task.title}
+                        </Badge>
+                      </div>
                     ))}
 
                     {/* Events */}
@@ -276,19 +304,29 @@ const Calendar = () => {
       </div>
 
       {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-4 text-sm text-muted-foreground">
+      <div className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <span>📝 Tasks</span>
           <span>📅 Events</span>
           <span>📚 Study Sessions</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <span>High Priority</span>
-          <div className="w-3 h-3 rounded-full bg-orange-500" />
-          <span>Medium Priority</span>
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span>Low Priority</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500" />
+            <span>Critical Priority</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-orange-500" />
+            <span>High Priority</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+            <span>Medium Priority</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-500" />
+            <span>Low Priority</span>
+          </div>
         </div>
       </div>
     </div>
