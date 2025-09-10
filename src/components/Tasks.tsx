@@ -638,13 +638,31 @@ export const Tasks = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Due Time</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="time" 
-                            placeholder="12:00" 
-                            {...field} 
-                          />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select time" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {/* Generate time options every 15 minutes */}
+                            {Array.from({ length: 96 }, (_, i) => {
+                              const hour = Math.floor(i / 4);
+                              const minute = (i % 4) * 15;
+                              const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                              const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              });
+                              return (
+                                <SelectItem key={timeString} value={timeString}>
+                                  {displayTime}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -828,13 +846,31 @@ export const Tasks = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Due Time</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="time" 
-                            placeholder="12:00" 
-                            {...field} 
-                          />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select time" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {/* Generate time options every 15 minutes */}
+                            {Array.from({ length: 96 }, (_, i) => {
+                              const hour = Math.floor(i / 4);
+                              const minute = (i % 4) * 15;
+                              const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                              const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              });
+                              return (
+                                <SelectItem key={timeString} value={timeString}>
+                                  {displayTime}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
