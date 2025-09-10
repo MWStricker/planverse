@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -44,6 +46,7 @@ interface WeatherData {
 
 const Calendar = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -269,6 +272,79 @@ const Calendar = () => {
     }
   };
 
+  const toggleTaskCompletion = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+    
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          completion_status: newStatus,
+          completed_at: newStatus === 'completed' ? new Date().toISOString() : null
+        })
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error updating task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update task status",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Task ${newStatus === 'completed' ? 'completed' : 'marked as pending'}`,
+        });
+        // Update local state
+        setTasks(tasks.map(task => 
+          task.id === taskId 
+            ? { ...task, completion_status: newStatus }
+            : task
+        ));
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error deleting task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete task",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Task deleted successfully",
+        });
+        // Update local state
+        setTasks(tasks.filter(task => task.id !== taskId));
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Function to manually refresh weather data
   const refreshWeather = async () => {
     try {
@@ -468,14 +544,40 @@ const Calendar = () => {
                   <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
                     {/* Tasks with individual priority indicators - ALL tasks shown */}
                     {dayTasks.map(task => (
-                      <div key={task.id} className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
-                        <Badge variant="secondary" className="text-xs w-fit justify-start overflow-hidden group">
-                          <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
-                            📝 <span className="whitespace-nowrap text-xs">{task.title}</span>
+                      <Popover key={task.id}>
+                        <PopoverTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-pointer hover:bg-accent/50 rounded p-1 transition-colors">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
+                            <Badge variant="secondary" className={`text-xs w-fit justify-start overflow-hidden group ${task.completion_status === 'completed' ? 'opacity-60 line-through' : ''}`}>
+                              <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
+                                📝 <span className="whitespace-nowrap text-xs">{task.title}</span>
+                              </div>
+                            </Badge>
                           </div>
-                        </Badge>
-                      </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="start">
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start h-8"
+                              onClick={() => toggleTaskCompletion(task.id, task.completion_status)}
+                            >
+                              <Check className="h-4 w-4 mr-2" />
+                              {task.completion_status === 'completed' ? 'Mark Pending' : 'Mark Complete'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start h-8 text-destructive hover:text-destructive"
+                              onClick={() => deleteTask(task.id)}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Delete Task
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     ))}
 
                     {/* Events */}
