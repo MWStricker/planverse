@@ -261,9 +261,13 @@ const Calendar = () => {
     }
   };
 
-  // Function to manually refresh weather
+  // Function to manually refresh weather data
   const refreshWeather = async () => {
-    await fetchWeatherData();
+    try {
+      await fetchWeatherData();
+    } catch (error) {
+      console.error('Error refreshing weather:', error);
+    }
   };
 
   const getWeatherIcon = (iconCode: string) => {
