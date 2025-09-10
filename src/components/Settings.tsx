@@ -689,54 +689,64 @@ export const Settings = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="school">School/University</Label>
-                <div className="relative">
-                  <Input
-                    id="school"
-                    value={schoolSearchQuery || getUniversityById(editedProfile.school)?.name || editedProfile.school}
-                    onChange={(e) => {
-                      setSchoolSearchQuery(e.target.value);
-                      // If it matches a university name exactly, use the university ID
-                      const matchedUni = getPublicUniversities().find(uni => uni.name === e.target.value);
-                      if (matchedUni) {
-                        handleProfileChange('school', matchedUni.id);
-                        setSchoolSearchQuery('');
-                      } else {
-                        // For custom schools, store the name directly
-                        handleProfileChange('school', e.target.value);
-                      }
-                    }}
-                    placeholder="Search for your public university or type custom name"
-                  />
-                  {schoolSearchQuery && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto bg-popover border border-border rounded-md shadow-lg">
-                      {/* Show all public universities if no search query, otherwise show filtered results */}
-                      {(schoolSearchQuery.length > 0 ? searchPublicUniversities(schoolSearchQuery) : getPublicUniversities()).slice(0, 15).map((uni) => (
-                        <div
-                          key={uni.id}
-                          className="flex items-center gap-3 p-3 hover:bg-accent cursor-pointer"
-                          onClick={() => {
-                            handleProfileChange('school', uni.id);
-                            setSchoolSearchQuery('');
-                          }}
-                        >
-                          {uni.logo && (
-                            <img src={uni.logo} alt={uni.shortName} className="w-8 h-8 object-contain" />
-                          )}
-                          <div className="flex-1">
-                            <div className="font-medium">{uni.shortName}</div>
-                            <div className="text-sm text-muted-foreground">{uni.name}</div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">{uni.state}</div>
+                <Select
+                  value={editedProfile.school}
+                  onValueChange={(value) => handleProfileChange('school', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your university">
+                      {editedProfile.school ? (
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const university = getUniversityById(editedProfile.school);
+                            return (
+                              <>
+                                {university?.logo && (
+                                  <img src={university.logo} alt={university.shortName} className="w-4 h-4 object-contain" />
+                                )}
+                                <span>{university?.shortName || editedProfile.school}</span>
+                              </>
+                            );
+                          })()}
                         </div>
-                      ))}
-                      {schoolSearchQuery && searchPublicUniversities(schoolSearchQuery).length === 0 && (
-                        <div className="p-3 text-sm text-muted-foreground text-center">
-                          No public universities found. You can type a custom school name.
-                        </div>
+                      ) : (
+                        "Select your university"
                       )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <div className="p-2">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">Public Universities (Alphabetical)</div>
+                      {getPublicUniversities().map((uni) => (
+                        <SelectItem key={uni.id} value={uni.id} className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 w-full">
+                            {uni.logo && (
+                              <img src={uni.logo} alt={uni.shortName} className="w-4 h-4 object-contain flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{uni.shortName}</div>
+                              <div className="text-xs text-muted-foreground truncate">{uni.name}</div>
+                            </div>
+                            <div className="text-xs text-muted-foreground flex-shrink-0">{uni.state}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="other" className="border-t mt-2 pt-2">
+                        <div className="font-medium">Other (Custom School)</div>
+                      </SelectItem>
                     </div>
-                  )}
-                </div>
+                  </SelectContent>
+                </Select>
+                
+                {/* Show text input when "other" is selected */}
+                {editedProfile.school === 'other' && (
+                  <Input
+                    placeholder="Enter your school/university name"
+                    value={editedProfile.school === 'other' ? '' : editedProfile.school}
+                    onChange={(e) => handleProfileChange('school', e.target.value)}
+                    className="mt-2"
+                  />
+                )}
               </div>
               
               <div className="space-y-2">
