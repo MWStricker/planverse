@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 
 interface Task {
@@ -46,10 +46,12 @@ const Calendar = () => {
   const [weather, setWeather] = useState<{ [key: string]: WeatherData }>({});
   const [loading, setLoading] = useState(true);
 
-  // Calculate calendar days (showing 30 days from current month)
+  // Calculate proper calendar grid (6 weeks)
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd }).slice(0, 30);
+  const calendarStart = startOfWeek(monthStart);
+  const calendarEnd = endOfWeek(monthEnd);
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   useEffect(() => {
     if (user) {
@@ -65,24 +67,24 @@ const Calendar = () => {
         .from('tasks')
         .select('*')
         .eq('user_id', user?.id)
-        .gte('due_date', monthStart.toISOString())
-        .lte('due_date', monthEnd.toISOString());
+        .gte('due_date', calendarStart.toISOString())
+        .lte('due_date', calendarEnd.toISOString());
 
       // Fetch events
       const { data: eventsData } = await supabase
         .from('events')
         .select('*')
         .eq('user_id', user?.id)
-        .gte('start_time', monthStart.toISOString())
-        .lte('start_time', monthEnd.toISOString());
+        .gte('start_time', calendarStart.toISOString())
+        .lte('start_time', calendarEnd.toISOString());
 
       // Fetch study sessions
       const { data: sessionsData } = await supabase
         .from('study_sessions')
         .select('*')
         .eq('user_id', user?.id)
-        .gte('start_time', monthStart.toISOString())
-        .lte('start_time', monthEnd.toISOString());
+        .gte('start_time', calendarStart.toISOString())
+        .lte('start_time', calendarEnd.toISOString());
 
       setTasks(tasksData || []);
       setEvents(eventsData || []);
@@ -195,16 +197,29 @@ const Calendar = () => {
           const daySessions = getSessionsForDay(day);
           const dayWeather = weather[format(day, 'yyyy-MM-dd')];
           const highestPriority = Math.max(...dayTasks.map(t => t.priority_score || 0), 0);
+          const isCurrentMonth = isSameMonth(day, currentDate);
 
           return (
-            <Card key={index} className={`min-h-[120px] p-2 ${isToday(day) ? 'ring-2 ring-primary' : ''}`}>
+            <Card key={index} className={`min-h-[120px] p-2 transition-all duration-200 ${
+              isToday(day) 
+                ? 'ring-2 ring-primary bg-primary/5' 
+                : isCurrentMonth 
+                  ? 'bg-card hover:bg-accent/50' 
+                  : 'bg-muted/30'
+            }`}>
               <CardContent className="p-0 space-y-1">
                 {/* Date and Weather */}
                 <div className="flex items-center justify-between text-sm">
-                  <span className={`font-semibold ${isToday(day) ? 'text-primary' : 'text-foreground'}`}>
+                  <span className={`font-semibold ${
+                    isToday(day) 
+                      ? 'text-primary text-lg' 
+                      : isCurrentMonth 
+                        ? 'text-foreground' 
+                        : 'text-muted-foreground'
+                  }`}>
                     {format(day, 'd')}
                   </span>
-                  {dayWeather && (
+                  {dayWeather && isCurrentMonth && (
                     <div className="flex items-center gap-1">
                       {getWeatherIcon(dayWeather.condition)}
                       <span className="text-xs text-muted-foreground">
@@ -215,39 +230,44 @@ const Calendar = () => {
                 </div>
 
                 {/* Priority Indicator */}
-                {highestPriority > 0 && (
+                {highestPriority > 0 && isCurrentMonth && (
                   <div className="flex items-center gap-1">
                     <div className={`w-2 h-2 rounded-full ${getPriorityColor(highestPriority)}`} />
                     <span className="text-xs text-muted-foreground">P{Math.round(highestPriority)}</span>
                   </div>
                 )}
 
-                {/* Tasks */}
-                {dayTasks.slice(0, 2).map(task => (
-                  <Badge key={task.id} variant="secondary" className="text-xs w-full justify-start truncate">
-                    📝 {task.title}
-                  </Badge>
-                ))}
+                {/* Only show content for current month days */}
+                {isCurrentMonth && (
+                  <>
+                    {/* Tasks */}
+                    {dayTasks.slice(0, 2).map(task => (
+                      <Badge key={task.id} variant="secondary" className="text-xs w-full justify-start truncate">
+                        📝 {task.title}
+                      </Badge>
+                    ))}
 
-                {/* Events */}
-                {dayEvents.slice(0, 1).map(event => (
-                  <Badge key={event.id} variant="outline" className="text-xs w-full justify-start truncate">
-                    📅 {event.title}
-                  </Badge>
-                ))}
+                    {/* Events */}
+                    {dayEvents.slice(0, 1).map(event => (
+                      <Badge key={event.id} variant="outline" className="text-xs w-full justify-start truncate">
+                        📅 {event.title}
+                      </Badge>
+                    ))}
 
-                {/* Study Sessions */}
-                {daySessions.slice(0, 1).map(session => (
-                  <Badge key={session.id} variant="default" className="text-xs w-full justify-start truncate">
-                    📚 {session.title}
-                  </Badge>
-                ))}
+                    {/* Study Sessions */}
+                    {daySessions.slice(0, 1).map(session => (
+                      <Badge key={session.id} variant="default" className="text-xs w-full justify-start truncate">
+                        📚 {session.title}
+                      </Badge>
+                    ))}
 
-                {/* Overflow indicator */}
-                {(dayTasks.length + dayEvents.length + daySessions.length) > 4 && (
-                  <div className="text-xs text-muted-foreground text-center">
-                    +{(dayTasks.length + dayEvents.length + daySessions.length) - 4} more
-                  </div>
+                    {/* Overflow indicator */}
+                    {(dayTasks.length + dayEvents.length + daySessions.length) > 4 && (
+                      <div className="text-xs text-muted-foreground text-center">
+                        +{(dayTasks.length + dayEvents.length + daySessions.length) - 4} more
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
