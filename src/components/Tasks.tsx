@@ -493,14 +493,22 @@ export const Tasks = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Sort by priority (critical first) then by due date
+  // Sort by completion status first (pending tasks first), then by priority, then by due date
   const sortedItems = filteredItems.sort((a, b) => {
-    // First sort by priority (higher priority first)
-    if (a.priority !== b.priority) {
-      return b.priority - a.priority;
+    // First sort by completion status (pending tasks first, completed tasks last)
+    if (a.completion_status !== b.completion_status) {
+      if (a.completion_status === 'completed' && b.completion_status === 'pending') return 1;
+      if (a.completion_status === 'pending' && b.completion_status === 'completed') return -1;
     }
     
-    // Then sort by due date (earlier dates first)
+    // Then sort by priority (higher priority first) - only for pending tasks
+    if (a.completion_status === 'pending' && b.completion_status === 'pending') {
+      if (a.priority !== b.priority) {
+        return b.priority - a.priority;
+      }
+    }
+    
+    // Finally sort by due date (earlier dates first)
     if (a.due_date && b.due_date) {
       return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
     }
