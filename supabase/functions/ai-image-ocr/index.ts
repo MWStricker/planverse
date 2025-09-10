@@ -26,35 +26,7 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You extract academic schedule items from an image and return STRICT JSON only.
-
-- Today (for context): ${nowIso}
-- User timezone: ${tz}
-
-Rules for dates/times:
-1) Always return dates as ISO YYYY-MM-DD (never MM/DD).
-2) Infer YEAR from the image (e.g., "Fall 2025", "2025-2026") or, if missing, choose the nearest FUTURE date within the next 12 months from today.
-3) If the image shows a month/week grid, align day-of-week with the date you output.
-4) Times must be 24h HH:MM.
-5) If start or end time is missing, estimate reasonably but keep it plausible.
-6) Keep locations short.
-7) Only include events you are confident about (confidence ≥ 60).
-
-Return ONLY a JSON object in this exact structure:
-{
-  "events": [
-    {
-      "id": "unique_id",
-      "title": "event name",
-      "date": "YYYY-MM-DD",
-      "startTime": "HH:MM",
-      "endTime": "HH:MM",
-      "location": "location",
-      "recurrence": "optional recurrence pattern",
-      "confidence": number_0_to_100
-    }
-  ]
-}`;
+    const systemPrompt = `You extract academic schedule items from an image and return STRICT JSON only.\n\n- Today (for context): ${nowIso}\n- User timezone: ${tz}\n\nRules for dates/times:\n1) Always return dates as ISO YYYY-MM-DD (never MM/DD).\n2) Infer YEAR from the image (e.g., "Fall 2025", "2025-2026") or, if missing, choose the nearest FUTURE date within the next 12 months from today.\n3) If the image shows a month/week grid, align day-of-week with the date you output.\n4) Times must be 24h HH:MM.\n5) If start or end time is missing, estimate reasonably but keep it plausible.\n6) Keep locations short.\n7) Only include events you are confident about (confidence ≥ 60).\n\nReturn ONLY a JSON object in this exact structure:\n{\n  "events": [\n    {\n      "id": "unique_id",\n      "title": "event name",\n      "date": "YYYY-MM-DD",\n      "startTime": "HH:MM",\n      "endTime": "HH:MM",\n      "location": "location",\n      "recurrence": "optional recurrence pattern",\n      "confidence": number_0_to_100\n    }\n  ]\n}`;
 
     const userContent = [
       { type: 'text', text: 'Extract all schedule information from this image. Be precise with dates and years.' },
@@ -75,8 +47,7 @@ Return ONLY a JSON object in this exact structure:
         body.max_tokens = 600;
         body.temperature = 0.1;
       } else {
-        // Newer models require max_completion_tokens and do not support temperature
-        body.max_completion_tokens = 600;
+        body.max_completion_tokens = 600; // newer models
       }
 
       return fetch('https://api.openai.com/v1/chat/completions', {
@@ -89,13 +60,12 @@ Return ONLY a JSON object in this exact structure:
       });
     }
 
-    // Try fast legacy vision model first
+    // Try fast, cheap legacy model first
     let response = await callOpenAI('gpt-4o-mini', 'legacy');
 
-    // Fallback to newer fast reasoning vision model if first attempt fails
-    if (!response.ok) {
-      response = await callOpenAI('o4-mini-2025-04-16', 'new');
-    }
+    // Fallbacks for reliability
+    if (!response.ok) response = await callOpenAI('o4-mini-2025-04-16', 'new');
+    if (!response.ok) response = await callOpenAI('gpt-4.1-2025-04-14', 'new');
 
     if (!response.ok) {
       const errText = await response.text();
@@ -106,19 +76,58 @@ Return ONLY a JSON object in this exact structure:
     }
 
     const aiData = await response.json();
-    const content = aiData?.choices?.[0]?.message?.content ?? '';
 
-    function tryParse(jsonLike: string): any | null {
-      try { return JSON.parse(jsonLike); } catch { /* ignore */ }
-      // Attempt to salvage JSON block from any extra text
-      const match = jsonLike.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { return JSON.parse(match[0]); } catch { /* ignore */ }
+    // Robust JSON recovery
+    function extractFromToolCall(data: any): any | null {
+      try {
+        const toolArgs = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+        if (typeof toolArgs === 'string') {
+          return JSON.parse(toolArgs);
+        }
+      } catch { /* ignore */ }
+      return null;
+    }
+
+    function cleanCodeFences(s: string): string {
+      return (s || '').replace(/```json\s*|```/g, '').trim();
+    }
+
+    function balancedJsonExtract(s: string): any | null {
+      const str = s || '';
+      const start = str.indexOf('{');
+      if (start === -1) return null;
+      let depth = 0;
+      let inStr = false;
+      let esc = false;
+      for (let i = start; i < str.length; i++) {
+        const ch = str[i];
+        if (inStr) {
+          if (!esc && ch === '"') inStr = false;
+          esc = !esc && ch === '\\';
+        } else {
+          if (ch === '"') inStr = true;
+          else if (ch === '{') depth++;
+          else if (ch === '}') {
+            depth--;
+            if (depth === 0) {
+              const candidate = str.slice(start, i + 1);
+              try { return JSON.parse(candidate); } catch { /* try next */ }
+            }
+          }
+        }
       }
       return null;
     }
 
-    let parsed = tryParse(content);
+    const content = aiData?.choices?.[0]?.message?.content ?? '';
+
+    let parsed = extractFromToolCall(aiData);
+    if (!parsed) {
+      const cleaned = cleanCodeFences(content);
+      try { parsed = JSON.parse(cleaned); } catch { /* ignore */ }
+      if (!parsed) parsed = balancedJsonExtract(cleaned);
+    }
+
     if (!parsed) {
       const durationMs = Date.now() - tStart;
       return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', raw: content, events: [], durationMs }), {
@@ -126,27 +135,23 @@ Return ONLY a JSON object in this exact structure:
       });
     }
 
-    // Normalize and sanitize events
-    if (parsed.events && Array.isArray(parsed.events)) {
-      parsed.events = parsed.events
-        .filter((e: any) => typeof e?.date === 'string' && /\d{4}-\d{2}-\d{2}/.test(e.date))
-        .map((event: any, index: number) => ({
-          id: event.id || `extracted_${Date.now()}_${index}`,
-          title: String(event.title || '').trim().slice(0, 120),
-          date: event.date,
-          startTime: String(event.startTime || '00:00').slice(0, 5),
-          endTime: String(event.endTime || '23:59').slice(0, 5),
-          location: String(event.location || '').trim().slice(0, 120),
-          recurrence: event.recurrence || null,
-          confidence: Number.isFinite(event.confidence) ? Math.max(0, Math.min(100, Number(event.confidence))) : 60,
-        }));
-    } else {
-      parsed.events = [];
-    }
+    // Normalize & sanitize
+    let events = Array.isArray(parsed.events) ? parsed.events : [];
+    events = events
+      .filter((e: any) => typeof e?.date === 'string' && /\d{4}-\d{2}-\d{2}/.test(e.date))
+      .map((event: any, index: number) => ({
+        id: event.id || `extracted_${Date.now()}_${index}`,
+        title: String(event.title || '').trim().slice(0, 120),
+        date: event.date,
+        startTime: String(event.startTime || '00:00').slice(0, 5),
+        endTime: String(event.endTime || '23:59').slice(0, 5),
+        location: String(event.location || '').trim().slice(0, 120),
+        recurrence: event.recurrence || null,
+        confidence: Number.isFinite(event.confidence) ? Math.max(0, Math.min(100, Number(event.confidence))) : 60,
+      }));
 
     const durationMs = Date.now() - tStart;
-
-    return new Response(JSON.stringify({ success: true, durationMs, ...parsed }), {
+    return new Response(JSON.stringify({ success: true, durationMs, events }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
