@@ -120,7 +120,7 @@ export const OCRUpload = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Schedule OCR Upload</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Image Upload</h1>
         <p className="text-muted-foreground">
           Upload photos of schedules, syllabi, or flyers to automatically extract events
         </p>
@@ -133,7 +133,8 @@ export const OCRUpload = () => {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`text-center transition-all duration-200 ${
+            onClick={() => document.getElementById('file-upload')?.click()}
+            className={`text-center transition-all duration-200 cursor-pointer ${
               isDragging ? 'scale-105 bg-primary/5' : ''
             }`}
           >
@@ -182,11 +183,6 @@ export const OCRUpload = () => {
                   className="hidden"
                   id="file-upload"
                 />
-                <label htmlFor="file-upload">
-                  <Button className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all">
-                    Choose File
-                  </Button>
-                </label>
               </div>
             )}
           </div>
