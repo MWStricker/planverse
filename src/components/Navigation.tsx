@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { getUniversityById } from "@/data/universities";
+import { AnalogClock } from "@/components/AnalogClock";
 
 interface NavigationProps {
   currentPage: string;
@@ -37,6 +38,11 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
             <p className="text-xs text-muted-foreground">Smart Scheduling</p>
           </div>
         </div>
+      </div>
+
+      {/* Clock */}
+      <div className="px-4 pb-4">
+        <AnalogClock />
       </div>
 
       {/* Navigation */}
