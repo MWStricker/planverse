@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Calendar, Home, Upload, Settings, BookOpen, Target, Clock, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 interface NavigationProps {
   currentPage: string;
@@ -10,6 +13,8 @@ interface NavigationProps {
 
 export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   const [notifications] = useState(3);
+  const { user } = useAuth();
+  const { profile } = useProfile();
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -70,12 +75,23 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
       {/* User Section */}
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-white">JS</span>
-          </div>
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={profile?.avatar_url} />
+            <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white">
+              {profile?.display_name?.charAt(0)?.toUpperCase() || 
+               user?.email?.charAt(0)?.toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">John Student</p>
-            <p className="text-xs text-muted-foreground truncate">Computer Science</p>
+            <p className="text-sm font-medium text-foreground truncate">
+              {profile?.display_name || user?.email?.split('@')[0] || 'User'}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {profile?.major ? 
+                profile.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                'Student'
+              }
+            </p>
           </div>
         </div>
         
