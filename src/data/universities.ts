@@ -1,4 +1,4 @@
-// Import real university logos (downloaded from official sources)
+// Import real university logos (downloaded from official sources) - updated
 import harvardRealLogo from '@/assets/university-logos/harvard-real.png';
 import mitRealLogo from '@/assets/university-logos/mit-real.png';
 import uclaRealLogo from '@/assets/university-logos/ucla-real.png';
