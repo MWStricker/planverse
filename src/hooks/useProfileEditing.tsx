@@ -4,6 +4,7 @@ interface ProfileEditingContextType {
   liveEditedProfile: {
     display_name?: string;
     major?: string;
+    school?: string;
   };
   updateLiveProfile: (field: string, value: string) => void;
 }
@@ -14,6 +15,7 @@ export const ProfileEditingProvider = ({ children }: { children: ReactNode }) =>
   const [liveEditedProfile, setLiveEditedProfile] = useState<{
     display_name?: string;
     major?: string;
+    school?: string;
   }>({});
 
   const updateLiveProfile = (field: string, value: string) => {

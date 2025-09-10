@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileEditing } from "@/hooks/useProfileEditing";
+import { universities, getUniversityById, searchUniversities } from "@/data/universities";
 
 interface AccountIntegration {
   id: string;
@@ -101,6 +102,7 @@ export const Settings = () => {
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [majorError, setMajorError] = useState('');
+  const [schoolSearchQuery, setSchoolSearchQuery] = useState('');
 
   // Comprehensive profanity filter
   const profanityList = [
@@ -687,12 +689,48 @@ export const Settings = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="school">School/University</Label>
-                <Input
-                  id="school"
-                  value={editedProfile.school}
-                  onChange={(e) => handleProfileChange('school', e.target.value)}
-                  placeholder="e.g. University of California, Berkeley"
-                />
+                <div className="relative">
+                  <Input
+                    id="school"
+                    value={schoolSearchQuery || getUniversityById(editedProfile.school)?.name || editedProfile.school}
+                    onChange={(e) => {
+                      setSchoolSearchQuery(e.target.value);
+                      // If it matches a university name exactly, use the university ID
+                      const matchedUni = universities.find(uni => uni.name === e.target.value);
+                      if (matchedUni) {
+                        handleProfileChange('school', matchedUni.id);
+                        setSchoolSearchQuery('');
+                      } else {
+                        // For custom schools, store the name directly
+                        handleProfileChange('school', e.target.value);
+                      }
+                    }}
+                    placeholder="Search for your university or type custom name"
+                  />
+                  {schoolSearchQuery && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto bg-popover border border-border rounded-md shadow-lg">
+                      {searchUniversities(schoolSearchQuery).slice(0, 10).map((uni) => (
+                        <div
+                          key={uni.id}
+                          className="flex items-center gap-3 p-3 hover:bg-accent cursor-pointer"
+                          onClick={() => {
+                            handleProfileChange('school', uni.id);
+                            setSchoolSearchQuery('');
+                          }}
+                        >
+                          {uni.logo && (
+                            <img src={uni.logo} alt={uni.shortName} className="w-8 h-8 object-contain" />
+                          )}
+                          <div className="flex-1">
+                            <div className="font-medium">{uni.shortName}</div>
+                            <div className="text-sm text-muted-foreground">{uni.name}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">{uni.state}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="space-y-2">
