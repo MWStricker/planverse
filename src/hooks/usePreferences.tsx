@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export interface UserPreferences {
   theme: 'default' | 'dark' | 'warm' | 'ocean' | 'forest' | 'sunset';
@@ -14,29 +16,102 @@ const defaultPreferences: UserPreferences = {
 
 export const usePreferences = () => {
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
+  const { user } = useAuth();
 
+  // Load preferences from database or localStorage
   useEffect(() => {
-    // Load preferences from localStorage
-    const saved = localStorage.getItem('userPreferences');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setPreferences({ ...defaultPreferences, ...parsed });
-      } catch (error) {
-        console.error('Failed to parse saved preferences:', error);
+    const loadPreferences = async () => {
+      if (user) {
+        // Load from database for authenticated users
+        try {
+          const { data, error } = await supabase
+            .from('user_settings')
+            .select('settings_data')
+            .eq('user_id', user.id)
+            .eq('settings_type', 'preferences')
+            .maybeSingle();
+
+          if (error && error.code !== 'PGRST116') { // Not a "no rows" error
+            console.error('Error loading preferences from database:', error);
+            // Fallback to localStorage
+            loadFromLocalStorage();
+            return;
+          }
+
+          if (data?.settings_data) {
+            const loadedPrefs = { ...defaultPreferences, ...(data.settings_data as unknown as UserPreferences) };
+            setPreferences(loadedPrefs);
+            applyPreferences(loadedPrefs);
+          } else {
+            // No preferences in database, check localStorage and save to database
+            loadFromLocalStorage();
+          }
+        } catch (error) {
+          console.error('Failed to load preferences from database:', error);
+          loadFromLocalStorage();
+        }
+      } else {
+        // Load from localStorage for non-authenticated users
+        loadFromLocalStorage();
       }
-    }
-  }, []);
+    };
 
+    const loadFromLocalStorage = () => {
+      const saved = localStorage.getItem('userPreferences');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const loadedPrefs = { ...defaultPreferences, ...parsed };
+          setPreferences(loadedPrefs);
+          applyPreferences(loadedPrefs);
+        } catch (error) {
+          console.error('Failed to parse saved preferences:', error);
+        }
+      }
+    };
+
+    loadPreferences();
+  }, [user]);
+
+  // Set up real-time syncing for authenticated users
   useEffect(() => {
-    // Apply preferences to document
+    if (!user) return;
+
+    const channel = supabase
+      .channel('user-preferences')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).settings_type === 'preferences') {
+            const newPrefs = { ...defaultPreferences, ...(payload.new as any).settings_data };
+            setPreferences(newPrefs);
+            applyPreferences(newPrefs);
+            // Also update localStorage for consistency
+            localStorage.setItem('userPreferences', JSON.stringify(newPrefs));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const applyPreferences = (prefs: UserPreferences) => {
     const root = document.documentElement;
     
     // Apply theme
-    root.setAttribute('data-theme', preferences.theme);
+    root.setAttribute('data-theme', prefs.theme);
     
     // Apply bold text
-    if (preferences.boldText) {
+    if (prefs.boldText) {
       root.style.setProperty('--font-weight-normal', '600');
       root.style.setProperty('--font-weight-medium', '700');
       root.style.setProperty('--font-weight-semibold', '800');
@@ -54,17 +129,38 @@ export const usePreferences = () => {
       medium: '1rem',
       large: '1.125rem'
     };
-    root.style.setProperty('--base-font-size', sizeMap[preferences.textSize]);
-    
-    // Save to localStorage
-    localStorage.setItem('userPreferences', JSON.stringify(preferences));
-  }, [preferences]);
+    root.style.setProperty('--base-font-size', sizeMap[prefs.textSize]);
+  };
 
-  const updatePreference = <K extends keyof UserPreferences>(
+  const updatePreference = async <K extends keyof UserPreferences>(
     key: K,
     value: UserPreferences[K]
   ) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
+    const newPrefs = { ...preferences, [key]: value };
+    setPreferences(newPrefs);
+    applyPreferences(newPrefs);
+
+    // Save to localStorage immediately
+    localStorage.setItem('userPreferences', JSON.stringify(newPrefs));
+
+    // Save to database for authenticated users
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            settings_type: 'preferences',
+            settings_data: newPrefs,
+          });
+
+        if (error) {
+          console.error('Error saving preferences to database:', error);
+        }
+      } catch (error) {
+        console.error('Failed to save preferences:', error);
+      }
+    }
   };
 
   return {

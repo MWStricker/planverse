@@ -16,6 +16,7 @@ import { usePreferences } from "@/hooks/usePreferences";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { universities, getUniversityById, getPublicUniversities, searchPublicUniversities } from "@/data/universities";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AccountIntegration {
   id: string;
@@ -103,6 +104,91 @@ export const Settings = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [majorError, setMajorError] = useState('');
   const [schoolSearchQuery, setSchoolSearchQuery] = useState('');
+
+  // Load and sync notification settings with database
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('user_settings')
+            .select('settings_data')
+            .eq('user_id', user.id)
+            .eq('settings_type', 'notifications')
+            .maybeSingle();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error('Error loading notifications from database:', error);
+            return;
+          }
+
+          if (data?.settings_data) {
+            setNotifications(prev => ({ ...prev, ...(data.settings_data as any) }));
+          }
+        } catch (error) {
+          console.error('Failed to load notifications from database:', error);
+        }
+      }
+    };
+
+    loadNotifications();
+  }, [user]);
+
+  // Set up real-time syncing for notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('user-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).settings_type === 'notifications') {
+            setNotifications(prev => ({ ...prev, ...(payload.new as any).settings_data }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  // Auto-save notification changes
+  const updateNotificationSetting = async (key: keyof typeof notifications, value: boolean) => {
+    const newNotifications = { ...notifications, [key]: value };
+    setNotifications(newNotifications);
+
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            settings_type: 'notifications',
+            settings_data: newNotifications,
+          });
+
+        if (error) {
+          console.error('Error saving notifications to database:', error);
+        } else {
+          toast({
+            title: "Settings saved",
+            description: "Your notification preferences have been updated.",
+          });
+        }
+      } catch (error) {
+        console.error('Failed to save notifications:', error);
+      }
+    }
+  };
 
   // Comprehensive profanity filter
   const profanityList = [
@@ -379,7 +465,7 @@ export const Settings = () => {
             </div>
             <Switch 
               checked={notifications.assignments} 
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, assignments: checked }))}
+              onCheckedChange={(checked) => updateNotificationSetting('assignments', checked)}
             />
           </div>
           <Separator />
@@ -390,7 +476,7 @@ export const Settings = () => {
             </div>
             <Switch 
               checked={notifications.deadlines} 
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, deadlines: checked }))}
+              onCheckedChange={(checked) => updateNotificationSetting('deadlines', checked)}
             />
           </div>
           <Separator />
@@ -401,7 +487,7 @@ export const Settings = () => {
             </div>
             <Switch 
               checked={notifications.studyReminders} 
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, studyReminders: checked }))}
+              onCheckedChange={(checked) => updateNotificationSetting('studyReminders', checked)}
             />
           </div>
         </CardContent>
@@ -419,7 +505,7 @@ export const Settings = () => {
             </div>
             <Switch 
               checked={notifications.syncErrors} 
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, syncErrors: checked }))}
+              onCheckedChange={(checked) => updateNotificationSetting('syncErrors', checked)}
             />
           </div>
         </CardContent>
