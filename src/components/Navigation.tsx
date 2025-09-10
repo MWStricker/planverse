@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Home, Upload, Settings, BookOpen, Target, Clock, Bell } from "lucide-react";
+import { Calendar, Home, Upload, Settings, BookOpen, Target, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,7 +25,6 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
     { id: 'tasks', label: 'Tasks', icon: Target },
     { id: 'upload', label: 'Image Upload', icon: Upload },
     { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'analytics', label: 'Time Analytics', icon: Clock },
   ];
 
   return (
@@ -57,14 +56,14 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
             <Button
               key={item.id}
               variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start h-11 transition-all ${
+              className={`w-full justify-start h-14 text-base transition-all ${
                 isActive 
                   ? 'bg-primary text-primary-foreground shadow-sm' 
                   : 'hover:bg-muted text-muted-foreground hover:text-foreground'
               }`}
               onClick={() => onPageChange(item.id)}
             >
-              <Icon className="h-4 w-4 mr-3" />
+              <Icon className="h-5 w-5 mr-3" />
               {item.label}
               {item.id === 'tasks' && notifications > 0 && (
                 <Badge 
