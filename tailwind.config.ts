@@ -108,6 +108,20 @@ export default {
             transform: "translateX(-100%)",
           },
         },
+        "scroll-boomerang": {
+          "0%": {
+            transform: "translateX(0%)",
+          },
+          "25%": {
+            transform: "translateX(-75%)",
+          },
+          "50%": {
+            transform: "translateX(0%)",
+          },
+          "100%": {
+            transform: "translateX(0%)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",

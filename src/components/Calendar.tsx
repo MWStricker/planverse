@@ -445,7 +445,7 @@ const Calendar = () => {
                       <div key={task.id} className="flex items-center gap-1">
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
                         <Badge variant="secondary" className="text-xs w-fit justify-start overflow-hidden group">
-                          <div className="flex items-center gap-1 group-hover:animate-[scroll-text_3s_linear_infinite]">
+                          <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
                             📝 <span className="whitespace-nowrap text-xs">{task.title}</span>
                           </div>
                         </Badge>
