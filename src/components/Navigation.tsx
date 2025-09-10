@@ -32,13 +32,6 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
       {/* Logo */}
       <div className="p-4 pt-1 border-b border-border">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 overflow-hidden rounded-lg mt-1">
-            <img 
-              src="/lovable-uploads/a3ff9ac9-6bac-424f-a880-22b8b42de5c3.png" 
-              alt="CourseConnect Logo" 
-              className="w-16 h-16 object-cover object-center scale-125"
-            />
-          </div>
           <div>
             <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
             <p className="text-xs text-muted-foreground">Smart Scheduling</p>
