@@ -100,7 +100,7 @@ export const Dashboard = () => {
     return dueDate <= weekFromNow && task.completion_status !== 'completed';
   }).length : "N/A";
 
-  // Get today's tasks ordered by priority
+  // Get today's tasks ordered by priority (optimized for instant updates)
   const todaysTasks = userTasks.filter(task => {
     if (!task.due_date || task.completion_status === 'completed') return false;
     const dueDate = new Date(task.due_date);
@@ -133,38 +133,52 @@ export const Dashboard = () => {
     }
   };
 
-  // Fetch and analyze data on component mount and set up real-time subscriptions
+  // Simplified data fetching function - only fetch essential data
+  const fetchDashboardData = async () => {
+    if (!user) return;
+    
+    try {
+      // Fetch only tasks and events concurrently
+      const [tasksResult, eventsResult] = await Promise.all([
+        supabase.from('tasks').select('*').eq('user_id', user.id),
+        supabase.from('events').select('*').eq('user_id', user.id)
+      ]);
+
+      if (tasksResult.data) setUserTasks(tasksResult.data);
+      if (eventsResult.data) setUserEvents(eventsResult.data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
+
+  // Fast data fetching and real-time sync
   useEffect(() => {
     if (user) {
-      analyzeUserData();
+      fetchDashboardData();
 
-      // Set up real-time subscriptions for instant updates
+      // Set up optimized real-time subscriptions
       const channel = supabase
-        .channel('dashboard-updates')
+        .channel('dashboard-realtime')
         .on(
           'postgres_changes',
           {
-            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            event: '*',
             schema: 'public',
             table: 'tasks',
             filter: `user_id=eq.${user.id}`
           },
-          () => {
-            // Refresh data when tasks change
-            analyzeUserData();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public', 
-            table: 'events',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            // Refresh data when events change
-            analyzeUserData();
+          (payload) => {
+            console.log('Task change detected:', payload);
+            // Instantly update tasks without full refresh
+            if (payload.eventType === 'INSERT') {
+              setUserTasks(prev => [...prev, payload.new as any]);
+            } else if (payload.eventType === 'UPDATE') {
+              setUserTasks(prev => prev.map(task => 
+                task.id === payload.new.id ? payload.new as any : task
+              ));
+            } else if (payload.eventType === 'DELETE') {
+              setUserTasks(prev => prev.filter(task => task.id !== payload.old.id));
+            }
           }
         )
         .on(
@@ -172,17 +186,25 @@ export const Dashboard = () => {
           {
             event: '*',
             schema: 'public',
-            table: 'study_sessions', 
+            table: 'events',
             filter: `user_id=eq.${user.id}`
           },
-          () => {
-            // Refresh data when study sessions change
-            analyzeUserData();
+          (payload) => {
+            console.log('Event change detected:', payload);
+            // Instantly update events without full refresh
+            if (payload.eventType === 'INSERT') {
+              setUserEvents(prev => [...prev, payload.new as any]);
+            } else if (payload.eventType === 'UPDATE') {
+              setUserEvents(prev => prev.map(event => 
+                event.id === payload.new.id ? payload.new as any : event
+              ));
+            } else if (payload.eventType === 'DELETE') {
+              setUserEvents(prev => prev.filter(event => event.id !== payload.old.id));
+            }
           }
         )
         .subscribe();
 
-      // Cleanup subscription on unmount
       return () => {
         supabase.removeChannel(channel);
       };
@@ -234,7 +256,7 @@ export const Dashboard = () => {
         });
         setIsAddDialogOpen(false);
         form.reset();
-        analyzeUserData(); // Refresh data
+        fetchDashboardData(); // Use faster fetch function
       }
     } catch (error) {
       console.error('Unexpected error:', error);
