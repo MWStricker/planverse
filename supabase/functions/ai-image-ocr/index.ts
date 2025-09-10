@@ -26,14 +26,14 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You extract academic schedule items and MUST return via the provided function tool.\n\n- Today (for context): ${nowIso}\n- User timezone: ${tz}\n\nRules for dates/times:\n1) Dates: ISO YYYY-MM-DD only.\n2) Infer YEAR from the image/text (e.g., "Fall 2025"), else pick the nearest FUTURE date within 12 months.\n3) Align day-of-week with any month/week grid present.\n4) Times: 24h HH:MM.\n5) If a time is missing, choose a plausible default (start 08:00, end 17:00).\n6) Keep locations short.\n7) Only include items with confidence ≥ 60.\n`;
+    const systemPrompt = `You extract academic schedule items and assignments/tasks and MUST return via the provided function tool.\n\n- Today (for context): ${nowIso}\n- User timezone: ${tz}\n\nRules for dates/times:\n1) Dates: ISO YYYY-MM-DD only.\n2) Infer YEAR from the image/text (e.g., "Fall 2025"), else pick the nearest FUTURE date within 12 months.\n3) Align day-of-week with any month/week grid present.\n4) Times: 24h HH:MM.\n5) If a time is missing, choose a plausible default (start 08:00, end 17:00).\n6) Keep locations short.\n7) Only include items with confidence ≥ 60.\n8) Distinguish between EVENTS (classes, meetings, appointments) and TASKS (assignments, homework, projects, exams).\n9) For tasks, identify due dates and assign priority levels.\n`;
 
     const tools = [
       {
         type: 'function',
         function: {
-          name: 'return_events',
-          description: 'Return extracted events as strict JSON',
+          name: 'return_schedule_items',
+          description: 'Return extracted events and tasks as strict JSON',
           parameters: {
             type: 'object',
             additionalProperties: false,
@@ -55,20 +55,39 @@ serve(async (req) => {
                   },
                   required: ['title','date','startTime','endTime','location','confidence']
                 }
+              },
+              tasks: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    id: { type: 'string' },
+                    title: { type: 'string' },
+                    description: { type: 'string' },
+                    dueDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+                    dueTime: { type: 'string', pattern: '^\\d{2}:\\d{2}$' },
+                    courseName: { type: 'string' },
+                    priority: { type: 'number', minimum: 1, maximum: 4 },
+                    taskType: { type: 'string' },
+                    confidence: { type: 'number', minimum: 0, maximum: 100 },
+                  },
+                  required: ['title','dueDate','priority','confidence']
+                }
               }
             },
-            required: ['events']
+            required: ['events', 'tasks']
           }
         }
       }
     ];
 
     const userImageContent = [
-      { type: 'text', text: 'Extract all schedule information from this image. Be precise with dates and years.' },
+      { type: 'text', text: 'Extract all schedule information from this image. Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects). Be precise with dates and years.' },
       { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } }
     ];
 
-    const userTextContent = `Extract all schedule information with precise dates and years from this text:\n\n${text || ''}`;
+    const userTextContent = `Extract all schedule information with precise dates and years from this text. Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects):\n\n${text || ''}`;
 
     async function callOpenAI(model: string, paramsType: 'legacy' | 'new', useText: boolean): Promise<Response> {
       const body: any = {
@@ -78,7 +97,7 @@ serve(async (req) => {
           { role: 'user', content: useText ? userTextContent : (userImageContent as any) },
         ],
         tools,
-        tool_choice: { type: 'function', function: { name: 'return_events' } },
+        tool_choice: { type: 'function', function: { name: 'return_schedule_items' } },
       };
 
       if (paramsType === 'legacy') {
@@ -122,7 +141,7 @@ serve(async (req) => {
     let parsed: any = null;
     try {
       const toolCalls = aiData?.choices?.[0]?.message?.tool_calls || [];
-      const fnCall = toolCalls.find((tc: any) => tc?.function?.name === 'return_events');
+      const fnCall = toolCalls.find((tc: any) => tc?.function?.name === 'return_schedule_items');
       if (fnCall?.function?.arguments) {
         parsed = JSON.parse(fnCall.function.arguments);
       }
@@ -140,17 +159,17 @@ serve(async (req) => {
 
     if (!parsed) {
       const durationMs = Date.now() - tStart;
-      return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', events: [], durationMs }), {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', events: [], tasks: [], durationMs }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Normalize & sanitize
+    // Normalize & sanitize events
     let events = Array.isArray(parsed.events) ? parsed.events : [];
     events = events
       .filter((e: any) => typeof e?.date === 'string' && /\d{4}-\d{2}-\d{2}/.test(e.date))
       .map((event: any, index: number) => ({
-        id: event.id || `extracted_${Date.now()}_${index}`,
+        id: event.id || `extracted_event_${Date.now()}_${index}`,
         title: String(event.title || '').trim().slice(0, 120),
         date: event.date,
         startTime: String(event.startTime || '08:00').slice(0, 5),
@@ -160,13 +179,29 @@ serve(async (req) => {
         confidence: Number.isFinite(event.confidence) ? Math.max(0, Math.min(100, Number(event.confidence))) : 60,
       }));
 
+    // Normalize & sanitize tasks
+    let tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+    tasks = tasks
+      .filter((t: any) => typeof t?.dueDate === 'string' && /\d{4}-\d{2}-\d{2}/.test(t.dueDate))
+      .map((task: any, index: number) => ({
+        id: task.id || `extracted_task_${Date.now()}_${index}`,
+        title: String(task.title || '').trim().slice(0, 120),
+        description: String(task.description || '').trim().slice(0, 500),
+        dueDate: task.dueDate,
+        dueTime: String(task.dueTime || '23:59').slice(0, 5),
+        courseName: String(task.courseName || '').trim().slice(0, 100),
+        priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
+        taskType: String(task.taskType || 'assignment').trim().slice(0, 50),
+        confidence: Number.isFinite(task.confidence) ? Math.max(0, Math.min(100, Number(task.confidence))) : 60,
+      }));
+
     const durationMs = Date.now() - tStart;
-    return new Response(JSON.stringify({ success: true, durationMs, events }), {
+    return new Response(JSON.stringify({ success: true, durationMs, events, tasks }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
     const durationMs = Date.now() - tStart;
-    return new Response(JSON.stringify({ success: false, error: error?.message || 'Unexpected error', events: [], durationMs }), {
+    return new Response(JSON.stringify({ success: false, error: error?.message || 'Unexpected error', events: [], tasks: [], durationMs }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

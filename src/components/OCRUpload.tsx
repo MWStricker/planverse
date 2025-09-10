@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Upload, Camera, FileImage, Check, X, Calendar, Clock, MapPin } from "lucide-react";
+import { Upload, Camera, FileImage, Check, X, Calendar, Clock, MapPin, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,18 @@ interface ParsedEvent {
   endTime: string;
   location: string;
   recurrence?: string;
+  confidence: number;
+}
+
+interface ParsedTask {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate: string;
+  dueTime: string;
+  courseName?: string;
+  priority: number;
+  taskType?: string;
   confidence: number;
 }
 
@@ -56,6 +68,7 @@ export const OCRUpload = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedEvents, setParsedEvents] = useState<ParsedEvent[]>([]);
+  const [parsedTasks, setParsedTasks] = useState<ParsedTask[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -105,11 +118,16 @@ export const OCRUpload = () => {
           throw new Error('Failed to process image');
         }
 
-          if (response.success && Array.isArray(response.events) && response.events.length > 0) {
-            setParsedEvents(response.events);
+          if (response.success && (
+            (Array.isArray(response.events) && response.events.length > 0) || 
+            (Array.isArray(response.tasks) && response.tasks.length > 0)
+          )) {
+            setParsedEvents(response.events || []);
+            setParsedTasks(response.tasks || []);
+            const totalItems = (response.events?.length || 0) + (response.tasks?.length || 0);
             toast({
               title: "Schedule parsed successfully!",
-              description: `Found ${response.events.length} events in your image.`,
+              description: `Found ${response.events?.length || 0} events and ${response.tasks?.length || 0} tasks in your image.`,
             });
           } else {
             // Fallback: client-side OCR to text then AI structuring
@@ -123,12 +141,20 @@ export const OCRUpload = () => {
               throw new Error('Fallback processing failed');
             }
 
-            if (textResponse.success && Array.isArray(textResponse.events) && textResponse.events.length > 0) {
-              setParsedEvents(textResponse.events);
-              toast({ title: 'Schedule parsed (OCR fallback)', description: `Found ${textResponse.events.length} events.`, });
+            if (textResponse.success && (
+              (Array.isArray(textResponse.events) && textResponse.events.length > 0) ||
+              (Array.isArray(textResponse.tasks) && textResponse.tasks.length > 0)
+            )) {
+              setParsedEvents(textResponse.events || []);
+              setParsedTasks(textResponse.tasks || []);
+              const totalItems = (textResponse.events?.length || 0) + (textResponse.tasks?.length || 0);
+              toast({ 
+                title: 'Schedule parsed (OCR fallback)', 
+                description: `Found ${textResponse.events?.length || 0} events and ${textResponse.tasks?.length || 0} tasks.`, 
+              });
             } else {
-              const msg = textResponse.error || 'No events found in image/text';
-              toast({ title: 'No events found', description: msg, variant: 'destructive' });
+              const msg = textResponse.error || 'No events or tasks found in image/text';
+              toast({ title: 'No items found', description: msg, variant: 'destructive' });
               return;
             }
           }
@@ -240,8 +266,68 @@ export const OCRUpload = () => {
     }
   };
 
+  const addTaskToTasks = async (task: ParsedTask) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to add tasks",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Parse the date and time
+      const datePart = String(task.dueDate || '').slice(0, 10); // YYYY-MM-DD
+      const timePart = String(task.dueTime || '23:59').slice(0, 5); // HH:MM
+      
+      const dueDateTime = `${datePart}T${timePart}:00.000Z`;
+
+      // Add to tasks table
+      const { error } = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          title: task.title,
+          description: task.description || `Extracted from image with ${task.confidence}% confidence`,
+          course_name: task.courseName || null,
+          due_date: dueDateTime,
+          priority_score: task.priority || 2,
+          completion_status: 'pending',
+          source_provider: 'ocr_upload'
+        });
+
+      if (error) {
+        console.error('Error adding task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add task",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Task added!",
+        description: `${task.title} has been added to your tasks.`,
+      });
+      setParsedTasks(prev => prev.filter(t => t.id !== task.id));
+    } catch (error) {
+      console.error('Error adding task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add task",
+        variant: "destructive",
+      });
+    }
+  };
+
   const rejectEvent = (event: ParsedEvent) => {
     setParsedEvents(prev => prev.filter(e => e.id !== event.id));
+  };
+
+  const rejectTask = (task: ParsedTask) => {
+    setParsedTasks(prev => prev.filter(t => t.id !== task.id));
   };
 
   return (
@@ -316,18 +402,21 @@ export const OCRUpload = () => {
         </CardContent>
       </Card>
 
-      {/* Parsed Events */}
-      {parsedEvents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              Extracted Events
-              <Badge className="bg-success/10 text-success">
-                {parsedEvents.length} found
-              </Badge>
-            </CardTitle>
-          </CardHeader>
+      {/* Parsed Events and Tasks */}
+      {(parsedEvents.length > 0 || parsedTasks.length > 0) && (
+        <div className="space-y-6">
+          {/* Events Section */}
+          {parsedEvents.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Extracted Events
+                  <Badge className="bg-success/10 text-success">
+                    {parsedEvents.length} found
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
           <CardContent className="space-y-4">
             {parsedEvents.map((event) => (
               <div
@@ -390,8 +479,100 @@ export const OCRUpload = () => {
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tasks Section */}
+        {parsedTasks.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                Extracted Tasks
+                <Badge className="bg-warning/10 text-warning">
+                  {parsedTasks.length} found
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {parsedTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:shadow-md transition-all"
+                >
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-foreground">{task.title}</h3>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${
+                          task.confidence >= 95 ? 'bg-success/10 text-success border-success/20' :
+                          task.confidence >= 85 ? 'bg-warning/10 text-warning border-warning/20' :
+                          'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {task.confidence}% confidence
+                      </Badge>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-xs ${
+                          task.priority === 4 ? 'bg-red-100 text-red-800' :
+                          task.priority === 3 ? 'bg-orange-100 text-orange-800' :
+                          task.priority === 2 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}
+                      >
+                        Priority {task.priority}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Due: {new Date(task.dueDate).toLocaleDateString()} at {task.dueTime}
+                      </div>
+                      {task.courseName && (
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          {task.courseName}
+                        </div>
+                      )}
+                      {task.taskType && (
+                        <Badge variant="secondary" className="text-xs">
+                          {task.taskType}
+                        </Badge>
+                      )}
+                    </div>
+                    {task.description && (
+                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => addTaskToTasks(task)}
+                      className="bg-warning hover:bg-warning/90 text-warning-foreground"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Add Task
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => rejectTask(task)}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+        </div>
       )}
 
       {/* Tips */}
