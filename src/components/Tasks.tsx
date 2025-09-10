@@ -41,7 +41,7 @@ const taskFormSchema = z.object({
     invalid_type_error: "Please select a valid date",
   }),
   due_time: z.string().min(1, "Time is required"),
-  priority: z.enum(["low", "medium", "high", "critical"], {
+  priority: z.enum(["none", "low", "medium", "high", "critical"], {
     required_error: "Priority is required",
   }),
 });
@@ -73,7 +73,7 @@ export const Tasks = () => {
       description: "",
       course_name: "",
       due_time: "12:00",
-      priority: "medium",
+      priority: "none",
     },
   });
 
@@ -81,6 +81,7 @@ export const Tasks = () => {
     if (!user) return;
 
     const priorityMap = {
+      none: 0,
       low: 1,
       medium: 2,
       high: 3,
@@ -101,7 +102,7 @@ export const Tasks = () => {
           description: values.description || null,
           course_name: values.course_name || null,
           due_date: dueDateTime.toISOString(),
-          priority_score: priorityMap[values.priority],
+          priority_score: priorityMap[values.priority] || 0,
           completion_status: 'pending',
           source_provider: 'manual'
         })
@@ -138,6 +139,7 @@ export const Tasks = () => {
     if (!user || !editingTask) return;
 
     const priorityMap = {
+      none: 0,
       low: 1,
       medium: 2,
       high: 3,
@@ -157,7 +159,7 @@ export const Tasks = () => {
           description: values.description || null,
           course_name: values.course_name || null,
           due_date: dueDateTime.toISOString(),
-          priority_score: priorityMap[values.priority],
+          priority_score: priorityMap[values.priority] || 0,
         })
         .eq('id', editingTask.id);
 
@@ -192,7 +194,8 @@ export const Tasks = () => {
     setEditingTask(task);
     
     // Convert priority score back to string
-    const priorityMap: { [key: number]: "low" | "medium" | "high" | "critical" } = {
+    const priorityMap: { [key: number]: "none" | "low" | "medium" | "high" | "critical" } = {
+      0: "none",
       1: "low",
       2: "medium", 
       3: "high",
@@ -214,7 +217,7 @@ export const Tasks = () => {
       course_name: task.course_name || "",
       due_date: dueDate,
       due_time: dueTime,
-      priority: priorityMap[task.priority_score || 2] || "medium",
+      priority: priorityMap[task.priority_score || 0] || "none",
     });
     
     setIsEditDialogOpen(true);
@@ -226,7 +229,7 @@ export const Tasks = () => {
       description: "",
       course_name: "",
       due_time: "12:00",
-      priority: "medium",
+      priority: "none",
     });
     setEditingTask(null);
   };
@@ -275,7 +278,8 @@ export const Tasks = () => {
       case 3: return 'High';
       case 2: return 'Medium';
       case 1: return 'Low';
-      default: return 'Medium';
+      case 0: return 'No Priority';
+      default: return 'No Priority';
     }
   };
 
@@ -285,7 +289,8 @@ export const Tasks = () => {
       case 3: return 'default';
       case 2: return 'secondary';
       case 1: return 'outline';
-      default: return 'secondary';
+      case 0: return 'outline';
+      default: return 'outline';
     }
   };
 
@@ -295,7 +300,8 @@ export const Tasks = () => {
       case 3: return <Clock className="h-4 w-4" />;
       case 2: return <BookOpen className="h-4 w-4" />;
       case 1: return <CheckCircle className="h-4 w-4" />;
-      default: return <BookOpen className="h-4 w-4" />;
+      case 0: return <div className="h-4 w-4 border border-muted-foreground rounded" />;
+      default: return <div className="h-4 w-4 border border-muted-foreground rounded" />;
     }
   };
 
@@ -682,6 +688,12 @@ export const Tasks = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="none">
+                            <div className="flex items-center gap-2">
+                              <div className="h-4 w-4 border border-muted-foreground rounded" />
+                              No Priority
+                            </div>
+                          </SelectItem>
                           <SelectItem value="low">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="h-4 w-4 text-green-500" />
@@ -890,6 +902,12 @@ export const Tasks = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="none">
+                            <div className="flex items-center gap-2">
+                              <div className="h-4 w-4 border border-muted-foreground rounded" />
+                              No Priority
+                            </div>
+                          </SelectItem>
                           <SelectItem value="low">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="h-4 w-4 text-green-500" />
