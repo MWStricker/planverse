@@ -100,6 +100,39 @@ export const Dashboard = () => {
     return dueDate <= weekFromNow && task.completion_status !== 'completed';
   }).length : "N/A";
 
+  // Get today's tasks ordered by priority
+  const todaysTasks = userTasks.filter(task => {
+    if (!task.due_date || task.completion_status === 'completed') return false;
+    const dueDate = new Date(task.due_date);
+    const today = new Date();
+    return (
+      dueDate.getDate() === today.getDate() &&
+      dueDate.getMonth() === today.getMonth() &&
+      dueDate.getFullYear() === today.getFullYear()
+    );
+  }).sort((a, b) => (b.priority_score || 2) - (a.priority_score || 2));
+
+  // Get priority label and color functions
+  const getPriorityLabel = (priority: number): string => {
+    switch (priority) {
+      case 4: return 'Critical';
+      case 3: return 'High';
+      case 2: return 'Medium';
+      case 1: return 'Low';
+      default: return 'Medium';
+    }
+  };
+
+  const getPriorityColor = (priority: number): "default" | "destructive" | "secondary" | "outline" => {
+    switch (priority) {
+      case 4: return 'destructive';
+      case 3: return 'default';
+      case 2: return 'secondary';
+      case 1: return 'outline';
+      default: return 'secondary';
+    }
+  };
+
   // Fetch and analyze data on component mount
   useEffect(() => {
     if (user) {
@@ -748,6 +781,29 @@ export const Dashboard = () => {
                   <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
                   <span className="text-sm text-muted-foreground">AI analyzing your schedule...</span>
                 </div>
+              ) : todaysTasks.length > 0 ? (
+                todaysTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <div className={`w-3 h-3 rounded-full ${
+                      task.priority_score === 4 ? 'bg-destructive' :
+                      task.priority_score === 3 ? 'bg-primary' :
+                      task.priority_score === 1 ? 'bg-muted-foreground' :
+                      'bg-secondary'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{task.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
+                      </p>
+                      {task.course_name && (
+                        <p className="text-xs text-muted-foreground">{task.course_name}</p>
+                      )}
+                    </div>
+                    <Badge variant={getPriorityColor(task.priority_score || 2)} className="text-xs">
+                      {getPriorityLabel(task.priority_score || 2)}
+                    </Badge>
+                  </div>
+                ))
               ) : (aiSchedule && aiSchedule.length > 0) ? (
                 aiSchedule.map((event: any) => (
                   <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
@@ -772,8 +828,8 @@ export const Dashboard = () => {
                 <div className="flex items-center justify-center py-8 text-center">
                   <div>
                     <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No schedule events yet</p>
-                    <p className="text-xs text-muted-foreground">Upload an image to get started</p>
+                    <p className="text-sm text-muted-foreground">No tasks due today</p>
+                    <p className="text-xs text-muted-foreground">Tasks will appear here when due today</p>
                   </div>
                 </div>
               )}
