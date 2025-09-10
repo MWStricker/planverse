@@ -1,10 +1,12 @@
-// Import university logos
-import harvardLogo from '@/assets/university-logos/harvard.png';
+// Import real university logos (downloaded from official sources)
+import harvardRealLogo from '@/assets/university-logos/harvard-real.png';
+import mitRealLogo from '@/assets/university-logos/mit-real.png';
+import uclaRealLogo from '@/assets/university-logos/ucla-real.png';
+
+// Import AI-generated logos (temporary until real logos are obtained)
 import stanfordLogo from '@/assets/university-logos/stanford.png';
-import mitLogo from '@/assets/university-logos/mit.png';
 import yaleLogo from '@/assets/university-logos/yale.png';
 import berkeleyLogo from '@/assets/university-logos/berkeley.png';
-import uclaLogo from '@/assets/university-logos/ucla.png';
 import michiganLogo from '@/assets/university-logos/michigan.png';
 import texasLogo from '@/assets/university-logos/texas.png';
 import floridaLogo from '@/assets/university-logos/florida.png';
@@ -158,7 +160,7 @@ export const universities: University[] = [
   createUniversity({ id: 'uc-berkeley', name: 'University of California, Berkeley', shortName: 'UC Berkeley', logo: berkeleyLogo, type: 'state', state: 'CA', isPublic: true }),
   createUniversity({ id: 'uc-davis', name: 'University of California, Davis', shortName: 'UC Davis', type: 'state', state: 'CA', isPublic: true }),
   createUniversity({ id: 'uc-irvine', name: 'University of California, Irvine', shortName: 'UC Irvine', type: 'state', state: 'CA', isPublic: true }),
-  createUniversity({ id: 'uc-los-angeles', name: 'University of California, Los Angeles', shortName: 'UCLA', logo: uclaLogo, type: 'state', state: 'CA', isPublic: true }),
+  createUniversity({ id: 'uc-los-angeles', name: 'University of California, Los Angeles', shortName: 'UCLA', logo: uclaRealLogo, type: 'state', state: 'CA', isPublic: true }),
   createUniversity({ id: 'uc-merced', name: 'University of California, Merced', shortName: 'UC Merced', type: 'state', state: 'CA', isPublic: true }),
   createUniversity({ id: 'uc-riverside', name: 'University of California, Riverside', shortName: 'UC Riverside', type: 'state', state: 'CA', isPublic: true }),
   createUniversity({ id: 'uc-san-diego', name: 'University of California, San Diego', shortName: 'UC San Diego', type: 'state', state: 'CA', isPublic: true }),
@@ -179,11 +181,11 @@ export const universities: University[] = [
   createUniversity({ id: 'wyoming', name: 'University of Wyoming', shortName: 'Wyoming', type: 'state', state: 'WY', isPublic: true }),
 
   // PRIVATE UNIVERSITIES (for completeness)
-  createUniversity({ id: 'harvard', name: 'Harvard University', shortName: 'Harvard', logo: harvardLogo, type: 'ivy-league', state: 'MA', isPublic: false }),
+  createUniversity({ id: 'harvard', name: 'Harvard University', shortName: 'Harvard', logo: harvardRealLogo, type: 'ivy-league', state: 'MA', isPublic: false }),
   createUniversity({ id: 'yale', name: 'Yale University', shortName: 'Yale', logo: yaleLogo, type: 'ivy-league', state: 'CT', isPublic: false }),
   createUniversity({ id: 'princeton', name: 'Princeton University', shortName: 'Princeton', type: 'ivy-league', state: 'NJ', isPublic: false }),
   createUniversity({ id: 'stanford', name: 'Stanford University', shortName: 'Stanford', logo: stanfordLogo, type: 'top-tier', state: 'CA', isPublic: false }),
-  createUniversity({ id: 'mit', name: 'Massachusetts Institute of Technology', shortName: 'MIT', logo: mitLogo, type: 'top-tier', state: 'MA', isPublic: false }),
+  createUniversity({ id: 'mit', name: 'Massachusetts Institute of Technology', shortName: 'MIT', logo: mitRealLogo, type: 'top-tier', state: 'MA', isPublic: false }),
 ].sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically by name
 
 // Helper functions
