@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { imageFileToBase64Compressed } from "@/lib/utils";
 
 interface ParsedEvent {
   id: string;
@@ -71,54 +72,40 @@ export const OCRUpload = () => {
     setIsProcessing(true);
 
     try {
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const base64 = e.target?.result as string;
-          const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+      // Compress image on client for faster uploads
+      const { base64, mimeType } = await imageFileToBase64Compressed(file, 1600, 'image/jpeg', 0.82);
 
-          // Call our AI OCR edge function
-          const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
-            body: { imageBase64: base64Data }
-          });
+      try {
+        // Call our AI OCR edge function
+        const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
+          body: { imageBase64: base64, mimeType }
+        });
 
-          if (error) {
-            console.error('OCR Error:', error);
-            throw new Error('Failed to process image');
-          }
-
-          if (response.success && response.events) {
-            setParsedEvents(response.events);
-            toast({
-              title: "Schedule parsed successfully!",
-              description: `Found ${response.events.length} events in your image.`,
-            });
-          } else {
-            throw new Error('No events found in image');
-          }
-        } catch (error) {
-          console.error('Error processing image:', error);
-          toast({
-            title: "Processing failed",
-            description: "Failed to extract schedule from image. Please try again.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsProcessing(false);
+        if (error) {
+          console.error('OCR Error:', error);
+          throw new Error('Failed to process image');
         }
-      };
 
-      reader.onerror = () => {
+        if (response.success && response.events) {
+          setParsedEvents(response.events);
+          toast({
+            title: "Schedule parsed successfully!",
+            description: `Found ${response.events.length} events in your image.`,
+          });
+        } else {
+          throw new Error('No events found in image');
+        }
+      } catch (error) {
+        console.error('Error processing image:', error);
         toast({
-          title: "File read error",
-          description: "Failed to read the image file.",
+          title: "Processing failed",
+          description: "Failed to extract schedule from image. Please try again.",
           variant: "destructive",
         });
+      } finally {
         setIsProcessing(false);
-      };
+      }
 
-      reader.readAsDataURL(file);
     } catch (error) {
       console.error('File upload error:', error);
       toast({
@@ -168,16 +155,13 @@ export const OCRUpload = () => {
     }
 
     try {
-      // Parse the date and time
-      const eventDate = new Date(event.date);
-      const [startHour, startMinute] = event.startTime.split(':').map(Number);
-      const [endHour, endMinute] = event.endTime.split(':').map(Number);
-      
-      const startTime = new Date(eventDate);
-      startTime.setHours(startHour, startMinute, 0, 0);
-      
-      const endTime = new Date(eventDate);
-      endTime.setHours(endHour, endMinute, 0, 0);
+      // Parse the date and time using local components to avoid timezone shifts
+      const [year, month, day] = String(event.date || '').split('-').map((v: string) => parseInt(v, 10));
+      const [startHour, startMinute] = String(event.startTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
+      const [endHour, endMinute] = String(event.endTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
+
+      const startTime = new Date(year || 1970, (month || 1) - 1, day || 1, startHour || 0, startMinute || 0, 0, 0);
+      const endTime = new Date(year || 1970, (month || 1) - 1, day || 1, endHour || 0, endMinute || 0, 0, 0);
 
       // Add to events table
       const { error } = await supabase

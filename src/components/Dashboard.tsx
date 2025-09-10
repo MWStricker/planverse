@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { imageFileToBase64Compressed } from "@/lib/utils";
 
 interface Task {
   id: string;
