@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileEditing } from "@/hooks/useProfileEditing";
-import { universities, getUniversityById, searchUniversities } from "@/data/universities";
+import { universities, getUniversityById, getPublicUniversities, searchPublicUniversities } from "@/data/universities";
 
 interface AccountIntegration {
   id: string;
@@ -696,7 +696,7 @@ export const Settings = () => {
                     onChange={(e) => {
                       setSchoolSearchQuery(e.target.value);
                       // If it matches a university name exactly, use the university ID
-                      const matchedUni = universities.find(uni => uni.name === e.target.value);
+                      const matchedUni = getPublicUniversities().find(uni => uni.name === e.target.value);
                       if (matchedUni) {
                         handleProfileChange('school', matchedUni.id);
                         setSchoolSearchQuery('');
@@ -705,11 +705,12 @@ export const Settings = () => {
                         handleProfileChange('school', e.target.value);
                       }
                     }}
-                    placeholder="Search for your university or type custom name"
+                    placeholder="Search for your public university or type custom name"
                   />
                   {schoolSearchQuery && (
                     <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto bg-popover border border-border rounded-md shadow-lg">
-                      {searchUniversities(schoolSearchQuery).slice(0, 10).map((uni) => (
+                      {/* Show all public universities if no search query, otherwise show filtered results */}
+                      {(schoolSearchQuery.length > 0 ? searchPublicUniversities(schoolSearchQuery) : getPublicUniversities()).slice(0, 15).map((uni) => (
                         <div
                           key={uni.id}
                           className="flex items-center gap-3 p-3 hover:bg-accent cursor-pointer"
@@ -728,6 +729,11 @@ export const Settings = () => {
                           <div className="text-xs text-muted-foreground">{uni.state}</div>
                         </div>
                       ))}
+                      {schoolSearchQuery && searchPublicUniversities(schoolSearchQuery).length === 0 && (
+                        <div className="p-3 text-sm text-muted-foreground text-center">
+                          No public universities found. You can type a custom school name.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
