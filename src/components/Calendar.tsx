@@ -157,8 +157,22 @@ const Calendar = () => {
         return;
       }
 
-      // Process the weather data
+      // Process the weather data - get current day + 7 days
       const forecastData: { [key: string]: WeatherData } = {};
+      
+      // Add current day weather
+      if (data.current) {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        forecastData[today] = {
+          temp: data.current.temp,
+          maxTemp: data.current.temp,
+          minTemp: data.current.temp,
+          description: data.current.description,
+          icon: data.current.icon,
+          humidity: data.current.humidity,
+          windSpeed: data.current.windSpeed
+        };
+      }
       
       if (data.forecast) {
         data.forecast.forEach((day: any) => {
@@ -309,7 +323,7 @@ const Calendar = () => {
           const isCurrentMonth = isSameMonth(day, currentDate);
 
           return (
-            <Card key={index} className={`min-h-[120px] p-2 transition-all duration-200 ${
+            <Card key={index} className={`min-h-[200px] p-2 transition-all duration-200 ${
               isToday(day) 
                 ? 'ring-2 ring-primary bg-primary/5' 
                 : isCurrentMonth 
