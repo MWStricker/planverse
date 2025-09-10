@@ -131,8 +131,25 @@ export const Dashboard = () => {
     });
 
     try {
-      // Compress image on client for faster uploads
-      const { base64, mimeType } = await imageFileToBase64Compressed(file, 1200, 'image/jpeg', 0.75);
+      // Preserve PNG uploads without recompression; compress others for speed
+      let base64: string;
+      let mimeType: string;
+      if (file.type === 'image/png') {
+        base64 = await new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => {
+            const s = String(fr.result || '');
+            resolve(s.split(',')[1] || '');
+          };
+          fr.onerror = reject;
+          fr.readAsDataURL(file);
+        });
+        mimeType = 'image/png';
+      } else {
+        const res = await imageFileToBase64Compressed(file, 1200, 'image/jpeg', 0.75);
+        base64 = res.base64;
+        mimeType = res.mimeType;
+      }
 
       try {
         // Call our AI OCR edge function
