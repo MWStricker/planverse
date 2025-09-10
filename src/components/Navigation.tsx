@@ -52,7 +52,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
               className={`w-full justify-start h-14 text-base transition-all duration-300 group relative overflow-hidden ${
                 isActive 
                   ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-l-primary-foreground/20' 
-                  : 'hover:bg-gradient-to-r hover:from-muted hover:to-muted/80 text-muted-foreground hover:text-foreground hover:scale-[1.02] hover:shadow-md hover:border-l-4 hover:border-l-primary/30'
+                  : 'text-foreground hover:bg-muted/30 hover:scale-[1.02]'
               }`}
               onClick={() => onPageChange(item.id)}
             >
@@ -61,16 +61,13 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               )}
               
-              {/* Ripple effect on hover */}
-              <div className="absolute inset-0 bg-primary/5 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-md"></div>
-              
               <Icon className={`h-5 w-5 mr-3 transition-all duration-300 ${
                 isActive 
                   ? 'text-primary-foreground scale-110' 
-                  : 'group-hover:scale-110 group-hover:rotate-12 group-hover:text-primary'
+                  : 'group-hover:scale-110'
               }`} />
               <span className={`font-medium transition-all duration-300 ${
-                isActive ? 'tracking-wide' : 'group-hover:tracking-wide'
+                isActive ? 'tracking-wide' : ''
               }`}>
                 {item.label}
               </span>
