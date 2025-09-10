@@ -30,69 +30,10 @@ interface ScheduleEvent {
   courseColor?: string;
 }
 
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Data Structures Project',
-    course: 'CS 250',
-    courseColor: 'course-cs',
-    dueDate: 'Tomorrow 11:59 PM',
-    estimatedHours: 6,
-    priority: 'high',
-    workloadReason: 'High complexity + due in 24h',
-    completed: false,
-  },
-  {
-    id: '2',
-    title: 'Calculus Problem Set 8',
-    course: 'MATH 201',
-    courseColor: 'course-math',
-    dueDate: 'Friday 5:00 PM',
-    estimatedHours: 3,
-    priority: 'medium',
-    workloadReason: 'Medium length, familiar format',
-    completed: false,
-  },
-  {
-    id: '3',
-    title: 'Read Chapter 12: Organic Chemistry',
-    course: 'CHEM 305',
-    courseColor: 'course-science',
-    dueDate: 'Next Monday',
-    estimatedHours: 2,
-    priority: 'low',
-    workloadReason: 'Standard reading, good runway',
-    completed: true,
-  },
-];
+// Empty mock data for testing
+const mockTasks: Task[] = [];
 
-const todaySchedule: ScheduleEvent[] = [
-  {
-    id: '1',
-    title: 'Data Structures',
-    time: '9:00 - 10:20 AM',
-    location: 'Engineering 203',
-    type: 'class',
-    course: 'CS 250',
-    courseColor: 'course-cs',
-  },
-  {
-    id: '2',
-    title: 'Study Block (Suggested)',
-    time: '10:30 - 12:00 PM',
-    location: 'Library Study Room',
-    type: 'study',
-  },
-  {
-    id: '3',
-    title: 'Calculus II',
-    time: '2:00 - 3:20 PM',
-    location: 'Math Building 105',
-    type: 'class',
-    course: 'MATH 201',
-    courseColor: 'course-math',
-  },
-];
+const todaySchedule: ScheduleEvent[] = [];
 
 export const Dashboard = () => {
   const { user } = useAuth();
@@ -156,42 +97,8 @@ export const Dashboard = () => {
     }
   };
 
-  // Define suggested study blocks
-  const suggestedStudyBlocks = [
-    {
-      id: 'morning-focus',
-      title: 'Morning Focus',
-      time: '10:30 AM - 12:00 PM',
-      location: 'Library',
-      description: 'Work on Data Structures Project',
-      priority: 'Optimal',
-      startTime: '10:30',
-      endTime: '12:00',
-      date: new Date().toISOString().split('T')[0], // Today
-    },
-    {
-      id: 'afternoon-review',
-      title: 'Afternoon Review', 
-      time: '3:30 PM - 5:00 PM',
-      location: 'Study Hall',
-      description: 'Calculus Problem Set',
-      priority: 'Good',
-      startTime: '15:30',
-      endTime: '17:00',
-      date: new Date().toISOString().split('T')[0], // Today
-    },
-    {
-      id: 'evening-prep',
-      title: 'Evening Prep',
-      time: '7:00 PM - 8:30 PM', 
-      location: 'Dorm',
-      description: 'Review Chemistry Notes',
-      priority: 'Alternative',
-      startTime: '19:00',
-      endTime: '20:30',
-      date: new Date().toISOString().split('T')[0], // Today
-    }
-  ];
+  // Empty suggested study blocks for testing
+  const suggestedStudyBlocks: any[] = [];
 
   const handleAcceptStudyBlock = async (studyBlock: any) => {
     if (!user) {
@@ -372,26 +279,35 @@ export const Dashboard = () => {
                   <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
                   <span className="text-sm text-muted-foreground">AI analyzing your schedule...</span>
                 </div>
-              ) : (
-                (aiSchedule || todaySchedule).map((event: any) => (
-                <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                  <div className={`w-3 h-3 rounded-full ${
-                    event.type === 'class' ? `bg-${event.courseColor}` :
-                    event.type === 'study' ? 'bg-accent' :
-                    'bg-muted-foreground'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{event.title}</p>
-                    <p className="text-xs text-muted-foreground">{event.time}</p>
-                    <p className="text-xs text-muted-foreground">{event.location}</p>
+              ) : (aiSchedule && aiSchedule.length > 0) ? (
+                aiSchedule.map((event: any) => (
+                  <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <div className={`w-3 h-3 rounded-full ${
+                      event.type === 'class' ? `bg-${event.courseColor}` :
+                      event.type === 'study' ? 'bg-accent' :
+                      'bg-muted-foreground'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{event.title}</p>
+                      <p className="text-xs text-muted-foreground">{event.time}</p>
+                      <p className="text-xs text-muted-foreground">{event.location}</p>
+                    </div>
+                    {event.type === 'study' && (
+                      <Badge variant="secondary" className="bg-accent/10 text-accent">
+                        Suggested
+                      </Badge>
+                    )}
                   </div>
-                  {event.type === 'study' && (
-                    <Badge variant="secondary" className="bg-accent/10 text-accent">
-                      Suggested
-                    </Badge>
-                  )}
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-8 text-center">
+                  <div>
+                    <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No schedule events yet</p>
+                    <p className="text-xs text-muted-foreground">Upload an image to get started</p>
+                  </div>
                 </div>
-              )))}
+              )}
             </CardContent>
           </Card>
 
@@ -412,48 +328,59 @@ export const Dashboard = () => {
                   <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
                   <span className="text-sm text-muted-foreground">AI prioritizing your tasks...</span>
                 </div>
-              ) : (
-                (aiPriorities.length > 0 ? aiPriorities : mockTasks).map((task: any, index: number) => (
-                <div 
-                  key={task.id} 
-                  className={`flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md ${
-                    task.completed ? 'bg-success/5 border-success/20' : 'bg-card border-border'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
-                      <div className={`w-2 h-2 rounded-full bg-${task.courseColor}`} />
+              ) : (aiPriorities && aiPriorities.length > 0) ? (
+                aiPriorities.map((task: any, index: number) => (
+                  <div 
+                    key={task.id} 
+                    className={`flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md ${
+                      task.completed ? 'bg-success/5 border-success/20' : 'bg-card border-border'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                        <div className={`w-2 h-2 rounded-full bg-${task.courseColor || 'primary'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {task.title}
+                          </h3>
+                          {task.course && (
+                            <Badge variant="outline" className="text-xs">
+                              {task.course}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-1">{task.workloadReason || task.description}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Due: {task.dueDate || 'No due date'}</span>
+                          <span>Est: {task.estimatedHours || 0}h</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                          {task.title}
-                        </h3>
-                        <Badge variant="outline" className="text-xs">
-                          {task.course}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">{task.workloadReason}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Due: {task.dueDate}</span>
-                        <span>Est: {task.estimatedHours}h</span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {task.priority || 'medium'}
+                      </Badge>
+                      {task.completed && (
+                        <CheckCircle className="h-5 w-5 text-success" />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {task.priority}
-                    </Badge>
-                    {task.completed && (
-                      <CheckCircle className="h-5 w-5 text-success" />
-                    )}
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-8 text-center">
+                  <div>
+                    <Target className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No tasks yet</p>
+                    <p className="text-xs text-muted-foreground">Upload schedule to get AI prioritization</p>
                   </div>
                 </div>
-              )))}
+              )}
             </CardContent>
           </Card>
         </div>
@@ -475,42 +402,50 @@ export const Dashboard = () => {
                 <Brain className="h-8 w-8 animate-pulse text-primary mr-3" />
                 <span className="text-muted-foreground">AI optimizing your study blocks...</span>
               </div>
-            ) : (
+            ) : (aiStudyBlocks && aiStudyBlocks.length > 0) ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {(aiStudyBlocks.length > 0 ? aiStudyBlocks : suggestedStudyBlocks).map((block: any, index: number) => (
-                <div key={block.id} className={`p-4 rounded-lg ${
-                  index === 0 
-                    ? 'bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20'
-                    : index === 1
-                      ? 'bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20'
-                      : 'bg-gradient-to-br from-muted/50 to-muted border border-border'
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-foreground">{block.title}</h4>
-                    <Badge className={
-                      block.priority === 'Optimal' 
-                        ? 'bg-primary text-primary-foreground'
-                        : block.priority === 'Good'
-                          ? 'bg-secondary text-secondary-foreground'
-                          : 'bg-outline text-foreground'
-                    }>
-                      {block.priority}
-                    </Badge>
+                {aiStudyBlocks.map((block: any, index: number) => (
+                  <div key={block.id} className={`p-4 rounded-lg ${
+                    index === 0 
+                      ? 'bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20'
+                      : index === 1
+                        ? 'bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20'
+                        : 'bg-gradient-to-br from-muted/50 to-muted border border-border'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-foreground">{block.title}</h4>
+                      <Badge className={
+                        block.priority === 'Optimal' 
+                          ? 'bg-primary text-primary-foreground'
+                          : block.priority === 'Good'
+                            ? 'bg-secondary text-secondary-foreground'
+                            : 'bg-outline text-foreground'
+                      }>
+                        {block.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">{block.time} • {block.location}</p>
+                    <p className="text-sm text-foreground mb-3">{block.description}</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        className={index === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground'}
+                        onClick={() => handleAcceptStudyBlock(block)}
+                      >
+                        Accept
+                      </Button>
+                      <Button size="sm" variant="outline">Modify</Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">{block.time} • {block.location}</p>
-                  <p className="text-sm text-foreground mb-3">{block.description}</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      className={index === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground'}
-                      onClick={() => handleAcceptStudyBlock(block)}
-                    >
-                      Accept
-                    </Button>
-                    <Button size="sm" variant="outline">Modify</Button>
-                  </div>
-                </div>
                 ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-8 text-center">
+                <div>
+                  <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No study blocks suggested yet</p>
+                  <p className="text-xs text-muted-foreground">AI will optimize study times after analyzing your schedule</p>
+                </div>
               </div>
             )}
           </CardContent>
