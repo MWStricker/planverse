@@ -15,7 +15,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'tasks', label: 'Tasks', icon: Target },
-    { id: 'upload', label: 'OCR Upload', icon: Upload },
+    { id: 'upload', label: 'Image Upload', icon: Upload },
     { id: 'courses', label: 'Courses', icon: BookOpen },
     { id: 'analytics', label: 'Time Analytics', icon: Clock },
   ];
