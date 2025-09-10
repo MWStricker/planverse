@@ -265,6 +265,8 @@ const Calendar = () => {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500" />
           <span>High Priority</span>
+          <div className="w-3 h-3 rounded-full bg-orange-500" />
+          <span>Medium Priority</span>
           <div className="w-3 h-3 rounded-full bg-green-500" />
           <span>Low Priority</span>
         </div>
