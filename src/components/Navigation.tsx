@@ -36,7 +36,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
           <img 
             src="/lovable-uploads/a3ff9ac9-6bac-424f-a880-22b8b42de5c3.png" 
             alt="CourseConnect Logo" 
-            className="w-12 h-12 object-contain"
+            className="w-16 h-16 object-contain"
           />
           <div>
             <h1 className="text-lg font-bold text-foreground">CourseConnect</h1>
