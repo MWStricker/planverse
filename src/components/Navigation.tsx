@@ -40,11 +40,6 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
         </div>
       </div>
 
-      {/* Clock */}
-      <div className="px-4 pb-4">
-        <AnalogClock />
-      </div>
-
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-3">
         {navItems.map((item) => {
@@ -140,6 +135,11 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
           >
             <Settings className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 ease-out" />
           </Button>
+        </div>
+        
+        {/* Digital Clock */}
+        <div className="mt-3">
+          <AnalogClock />
         </div>
       </div>
     </div>
