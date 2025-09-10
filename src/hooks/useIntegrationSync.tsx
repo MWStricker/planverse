@@ -6,11 +6,9 @@ import { useToast } from "@/components/ui/use-toast";
 interface IntegrationConnection {
   id: string;
   provider: string;
-  provider_id: string;
-  access_token: string;
-  refresh_token?: string;
-  token_expires_at?: string;
+  provider_id: string | null;
   is_active: boolean;
+  token_expires_at?: string | null;
   sync_settings: any;
 }
 
@@ -27,7 +25,7 @@ export const useIntegrationSync = () => {
     try {
       const { data, error } = await supabase
         .from('calendar_connections')
-        .select('*')
+        .select('id, provider, provider_id, is_active, sync_settings, token_expires_at')
         .eq('user_id', user.id)
         .eq('is_active', true);
 
