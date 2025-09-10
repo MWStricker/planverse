@@ -7,7 +7,7 @@ interface HeaderProps {
 export const Header = ({ className = "" }: HeaderProps) => {
   return (
     <header className={`w-full bg-card border-b border-border ${className} relative`}>
-      <div className="fixed top-2 left-0 w-48 h-48 overflow-hidden flex items-start justify-start z-50">
+      <div className="fixed top-8 left-0 w-48 h-48 overflow-hidden flex items-start justify-start z-50">
         <img 
           src="/lovable-uploads/a3ff9ac9-6bac-424f-a880-22b8b42de5c3.png" 
           alt="CourseConnect Logo" 
