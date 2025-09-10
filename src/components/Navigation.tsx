@@ -31,8 +31,8 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
     <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Logo */}
       <div className="p-4 pt-1 border-b border-border">
-        <div className="flex items-start gap-3">
-          <div>
+        <div className="flex justify-center items-center">
+          <div className="text-center">
             <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
             <p className="text-xs text-muted-foreground">Smart Scheduling</p>
           </div>
