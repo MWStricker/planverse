@@ -31,9 +31,9 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   return (
     <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 overflow-hidden rounded-lg">
+      <div className="p-4 pt-2 border-b border-border">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 overflow-hidden rounded-lg mt-1">
             <img 
               src="/lovable-uploads/a3ff9ac9-6bac-424f-a880-22b8b42de5c3.png" 
               alt="CourseConnect Logo" 
