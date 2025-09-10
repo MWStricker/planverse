@@ -49,24 +49,24 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
             <Button
               key={item.id}
               variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start h-14 text-base transition-all duration-300 group relative overflow-hidden ${
+              className={`w-full justify-start h-14 text-base transition-all duration-200 ease-out group relative overflow-hidden ${
                 isActive 
                   ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-l-primary-foreground/20' 
-                  : 'text-foreground hover:bg-muted/30 hover:scale-[1.02]'
+                  : 'text-foreground hover:bg-muted/30 hover:scale-[1.01]'
               }`}
               onClick={() => onPageChange(item.id)}
             >
               {/* Shimmer effect for active items */}
               {isActive && (
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
               )}
               
-              <Icon className={`h-5 w-5 mr-3 transition-all duration-300 ${
+              <Icon className={`h-5 w-5 mr-3 transition-all duration-200 ease-out ${
                 isActive 
                   ? 'text-primary-foreground scale-110' 
-                  : 'group-hover:scale-110'
+                  : 'group-hover:scale-105'
               }`} />
-              <span className={`font-medium transition-all duration-300 ${
+              <span className={`font-medium transition-all duration-150 ease-out ${
                 isActive ? 'tracking-wide' : ''
               }`}>
                 {item.label}
@@ -82,7 +82,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
               
               {/* Glow effect for active items */}
               {isActive && (
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 group-hover:blur-md transition-all duration-300"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-all duration-300 ease-out"></div>
               )}
             </Button>
           );
@@ -121,18 +121,18 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="flex-1 hover:bg-gradient-to-r hover:from-muted/50 hover:to-muted hover:scale-105 transition-all duration-300 group"
+            className="flex-1 hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group"
           >
-            <Bell className="h-4 w-4 mr-2 group-hover:animate-pulse group-hover:text-primary transition-colors" />
-            <span className="group-hover:tracking-wide transition-all duration-300">Alerts</span>
+            <Bell className="h-4 w-4 mr-2 transition-all duration-200 ease-out" />
+            <span className="transition-all duration-150 ease-out">Alerts</span>
           </Button>
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => onPageChange('settings')}
-            className="hover:bg-gradient-to-r hover:from-muted/50 hover:to-muted hover:scale-110 hover:rotate-12 transition-all duration-300 group"
+            className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group"
           >
-            <Settings className="h-4 w-4 group-hover:rotate-180 group-hover:text-primary transition-all duration-500" />
+            <Settings className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 ease-out" />
           </Button>
         </div>
       </div>
