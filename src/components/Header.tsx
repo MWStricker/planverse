@@ -17,9 +17,7 @@ export const Header = ({ className = "" }: HeaderProps) => {
       
       <div className="container mx-auto px-6 py-6">
         <div className="flex justify-center">
-          <h1 className="text-5xl font-semibold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent hover-scale">
-            Course Connect
-          </h1>
+          <h1 className="text-6xl font-bold text-foreground">Course Connect</h1>
         </div>
       </div>
     </header>
