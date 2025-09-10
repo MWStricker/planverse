@@ -73,7 +73,7 @@ export const OCRUpload = () => {
 
     try {
       // Compress image on client for faster uploads
-      const { base64, mimeType } = await imageFileToBase64Compressed(file, 1600, 'image/jpeg', 0.82);
+      const { base64, mimeType } = await imageFileToBase64Compressed(file, 1200, 'image/jpeg', 0.75);
 
       try {
         // Call our AI OCR edge function

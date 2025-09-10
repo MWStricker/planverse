@@ -8,9 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 // Compress an image file on the client and return base64 (no data URL prefix)
 export async function imageFileToBase64Compressed(
   file: File,
-  maxDimension = 1600,
+  maxDimension = 1200,
   outputMime: 'image/jpeg' | 'image/png' = 'image/jpeg',
-  quality = 0.8
+  quality = 0.75
 ): Promise<{ base64: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
