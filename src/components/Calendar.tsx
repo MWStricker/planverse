@@ -93,6 +93,13 @@ const Calendar = () => {
     }
   }, [user, currentDate]);
 
+  // Ensure weather loads once geolocation resolves (even after initial render)
+  useEffect(() => {
+    if (user && userLocation) {
+      fetchWeatherData().catch((error) => console.error('Weather refetch failed:', error));
+    }
+  }, [user, userLocation]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
