@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +88,16 @@ export const Settings = () => {
   const { preferences, updatePreference } = usePreferences();
   const { profile, loading: profileLoading, uploading, updateProfile, uploadAvatar } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Local state for profile editing
+  const [editedProfile, setEditedProfile] = useState({
+    display_name: '',
+    school: '',
+    major: '',
+    campus_location: '',
+    timezone: 'America/New_York'
+  });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -112,7 +122,30 @@ export const Settings = () => {
       default: return 'secondary';
     }
   };
+  
+  // Sync profile data to local state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setEditedProfile({
+        display_name: profile.display_name || '',
+        school: profile.school || '',
+        major: profile.major || '',
+        campus_location: profile.campus_location || '',
+        timezone: profile.timezone || 'America/New_York'
+      });
+      setHasUnsavedChanges(false);
+    }
+  }, [profile]);
 
+  const handleProfileChange = (field: string, value: string) => {
+    setEditedProfile(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSaveProfile = async () => {
+    await updateProfile(editedProfile);
+    setHasUnsavedChanges(false);
+  };
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'connected': return <CheckCircle className="h-4 w-4" />;
@@ -583,8 +616,8 @@ export const Settings = () => {
                 <Label htmlFor="display_name">Display Name</Label>
                 <Input
                   id="display_name"
-                  value={profile?.display_name || ''}
-                  onChange={(e) => updateProfile({ display_name: e.target.value })}
+                  value={editedProfile.display_name}
+                  onChange={(e) => handleProfileChange('display_name', e.target.value)}
                   placeholder="Enter your display name"
                 />
               </div>
@@ -616,8 +649,8 @@ export const Settings = () => {
                 <Label htmlFor="school">School/University</Label>
                 <Input
                   id="school"
-                  value={profile?.school || ''}
-                  onChange={(e) => updateProfile({ school: e.target.value })}
+                  value={editedProfile.school}
+                  onChange={(e) => handleProfileChange('school', e.target.value)}
                   placeholder="e.g. University of California, Berkeley"
                 />
               </div>
@@ -625,8 +658,8 @@ export const Settings = () => {
               <div className="space-y-2">
                 <Label htmlFor="major">Major/Field of Study</Label>
                 <Select 
-                  value={profile?.major || ''} 
-                  onValueChange={(value) => updateProfile({ major: value })}
+                  value={editedProfile.major} 
+                  onValueChange={(value) => handleProfileChange('major', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your major" />
@@ -654,8 +687,8 @@ export const Settings = () => {
                 <Label htmlFor="campus_location">Campus Location</Label>
                 <Input
                   id="campus_location"
-                  value={profile?.campus_location || ''}
-                  onChange={(e) => updateProfile({ campus_location: e.target.value })}
+                  value={editedProfile.campus_location}
+                  onChange={(e) => handleProfileChange('campus_location', e.target.value)}
                   placeholder="e.g. Main Campus, Downtown Campus"
                 />
               </div>
@@ -673,8 +706,8 @@ export const Settings = () => {
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
                 <Select 
-                  value={profile?.timezone || 'America/New_York'} 
-                  onValueChange={(value) => updateProfile({ timezone: value })}
+                  value={editedProfile.timezone} 
+                  onValueChange={(value) => handleProfileChange('timezone', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -691,6 +724,29 @@ export const Settings = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Save Button */}
+          {hasUnsavedChanges && (
+            <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                      You have unsaved changes
+                    </span>
+                  </div>
+                  <Button 
+                    onClick={handleSaveProfile}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    Save Changes
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
