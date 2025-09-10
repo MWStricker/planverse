@@ -41,7 +41,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
             />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">CourseConnect</h1>
+            <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
             <p className="text-xs text-muted-foreground">Smart Scheduling</p>
           </div>
         </div>
