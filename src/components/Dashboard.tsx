@@ -334,7 +334,7 @@ export const Dashboard = () => {
             <p className="text-muted-foreground">Here's your day at a glance</p>
           </div>
           <div className="flex gap-3">
-            <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all">
+            <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all px-8">
               <Plus className="h-4 w-4 mr-2" />
               Add Task
             </Button>
