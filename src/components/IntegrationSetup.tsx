@@ -65,6 +65,7 @@ export const IntegrationSetup = () => {
   const handleGoogleCalendarConnect = async () => {
     try {
       setIsConnecting(true);
+      console.log('Starting Google Calendar connection...');
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -78,19 +79,23 @@ export const IntegrationSetup = () => {
         },
       });
 
+      console.log('OAuth response:', { data, error });
+
       if (error) {
         console.error('Google OAuth error:', error);
         toast({
           title: "Connection Failed",
-          description: error.message || "Failed to connect to Google Calendar. Please try again.",
+          description: `${error.message} - Please check that Google OAuth is configured in Supabase.`,
           variant: "destructive",
         });
+      } else {
+        console.log('OAuth request successful, should redirect to Google...');
       }
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({
         title: "Connection Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: "An unexpected error occurred. Please check console for details.",
         variant: "destructive",
       });
     } finally {
