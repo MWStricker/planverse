@@ -267,15 +267,21 @@ const Auth = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02]" 
+                  className="w-full h-12 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary transition-all duration-500 shadow-lg hover:shadow-2xl hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group" 
                   disabled={loading || !emailValid}
                 >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <span className="animate-pulse">Signing In...</span>
+                    </>
                   ) : (
-                    <User className="mr-2 h-4 w-4" />
+                    <>
+                      <User className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
+                      <span className="font-medium">Sign In</span>
+                    </>
                   )}
-                  {loading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
             </TabsContent>
@@ -373,15 +379,21 @@ const Auth = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02]" 
+                  className="w-full h-12 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-600 transition-all duration-500 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-muted disabled:to-muted relative overflow-hidden group text-white" 
                   disabled={loading || !emailValid || passwordStrength < 2}
                 >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <span className="animate-pulse">Creating Account...</span>
+                    </>
                   ) : (
-                    <User className="mr-2 h-4 w-4" />
+                    <>
+                      <User className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
+                      <span className="font-medium">Create Account</span>
+                    </>
                   )}
-                  {loading ? "Creating Account..." : "Create Account"}
                 </Button>
               </form>
             </TabsContent>
@@ -399,11 +411,12 @@ const Auth = () => {
             
             <Button
               variant="outline"
-              className="w-full mt-6 h-11 border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group"
+              className="w-full mt-6 h-12 border-2 border-border/50 hover:border-border hover:bg-muted/30 transition-all duration-400 group relative overflow-hidden hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
               onClick={handleGoogleSignIn}
               disabled={loading}
             >
-              <svg className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" viewBox="0 0 24 24">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 via-blue-50/30 to-blue-50/0 -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
+              <svg className="mr-3 h-5 w-5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -422,9 +435,12 @@ const Auth = () => {
                 />
               </svg>
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="animate-pulse">Connecting...</span>
+                </div>
               ) : (
-                "Continue with Google"
+                <span className="font-medium group-hover:text-foreground transition-colors">Continue with Google</span>
               )}
             </Button>
           </div>
