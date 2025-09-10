@@ -107,7 +107,7 @@ export const Settings = () => {
     'damn', 'hell', 'shit', 'fuck', 'bitch', 'ass', 'crap', 'piss', 'bastard', 'idiot', 'stupid',
     'asshole', 'dumbass', 'jackass', 'dickhead', 'motherfucker', 'bullshit', 'goddamn', 'jesus christ',
     'wtf', 'stfu', 'gtfo', 'fml', 'omfg', 'lmfao', 'rotfl', 'dildo', 'penis', 'vagina', 'boobs',
-    'tits', 'cock', 'dick', 'pussy', 'whore', 'slut', 'hooker', 'prostitute', 'sex', 'porn',
+    'tits', 'cock', 'dick', 'pussy', 'whore', 'slut', 'hooker', 'prostitute', 'sex', 'porn', 'cunt',
     'retard', 'retarded', 'gay', 'faggot', 'homo', 'lesbian', 'dyke', 'tranny', 'nigger', 'nigga',
     'spic', 'wetback', 'chink', 'gook', 'jap', 'kike', 'wop', 'honky', 'cracker', 'redneck'
   ];
