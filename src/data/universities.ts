@@ -2,6 +2,11 @@
 import harvardRealLogo from '@/assets/university-logos/harvard-real.png';
 import mitRealLogo from '@/assets/university-logos/mit-real.png';
 import uclaRealLogo from '@/assets/university-logos/ucla-real.png';
+import alabamaRealLogo from '@/assets/university-logos/alabama-real.svg';
+import asuRealLogo from '@/assets/university-logos/asu-real2.png';
+import uabRealLogo from '@/assets/university-logos/uab-real.png';
+import arkansasRealLogo from '@/assets/university-logos/arkansas-real.png';
+import auburnRealLogo from '@/assets/university-logos/auburn-real.png';
 
 // Import AI-generated logos (temporary until real logos are obtained)
 import stanfordLogo from '@/assets/university-logos/stanford.png';
@@ -43,16 +48,16 @@ const createUniversity = (data: University): University => data;
 
 export const universities: University[] = [
   // PUBLIC UNIVERSITIES IN ALPHABETICAL ORDER
-  createUniversity({ id: 'alabama', name: 'University of Alabama', shortName: 'Alabama', logo: alabamaLogo, type: 'state', state: 'AL', isPublic: true }),
-  createUniversity({ id: 'alabama-birmingham', name: 'University of Alabama at Birmingham', shortName: 'UAB', type: 'state', state: 'AL', isPublic: true }),
+  createUniversity({ id: 'alabama', name: 'University of Alabama', shortName: 'Alabama', logo: alabamaRealLogo, type: 'state', state: 'AL', isPublic: true }),
+  createUniversity({ id: 'alabama-birmingham', name: 'University of Alabama at Birmingham', shortName: 'UAB', logo: uabRealLogo, type: 'state', state: 'AL', isPublic: true }),
   createUniversity({ id: 'alabama-huntsville', name: 'University of Alabama in Huntsville', shortName: 'UAH', type: 'state', state: 'AL', isPublic: true }),
   createUniversity({ id: 'alaska-anchorage', name: 'University of Alaska Anchorage', shortName: 'UAA', type: 'state', state: 'AK', isPublic: true }),
   createUniversity({ id: 'alaska-fairbanks', name: 'University of Alaska Fairbanks', shortName: 'UAF', type: 'state', state: 'AK', isPublic: true }),
   createUniversity({ id: 'arizona', name: 'University of Arizona', shortName: 'Arizona', type: 'state', state: 'AZ', isPublic: true }),
-  createUniversity({ id: 'arizona-state', name: 'Arizona State University', shortName: 'ASU', logo: asuLogo, type: 'state', state: 'AZ', isPublic: true }),
-  createUniversity({ id: 'arkansas', name: 'University of Arkansas', shortName: 'Arkansas', type: 'state', state: 'AR', isPublic: true }),
+  createUniversity({ id: 'arizona-state', name: 'Arizona State University', shortName: 'ASU', logo: asuRealLogo, type: 'state', state: 'AZ', isPublic: true }),
+  createUniversity({ id: 'arkansas', name: 'University of Arkansas', shortName: 'Arkansas', logo: arkansasRealLogo, type: 'state', state: 'AR', isPublic: true }),
   createUniversity({ id: 'arkansas-little-rock', name: 'University of Arkansas at Little Rock', shortName: 'UALR', type: 'state', state: 'AR', isPublic: true }),
-  createUniversity({ id: 'auburn', name: 'Auburn University', shortName: 'Auburn', logo: auburnLogo, type: 'state', state: 'AL', isPublic: true }),
+  createUniversity({ id: 'auburn', name: 'Auburn University', shortName: 'Auburn', logo: auburnRealLogo, type: 'state', state: 'AL', isPublic: true }),
   createUniversity({ id: 'ball-state', name: 'Ball State University', shortName: 'Ball State', type: 'state', state: 'IN', isPublic: true }),
   createUniversity({ id: 'boise-state', name: 'Boise State University', shortName: 'Boise State', type: 'state', state: 'ID', isPublic: true }),
   createUniversity({ id: 'bowling-green', name: 'Bowling Green State University', shortName: 'BGSU', type: 'state', state: 'OH', isPublic: true }),
