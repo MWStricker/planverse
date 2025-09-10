@@ -164,27 +164,27 @@ export const Dashboard = () => {
 
         if (response.success && response.events && response.events.length > 0) {
           // Add all extracted events to the database
-          const eventsToInsert = response.events.map((event: any) => {
-            // Robust local date construction to avoid timezone day shifts
-            const [year, month, day] = String(event.date || '').split('-').map((v: string) => parseInt(v, 10));
-            const [startHour, startMinute] = String(event.startTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
-            const [endHour, endMinute] = String(event.endTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
+            const eventsToInsert = response.events.map((event: any) => {
+              // Avoid timezone shifts by constructing ISO strings directly
+              const datePart = String(event.date || '').slice(0, 10); // YYYY-MM-DD
+              const startTimePart = String(event.startTime || '00:00').slice(0, 5); // HH:MM
+              const endTimePart = String(event.endTime || '00:00').slice(0, 5); // HH:MM
+              
+              const startTimeISO = `${datePart}T${startTimePart}:00.000Z`;
+              const endTimeISO = `${datePart}T${endTimePart}:00.000Z`;
 
-            const startTime = new Date(year || 1970, (month || 1) - 1, day || 1, startHour || 0, startMinute || 0, 0, 0);
-            const endTime = new Date(year || 1970, (month || 1) - 1, day || 1, endHour || 0, endMinute || 0, 0, 0);
-
-            return {
-              user_id: user!.id,
-              title: event.title,
-              start_time: startTime.toISOString(),
-              end_time: endTime.toISOString(),
-              location: event.location || '',
-              description: `Extracted from image with ${event.confidence}% confidence`,
-              event_type: 'class',
-              source_provider: 'ocr_upload',
-              recurrence_rule: event.recurrence || null
-            };
-          });
+              return {
+                user_id: user!.id,
+                title: event.title,
+                start_time: startTimeISO,
+                end_time: endTimeISO,
+                location: event.location || '',
+                description: `Extracted from image with ${event.confidence}% confidence`,
+                event_type: 'class',
+                source_provider: 'ocr_upload',
+                recurrence_rule: event.recurrence || null
+              };
+            });
 
           const { error: insertError } = await supabase
             .from('events')
@@ -216,18 +216,19 @@ export const Dashboard = () => {
 
           if (textResponse.success && textResponse.events && textResponse.events.length > 0) {
             const eventsToInsert = textResponse.events.map((event: any) => {
-              const [year, month, day] = String(event.date || '').split('-').map((v: string) => parseInt(v, 10));
-              const [startHour, startMinute] = String(event.startTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
-              const [endHour, endMinute] = String(event.endTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
-
-              const startTime = new Date(year || 1970, (month || 1) - 1, day || 1, startHour || 0, startMinute || 0, 0, 0);
-              const endTime = new Date(year || 1970, (month || 1) - 1, day || 1, endHour || 0, endMinute || 0, 0, 0);
+              // Avoid timezone shifts by constructing ISO strings directly  
+              const datePart = String(event.date || '').slice(0, 10); // YYYY-MM-DD
+              const startTimePart = String(event.startTime || '00:00').slice(0, 5); // HH:MM
+              const endTimePart = String(event.endTime || '00:00').slice(0, 5); // HH:MM
+              
+              const startTimeISO = `${datePart}T${startTimePart}:00.000Z`;
+              const endTimeISO = `${datePart}T${endTimePart}:00.000Z`;
 
               return {
                 user_id: user!.id,
                 title: event.title,
-                start_time: startTime.toISOString(),
-                end_time: endTime.toISOString(),
+                start_time: startTimeISO,
+                end_time: endTimeISO,
                 location: event.location || '',
                 description: `Extracted via OCR fallback with ${event.confidence}% confidence`,
                 event_type: 'class',

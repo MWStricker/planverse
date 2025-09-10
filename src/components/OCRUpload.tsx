@@ -192,13 +192,13 @@ export const OCRUpload = () => {
     }
 
     try {
-      // Parse the date and time using local components to avoid timezone shifts
-      const [year, month, day] = String(event.date || '').split('-').map((v: string) => parseInt(v, 10));
-      const [startHour, startMinute] = String(event.startTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
-      const [endHour, endMinute] = String(event.endTime || '00:00').split(':').map((v: string) => parseInt(v, 10));
-
-      const startTime = new Date(year || 1970, (month || 1) - 1, day || 1, startHour || 0, startMinute || 0, 0, 0);
-      const endTime = new Date(year || 1970, (month || 1) - 1, day || 1, endHour || 0, endMinute || 0, 0, 0);
+      // Parse the date and time without timezone conversion to avoid day shifts
+      const datePart = String(event.date || '').slice(0, 10); // YYYY-MM-DD
+      const startTimePart = String(event.startTime || '00:00').slice(0, 5); // HH:MM
+      const endTimePart = String(event.endTime || '00:00').slice(0, 5); // HH:MM
+      
+      const startTimeISO = `${datePart}T${startTimePart}:00.000Z`;
+      const endTimeISO = `${datePart}T${endTimePart}:00.000Z`;
 
       // Add to events table
       const { error } = await supabase
@@ -206,8 +206,8 @@ export const OCRUpload = () => {
         .insert({
           user_id: user.id,
           title: event.title,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
+          start_time: startTimeISO,
+          end_time: endTimeISO,
           location: event.location,
           description: `Extracted from image with ${event.confidence}% confidence`,
           event_type: 'class',
