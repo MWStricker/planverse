@@ -440,9 +440,6 @@ const Calendar = () => {
                 {highestPriority > 0 && isCurrentMonth && (
                   <div className="flex items-center gap-1">
                     <div className={`w-2 h-2 rounded-full ${getPriorityColor(highestPriority)}`} />
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {getPriorityLabel(highestPriority)}
-                    </span>
                   </div>
                 )}
 
