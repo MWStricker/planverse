@@ -32,15 +32,17 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
     <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Logo */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-4">
-          <img 
-            src="/lovable-uploads/a3ff9ac9-6bac-424f-a880-22b8b42de5c3.png" 
-            alt="CourseConnect Logo" 
-            className="w-32 h-32 object-contain"
-          />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 overflow-hidden rounded-lg">
+            <img 
+              src="/lovable-uploads/a3ff9ac9-6bac-424f-a880-22b8b42de5c3.png" 
+              alt="CourseConnect Logo" 
+              className="w-16 h-16 object-cover object-center scale-150"
+            />
+          </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">CourseConnect</h1>
-            <p className="text-sm text-muted-foreground">Smart Scheduling</p>
+            <h1 className="text-lg font-bold text-foreground">CourseConnect</h1>
+            <p className="text-xs text-muted-foreground">Smart Scheduling</p>
           </div>
         </div>
       </div>
