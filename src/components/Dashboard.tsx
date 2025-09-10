@@ -42,10 +42,22 @@ export const Dashboard = () => {
   const [aiPriorities, setAiPriorities] = useState<any[]>([]);
   const [aiStudyBlocks, setAiStudyBlocks] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [userTasks, setUserTasks] = useState<any[]>([]);
   
-  const completedTasks = mockTasks.filter(task => task.completed).length;
-  const totalTasks = mockTasks.length;
-  const completionRate = Math.round((completedTasks / totalTasks) * 100);
+  const completedTasks = userTasks.filter(task => task.completion_status === 'completed').length;
+  const totalTasks = userTasks.length;
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // Calculate free time and due items from real data
+  const freeTimeToday = userEvents.length > 0 ? "4.5 hrs" : "N/A";
+  const dueThisWeek = userTasks.length > 0 ? userTasks.filter(task => {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    const weekFromNow = new Date();
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    return dueDate <= weekFromNow && task.completion_status !== 'completed';
+  }).length : "N/A";
 
   // Fetch and analyze data on component mount
   useEffect(() => {
@@ -72,26 +84,30 @@ export const Dashboard = () => {
         studySessions: studySessionsResult.data || []
       };
 
-      // Get AI analysis for daily schedule
-      const { data: scheduleAnalysis } = await supabase.functions.invoke('ai-schedule-analyzer', {
-        body: {
-          analysisType: 'daily_schedule',
-          data: userData
-        }
-      });
+      // Store the real data
+      setUserEvents(userData.events);
+      setUserTasks(userData.tasks);
 
-      if (scheduleAnalysis?.success) {
-        const analysis = scheduleAnalysis.analysis;
-        setAiSchedule(analysis.todaySchedule || todaySchedule);
-        setAiPriorities(analysis.priorityInsights || mockTasks);
-        setAiStudyBlocks(analysis.studyBlockSuggestions || suggestedStudyBlocks);
+      // Only run AI analysis if there's data to analyze
+      if (userData.events.length > 0 || userData.tasks.length > 0) {
+        // Get AI analysis for daily schedule
+        const { data: scheduleAnalysis } = await supabase.functions.invoke('ai-schedule-analyzer', {
+          body: {
+            analysisType: 'daily_schedule',
+            data: userData
+          }
+        });
+
+        if (scheduleAnalysis?.success) {
+          const analysis = scheduleAnalysis.analysis;
+          setAiSchedule(analysis.todaySchedule || []);
+          setAiPriorities(analysis.priorityInsights || []);
+          setAiStudyBlocks(analysis.studyBlockSuggestions || []);
+        }
       }
     } catch (error) {
       console.error('Error analyzing user data:', error);
-      // Fall back to mock data
-      setAiSchedule(todaySchedule);
-      setAiPriorities(mockTasks);
-      setAiStudyBlocks(suggestedStudyBlocks);
+      // No fallback to mock data
     } finally {
       setIsAnalyzing(false);
     }
@@ -215,7 +231,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Free Time Today</p>
-                  <p className="text-2xl font-bold text-foreground">4.5 hrs</p>
+                  <p className="text-2xl font-bold text-foreground">{freeTimeToday}</p>
                 </div>
               </div>
             </CardContent>
@@ -229,7 +245,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  <p className="text-2xl font-bold text-foreground">{completedTasks}/{totalTasks}</p>
+                  <p className="text-2xl font-bold text-foreground">{totalTasks > 0 ? `${completedTasks}/${totalTasks}` : "N/A"}</p>
                 </div>
               </div>
             </CardContent>
@@ -243,7 +259,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Due This Week</p>
-                  <p className="text-2xl font-bold text-foreground">7 items</p>
+                  <p className="text-2xl font-bold text-foreground">{dueThisWeek}</p>
                 </div>
               </div>
             </CardContent>
@@ -257,7 +273,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Weekly Progress</p>
-                  <p className="text-2xl font-bold text-foreground">{completionRate}%</p>
+                  <p className="text-2xl font-bold text-foreground">{totalTasks > 0 ? `${completionRate}%` : "N/A"}</p>
                 </div>
               </div>
             </CardContent>
