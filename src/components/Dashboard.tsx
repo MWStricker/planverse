@@ -133,10 +133,59 @@ export const Dashboard = () => {
     }
   };
 
-  // Fetch and analyze data on component mount
+  // Fetch and analyze data on component mount and set up real-time subscriptions
   useEffect(() => {
     if (user) {
       analyzeUserData();
+
+      // Set up real-time subscriptions for instant updates
+      const channel = supabase
+        .channel('dashboard-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            schema: 'public',
+            table: 'tasks',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            // Refresh data when tasks change
+            analyzeUserData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public', 
+            table: 'events',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            // Refresh data when events change
+            analyzeUserData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'study_sessions', 
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            // Refresh data when study sessions change
+            analyzeUserData();
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
