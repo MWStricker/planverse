@@ -335,9 +335,19 @@ const Calendar = () => {
   };
 
   const getTasksForDay = (day: Date) => {
-    return tasks.filter(task => 
+    const dayTasks = tasks.filter(task => 
       task.due_date && isSameDay(new Date(task.due_date), day)
     );
+    // Sort by priority (highest first), then by due date
+    return dayTasks.sort((a, b) => {
+      if (a.priority_score !== b.priority_score) {
+        return (b.priority_score || 0) - (a.priority_score || 0);
+      }
+      if (a.due_date && b.due_date) {
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      }
+      return 0;
+    });
   };
 
   const getEventsForDay = (day: Date) => {
@@ -420,14 +430,14 @@ const Calendar = () => {
           const isCurrentMonth = isSameMonth(day, currentDate);
 
           return (
-            <Card key={index} className={`min-h-[200px] p-2 transition-all duration-200 ${
+            <Card key={index} className={`min-h-[240px] max-h-[240px] p-2 transition-all duration-200 ${
               isToday(day) 
                 ? 'ring-2 ring-primary bg-primary/5' 
                 : isCurrentMonth 
                   ? 'bg-card hover:bg-accent/50' 
                   : 'bg-muted/30'
             }`}>
-              <CardContent className="p-0 space-y-1">
+              <CardContent className="p-0 space-y-1 h-full flex flex-col">
                 {/* Date and Weather */}
                 <div className="flex items-center justify-between text-sm">
                   <span className={`font-semibold ${
@@ -455,9 +465,9 @@ const Calendar = () => {
 
                 {/* Only show content for current month days */}
                 {isCurrentMonth && (
-                  <>
-                    {/* Tasks with individual priority indicators */}
-                    {dayTasks.slice(0, 2).map(task => (
+                  <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+                    {/* Tasks with individual priority indicators - ALL tasks shown */}
+                    {dayTasks.map(task => (
                       <div key={task.id} className="flex items-center gap-1">
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
                         <Badge variant="secondary" className="text-xs w-fit justify-start overflow-hidden group">
@@ -469,26 +479,19 @@ const Calendar = () => {
                     ))}
 
                     {/* Events */}
-                    {dayEvents.slice(0, 1).map(event => (
+                    {dayEvents.map(event => (
                       <Badge key={event.id} variant="outline" className="text-xs w-full justify-start truncate">
                         📅 {event.title}
                       </Badge>
                     ))}
 
                     {/* Study Sessions */}
-                    {daySessions.slice(0, 1).map(session => (
+                    {daySessions.map(session => (
                       <Badge key={session.id} variant="default" className="text-xs w-full justify-start truncate">
                         📚 {session.title}
                       </Badge>
                     ))}
-
-                    {/* Overflow indicator */}
-                    {(dayTasks.length + dayEvents.length + daySessions.length) > 4 && (
-                      <div className="text-xs text-muted-foreground text-center">
-                        +{(dayTasks.length + dayEvents.length + daySessions.length) - 4} more
-                      </div>
-                    )}
-                  </>
+                  </div>
                 )}
               </CardContent>
             </Card>
