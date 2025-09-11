@@ -237,7 +237,8 @@ COLUMN ALIGNMENT RULES:
 
 OUTPUT RULES:
 - Extract EVERYTHING visible. If an item has no time visible, put it in tasks (not events).
-- Use 12-hour time only if the image clearly shows a time (e.g., 3:15 PM). If 24h is shown, convert to 12-hour.
+- ALL TIMES must be in 12-hour format with AM/PM (e.g., "2:30 PM", "11:59 PM")
+- If you see 24-hour time (e.g., "14:30"), convert it to 12-hour format ("2:30 PM")
 - Keep titles as shown (trimmed).`;
 
     const contentParts: any[] = [];
@@ -378,6 +379,23 @@ OUTPUT RULES:
       if (!month || !year) return null;
       return { month, year };
     }
+
+    // Convert 24-hour time to 12-hour format
+    function convertTo12Hour(time24: string | null): string | null {
+      if (!time24 || time24 === 'null') return null;
+      
+      const timeMatch = time24.match(/^(\d{1,2}):(\d{2})$/);
+      if (!timeMatch) return time24; // Return as-is if format doesn't match
+      
+      let hours = parseInt(timeMatch[1], 10);
+      const minutes = timeMatch[2];
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      
+      if (hours === 0) hours = 12; // 00:xx becomes 12:xx AM
+      else if (hours > 12) hours = hours - 12; // 13:xx becomes 1:xx PM
+      
+      return `${hours}:${minutes} ${ampm}`;
+    }
     function daysInMonth(year: number, month1to12: number) {
       return new Date(year, month1to12, 0).getDate();
     }
@@ -405,8 +423,8 @@ OUTPUT RULES:
         date: coerceDateToCanonical(
           event.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
         ),
-        startTime: event.startTime && event.startTime !== 'null' ? String(event.startTime).slice(0, 5) : null,
-        endTime: event.endTime && event.endTime !== 'null' ? String(event.endTime).slice(0, 5) : null,
+        startTime: convertTo12Hour(event.startTime && event.startTime !== 'null' ? String(event.startTime).slice(0, 5) : null),
+        endTime: convertTo12Hour(event.endTime && event.endTime !== 'null' ? String(event.endTime).slice(0, 5) : null),
         location: String(event.location || '').trim().slice(0, 120),
         recurrence: event.recurrence || null,
         eventType: String(event.eventType || 'class').trim().slice(0, 50),
@@ -425,7 +443,7 @@ OUTPUT RULES:
         dueDate: coerceDateToCanonical(
           task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`
         ),
-        dueTime: task.dueTime && task.dueTime !== 'null' ? String(task.dueTime).slice(0, 5) : null,
+        dueTime: convertTo12Hour(task.dueTime && task.dueTime !== 'null' ? String(task.dueTime).slice(0, 5) : null),
         courseName: String(task.courseName || '').trim().slice(0, 100),
         priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
         taskType: String(task.taskType || 'assignment').trim().slice(0, 50),
