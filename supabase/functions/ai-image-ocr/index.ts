@@ -122,12 +122,23 @@ serve(async (req) => {
       }
     }
 
-    const userImageContent = [
+    const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
+    const userImageContent = hasImage ? [
       { type: 'text', text: 'Extract all schedule information from this image. Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects). Be precise with dates, years, and times.' },
       { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } }
-    ];
+    ] : null;
 
     const userTextContent = `Source: ${ocrSource === 'gcv' ? 'Google Cloud Vision' : 'User text'}\n\nExtract all schedule information with precise DATES (YYYY-MM-DD), TIMES (HH:MM 24h), YEARS, assignment types, and course names from this text:\n\n${resolvedText || ''}`;
+
+    const useTextInput = (resolvedText && resolvedText.trim().length > 0);
+    const useImageInput = !useTextInput && hasImage;
+    if (!useTextInput && !useImageInput) {
+      const durationMs = Date.now() - tStart;
+      return new Response(
+        JSON.stringify({ success: false, error: 'No image or text provided for analysis', events: [], tasks: [], durationMs }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     async function callOpenAI(model: string, paramsType: 'legacy' | 'new', useText: boolean): Promise<Response> {
       const body: any = {
@@ -156,8 +167,8 @@ serve(async (req) => {
       });
     }
 
-    // Decide if we are using text (preferred if GCV OCR succeeded) or image path
-    const useText = (resolvedText && resolvedText.trim().length > 0);
+    // Decide content mode (already computed)
+    const useText = useTextInput;
 
     // Try fast path first
     let response = await callOpenAI('gpt-4o-mini', 'legacy', useText);
