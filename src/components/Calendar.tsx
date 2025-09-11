@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { getPriorityColor, getPriorityEmoji } from "@/lib/priority-utils";
 
 interface Task {
   id: string;
@@ -459,15 +460,6 @@ const Calendar = () => {
     return iconMap[iconCode] || <Sun className="h-4 w-4 text-yellow-500" />;
   };
 
-  const getPriorityColor = (priority: number) => {
-    switch (priority) {
-      case 4: return "bg-red-500"; // Critical
-      case 3: return "bg-orange-500"; // High
-      case 2: return "bg-yellow-500"; // Medium
-      case 1: return "bg-green-500"; // Low
-      default: return "bg-blue-500"; // Default
-    }
-  };
 
   const getPriorityLabel = (priority: number) => {
     switch (priority) {
@@ -628,12 +620,12 @@ const Calendar = () => {
                           <div className={`flex items-center gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors ${
                             completingTasks.has(task.id) ? 'bg-green-100 animate-pulse' : ''
                           }`}>
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 2)}`} />
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
                             <Badge variant="secondary" className={`text-xs w-fit justify-start overflow-hidden group ${
                               task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
                             } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
-                              <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
-                                📝 <span className="whitespace-nowrap text-xs">{task.title}</span>
+                               <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
+                                 {getPriorityEmoji(task.priority_score || 0)} <span className="whitespace-nowrap text-xs">{task.title}</span>
                                 {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
                               </div>
                             </Badge>

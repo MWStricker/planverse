@@ -18,6 +18,14 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  getPriorityConfig, 
+  getPriorityLabel, 
+  getPriorityBadgeVariant, 
+  getPriorityIcon,
+  getPriorityEmoji,
+  PRIORITY_CONFIG 
+} from "@/lib/priority-utils";
 
 interface Task {
   id: string;
@@ -271,39 +279,6 @@ export const Tasks = () => {
     }
     
     return 0; // Default no priority
-  };
-
-  const getPriorityLabel = (priority: number): string => {
-    switch (priority) {
-      case 4: return 'Critical';
-      case 3: return 'High';
-      case 2: return 'Medium';
-      case 1: return 'Low';
-      case 0: return 'No Priority';
-      default: return 'No Priority';
-    }
-  };
-
-  const getPriorityColor = (priority: number): "default" | "destructive" | "secondary" | "outline" => {
-    switch (priority) {
-      case 4: return 'destructive';
-      case 3: return 'default';
-      case 2: return 'secondary';
-      case 1: return 'outline';
-      case 0: return 'outline';
-      default: return 'outline';
-    }
-  };
-
-  const getPriorityIcon = (priority: number) => {
-    switch (priority) {
-      case 4: return <AlertTriangle className="h-4 w-4" />;
-      case 3: return <Clock className="h-4 w-4" />;
-      case 2: return <BookOpen className="h-4 w-4" />;
-      case 1: return <CheckCircle className="h-4 w-4" />;
-      case 0: return <div className="h-4 w-4 border border-muted-foreground rounded" />;
-      default: return <div className="h-4 w-4 border border-muted-foreground rounded" />;
-    }
   };
 
   const fetchTasks = async () => {
@@ -1138,7 +1113,7 @@ export const Tasks = () => {
                           <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
                         )}
                       </h3>
-                      <Badge variant={getPriorityColor(item.priority)} className="flex items-center gap-1">
+                      <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
                         {getPriorityIcon(item.priority)}
                         {getPriorityLabel(item.priority)}
                       </Badge>
