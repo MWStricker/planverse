@@ -652,7 +652,7 @@ const Calendar = () => {
                     {dayEvents.map(event => (
                       <Popover key={event.id}>
                         <PopoverTrigger asChild>
-                          <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors">
+                           <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors duration-300">
                             <Badge variant="outline" className="text-xs w-full justify-start truncate">
                               📅 {event.title}
                             </Badge>
