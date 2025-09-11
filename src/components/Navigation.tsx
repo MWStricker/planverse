@@ -202,9 +202,9 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
               {courses.length}
             </Badge>
           </div>
-          <ScrollArea className="h-40">
+          <ScrollArea className="h-60">
             <div className="space-y-2">
-              {courses.slice(0, 4).map((course, index) => (
+              {courses.map((course, index) => (
                 <Card 
                   key={course.code} 
                   className={`transition-all duration-200 hover:scale-[1.02] cursor-pointer border ${course.color}`}
@@ -217,7 +217,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{course.code}</p>
                           <p className="text-xs text-muted-foreground">
-                            {course.tasks.length} assignments
+                            {course.totalAssignments || course.events.length + course.tasks.length} assignments
                           </p>
                         </div>
                       </div>
