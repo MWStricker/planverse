@@ -79,6 +79,8 @@ export const Dashboard = () => {
   const [userTasks, setUserTasks] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   
   const toggleDescription = (taskId: string) => {
     const newExpanded = new Set(expandedDescriptions);
@@ -1150,7 +1152,11 @@ export const Dashboard = () => {
                 allTodaysItems.map((task, index) => (
                   <div 
                     key={task.id} 
-                    className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border"
+                    className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelectedTask(task);
+                      setIsTaskDetailOpen(true);
+                    }}
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <div className="flex items-center gap-2">
@@ -1315,6 +1321,116 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Task Detail Modal */}
+      <Dialog open={isTaskDetailOpen} onOpenChange={setIsTaskDetailOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${
+                selectedTask?.priority_score === 4 ? 'bg-destructive' :
+                selectedTask?.priority_score === 3 ? 'bg-primary' :
+                selectedTask?.priority_score === 1 ? 'bg-muted-foreground' :
+                'bg-secondary'
+              }`} />
+              {selectedTask?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedTask && (
+            <div className="space-y-4">
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2">
+                {selectedTask.source_provider === 'canvas' && (
+                  <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-700">
+                    Canvas
+                  </Badge>
+                )}
+                {selectedTask.event_type === 'assignment' && (
+                  <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                    Assignment
+                  </Badge>
+                )}
+                {selectedTask.course_name && (
+                  <Badge variant="outline">
+                    {selectedTask.course_name}
+                  </Badge>
+                )}
+                <Badge 
+                  variant={getPriorityColor(selectedTask.priority_score || 2)}
+                >
+                  {getPriorityLabel(selectedTask.priority_score || 2)} Priority
+                </Badge>
+              </div>
+
+              {/* Description */}
+              {selectedTask.description && (
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Description</h4>
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedTask.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Task Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Due Date & Time</h4>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {selectedTask.due_date 
+                        ? format(new Date(selectedTask.due_date), "PPP 'at' h:mm a")
+                        : "No due date set"
+                      }
+                    </span>
+                  </div>
+                </div>
+                
+                {selectedTask.estimated_hours && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-2">Estimated Time</h4>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Target className="h-4 w-4" />
+                      <span>{selectedTask.estimated_hours} hours</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Info */}
+              {(selectedTask.is_recurring || selectedTask.source_provider) && (
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Additional Information</h4>
+                  <div className="space-y-2">
+                    {selectedTask.is_recurring && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>
+                          Recurring {selectedTask.recurrence_type || 'task'}
+                          {selectedTask.recurrence_type === 'weekly' && selectedTask.recurrence_pattern?.days 
+                            ? ` on ${selectedTask.recurrence_pattern.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
+                            : ''
+                          }
+                        </span>
+                      </div>
+                    )}
+                    {selectedTask.source_provider && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <BookOpen className="h-4 w-4" />
+                        <span>Source: {selectedTask.source_provider}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
