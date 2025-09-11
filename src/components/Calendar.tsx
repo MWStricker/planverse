@@ -613,14 +613,14 @@ const Calendar = () => {
                             completingTasks.has(task.id) ? 'bg-green-100 animate-pulse' : ''
                           }`}>
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
-                            <Badge variant="secondary" className={`text-xs w-fit justify-start overflow-hidden group ${
-                              task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
-                            } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
-                               <div className="flex items-center gap-1 group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]">
-                                 {getPriorityEmoji(task.priority_score || 0)} <span className="whitespace-nowrap text-xs">{task.title}</span>
-                                {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
-                              </div>
-                            </Badge>
+                             <Badge variant="secondary" className={`text-xs w-full justify-start overflow-hidden group ${
+                               task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
+                             } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
+                                <div className="flex items-center gap-1 group-hover:animate-[scroll-left-right_4s_ease-in-out_infinite]">
+                                  {getPriorityEmoji(task.priority_score || 0)} <span className="whitespace-nowrap text-xs">{task.title}</span>
+                                 {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
+                               </div>
+                             </Badge>
                           </div>
                         </PopoverTrigger>
                         <PopoverContent className="w-48 p-2" align="start">
