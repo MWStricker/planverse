@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check, Link, Calendar as CalendarIcon, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +70,9 @@ const Calendar = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
+  const [canvasFeedUrl, setCanvasFeedUrl] = useState('');
+  const [isAddingFeed, setIsAddingFeed] = useState(false);
+  const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
   const [weather, setWeather] = useState<{ current?: WeatherData; forecast: { [key: string]: WeatherData } }>(() => {
     // Load cached weather data from localStorage on component mount
     try {
@@ -165,6 +169,12 @@ const Calendar = () => {
       fetchData();
     }
   }, [user, currentDate, showAllTasks]);
+
+  useEffect(() => {
+    if (user) {
+      fetchCalendarConnections();
+    }
+  }, [user]);
 
   // Ensure weather loads once geolocation resolves (even after initial render)
   useEffect(() => {
@@ -286,6 +296,117 @@ const Calendar = () => {
       });
     } catch (error) {
       console.error('Error fetching weather data:', error);
+    }
+  };
+
+  const fetchCalendarConnections = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('calendar_connections')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error fetching calendar connections:', error);
+      } else {
+        setCalendarConnections(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching calendar connections:', error);
+    }
+  };
+
+  const addCanvasFeed = async () => {
+    if (!canvasFeedUrl.trim() || !user) return;
+
+    try {
+      setIsAddingFeed(true);
+      
+      // Validate URL format (basic check for calendar feed URLs)
+      const url = canvasFeedUrl.trim();
+      if (!url.startsWith('http') || !url.includes('calendar')) {
+        toast({
+          title: "Invalid URL",
+          description: "Please enter a valid Canvas calendar feed URL",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('calendar_connections')
+        .insert({
+          user_id: user.id,
+          provider: 'canvas',
+          provider_id: url,
+          sync_settings: {
+            feed_url: url,
+            sync_type: 'assignments',
+            auto_sync: true
+          },
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding calendar feed:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add calendar feed",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Canvas calendar feed added successfully",
+        });
+        setCanvasFeedUrl('');
+        setIsAddingFeed(false);
+        fetchCalendarConnections();
+        // Optionally trigger a sync here
+      }
+    } catch (error) {
+      console.error('Error adding calendar feed:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingFeed(false);
+    }
+  };
+
+  const removeCalendarConnection = async (connectionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('calendar_connections')
+        .delete()
+        .eq('id', connectionId);
+
+      if (error) {
+        console.error('Error removing calendar connection:', error);
+        toast({
+          title: "Error",
+          description: "Failed to remove calendar connection",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Calendar connection removed successfully",
+        });
+        fetchCalendarConnections();
+      }
+    } catch (error) {
+      console.error('Error removing calendar connection:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -775,6 +896,80 @@ const Calendar = () => {
           );
         })}
       </div>
+
+      {/* Canvas Calendar Feed Section */}
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Link className="h-5 w-5 text-primary" />
+            Canvas Calendar Feed
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Existing Calendar Connections */}
+          {calendarConnections.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Connected Feeds:</h4>
+              {calendarConnections.map((connection) => (
+                <div key={connection.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-primary" />
+                    <div>
+                      <div className="text-sm font-medium">Canvas Calendar</div>
+                      <div className="text-xs text-muted-foreground">
+                        {connection.provider_id?.substring(0, 50)}...
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeCalendarConnection(connection.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Add New Feed */}
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Paste your Canvas calendar feed URL here..."
+                value={canvasFeedUrl}
+                onChange={(e) => setCanvasFeedUrl(e.target.value)}
+                className="flex-1"
+                disabled={isAddingFeed}
+              />
+              <Button 
+                onClick={addCanvasFeed} 
+                disabled={!canvasFeedUrl.trim() || isAddingFeed}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {isAddingFeed ? 'Adding...' : 'Add Feed'}
+              </Button>
+            </div>
+            
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p><strong>How to get your Canvas calendar feed URL:</strong></p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>Log into your Canvas account</li>
+                <li>Go to Calendar (from the main navigation)</li>
+                <li>Click on "Calendar Feed" in the right sidebar</li>
+                <li>Copy the calendar feed URL that appears</li>
+                <li>Paste it above and click "Add Feed"</li>
+              </ol>
+              <p className="text-orange-600 dark:text-orange-400 mt-2">
+                ⚠️ Only use calendar feeds from trusted sources. This URL will be used to sync your assignments.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Current Weather Display */}
       <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border">
