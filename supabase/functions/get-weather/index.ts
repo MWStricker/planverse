@@ -25,6 +25,7 @@ serve(async (req) => {
     }
 
     if (!openWeatherApiKey) {
+      console.error('OpenWeatherMap API key not found in environment variables');
       return new Response(JSON.stringify({ error: 'OpenWeatherMap API key not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -32,13 +33,20 @@ serve(async (req) => {
     }
 
     // Fetch current weather (in Fahrenheit)
+    console.log(`Fetching weather for lat: ${lat}, lon: ${lon}`);
     const currentWeatherResponse = await fetch(
       `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=imperial`
     );
 
     if (!currentWeatherResponse.ok) {
-      console.error('OpenWeatherMap API error:', await currentWeatherResponse.text());
-      return new Response(JSON.stringify({ error: 'Failed to fetch weather data' }), {
+      const errorText = await currentWeatherResponse.text();
+      console.error('OpenWeatherMap API error:', errorText);
+      console.error('Status:', currentWeatherResponse.status);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to fetch weather data',
+        details: errorText,
+        status: currentWeatherResponse.status 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
