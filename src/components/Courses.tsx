@@ -332,7 +332,7 @@ export const Courses = () => {
                   </CardHeader>
                 </CollapsibleTrigger>
                 
-                <CollapsibleContent className="overflow-hidden transition-all duration-300 ease-in-out data-[state=closed]:animate-[collapsibleSlideUp_300ms_ease-in-out] data-[state=open]:animate-[collapsibleSlideDown_300ms_ease-in-out]">
+                <CollapsibleContent className="overflow-hidden transition-all duration-300 ease-in-out">
                   <CardContent className="space-y-4">
                  {allAssignments.length > 0 ? (
                    <div className="space-y-3">
