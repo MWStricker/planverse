@@ -261,18 +261,16 @@ export const Tasks = () => {
       return 1; // Low
     }
     
-    // Default priority based on due date proximity
+    // Only assign priority based on due date for urgent deadlines
     if (dueDate) {
       const now = new Date();
       const due = new Date(dueDate);
       const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysUntilDue <= 1) return 4; // Critical - due tomorrow or today
-      if (daysUntilDue <= 3) return 3; // High - due within 3 days
-      if (daysUntilDue <= 7) return 2; // Medium - due within a week
     }
     
-    return 2; // Default medium priority
+    return 0; // Default no priority
   };
 
   const getPriorityLabel = (priority: number): string => {
