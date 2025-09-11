@@ -219,7 +219,7 @@ Extract EVERYTHING visible with maximum precision.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: contentParts as any },
         ],
-        response_format: { type: 'json_object' },
+        tools,
       };
 
       if (paramsType === 'legacy') {
@@ -246,6 +246,11 @@ Extract EVERYTHING visible with maximum precision.`;
     if (!response.ok) {
       console.log('GPT-4.1 failed, trying GPT-5 for maximum accuracy');
       response = await callOpenAI('gpt-5-2025-08-07', 'new');
+    }
+
+    if (!response.ok) {
+      console.log('GPT-5 failed, trying GPT-4o-mini as compatibility fallback');
+      response = await callOpenAI('gpt-4o-mini', 'legacy');
     }
 
     if (!response.ok) {
