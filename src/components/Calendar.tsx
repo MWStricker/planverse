@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { getPriorityColor } from "@/lib/priority-utils";
+import { getPriorityColor, getPriorityLabel } from "@/lib/priority-utils";
 
 // Extract course code consistently from titles or course names
 const extractCourseCode = (title: string, isCanvas: boolean = false) => {
@@ -187,6 +187,7 @@ const Calendar = () => {
   const [canvasFeedUrl, setCanvasFeedUrl] = useState('');
   const [isAddingFeed, setIsAddingFeed] = useState(false);
   const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const [weather, setWeather] = useState<{ current?: WeatherData; forecast: { [key: string]: WeatherData } }>(() => {
     // Load cached weather data from localStorage on component mount
     try {
@@ -979,7 +980,86 @@ const Calendar = () => {
     );
   };
 
-  const getSessionsForDay = (day: Date) => {
+  // Helper functions for course management
+  const getUniqueCanvasCourses = () => {
+    const courses = new Map();
+    
+    // Extract courses from Canvas events
+    events.forEach(event => {
+      if (event.source_provider === 'canvas') {
+        const courseCode = extractCourseCode(event.title, true);
+        if (courseCode) {
+          if (!courses.has(courseCode)) {
+            courses.set(courseCode, {
+              code: courseCode,
+              color: getCourseColor(event.title, true),
+              icon: getCourseIcon(event.title, true),
+              events: [],
+              tasks: []
+            });
+          }
+          courses.get(courseCode).events.push(event);
+        }
+      }
+    });
+    
+    // Extract courses from Canvas tasks
+    tasks.forEach(task => {
+      if (task.source_provider === 'canvas' || task.course_name) {
+        const courseCode = task.course_name || extractCourseCode(task.title, true);
+        if (courseCode) {
+          if (!courses.has(courseCode)) {
+            const pseudoTitle = `[2025FA-${courseCode}]`;
+            courses.set(courseCode, {
+              code: courseCode,
+              color: getCourseColor(pseudoTitle, true),
+              icon: getCourseIcon(pseudoTitle, true),
+              events: [],
+              tasks: []
+            });
+          }
+          courses.get(courseCode).tasks.push(task);
+        }
+      }
+    });
+    
+    return Array.from(courses.values());
+  };
+
+  const getCourseItems = (course: any) => {
+    const items = [
+      ...course.events.map((event: Event) => ({
+        ...event,
+        type: 'event',
+        dueDate: new Date(event.start_time)
+      })),
+      ...course.tasks.map((task: Task) => ({
+        ...task,
+        type: 'task',
+        dueDate: task.due_date ? new Date(task.due_date) : null
+      }))
+    ];
+    
+    // Sort by due date
+    return items.sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate.getTime() - b.dueDate.getTime();
+    });
+  };
+
+  const toggleCourseExpansion = (courseCode: string) => {
+    setExpandedCourses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(courseCode)) {
+        newSet.delete(courseCode);
+      } else {
+        newSet.add(courseCode);
+      }
+      return newSet;
+    });
+  };
     return studySessions.filter(session => 
       isSameDay(new Date(session.start_time), day)
     );
@@ -1445,6 +1525,134 @@ const Calendar = () => {
           </div>
         </div>
       </div>
+
+      {/* Canvas Courses Section */}
+      {getUniqueCanvasCourses().length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-6">Your Courses</h2>
+          <div className="grid gap-4">
+            {getUniqueCanvasCourses().map(course => {
+              const CourseIcon = course.icon;
+              const isExpanded = expandedCourses.has(course.code);
+              const courseItems = getCourseItems(course);
+              
+              return (
+                <Card key={course.code} className={`transition-all duration-200 ${course.color}`}>
+                  <CardContent className="p-0">
+                    <button
+                      onClick={() => toggleCourseExpansion(course.code)}
+                      className="w-full p-4 text-left hover:bg-accent/50 transition-colors duration-200 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CourseIcon className="h-6 w-6" />
+                        <div>
+                          <h3 className="text-lg font-semibold">{course.code}</h3>
+                          <p className="text-sm opacity-75">
+                            {course.events.length} events, {course.tasks.length} tasks
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight 
+                        className={`h-5 w-5 transition-transform duration-200 ${
+                          isExpanded ? 'rotate-90' : ''
+                        }`} 
+                      />
+                    </button>
+                    
+                    {isExpanded && (
+                      <div className="border-t bg-card/50 p-4 space-y-3">
+                        <h4 className="font-medium mb-3">
+                          Upcoming Items ({courseItems.length})
+                        </h4>
+                        {courseItems.length === 0 ? (
+                          <p className="text-muted-foreground text-sm">No items found for this course</p>
+                        ) : (
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {courseItems.map((item: any) => (
+                              <div key={`${item.type}-${item.id}`} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border">
+                                <div className="flex-shrink-0">
+                                  {item.type === 'event' ? (
+                                    <CalendarIcon className="h-4 w-4 mt-0.5" />
+                                  ) : (
+                                    <div className={`w-4 h-4 rounded-full mt-0.5 ${getPriorityColor(item.priority_score || 0)}`} />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h5 className={`font-medium text-sm ${
+                                      item.completion_status === 'completed' ? 'line-through text-muted-foreground' : ''
+                                    }`}>
+                                      {item.title}
+                                    </h5>
+                                    <Badge variant="outline" className="text-xs">
+                                      {item.type}
+                                    </Badge>
+                                    {item.type === 'task' && (
+                                      <Badge variant="outline" className={`text-xs ${getPriorityColor(item.priority_score || 0)}`}>
+                                        {getPriorityLabel(item.priority_score || 0)}
+                                      </Badge>
+                                    )}
+                                    {item.completion_status === 'completed' && (
+                                      <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                                        Completed
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {item.dueDate && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Clock className="h-3 w-3" />
+                                      Due: {format(item.dueDate, 'MMM d, yyyy h:mm a')}
+                                    </div>
+                                  )}
+                                  {item.description && (
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex gap-1">
+                                  {item.type === 'task' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleTaskCompletion(item.id, item.completion_status);
+                                      }}
+                                      className="h-7 w-7 p-0"
+                                    >
+                                      <Check className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (item.type === 'task') {
+                                        deleteTask(item.id);
+                                      } else {
+                                        deleteEvent(item.id);
+                                      }
+                                    }}
+                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Day Detail Dialog */}
       <Dialog open={isDayDialogOpen} onOpenChange={setIsDayDialogOpen}>
