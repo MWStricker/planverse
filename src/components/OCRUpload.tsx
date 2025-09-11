@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { imageFileToBase64Compressed } from "@/lib/utils";
 import { ocrExtractText } from "@/lib/ocr";
 import { fromZonedTime } from "date-fns-tz";
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ParsedEvent {
   id: string;
@@ -73,6 +73,7 @@ export const OCRUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [calendarTypeHint, setCalendarTypeHint] = useState<'auto' | 'canvas' | 'events'>('auto');
 
   const formatLocalDate = (iso: string) => {
     const [y, m, d] = iso.split('-').map(Number);
@@ -118,7 +119,7 @@ export const OCRUpload = () => {
       try {
         // Call our AI OCR edge function
         const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
-          body: { imageBase64: base64, mimeType, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, currentDate: new Date().toISOString() }
+          body: { imageBase64: base64, mimeType, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, currentDate: new Date().toISOString(), calendarTypeHint }
         });
 
         if (error) {
@@ -142,7 +143,7 @@ export const OCRUpload = () => {
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const text = await ocrExtractText(file);
             const { data: textResponse, error: textError } = await supabase.functions.invoke('ai-image-ocr', {
-              body: { text, imageBase64: base64, mimeType, timeZone: tz, currentDate: new Date().toISOString() }
+              body: { text, imageBase64: base64, mimeType, timeZone: tz, currentDate: new Date().toISOString(), calendarTypeHint }
             });
 
             if (textError) {
@@ -400,6 +401,19 @@ export const OCRUpload = () => {
                     <Clock className="h-3 w-3 mr-1" />
                     Event Flyers
                   </Badge>
+                </div>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <span className="text-sm text-muted-foreground">Calendar type:</span>
+                  <Select value={calendarTypeHint} onValueChange={(v) => setCalendarTypeHint(v as any)}>
+                    <SelectTrigger className="w-[220px]">
+                      <SelectValue placeholder="Auto detect" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto detect</SelectItem>
+                      <SelectItem value="canvas">Canvas tasks (due dates only)</SelectItem>
+                      <SelectItem value="events">Events with times</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <input
                   type="file"

@@ -14,7 +14,7 @@ serve(async (req) => {
   const tStart = Date.now();
 
   try {
-    const { imageBase64, mimeType, text, timeZone, currentDate } = await req.json();
+    const { imageBase64, mimeType, text, timeZone, currentDate, calendarTypeHint } = await req.json();
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const VISION_API_KEY = Deno.env.get('VISION_API_KEY');
 
@@ -200,7 +200,7 @@ OUTPUT RULES:
 - Keep titles as shown (trimmed).`;
 
     const contentParts: any[] = [];
-    contentParts.push({ type: 'text', text: instruction });
+    contentParts.push({ type: 'text', text: instruction + (calendarTypeHint ? `\n\nUSER HINT: calendarTypeHint=${calendarTypeHint}` : '') });
     if (hasImage) {
       contentParts.push({ type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } });
     }
