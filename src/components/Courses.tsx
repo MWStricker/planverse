@@ -185,15 +185,20 @@ export const Courses = () => {
   const getCourseColor = (title: string, forCanvas = false) => {
     if (!forCanvas) return 'bg-muted/50 border-muted';
     
+    // Canvas-style colors matching their actual course color scheme
     const colors = [
-      'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-900',
-      'bg-gradient-to-br from-green-50 to-green-100 border-green-200 text-green-900',
-      'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 text-purple-900',
-      'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 text-orange-900',
-      'bg-gradient-to-br from-red-50 to-red-100 border-red-200 text-red-900',
-      'bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200 text-pink-900',
-      'bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200 text-indigo-900',
-      'bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200 text-teal-900'
+      'bg-[#394B59] text-white border-[#394B59]', // Canvas dark blue
+      'bg-[#008EE2] text-white border-[#008EE2]', // Canvas primary blue  
+      'bg-[#00AC18] text-white border-[#00AC18]', // Canvas green
+      'bg-[#FC5E13] text-white border-[#FC5E13]', // Canvas orange
+      'bg-[#8F3E97] text-white border-[#8F3E97]', // Canvas purple
+      'bg-[#BD3C14] text-white border-[#BD3C14]', // Canvas red
+      'bg-[#2D3B45] text-white border-[#2D3B45]', // Canvas slate
+      'bg-[#127A1B] text-white border-[#127A1B]', // Canvas dark green
+      'bg-[#D97900] text-white border-[#D97900]', // Canvas amber
+      'bg-[#68777D] text-white border-[#68777D]', // Canvas gray
+      'bg-[#AD439A] text-white border-[#AD439A]', // Canvas magenta  
+      'bg-[#0076D1] text-white border-[#0076D1]'  // Canvas bright blue
     ];
     
     let hash = 0;
