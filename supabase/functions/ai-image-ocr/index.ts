@@ -137,14 +137,13 @@ serve(async (req) => {
           { role: 'user', content: useText ? userTextContent : (userImageContent as any) },
         ],
         tools,
-        tool_choice: { type: 'function', function: { name: 'return_schedule_items' } },
       };
 
       if (paramsType === 'legacy') {
-        body.max_tokens = 600;
+        body.max_tokens = 1200;
         body.temperature = 0.1;
       } else {
-        body.max_completion_tokens = 600;
+        body.max_completion_tokens = 1200;
       }
 
       return fetch('https://api.openai.com/v1/chat/completions', {
@@ -163,9 +162,6 @@ serve(async (req) => {
     // Try fast path first
     let response = await callOpenAI('gpt-4o-mini', 'legacy', useText);
 
-    // Fallbacks
-    if (!response.ok) response = await callOpenAI('o4-mini-2025-04-16', 'new', useText);
-    if (!response.ok) response = await callOpenAI('gpt-4.1-2025-04-14', 'new', useText);
 
     if (!response.ok) {
       const errText = await response.text();
