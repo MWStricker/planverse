@@ -210,8 +210,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                   className={`transition-all duration-200 hover:scale-[1.02] cursor-pointer border ${course.color}`}
                   onClick={() => onPageChange('calendar')}
                 >
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
+                   <CardContent className="p-3">
                       <div className="flex items-center gap-2 min-w-0">
                         <BookOpen className="h-4 w-4 flex-shrink-0" />
                         <div className="min-w-0">
@@ -221,8 +220,6 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="h-4 w-4 flex-shrink-0 opacity-50" />
-                    </div>
                   </CardContent>
                 </Card>
               ))}
