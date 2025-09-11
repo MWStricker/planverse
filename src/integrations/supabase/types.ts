@@ -494,6 +494,10 @@ export type Database = {
         Args: { post_id: string }
         Returns: undefined
       }
+      test_auth_uid: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
