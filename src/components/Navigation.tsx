@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Home, Upload, Settings, BookOpen, Target, Bell } from "lucide-react";
+import { Calendar, Home, Upload, Settings, BookOpen, Target, Bell, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +23,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'connect', label: 'Connect', icon: Users },
     { id: 'tasks', label: 'Tasks', icon: Target },
     { id: 'upload', label: 'Image Upload', icon: Upload },
     { id: 'courses', label: 'Courses', icon: BookOpen },
