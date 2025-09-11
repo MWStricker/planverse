@@ -108,6 +108,13 @@ export const Settings = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [majorError, setMajorError] = useState('');
   const [schoolSearchQuery, setSchoolSearchQuery] = useState('');
+  
+  // Get all public universities sorted alphabetically by name
+  const getAllPublicUniversities = () => {
+    return universities
+      .filter(university => university.isPublic)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
 
   // Load and sync notification settings with database
   useEffect(() => {
@@ -786,12 +793,21 @@ export const Settings = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="school">School/University</Label>
-                <Input
-                  id="school"
-                  value={editedProfile.school}
-                  onChange={(e) => handleProfileChange('school', e.target.value)}
-                  placeholder="Enter your school or university"
-                />
+                <Select 
+                  value={editedProfile.school} 
+                  onValueChange={(value) => handleProfileChange('school', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your school or university" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                    {getAllPublicUniversities().map((university) => (
+                      <SelectItem key={university.id} value={university.name}>
+                        {university.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-2">
