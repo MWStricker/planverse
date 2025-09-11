@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getPriorityColor } from "@/lib/priority-utils";
 
-// Course color coding for Canvas events
+// Generate unique colors for each course
 const getCourseColor = (title: string, isCanvas: boolean) => {
   if (!isCanvas) return 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
   
@@ -21,28 +21,44 @@ const getCourseColor = (title: string, isCanvas: boolean) => {
   const courseMatch = title.match(/\[([A-Z]+-\d+)/);
   const courseCode = courseMatch ? courseMatch[1] : title;
   
-  // Generate consistent colors based on course code
-  const courseColors = {
-    'PSY': 'bg-purple-100 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-800 dark:text-purple-200',
-    'MU': 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200', 
-    'LIFE': 'bg-green-100 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-800 dark:text-green-200',
-    'MATH': 'bg-orange-100 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200',
-    'PHYS': 'bg-red-100 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200',
-    'CHEM': 'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200',
-    'ENG': 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700 text-indigo-800 dark:text-indigo-200',
-    'HIST': 'bg-rose-100 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-200',
-    'CS': 'bg-cyan-100 dark:bg-cyan-900/20 border-cyan-300 dark:border-cyan-700 text-cyan-800 dark:text-cyan-200',
+  // Generate a hash from the course code for consistent color assignment
+  const hashCode = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash);
   };
   
-  // Find matching course prefix
-  for (const [prefix, color] of Object.entries(courseColors)) {
-    if (courseCode.startsWith(prefix)) {
-      return color;
-    }
-  }
+  const hash = hashCode(courseCode);
   
-  // Default Canvas color if no specific match
-  return 'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 ring-1 ring-blue-300 dark:ring-blue-700';
+  // Define a comprehensive set of distinct colors
+  const courseColors = [
+    'bg-red-100 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200',
+    'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200',
+    'bg-green-100 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-800 dark:text-green-200',
+    'bg-purple-100 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-800 dark:text-purple-200',
+    'bg-orange-100 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200',
+    'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200',
+    'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700 text-indigo-800 dark:text-indigo-200',
+    'bg-pink-100 dark:bg-pink-900/20 border-pink-300 dark:border-pink-700 text-pink-800 dark:text-pink-200',
+    'bg-teal-100 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-200',
+    'bg-cyan-100 dark:bg-cyan-900/20 border-cyan-300 dark:border-cyan-700 text-cyan-800 dark:text-cyan-200',
+    'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200',
+    'bg-lime-100 dark:bg-lime-900/20 border-lime-300 dark:border-lime-700 text-lime-800 dark:text-lime-200',
+    'bg-amber-100 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200',
+    'bg-rose-100 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-200',
+    'bg-violet-100 dark:bg-violet-900/20 border-violet-300 dark:border-violet-700 text-violet-800 dark:text-violet-200',
+    'bg-fuchsia-100 dark:bg-fuchsia-900/20 border-fuchsia-300 dark:border-fuchsia-700 text-fuchsia-800 dark:text-fuchsia-200',
+    'bg-sky-100 dark:bg-sky-900/20 border-sky-300 dark:border-sky-700 text-sky-800 dark:text-sky-200',
+    'bg-slate-100 dark:bg-slate-900/20 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200',
+  ];
+  
+  // Use hash to select a color from the array
+  const colorIndex = hash % courseColors.length;
+  return courseColors[colorIndex];
 };
 
 const getCourseIcon = (title: string, isCanvas: boolean) => {
@@ -1231,21 +1247,24 @@ const Calendar = () => {
           <div className="space-y-2">
             <div className="font-medium text-foreground">Course Colors</div>
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-purple-400" />
-                <span>Psychology</span>
+              <div className="text-xs text-muted-foreground mb-2">
+                Each Canvas course automatically gets a unique color
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                <span>Music</span>
+                <div className="w-3 h-3 rounded-full bg-red-400" />
+                <span>Course A</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-400" />
+                <span>Course B</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-green-400" />
-                <span>Life Sciences</span>
+                <span>Course C</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-orange-400" />
-                <span>Math & More</span>
+                <div className="w-3 h-3 rounded-full bg-purple-400" />
+                <span>And so on...</span>
               </div>
             </div>
           </div>
