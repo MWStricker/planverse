@@ -183,17 +183,21 @@ MUST extract at least 1 item unless image is completely blank.`;
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
     // Build detailed prompt for precise calendar analysis
-    const instruction = `Analyze this calendar image with EXTREME PRECISION:
+    const instruction = `Analyze this calendar image with EXTREME PRECISION.
 
-1. CANVAS LMS CALENDAR: Look at the monthly grid structure carefully
-2. Each assignment appears on its EXACT due date square
-3. Read the day numbers in the grid - that IS the due date
-4. Extract assignment names as TASKS (not events)
-5. Be 100% accurate with dates - do not guess or estimate
-6. Look for month/year information in headers
-7. Pay attention to calendar grid layout and positioning
+CALENDAR TYPE RULES:
+- Events calendars (e.g., Google): Events have visible times next to titles. Output these in events[] with startTime/endTime.
+- Canvas/tasks calendars: Assignments have due dates only (no times). Output these in tasks[] with dueTime null. Do NOT invent times.
 
-Extract EVERYTHING visible with maximum precision.`;
+DATE ACCURACY (no off-by-one):
+- Use the exact day number inside the SAME grid cell as the text.
+- Take month/year from the header (e.g., "September 2025").
+- Never shift/normalize dates. Do not add or subtract days.
+
+OUTPUT RULES:
+- Extract EVERYTHING visible. If an item has no time visible, put it in tasks (not events).
+- Use 12-hour time only if the image clearly shows a time (e.g., 3:15 PM). If 24h is shown, convert to 12-hour.
+- Keep titles as shown (trimmed).`;
 
     const contentParts: any[] = [];
     contentParts.push({ type: 'text', text: instruction });
@@ -201,7 +205,13 @@ Extract EVERYTHING visible with maximum precision.`;
       contentParts.push({ type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } });
     }
     if (resolvedText && resolvedText.length > 0) {
-      contentParts.push({ type: 'text', text: `\n\nOCR Text from image:\n${resolvedText.slice(0, 8000)}` });
+      contentParts.push({ type: 'text', text: `\n\nOCR Text from image:\n${resolvedText.slice(0, 6000)}` });
+    }
+
+    if (layoutHints && layoutHints.length > 0) {
+      const maxHints = 200;
+      const layoutSummary = layoutHints.slice(0, maxHints).map(it => `${it.x.toFixed(3)},${it.y.toFixed(3)}: ${it.text}`).join('\n');
+      contentParts.push({ type: 'text', text: `\n\nLAYOUT HINTS (normalized x,y in [0-1], first ${Math.min(maxHints, layoutHints.length)} items):\n${layoutSummary}` });
     }
 
     if (!hasImage && (!resolvedText || resolvedText.trim().length === 0)) {
@@ -328,6 +338,30 @@ Extract EVERYTHING visible with maximum precision.`;
         taskType: String(task.taskType || 'assignment').trim().slice(0, 50),
         confidence: Number.isFinite(task.confidence) ? Math.max(0, Math.min(100, Number(task.confidence))) : 60,
       }));
+
+    // Reclassify: any event without a visible time becomes a task (Canvas-style due date)
+    const extraTasksFromEvents = [] as any[];
+    const keptEvents = [] as any[];
+    for (const e of events) {
+      const hasTime = !!(e.startTime && e.endTime);
+      if (!hasTime) {
+        extraTasksFromEvents.push({
+          id: `from_event_${e.id}`,
+          title: e.title,
+          description: '',
+          dueDate: e.date,
+          dueTime: null,
+          courseName: '',
+          priority: 2,
+          taskType: /quiz|exam|midterm|homework|assignment|discussion|project/i.test(e.title) ? 'assignment' : 'other',
+          confidence: e.confidence,
+        });
+      } else {
+        keptEvents.push(e);
+      }
+    }
+    events = keptEvents;
+    tasks = [...tasks, ...extraTasksFromEvents];
 
     const durationMs = Date.now() - tStart;
     console.log('Final result:', { events: events.length, tasks: tasks.length, ocrSource });
