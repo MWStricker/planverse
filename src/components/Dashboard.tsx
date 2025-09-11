@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -983,103 +984,80 @@ export const Dashboard = () => {
                 Today's Schedule
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {isAnalyzing ? (
-                <div className="flex items-center justify-center py-4">
-                  <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
-                  <span className="text-sm text-muted-foreground">AI analyzing your schedule...</span>
-                </div>
-              ) : allTodaysItems.length > 0 ? (
-                allTodaysItems.map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
-                    <div className={`w-3 h-3 rounded-full ${
-                      task.priority_score === 4 ? 'bg-destructive' :
-                      task.priority_score === 3 ? 'bg-primary' :
-                      task.priority_score === 1 ? 'bg-muted-foreground' :
-                      'bg-secondary'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm truncate">{task.title}</p>
-                        {task.source_provider === 'canvas' && (
-                          <Badge variant="outline" className="text-xs px-1 bg-blue-50 border-blue-200 text-blue-700">
-                            Canvas
-                          </Badge>
-                        )}
-                        {task.event_type === 'assignment' && (
-                          <Badge variant="outline" className="text-xs px-1 bg-green-50 border-green-200 text-green-700">
-                            Assignment
-                          </Badge>
-                        )}
-                        {task.is_recurring && (
-                          <Badge variant="outline" className="text-xs px-1">
-                            Recurring
+            <CardContent className="p-0">
+              <ScrollArea className="h-80 px-6 pb-6">
+                {isAnalyzing ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
+                    <span className="text-sm text-muted-foreground">AI analyzing your schedule...</span>
+                  </div>
+                ) : allTodaysItems.length > 0 ? (
+                  <div className="space-y-2">
+                    {allTodaysItems.map((task) => (
+                      <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                          task.priority_score === 4 ? 'bg-destructive' :
+                          task.priority_score === 3 ? 'bg-primary' :
+                          task.priority_score === 1 ? 'bg-muted-foreground' :
+                          'bg-secondary'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm text-foreground">{task.title}</p>
+                            {task.source_provider === 'canvas' && (
+                              <Badge variant="outline" className="text-xs h-5 px-2 bg-blue-50 border-blue-200 text-blue-700">
+                                Canvas
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time"}</span>
+                          </div>
+                          {task.course_name && (
+                            <p className="text-xs text-muted-foreground">{task.course_name}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (aiSchedule && aiSchedule.length > 0) ? (
+                  <div className="space-y-2">
+                    {aiSchedule.map((event: any) => (
+                      <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                          event.type === 'class' ? `bg-${event.courseColor}` :
+                          event.type === 'study' ? 'bg-accent' :
+                          'bg-muted-foreground'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm mb-1">{event.title}</p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{event.time}</span>
+                          </div>
+                          {event.location && (
+                            <p className="text-xs text-muted-foreground">{event.location}</p>
+                          )}
+                        </div>
+                        {event.type === 'study' && (
+                          <Badge variant="secondary" className="bg-accent/10 text-accent text-xs">
+                            Suggested
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span className="font-medium">
-                          {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
-                        </span>
-                        {task.due_date && format(new Date(task.due_date), "h:mm a") !== "12:00 AM" && (
-                          <span className="text-orange-600 font-medium">• Due Today</span>
-                        )}
-                      </div>
-                      {task.course_name && (
-                        <p className="text-xs text-muted-foreground font-medium">{task.course_name}</p>
-                      )}
-                      {task.description && task.source_provider === 'canvas' && (
-                        <p className="text-xs text-muted-foreground truncate mt-1">{task.description}</p>
-                      )}
-                      {task.is_recurring && (
-                        <p className="text-xs text-muted-foreground">
-                          {task.recurrence_type === 'weekly' && task.recurrence_pattern?.days 
-                            ? `Recurrs weekly on ${task.recurrence_pattern.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
-                            : `Recurrs ${task.recurrence_type}`
-                          }
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant={getPriorityColor(task.priority_score || 2)} className="text-xs">
-                        {getPriorityLabel(task.priority_score || 2)}
-                      </Badge>
-                      {task.source_provider === 'canvas' && (
-                        <div className="text-xs text-blue-600 font-medium">📚</div>
-                      )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-8 text-center">
+                    <div>
+                      <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No tasks due today</p>
+                      <p className="text-xs text-muted-foreground">Tasks will appear here when due today</p>
                     </div>
                   </div>
-                ))
-              ) : (aiSchedule && aiSchedule.length > 0) ? (
-                aiSchedule.map((event: any) => (
-                  <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                    <div className={`w-3 h-3 rounded-full ${
-                      event.type === 'class' ? `bg-${event.courseColor}` :
-                      event.type === 'study' ? 'bg-accent' :
-                      'bg-muted-foreground'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{event.title}</p>
-                      <p className="text-xs text-muted-foreground">{event.time}</p>
-                      <p className="text-xs text-muted-foreground">{event.location}</p>
-                    </div>
-                    {event.type === 'study' && (
-                      <Badge variant="secondary" className="bg-accent/10 text-accent">
-                        Suggested
-                      </Badge>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="flex items-center justify-center py-8 text-center">
-                  <div>
-                    <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No tasks due today</p>
-                    <p className="text-xs text-muted-foreground">Tasks will appear here when due today</p>
-                  </div>
-                </div>
-              )}
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
 
