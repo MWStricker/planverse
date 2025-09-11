@@ -8,6 +8,7 @@ import { IntegrationSetup } from "@/components/IntegrationSetup";
 import Calendar from "@/components/Calendar";
 import { Connect } from "@/components/Connect";
 import { Tasks } from "@/components/Tasks";
+import { Courses } from "@/components/Courses";
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
 import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
@@ -55,6 +56,8 @@ const Index = () => {
         return <Connect />;
       case 'tasks':
         return <Tasks />;
+      case 'courses':
+        return <Courses />;
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">
