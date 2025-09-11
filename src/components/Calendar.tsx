@@ -1214,7 +1214,7 @@ const Calendar = () => {
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">Connected Feeds:</h4>
               {calendarConnections.map((connection) => (
-                <div key={connection.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div key={connection.id} className="flex items-center p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4 text-primary" />
                     <div>
@@ -1224,14 +1224,6 @@ const Calendar = () => {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeCalendarConnection(connection.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
                 </div>
               ))}
             </div>
