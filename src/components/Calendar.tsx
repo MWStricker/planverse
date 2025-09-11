@@ -825,15 +825,34 @@ const Calendar = () => {
               <CardContent className="p-0 space-y-0.5 h-full flex flex-col">
                 {/* Date and Weather */}
                 <div className="flex items-center justify-between text-sm">
-                  <span className={`font-semibold ${
-                    isToday(day) 
-                      ? 'text-primary text-lg' 
-                      : isCurrentMonth 
-                        ? 'text-foreground' 
-                        : 'text-muted-foreground'
-                  }`}>
+                  <button 
+                    className={`font-semibold hover:bg-accent/50 rounded px-1 py-0.5 transition-colors cursor-pointer ${
+                      isToday(day) 
+                        ? 'text-primary text-lg' 
+                        : isCurrentMonth 
+                          ? 'text-foreground' 
+                          : 'text-muted-foreground'
+                    }`}
+                    onClick={() => {
+                      const tasksForDay = getTasksForDay(day);
+                      const eventsForDay = getEventsForDay(day);
+                      const sessionsForDay = getSessionsForDay(day);
+                      
+                      if (tasksForDay.length > 0 || eventsForDay.length > 0 || sessionsForDay.length > 0) {
+                        toast({
+                          title: `${format(day, 'MMMM d, yyyy')}`,
+                          description: `${tasksForDay.length} tasks, ${eventsForDay.length} events, ${sessionsForDay.length} study sessions`,
+                        });
+                      } else {
+                        toast({
+                          title: `${format(day, 'MMMM d, yyyy')}`,
+                          description: "No tasks or events for this day",
+                        });
+                      }
+                    }}
+                  >
                     {format(day, 'd')}
-                  </span>
+                  </button>
                   {dayWeather && isCurrentMonth && (
                     <div className="flex items-center gap-1">
                       {getWeatherIcon(dayWeather.icon)}
@@ -851,25 +870,33 @@ const Calendar = () => {
                 {/* Only show content for current month days */}
                 {isCurrentMonth && (
                   <div className="flex-1 overflow-y-auto space-y-0.5 min-h-0">
-                    {/* Tasks with individual priority indicators - ALL tasks shown */}
+                     {/* Tasks with individual priority indicators - ALL tasks shown */}
                     {dayTasks.map(task => (
                       <Popover key={task.id}>
                         <PopoverTrigger asChild>
-                          <div className={`flex items-center gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors ${
+                          <div className={`flex flex-col gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors ${
                             completingTasks.has(task.id) ? 'bg-green-100 animate-pulse' : ''
                           }`}>
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
-                             <Badge variant="secondary" className={`text-xs w-full justify-start overflow-hidden group ${
-                               task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
-                             } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
-                                <div 
-                                  className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
-                                  style={{ '--animation-duration': `${getAnimationDuration(task.title)}s` } as React.CSSProperties}
-                                >
-                                  {getPriorityEmoji(task.priority_score || 0)} <span className="whitespace-nowrap text-xs">{task.title}</span>
-                                 {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
-                               </div>
-                             </Badge>
+                            <div className="flex items-center gap-0.5">
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
+                              <Badge variant="secondary" className={`text-xs w-full justify-start overflow-hidden group ${
+                                task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
+                              } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
+                                 <div 
+                                   className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
+                                   style={{ '--animation-duration': `${getAnimationDuration(task.title)}s` } as React.CSSProperties}
+                                 >
+                                   {getPriorityEmoji(task.priority_score || 0)} <span className="whitespace-nowrap text-xs">{task.title}</span>
+                                  {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
+                                </div>
+                              </Badge>
+                            </div>
+                            {task.due_date && (
+                              <div className="text-xs text-muted-foreground ml-2.5 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {format(new Date(task.due_date), 'h:mm a')}
+                              </div>
+                            )}
                           </div>
                         </PopoverTrigger>
                         <PopoverContent className="w-48 p-2" align="start">
@@ -897,7 +924,7 @@ const Calendar = () => {
                       </Popover>
                     ))}
 
-                    {/* Events */}
+                     {/* Events */}
                     {dayEvents.map(event => (
                       <Popover key={event.id}>
                         <PopoverTrigger asChild>
@@ -910,6 +937,12 @@ const Calendar = () => {
                                  📅 <span className="whitespace-nowrap">{event.title}</span>
                                </div>
                              </Badge>
+                             {event.start_time && (
+                               <div className="text-xs text-muted-foreground ml-2 flex items-center gap-1 mt-0.5">
+                                 <Clock className="h-3 w-3" />
+                                 {format(new Date(event.start_time), 'h:mm a')}
+                               </div>
+                             )}
                           </div>
                         </PopoverTrigger>
                         <PopoverContent className="w-48 p-2" align="start">
