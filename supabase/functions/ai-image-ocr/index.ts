@@ -320,32 +320,82 @@ OUTPUT RULES:
     }
 
     const aiData = await response.json();
-    console.log('OpenAI response received, tool_calls:', aiData?.choices?.[0]?.message?.tool_calls?.length || 0);
+    console.log('OpenAI response received, full response:', JSON.stringify(aiData, null, 2));
+    console.log('Tool calls count:', aiData?.choices?.[0]?.message?.tool_calls?.length || 0);
+    
+    // Check for OpenAI errors in response
+    if (aiData.error) {
+      console.error('OpenAI API error in response:', aiData.error);
+      const durationMs = Date.now() - tStart;
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `OpenAI API error: ${aiData.error.message || 'Unknown error'}`, 
+        events: [], 
+        tasks: [], 
+        durationMs 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
 
     // Prefer function/tool call output
     let parsed: any = null;
     try {
       const toolCalls = aiData?.choices?.[0]?.message?.tool_calls || [];
+      console.log('Found tool calls:', toolCalls.length);
       const fnCall = toolCalls.find((tc: any) => tc?.function?.name === 'return_schedule_items');
       if (fnCall?.function?.arguments) {
+        console.log('Parsing function arguments:', fnCall.function.arguments);
         parsed = JSON.parse(fnCall.function.arguments);
+        console.log('Successfully parsed function call JSON');
       }
-    } catch (_) { /* ignore */ }
+    } catch (e) { 
+      console.error('Error parsing function call JSON:', e); 
+    }
 
     // Fallback to content JSON extraction if needed
     if (!parsed) {
       const content = aiData?.choices?.[0]?.message?.content ?? '';
-      try { parsed = JSON.parse(String(content)); } catch { /* try to salvage */ }
-      if (!parsed) {
+      console.log('No function call found, trying content parsing. Content:', content);
+      try { 
+        parsed = JSON.parse(String(content)); 
+        console.log('Successfully parsed content JSON');
+      } catch (e) { 
+        console.log('Content JSON parse failed:', e);
         const cleaned = String(content).replace(/```json\s*|```/g, '').trim();
-        try { parsed = JSON.parse(cleaned); } catch { /* ignore */ }
+        try { 
+          parsed = JSON.parse(cleaned); 
+          console.log('Successfully parsed cleaned content JSON');
+        } catch (e2) { 
+          console.log('Cleaned content JSON parse also failed:', e2);
+        }
       }
     }
 
     if (!parsed) {
       console.log('No valid JSON parsed from OpenAI response');
+      console.log('Response structure:', JSON.stringify({
+        choices: aiData?.choices?.length || 0,
+        message: aiData?.choices?.[0]?.message ? 'present' : 'missing',
+        content: aiData?.choices?.[0]?.message?.content || 'no content',
+        tool_calls: aiData?.choices?.[0]?.message?.tool_calls?.length || 0
+      }));
       const durationMs = Date.now() - tStart;
-      return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', events: [], tasks: [], durationMs }), {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Invalid JSON from model - no parseable response found', 
+        debug: {
+          hasChoices: !!aiData?.choices?.length,
+          hasMessage: !!aiData?.choices?.[0]?.message,
+          hasContent: !!aiData?.choices?.[0]?.message?.content,
+          hasToolCalls: !!aiData?.choices?.[0]?.message?.tool_calls?.length,
+          content: aiData?.choices?.[0]?.message?.content?.slice(0, 500) || null
+        },
+        events: [], 
+        tasks: [], 
+        durationMs 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
