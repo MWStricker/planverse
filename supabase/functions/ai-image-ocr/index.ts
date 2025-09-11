@@ -29,29 +29,33 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an expert calendar parser with perfect accuracy for Canvas LMS and academic calendars. You MUST extract ALL visible assignments and events with ABSOLUTELY PRECISE due dates.
+    const systemPrompt = `You are an expert calendar parser with PERFECT DATE AND TIME ACCURACY for all calendar types. You MUST extract ALL visible assignments and events with ABSOLUTELY PRECISE due dates and times.
 
 CRITICAL CONTEXT: Today is ${nowIso} in timezone ${tz}
 
-FUNDAMENTAL CANVAS CALENDAR RULES (NEVER VIOLATE):
+FUNDAMENTAL CALENDAR PARSING RULES:
 1. Canvas calendars display a monthly grid where EACH DAY SQUARE corresponds to ONE SPECIFIC DATE
 2. Any assignment/task appearing in a day square has its due date on THAT EXACT DAY
-3. The calendar shows the month/year at the top (e.g., "September 2025")
-4. Days are arranged in a 7-column grid (Sunday through Saturday)
+3. The calendar shows the month/year at the top (e.g., "September 2025", "Oct 2025", "December 2024")
+4. Days are arranged in a 7-column grid (Sunday through Saturday OR Monday through Sunday)
 5. Each assignment appears in the EXACT day square when it's due
 
-ABSOLUTE DATE ACCURACY PROTOCOL:
-1. STEP 1: Identify the month and year from the calendar header
-2. STEP 2: Map each assignment to its exact day square position
-3. STEP 3: Use the day number IN THAT SQUARE as the due date
-4. STEP 4: NEVER adjust dates by ±1 day - use the EXACT visible date
-5. EXAMPLE: If "Quiz 1.2" appears in the square labeled "14", the due date is the 14th of that month
+ENHANCED DATE ACCURACY PROTOCOL:
+1. STEP 1: Identify the EXACT month and year from calendar header - look for patterns like "September 2025", "Oct 2025", "Dec 2024"
+2. STEP 2: Determine the calendar layout (Sun-Sat or Mon-Sun starting day)
+3. STEP 3: Map each assignment to its precise day square position using visual coordinates
+4. STEP 4: Cross-reference with week structure to validate date mapping
+5. STEP 5: Use the day number IN THAT SQUARE as the due date - NEVER adjust by ±1 day
+6. EXAMPLE: If "Quiz 1.2" appears in square labeled "14" → due date is 14th of that month
+7. VALIDATION: Ensure dates make logical sense (no Feb 30th, no invalid day-of-week combinations)
 
-CANVAS STRUCTURE RECOGNITION:
+ENHANCED STRUCTURE RECOGNITION:
 - Assignment titles may be truncated (e.g., "Homework 04 - Telescopes...")
 - Multiple items can appear in the same day square
-- Course codes often shown (e.g., "AA-100", "BUS-100")
-- Due times are rarely shown for assignments (usually just dates)
+- Course codes often shown (e.g., "AA-100", "BUS-100", "MATH-101")
+- Due times may be shown in various formats: "11:59 PM", "due 11:59pm", "23:59", "by 5:00 PM"
+- Time formats to recognize: 12-hour (3:15 PM), 24-hour (15:15), abbreviated (3p, 11:59pm)
+- Default due times: if no time specified, assume "11:59 PM" for assignments
 
 CROSSED-OUT/COMPLETED ITEM DETECTION:
 - CRITICAL: Completely IGNORE any items with visual completion indicators:
@@ -191,20 +195,23 @@ QUALITY CONTROL:
 
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
-    // Build ultra-precise prompt for calendar analysis
-    const instruction = `Analyze this calendar image with PERFECT ACCURACY. You are analyzing a ${calendarTypeHint || 'calendar'} and must extract every visible item with absolute precision.
+    // Build ultra-precise prompt with enhanced date/time analysis
+    const instruction = `Analyze this calendar image with PERFECT DATE AND TIME ACCURACY. You are analyzing a ${calendarTypeHint || 'calendar'} and must extract every visible item with absolute precision.
 
-CANVAS CALENDAR ANALYSIS PROTOCOL:
-1. HEADER ANALYSIS: Find the month/year display (e.g., "September 2025", "Oct 2025")
-2. GRID MAPPING: Identify the 7-column layout (Sun-Sat) with numbered day squares
-3. ITEM POSITIONING: Map each assignment to its exact day square position
-4. DATE CALCULATION: Use day square number + header month/year = exact due date
+ENHANCED CALENDAR ANALYSIS PROTOCOL:
+1. HEADER ANALYSIS: Find the EXACT month/year display (patterns: "September 2025", "Oct 2025", "December 2024", "Jan 2025")
+2. LAYOUT DETECTION: Identify the 7-column layout and determine if it starts with Sunday or Monday
+3. GRID MAPPING: Create precise coordinate mapping for each day square using provided layout hints
+4. ITEM POSITIONING: Map each assignment to its exact day square using horizontal positioning data
+5. DATE CALCULATION: Combine day square number + header month/year = exact due date
+6. TIME EXTRACTION: Look for any time indicators in or near items
 
 CRITICAL DATE EXTRACTION RULES:
-- If assignment appears in day square "14" → due date is 14th of that month
-- If assignment appears in day square "28" → due date is 28th of that month
+- If assignment appears in day square "14" → due date is EXACTLY 14th of that month
+- If assignment appears in day square "28" → due date is EXACTLY 28th of that month  
 - NEVER adjust dates by ±1 day from the visible square position
-- Use the calendar header to determine month/year context
+- Use calendar header to determine EXACT month/year context
+- Validate dates against calendar logic (ensure day-of-week alignment is correct)
 
 VISUAL COMPLETION DETECTION (CRITICAL):
 - COMPLETELY IGNORE items with completion indicators:
@@ -233,11 +240,14 @@ COLUMN ALIGNMENT USING GUIDES:
 - For items spanning columns, use the primary/starting position
 - Be extra careful with items near column boundaries
 
-TIME FORMAT STANDARDIZATION:
+ENHANCED TIME EXTRACTION AND STANDARDIZATION:
+- Extract times from various formats: "11:59 PM", "due 11:59pm", "23:59", "by 5:00 PM", "3:15p"
 - Convert all times to 12-hour format with AM/PM
-- "14:30" becomes "2:30 PM"
-- "3:15p" becomes "3:15 PM"
-- Keep existing AM/PM designations
+- "14:30" becomes "2:30 PM", "23:59" becomes "11:59 PM"
+- "3:15p" becomes "3:15 PM", "11:59pm" becomes "11:59 PM"
+- Default assignment due time: "11:59 PM" (if no time specified but assignment has due date)
+- For timed events: extract both start and end times when available
+- Keep existing AM/PM designations, but standardize format consistency
 
 QUALITY ASSURANCE:
 - Cross-reference each date with its visual grid position
@@ -300,13 +310,13 @@ EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date acc
       });
     }
 
-    // Use simpler model approach without function calling
+    // Use improved model approach with better date/time accuracy
     console.log('Sending to OpenAI (no function calling):', { textLength: resolvedText?.length || 0, hasImage });
-    let response = await callOpenAI('gpt-4o-mini', 'legacy');
+    let response = await callOpenAI('gpt-4o', 'legacy'); // Start with more powerful model
 
     if (!response.ok) {
-      console.log('GPT-4o-mini failed, trying GPT-4o');
-      response = await callOpenAI('gpt-4o', 'legacy');
+      console.log('GPT-4o failed, trying GPT-4o-mini as fallback');
+      response = await callOpenAI('gpt-4o-mini', 'legacy');
     }
 
     if (!response.ok) {
@@ -419,21 +429,55 @@ EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date acc
       return { month, year };
     }
 
-    // Convert 24-hour time to 12-hour format
-    function convertTo12Hour(time24: string | null): string | null {
-      if (!time24 || time24 === 'null') return null;
+    // Enhanced time parsing and conversion function
+    function convertTo12Hour(timeStr: string | null): string | null {
+      if (!timeStr || timeStr === 'null' || timeStr.trim() === '') return null;
       
-      const timeMatch = time24.match(/^(\d{1,2}):(\d{2})$/);
-      if (!timeMatch) return time24; // Return as-is if format doesn't match
+      const cleaned = timeStr.trim().toLowerCase();
       
-      let hours = parseInt(timeMatch[1], 10);
-      const minutes = timeMatch[2];
-      const ampm = hours >= 12 ? 'PM' : 'AM';
+      // Already in 12-hour format - standardize
+      const twelve_hour = cleaned.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
+      if (twelve_hour) {
+        let hours = parseInt(twelve_hour[1], 10);
+        const minutes = twelve_hour[2];
+        const ampm = twelve_hour[3].toUpperCase();
+        
+        // Handle 12-hour edge cases
+        if (ampm === 'AM' && hours === 12) hours = 12; // 12:xx AM stays 12:xx AM
+        if (ampm === 'PM' && hours === 12) hours = 12; // 12:xx PM stays 12:xx PM
+        
+        return `${hours}:${minutes} ${ampm}`;
+      }
       
-      if (hours === 0) hours = 12; // 00:xx becomes 12:xx AM
-      else if (hours > 12) hours = hours - 12; // 13:xx becomes 1:xx PM
+      // Abbreviated formats like "11:59pm" or "3:15p"
+      const abbrev = cleaned.match(/^(\d{1,2}):(\d{2})\s*(p|pm|a|am)$/);
+      if (abbrev) {
+        let hours = parseInt(abbrev[1], 10);
+        const minutes = abbrev[2];
+        const period = abbrev[3];
+        const ampm = (period === 'p' || period === 'pm') ? 'PM' : 'AM';
+        
+        if (ampm === 'AM' && hours === 12) hours = 12;
+        if (ampm === 'PM' && hours === 12) hours = 12;
+        
+        return `${hours}:${minutes} ${ampm}`;
+      }
       
-      return `${hours}:${minutes} ${ampm}`;
+      // 24-hour format
+      const twenty_four = cleaned.match(/^(\d{1,2}):(\d{2})$/);
+      if (twenty_four) {
+        let hours = parseInt(twenty_four[1], 10);
+        const minutes = twenty_four[2];
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        
+        if (hours === 0) hours = 12; // 00:xx becomes 12:xx AM
+        else if (hours > 12) hours = hours - 12; // 13:xx becomes 1:xx PM
+        
+        return `${hours}:${minutes} ${ampm}`;
+      }
+      
+      // Return original if no pattern matches
+      return timeStr;
     }
     function daysInMonth(year: number, month1to12: number) {
       return new Date(year, month1to12, 0).getDate();
@@ -482,7 +526,7 @@ EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date acc
         dueDate: coerceDateToCanonical(
           task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`
         ),
-        dueTime: convertTo12Hour(task.dueTime && task.dueTime !== 'null' ? String(task.dueTime).slice(0, 5) : null),
+        dueTime: convertTo12Hour(task.dueTime && task.dueTime !== 'null' ? String(task.dueTime) : (task.taskType === 'assignment' ? '11:59 PM' : null)),
         courseName: String(task.courseName || '').trim().slice(0, 100),
         priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
         taskType: String(task.taskType || 'assignment').trim().slice(0, 50),
