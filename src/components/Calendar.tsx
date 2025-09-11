@@ -327,12 +327,11 @@ const Calendar = () => {
       const [tasksResult, eventsResult, sessionsResult] = await Promise.allSettled([
         tasksQuery,
         
+        // For events, fetch ALL Canvas events (not date-filtered) to show courses correctly
         supabase
           .from('events')
           .select('*')
-          .eq('user_id', user?.id)
-          .gte('start_time', calendarStart.toISOString())
-          .lte('start_time', calendarEnd.toISOString()),
+          .eq('user_id', user?.id),
         
         supabase
           .from('study_sessions')
@@ -1022,9 +1021,10 @@ const Calendar = () => {
   };
 
   const getEventsForDay = (day: Date) => {
-    return events.filter(event => 
-      isSameDay(new Date(event.start_time), day)
-    );
+    return events.filter(event => {
+      const eventDate = new Date(event.start_time);
+      return isSameDay(eventDate, day);
+    });
   };
 
   // Helper functions for course management
