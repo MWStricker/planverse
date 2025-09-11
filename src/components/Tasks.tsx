@@ -485,7 +485,9 @@ export const Tasks = () => {
     ...tasks.map(task => ({
       ...task,
       type: 'task',
-      priority: task.priority_score || calculatePriority(task.title, task.description, task.due_date)
+      priority: task.priority_score !== null && task.priority_score !== undefined 
+        ? task.priority_score 
+        : calculatePriority(task.title, task.description, task.due_date)
     })),
     ...events.map(event => ({
       ...event,
