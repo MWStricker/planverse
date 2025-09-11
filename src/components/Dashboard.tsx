@@ -1184,9 +1184,9 @@ export const Dashboard = () => {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground mb-1">
-                          {task.description && task.source_provider === 'canvas' ? (
+                          {task.description ? (
                             <div>
-                              {task.description.length > 80 ? (
+                              {task.description.length > 60 ? (
                                 expandedDescriptions.has(task.id) ? (
                                   <>
                                     <span>{task.description}</span>
@@ -1202,7 +1202,7 @@ export const Dashboard = () => {
                                   </>
                                 ) : (
                                   <>
-                                    <span>{task.description.slice(0, 80)}...</span>
+                                    <span>{task.description.slice(0, 60)}...</span>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1219,7 +1219,7 @@ export const Dashboard = () => {
                               )}
                             </div>
                           ) : (
-                            <span>{task.description || "No description available"}</span>
+                            <span>No description available</span>
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
