@@ -276,6 +276,7 @@ OUTPUT RULES:
           { role: 'user', content: contentParts as any },
         ],
         tools,
+        tool_choice: { type: 'function', function: { name: 'return_schedule_items' } }, // Force function call
       };
 
       if (paramsType === 'legacy') {
@@ -344,11 +345,17 @@ OUTPUT RULES:
     try {
       const toolCalls = aiData?.choices?.[0]?.message?.tool_calls || [];
       console.log('Found tool calls:', toolCalls.length);
+      console.log('Tool calls details:', JSON.stringify(toolCalls, null, 2));
       const fnCall = toolCalls.find((tc: any) => tc?.function?.name === 'return_schedule_items');
       if (fnCall?.function?.arguments) {
-        console.log('Parsing function arguments:', fnCall.function.arguments);
+        console.log('Function call found! Arguments:', fnCall.function.arguments);
+        console.log('Arguments type:', typeof fnCall.function.arguments);
+        console.log('Arguments length:', fnCall.function.arguments.length);
         parsed = JSON.parse(fnCall.function.arguments);
         console.log('Successfully parsed function call JSON');
+      } else {
+        console.log('No function call with arguments found');
+        console.log('fnCall:', fnCall);
       }
     } catch (e) { 
       console.error('Error parsing function call JSON:', e); 
