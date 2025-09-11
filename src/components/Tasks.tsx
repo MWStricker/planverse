@@ -1175,15 +1175,8 @@ export const Tasks = () => {
                     </div>
 
                     {item.is_recurring && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        <p className="font-medium">Next occurrences:</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {getNextRecurrences(item, 4).map((date, index) => (
-                            <span key={index} className="bg-muted px-2 py-1 rounded text-xs">
-                              {date.toLocaleDateString()}
-                            </span>
-                          ))}
-                        </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Next: {getNextRecurrences(item, 3).map(date => date.toLocaleDateString()).join(", ")}
                       </div>
                     )}
                   </div>

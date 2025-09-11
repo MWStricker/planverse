@@ -1003,16 +1003,9 @@ export const Dashboard = () => {
                         <p className="text-xs text-muted-foreground">{task.course_name}</p>
                       )}
                       {task.is_recurring && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          <p className="font-medium">Next occurrences:</p>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {getNextRecurrences(task, 3).map((date, index) => (
-                              <span key={index} className="bg-muted px-1 rounded text-xs">
-                                {format(date, "MMM dd")}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Next: {getNextRecurrences(task, 2).map(date => format(date, "MMM dd")).join(", ")}
+                        </p>
                       )}
                     </div>
                     <Badge variant={getPriorityColor(task.priority_score || 2)} className="text-xs">
