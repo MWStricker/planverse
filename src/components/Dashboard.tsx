@@ -1004,7 +1004,10 @@ export const Dashboard = () => {
                       )}
                       {task.is_recurring && (
                         <p className="text-xs text-muted-foreground">
-                          Recurrs {task.recurrence_type}
+                          {task.recurrence_type === 'weekly' && task.recurrence_pattern?.days 
+                            ? `Recurrs weekly on ${task.recurrence_pattern.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
+                            : `Recurrs ${task.recurrence_type}`
+                          }
                         </p>
                       )}
                     </div>

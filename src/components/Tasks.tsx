@@ -1176,7 +1176,10 @@ export const Tasks = () => {
 
                     {item.is_recurring && (
                       <div className="mt-1 text-xs text-muted-foreground">
-                        Recurrs {item.recurrence_type}
+                        {item.recurrence_type === 'weekly' && item.recurrence_pattern?.days 
+                          ? `Recurrs weekly on ${item.recurrence_pattern.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
+                          : `Recurrs ${item.recurrence_type}`
+                        }
                       </div>
                     )}
                   </div>
