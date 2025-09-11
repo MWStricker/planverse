@@ -90,18 +90,13 @@ export const Tasks = () => {
   const onSubmitTask = async (values: z.infer<typeof taskFormSchema>) => {
     if (!user) return;
 
-    const priorityMap = {
-      none: 0,
-      low: 1,
-      medium: 2,
-      high: 3,
-      critical: 4,
-    };
-
     // Combine date and time
     const dueDateTime = new Date(values.due_date);
     const [hours, minutes] = values.due_time.split(':');
     dueDateTime.setHours(parseInt(hours), parseInt(minutes));
+
+    // Use keyword-based priority calculation instead of form priority
+    const calculatedPriority = calculatePriority(values.title, values.description || '', dueDateTime.toISOString());
 
     try {
       const { data, error } = await supabase
@@ -112,7 +107,7 @@ export const Tasks = () => {
           description: values.description || null,
           course_name: values.course_name || null,
           due_date: dueDateTime.toISOString(),
-          priority_score: priorityMap[values.priority] || 0,
+          priority_score: calculatedPriority,
           completion_status: 'pending',
           source_provider: 'manual'
         })
@@ -148,18 +143,13 @@ export const Tasks = () => {
   const onEditTask = async (values: z.infer<typeof taskFormSchema>) => {
     if (!user || !editingTask) return;
 
-    const priorityMap = {
-      none: 0,
-      low: 1,
-      medium: 2,
-      high: 3,
-      critical: 4,
-    };
-
     // Combine date and time
     const dueDateTime = new Date(values.due_date);
     const [hours, minutes] = values.due_time.split(':');
     dueDateTime.setHours(parseInt(hours), parseInt(minutes));
+
+    // Use keyword-based priority calculation for edited tasks too
+    const calculatedPriority = calculatePriority(values.title, values.description || '', dueDateTime.toISOString());
 
     try {
       const { error } = await supabase
@@ -169,7 +159,7 @@ export const Tasks = () => {
           description: values.description || null,
           course_name: values.course_name || null,
           due_date: dueDateTime.toISOString(),
-          priority_score: priorityMap[values.priority] || 0,
+          priority_score: calculatedPriority,
         })
         .eq('id', editingTask.id);
 
