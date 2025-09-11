@@ -1,13 +1,16 @@
-import { useState } from "react";
-import { Calendar, Home, Upload, Settings, BookOpen, Target, Bell, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Home, Upload, Settings, BookOpen, Target, Bell, Users, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { getUniversityById } from "@/data/universities";
 import { AnalogClock } from "@/components/AnalogClock";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavigationProps {
   currentPage: string;
@@ -16,9 +19,75 @@ interface NavigationProps {
 
 export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   const [notifications] = useState(0);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [eventsCount, setEventsCount] = useState(0);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { liveEditedProfile } = useProfileEditing();
+
+  // Fetch course data from Canvas events
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: events, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('source_provider', 'canvas');
+
+        if (error) {
+          console.error('Error fetching course events:', error);
+          return;
+        }
+
+        if (events && events.length > 0) {
+          // Extract unique courses from Canvas events
+          const courseMap = new Map();
+          
+          events.forEach(event => {
+            // Extract course code from title format like [2025FA-PSY-100-007]
+            const courseMatch = event.title.match(/\[([A-Z0-9]+-)?([A-Z]+-\d+)/);
+            if (courseMatch) {
+              const courseCode = courseMatch[2]; // Get PSY-100 part
+              if (!courseMap.has(courseCode)) {
+                courseMap.set(courseCode, {
+                  code: courseCode,
+                  events: [],
+                  color: getCourseColor(courseCode)
+                });
+              }
+              courseMap.get(courseCode).events.push(event);
+            }
+          });
+
+          const uniqueCourses = Array.from(courseMap.values());
+          setCourses(uniqueCourses);
+          setEventsCount(events.length);
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+
+    fetchCourseData();
+  }, [user]);
+
+  // Generate consistent colors for courses
+  const getCourseColor = (courseCode: string) => {
+    const colors = [
+      'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200',
+      'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+      'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-200',
+      'bg-orange-100 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200',
+      'bg-pink-100 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800 text-pink-800 dark:text-pink-200',
+      'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200'
+    ];
+    
+    const hash = courseCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -26,7 +95,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
     { id: 'connect', label: 'Connect', icon: Users },
     { id: 'tasks', label: 'Tasks', icon: Target },
     { id: 'upload', label: 'Image Upload', icon: Upload },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
+    { id: 'courses', label: 'Courses', icon: BookOpen, badge: courses.length > 0 ? courses.length : null },
   ];
 
   return (
@@ -81,6 +150,14 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
                   {notifications}
                 </Badge>
               )}
+              {item.id === 'courses' && item.badge && (
+                <Badge 
+                  className="ml-auto bg-gradient-to-r from-primary/80 to-primary text-primary-foreground text-xs shadow-sm"
+                  variant="default"
+                >
+                  {item.badge}
+                </Badge>
+              )}
               
               {/* Glow effect for active items */}
               {isActive && (
@@ -89,6 +166,49 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
             </Button>
           );
         })}
+
+        {/* Course Preview Section */}
+        {courses.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-foreground">My Courses</h3>
+              <Badge variant="outline" className="text-xs">
+                {eventsCount} items
+              </Badge>
+            </div>
+            <ScrollArea className="h-32">
+              <div className="space-y-2">
+                {courses.slice(0, 4).map((course) => (
+                  <Card 
+                    key={course.code} 
+                    className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${course.color}`}
+                    onClick={() => onPageChange('courses')}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium truncate">{course.code}</p>
+                          <p className="text-xs opacity-75">{course.events.length} assignments</p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 opacity-50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {courses.length > 4 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full text-xs"
+                    onClick={() => onPageChange('courses')}
+                  >
+                    +{courses.length - 4} more courses
+                  </Button>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
       </nav>
 
       {/* User Section */}
