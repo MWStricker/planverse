@@ -73,7 +73,7 @@ export const OCRUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [calendarTypeHint, setCalendarTypeHint] = useState<'auto' | 'canvas' | 'events'>('auto');
+  const [calendarTypeHint, setCalendarTypeHint] = useState<'auto' | 'google-calendar' | 'school-schedule' | 'syllabus' | 'event-flyer'>('auto');
 
   const formatLocalDate = (iso: string) => {
     const [y, m, d] = iso.split('-').map(Number);
@@ -405,13 +405,15 @@ export const OCRUpload = () => {
                 <div className="flex items-center justify-center gap-3 pt-2">
                   <span className="text-sm text-muted-foreground">Calendar type:</span>
                   <Select value={calendarTypeHint} onValueChange={(v) => setCalendarTypeHint(v as any)}>
-                    <SelectTrigger className="w-[220px]">
+                    <SelectTrigger className="w-[220px] bg-background border-border z-50">
                       <SelectValue placeholder="Auto detect" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border-border z-50">
                       <SelectItem value="auto">Auto detect</SelectItem>
-                      <SelectItem value="canvas">Canvas tasks (due dates only)</SelectItem>
-                      <SelectItem value="events">Events with times</SelectItem>
+                      <SelectItem value="google-calendar">Google Calendar</SelectItem>
+                      <SelectItem value="school-schedule">School Schedule</SelectItem>
+                      <SelectItem value="syllabus">Syllabus</SelectItem>
+                      <SelectItem value="event-flyer">Event Flyer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

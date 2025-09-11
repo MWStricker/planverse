@@ -74,11 +74,17 @@ CROSSED-OUT/COMPLETED ITEM DETECTION:
   * "Completed" or "Done" status
 - Only extract ACTIVE/PENDING items
 
-CALENDAR TYPE CLASSIFICATION:
-- CANVAS/ASSIGNMENT CALENDARS: Show homework, quizzes, exams with due dates
-  → Put these in "tasks" array with dueTime: null
-- EVENT CALENDARS: Show meetings, classes with specific times (e.g., "3:15 PM")
-  → Put these in "events" array with startTime/endTime
+ENHANCED CALENDAR TYPE CLASSIFICATION:
+- GOOGLE CALENDAR: Shows colorful events with clear time slots, often in week/month view with specific times
+  → Extract timed events to "events" array, tasks without times to "tasks" array
+- SCHOOL SCHEDULE: Class timetables with room numbers, course codes, and time blocks
+  → Extract classes as "events" with locations, recurring patterns
+- SYLLABUS: Assignment lists with due dates, often in table/list format with course information
+  → Extract assignments, homework, exams to "tasks" array with due dates
+- EVENT FLYER: Single event with specific time, date, location details
+  → Extract as single "event" with complete details
+- CANVAS/LMS CALENDARS: Assignment due dates in monthly grid format
+  → Extract assignments to "tasks" array with exact due dates from grid positions
 - MIXED CALENDARS: Contain both types - classify each item appropriately
 
 GRID POSITION ANALYSIS:
@@ -233,14 +239,24 @@ VISUAL COMPLETION DETECTION (CRITICAL):
   * Different background color indicating completion
 - Only extract ACTIVE items that appear normal/highlighted
 
-CANVAS VS EVENT CALENDAR DISTINCTION:
-- CANVAS ASSIGNMENTS: Homework, quizzes, discussions, projects (no times shown)
-  → Extract to tasks[] with dueTime: null
-- TIMED EVENTS: Classes, meetings, appointments with visible times ("3:15 PM", "2:00-3:30")
-  → Extract to events[] with startTime/endTime
+ENHANCED CALENDAR TYPE SPECIFIC ANALYSIS:
+- GOOGLE CALENDAR: Look for colorful event blocks, time slots, recurring patterns
+  → Extract timed events with locations, all-day events as tasks
+- SCHOOL SCHEDULE: Identify course codes, room numbers, class periods
+  → Extract as recurring events with location data and time patterns
+- SYLLABUS: Focus on assignment lists, due dates, course information
+  → Extract all assignments as tasks with due dates and course context
+- EVENT FLYER: Single event focus with detailed information
+  → Extract as single event with complete time, date, location details
+- CANVAS/LMS: Monthly grid with assignment due dates
+  → Map each item to exact day square position for precise dating
 
-PRECISION REQUIREMENTS:
-- Use exact assignment names (even if truncated with "...")
+PRECISION REQUIREMENTS BY TYPE:
+- Google Calendar: Preserve color coding info, extract recurring patterns
+- School Schedule: Include room numbers, course codes, time blocks
+- Syllabus: Maintain course context, assignment types, point values
+- Event Flyer: Extract all event details including contact info
+- Canvas/LMS: Use exact assignment names (even if truncated with "...")
 - Include visible course codes (e.g., "2025FA-AA-100-001")
 - Maintain original capitalization and formatting
 - Set confidence 90+ for clearly visible items
