@@ -48,15 +48,15 @@ interface WeatherData {
 const Calendar = () => {
   // Function to calculate animation duration based on text length
   const getAnimationDuration = (text: string) => {
-    // Much more aggressive scaling based on character count
-    const charactersPerSecond = 8; // Very slow, comfortable reading
-    const baseTime = 1; // Quick start
+    // Very generous time calculation to ensure full readability
+    const charactersPerSecond = 3; // Much slower reading speed
+    const baseTime = 2; // Longer start time
     const readingTime = text.length / charactersPerSecond;
-    const pauseTime = 1.5; // Time to pause at end
+    const pauseTime = 3; // Much longer pause at end
     const totalTime = baseTime + readingTime + pauseTime;
     
-    // Wide range: very short for short text, very long for long text
-    return Math.min(Math.max(totalTime, 1), 20);
+    // Very generous range - minimum 4 seconds, up to 30 seconds
+    return Math.min(Math.max(totalTime, 4), 30);
   };
   const { user } = useAuth();
   const { toast } = useToast();
