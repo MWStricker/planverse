@@ -1192,38 +1192,10 @@ export const Dashboard = () => {
                         <div className="text-sm text-muted-foreground mb-1">
                           {task.description ? (
                             <div>
-                              {task.description.length > 60 ? (
-                                <>
-                                  <span>{task.description.slice(0, 60)}</span>
-                                  {!expandedDescriptions.has(task.id) && <span>...</span>}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleDescription(task.id);
-                                    }}
-                                    className="ml-1 text-primary hover:underline text-xs font-medium"
-                                  >
-                                    {expandedDescriptions.has(task.id) ? "less" : "more"}
-                                  </button>
-                                  {expandedDescriptions.has(task.id) && (
-                                    <div className="mt-1">
-                                      <span>{task.description.substring(60).trim()}</span>
-                                      {task.source_provider === 'canvas' && task.description.length === 63 && (
-                                        <div className="mt-1 text-xs text-orange-600">
-                                          ⚠️ May be incomplete - check Canvas for full instructions
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <div>
-                                  <span>{task.description}</span>
-                                  {task.source_provider === 'canvas' && task.description.length === 63 && (
-                                    <div className="mt-1 text-xs text-orange-600">
-                                      ⚠️ May be incomplete - check Canvas for full instructions
-                                    </div>
-                                  )}
+                              <span>{task.description}</span>
+                              {task.source_provider === 'canvas' && task.description.length === 63 && (
+                                <div className="mt-1 text-xs text-orange-600">
+                                  ⚠️ May be incomplete - check Canvas for full instructions
                                 </div>
                               )}
                             </div>

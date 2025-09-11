@@ -36,6 +36,7 @@ function parseICS(icsContent: string): CalendarEvent[] {
       continue;
     } else if (multiLineProperty && multiLineValue) {
       // Process the completed multi-line property
+      console.log(`Processing multi-line property ${multiLineProperty} with full value (length: ${multiLineValue.length})`);
       processProperty(multiLineProperty, multiLineValue, currentEvent);
       multiLineProperty = '';
       multiLineValue = '';
@@ -65,7 +66,10 @@ function parseICS(icsContent: string): CalendarEvent[] {
         }
         
         events.push(currentEvent as CalendarEvent);
-        console.log(`Added event: "${currentEvent.title}" at ${currentEvent.start_time}`);
+        console.log(`Added event: "${currentEvent.title}" at ${currentEvent.start_time}, description length: ${currentEvent.description?.length || 0}`);
+        if (currentEvent.description && currentEvent.description.length > 0) {
+          console.log(`Description preview: "${currentEvent.description.substring(0, 100)}${currentEvent.description.length > 100 ? '...' : ''}"`);
+        }
       } else {
         console.log('Skipped event with no title');
       }
@@ -95,8 +99,10 @@ function processProperty(property: string, value: string, currentEvent: Partial<
   
   if (property.startsWith('SUMMARY')) {
     currentEvent.title = cleanValue;
+    console.log(`Title set: "${cleanValue}"`);
   } else if (property.startsWith('DESCRIPTION')) {
     currentEvent.description = cleanValue;
+    console.log(`Description set (length ${cleanValue.length}): "${cleanValue.substring(0, 100)}${cleanValue.length > 100 ? '...' : ''}"`);
   } else if (property.startsWith('DTSTART')) {
     currentEvent.start_time = parseICSDate(value);
   } else if (property.startsWith('DTEND')) {
