@@ -62,6 +62,33 @@ export type Database = {
         }
         Relationships: []
       }
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
@@ -113,6 +140,33 @@ export type Database = {
         }
         Relationships: []
       }
+      friend_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ocr_uploads: {
         Row: {
           created_at: string
@@ -152,14 +206,71 @@ export type Database = {
         }
         Relationships: []
       }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      posts: {
+        Row: {
+          comments_count: number | null
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          likes_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments_count?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           campus_location: string | null
           created_at: string
           display_name: string | null
           email: string | null
+          graduation_year: number | null
           id: string
+          is_public: boolean | null
           major: string | null
           school: string | null
           timezone: string | null
@@ -168,11 +279,14 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           campus_location?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          graduation_year?: number | null
           id?: string
+          is_public?: boolean | null
           major?: string | null
           school?: string | null
           timezone?: string | null
@@ -181,11 +295,14 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           campus_location?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          graduation_year?: number | null
           id?: string
+          is_public?: boolean | null
           major?: string | null
           school?: string | null
           timezone?: string | null
