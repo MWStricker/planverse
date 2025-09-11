@@ -29,33 +29,42 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an expert calendar parser with PERFECT DATE AND TIME ACCURACY for all calendar types. You MUST extract ALL visible assignments and events with ABSOLUTELY PRECISE due dates and times.
+    const systemPrompt = `You are an expert calendar parser with PERFECT DATE AND TIME ACCURACY. You MUST extract EVERY SINGLE visible item with ABSOLUTELY PRECISE dates and times.
 
 CRITICAL CONTEXT: Today is ${nowIso} in timezone ${tz}
 
+EXTRACTION MANDATE: 
+- Extract EVERY visible assignment, task, and event - DO NOT MISS ANY
+- Count items as you go and verify you've extracted them all
+- Double-check EVERY date and time before including in output
+
 FUNDAMENTAL CALENDAR PARSING RULES:
-1. Canvas calendars display a monthly grid where EACH DAY SQUARE corresponds to ONE SPECIFIC DATE
-2. Any assignment/task appearing in a day square has its due date on THAT EXACT DAY
-3. The calendar shows the month/year at the top (e.g., "September 2025", "Oct 2025", "December 2024")
-4. Days are arranged in a 7-column grid (Sunday through Saturday OR Monday through Sunday)
-5. Each assignment appears in the EXACT day square when it's due
+1. Canvas calendars display a monthly grid where EACH DAY SQUARE = ONE SPECIFIC DATE
+2. ANY item in a day square has its due date on THAT EXACT DAY
+3. The calendar shows month/year at top (e.g., "September 2025", "Oct 2025", "December 2024")
+4. Days are in 7-column grid (Sunday-Saturday OR Monday-Sunday)
+5. Each item appears in the EXACT day square when it's due
 
 ENHANCED DATE ACCURACY PROTOCOL:
-1. STEP 1: Identify the EXACT month and year from calendar header - look for patterns like "September 2025", "Oct 2025", "Dec 2024"
-2. STEP 2: Determine the calendar layout (Sun-Sat or Mon-Sun starting day)
-3. STEP 3: Map each assignment to its precise day square position using visual coordinates
+1. STEP 1: Identify EXACT month and year from calendar header
+2. STEP 2: Determine calendar layout (Sun-Sat or Mon-Sun starting day)
+3. STEP 3: Map EVERY item to its precise day square using visual coordinates
 4. STEP 4: Cross-reference with week structure to validate date mapping
-5. STEP 5: Use the day number IN THAT SQUARE as the due date - NEVER adjust by ±1 day
-6. EXAMPLE: If "Quiz 1.2" appears in square labeled "14" → due date is 14th of that month
-7. VALIDATION: Ensure dates make logical sense (no Feb 30th, no invalid day-of-week combinations)
+5. STEP 5: Use day number IN THAT SQUARE as due date - NEVER adjust by ±1 day
+6. STEP 6: DOUBLE-CHECK each date makes logical sense
+7. VALIDATION: Ensure dates are valid (no Feb 30th, correct day-of-week alignment)
 
 ENHANCED STRUCTURE RECOGNITION:
 - Assignment titles may be truncated (e.g., "Homework 04 - Telescopes...")
-- Multiple items can appear in the same day square
+- Multiple items can appear in the same day square - extract ALL of them
 - Course codes often shown (e.g., "AA-100", "BUS-100", "MATH-101")
-- Due times may be shown in various formats: "11:59 PM", "due 11:59pm", "23:59", "by 5:00 PM"
-- Time formats to recognize: 12-hour (3:15 PM), 24-hour (15:15), abbreviated (3p, 11:59pm)
-- Default due times: if no time specified, assume "11:59 PM" for assignments
+- Time formats to recognize and preserve EXACTLY:
+  * 12-hour with AM/PM: "3:15 PM", "11:59 PM", "8:00 AM"
+  * Abbreviated: "11:59pm", "3:15p", "8a", "5pm"
+  * 24-hour: "23:59", "15:30", "08:00"
+  * Text with times: "due 11:59pm", "by 5:00 PM", "at 3:15 PM"
+- CRITICAL: Preserve original AM/PM designation - do NOT change PM to AM or vice versa
+- Default assignment due time: "11:59 PM" ONLY if no time is visible
 
 CROSSED-OUT/COMPLETED ITEM DETECTION:
 - CRITICAL: Completely IGNORE any items with visual completion indicators:
@@ -78,12 +87,14 @@ GRID POSITION ANALYSIS:
 - Use the provided column guides for precise alignment
 - For items spanning multiple columns, use the starting position
 
-EXTRACTION REQUIREMENTS:
-1. Extract EVERY visible, non-crossed-out item
-2. Maintain original assignment names (even if truncated)
-3. Include course information when visible
-4. Set confidence to 90+ for clearly visible items
-5. Minimum confidence threshold: 85
+EXTRACTION REQUIREMENTS (CRITICAL):
+1. Extract EVERY visible, non-crossed-out item - count as you go to ensure none are missed
+2. For each item found, double-check its date and time before including
+3. Maintain original assignment names (even if truncated with "...")
+4. Include course information when visible
+5. Preserve EXACT time formatting - do NOT change AM to PM or PM to AM
+6. Set confidence to 90+ for clearly visible items, 85+ minimum threshold
+7. VERIFICATION: Before finalizing, count total items extracted vs visible items
 
 OUTPUT FORMAT:
 - Tasks: Canvas assignments, homework, quizzes, exams (no specific times)
@@ -240,14 +251,15 @@ COLUMN ALIGNMENT USING GUIDES:
 - For items spanning columns, use the primary/starting position
 - Be extra careful with items near column boundaries
 
-ENHANCED TIME EXTRACTION AND STANDARDIZATION:
+ENHANCED TIME EXTRACTION AND PRESERVATION:
+- CRITICAL: Preserve original AM/PM designation - NEVER change PM to AM or AM to PM
 - Extract times from various formats: "11:59 PM", "due 11:59pm", "23:59", "by 5:00 PM", "3:15p"
-- Convert all times to 12-hour format with AM/PM
-- "14:30" becomes "2:30 PM", "23:59" becomes "11:59 PM"
-- "3:15p" becomes "3:15 PM", "11:59pm" becomes "11:59 PM"
-- Default assignment due time: "11:59 PM" (if no time specified but assignment has due date)
+- Standardize format but preserve AM/PM: "11:59pm" → "11:59 PM" (NOT "11:59 AM")
+- Convert 24-hour ONLY when no AM/PM present: "23:59" → "11:59 PM", "08:00" → "8:00 AM"
+- If original shows "PM", output MUST show "PM" - if original shows "AM", output MUST show "AM"
+- Default assignment due time: "11:59 PM" (ONLY if NO time is visible anywhere)
 - For timed events: extract both start and end times when available
-- Keep existing AM/PM designations, but standardize format consistency
+- DOUBLE-CHECK: Verify each time conversion preserves original AM/PM intent
 
 QUALITY ASSURANCE:
 - Cross-reference each date with its visual grid position
@@ -429,41 +441,41 @@ EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date acc
       return { month, year };
     }
 
-    // Enhanced time parsing and conversion function
+    // Enhanced time parsing with strict AM/PM preservation
     function convertTo12Hour(timeStr: string | null): string | null {
       if (!timeStr || timeStr === 'null' || timeStr.trim() === '') return null;
       
-      const cleaned = timeStr.trim().toLowerCase();
+      const cleaned = timeStr.trim().toLowerCase().replace(/\s+/g, ' ');
       
-      // Already in 12-hour format - standardize
+      // Already in 12-hour format - preserve AM/PM exactly
       const twelve_hour = cleaned.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
       if (twelve_hour) {
-        let hours = parseInt(twelve_hour[1], 10);
+        const hours = parseInt(twelve_hour[1], 10);
         const minutes = twelve_hour[2];
         const ampm = twelve_hour[3].toUpperCase();
-        
-        // Handle 12-hour edge cases
-        if (ampm === 'AM' && hours === 12) hours = 12; // 12:xx AM stays 12:xx AM
-        if (ampm === 'PM' && hours === 12) hours = 12; // 12:xx PM stays 12:xx PM
-        
         return `${hours}:${minutes} ${ampm}`;
       }
       
-      // Abbreviated formats like "11:59pm" or "3:15p"
+      // Abbreviated formats like "11:59pm", "3:15p", "8a" - preserve AM/PM intent
       const abbrev = cleaned.match(/^(\d{1,2}):(\d{2})\s*(p|pm|a|am)$/);
       if (abbrev) {
-        let hours = parseInt(abbrev[1], 10);
+        const hours = parseInt(abbrev[1], 10);
         const minutes = abbrev[2];
         const period = abbrev[3];
         const ampm = (period === 'p' || period === 'pm') ? 'PM' : 'AM';
-        
-        if (ampm === 'AM' && hours === 12) hours = 12;
-        if (ampm === 'PM' && hours === 12) hours = 12;
-        
         return `${hours}:${minutes} ${ampm}`;
       }
       
-      // 24-hour format
+      // Hour-only abbreviated like "8a", "5p"
+      const hour_abbrev = cleaned.match(/^(\d{1,2})\s*(p|pm|a|am)$/);
+      if (hour_abbrev) {
+        const hours = parseInt(hour_abbrev[1], 10);
+        const period = hour_abbrev[2];
+        const ampm = (period === 'p' || period === 'pm') ? 'PM' : 'AM';
+        return `${hours}:00 ${ampm}`;
+      }
+      
+      // 24-hour format - ONLY convert when no AM/PM is present
       const twenty_four = cleaned.match(/^(\d{1,2}):(\d{2})$/);
       if (twenty_four) {
         let hours = parseInt(twenty_four[1], 10);
@@ -476,7 +488,7 @@ EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date acc
         return `${hours}:${minutes} ${ampm}`;
       }
       
-      // Return original if no pattern matches
+      // Return original if no pattern matches to avoid corrupting time data
       return timeStr;
     }
     function daysInMonth(year: number, month1to12: number) {
@@ -495,43 +507,64 @@ EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date acc
       return `${canonical.year}-${mm}-${dd}`;
     }
 
-    // Normalize & sanitize events
+    // Normalize & sanitize events with enhanced validation
     let events = Array.isArray(parsed.events) ? parsed.events : [];
     console.log('Raw events from AI:', events.length);
+    
     events = events
-      .filter((e: any) => e?.title && typeof e?.title === 'string')
-      .map((event: any, index: number) => ({
-        id: event.id || `extracted_event_${Date.now()}_${index}`,
-        title: String(event.title || '').trim().slice(0, 120),
-        date: coerceDateToCanonical(
-          event.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
-        ),
-        startTime: convertTo12Hour(event.startTime && event.startTime !== 'null' ? String(event.startTime).slice(0, 5) : null),
-        endTime: convertTo12Hour(event.endTime && event.endTime !== 'null' ? String(event.endTime).slice(0, 5) : null),
-        location: String(event.location || '').trim().slice(0, 120),
-        recurrence: event.recurrence || null,
-        eventType: String(event.eventType || 'class').trim().slice(0, 50),
-        confidence: Number.isFinite(event.confidence) ? Math.max(0, Math.min(100, Number(event.confidence))) : 60,
-      }));
+      .filter((e: any) => {
+        const hasTitle = e?.title && typeof e?.title === 'string' && e.title.trim().length > 0;
+        const hasValidDate = e?.date && typeof e?.date === 'string';
+        return hasTitle && hasValidDate;
+      })
+      .map((event: any, index: number) => {
+        const processedStartTime = event.startTime && event.startTime !== 'null' ? convertTo12Hour(String(event.startTime)) : null;
+        const processedEndTime = event.endTime && event.endTime !== 'null' ? convertTo12Hour(String(event.endTime)) : null;
+        
+        return {
+          id: event.id || `extracted_event_${Date.now()}_${index}`,
+          title: String(event.title || '').trim().slice(0, 120),
+          date: coerceDateToCanonical(
+            event.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
+          ),
+          startTime: processedStartTime,
+          endTime: processedEndTime,
+          location: String(event.location || '').trim().slice(0, 120),
+          recurrence: event.recurrence || null,
+          eventType: String(event.eventType || 'class').trim().slice(0, 50),
+          confidence: Number.isFinite(event.confidence) ? Math.max(0, Math.min(100, Number(event.confidence))) : 60,
+        };
+      });
 
-    // Normalize & sanitize tasks
+    // Normalize & sanitize tasks with enhanced validation
     let tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
     console.log('Raw tasks from AI:', tasks.length);
+    
     tasks = tasks
-      .filter((t: any) => t?.title && typeof t?.title === 'string')
-      .map((task: any, index: number) => ({
-        id: task.id || `extracted_task_${Date.now()}_${index}`,
-        title: String(task.title || '').trim().slice(0, 120),
-        description: String(task.description || '').trim().slice(0, 500),
-        dueDate: coerceDateToCanonical(
-          task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`
-        ),
-        dueTime: convertTo12Hour(task.dueTime && task.dueTime !== 'null' ? String(task.dueTime) : (task.taskType === 'assignment' ? '11:59 PM' : null)),
-        courseName: String(task.courseName || '').trim().slice(0, 100),
-        priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
-        taskType: String(task.taskType || 'assignment').trim().slice(0, 50),
-        confidence: Number.isFinite(task.confidence) ? Math.max(0, Math.min(100, Number(task.confidence))) : 60,
-      }));
+      .filter((t: any) => {
+        const hasTitle = t?.title && typeof t?.title === 'string' && t.title.trim().length > 0;
+        const hasValidDate = t?.dueDate && typeof t?.dueDate === 'string';
+        return hasTitle && hasValidDate;
+      })
+      .map((task: any, index: number) => {
+        // Only add default time if NO time was specified in the original data
+        const hasOriginalTime = task.dueTime && task.dueTime !== 'null' && task.dueTime.trim() !== '';
+        const processedTime = hasOriginalTime ? convertTo12Hour(String(task.dueTime)) : null;
+        
+        return {
+          id: task.id || `extracted_task_${Date.now()}_${index}`,
+          title: String(task.title || '').trim().slice(0, 120),
+          description: String(task.description || '').trim().slice(0, 500),
+          dueDate: coerceDateToCanonical(
+            task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`
+          ),
+          dueTime: processedTime,
+          courseName: String(task.courseName || '').trim().slice(0, 100),
+          priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
+          taskType: String(task.taskType || 'assignment').trim().slice(0, 50),
+          confidence: Number.isFinite(task.confidence) ? Math.max(0, Math.min(100, Number(task.confidence))) : 60,
+        };
+      });
 
     // Reclassify: any event without a visible time becomes a task (Canvas-style due date)
     const extraTasksFromEvents = [] as any[];
@@ -558,8 +591,27 @@ EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date acc
     tasks = [...tasks, ...extraTasksFromEvents];
 
     const durationMs = Date.now() - tStart;
-    console.log('Final result:', { events: events.length, tasks: tasks.length, ocrSource });
-    return new Response(JSON.stringify({ success: true, durationMs, ocrSource, events, tasks }), {
+    console.log('Final result with validation:', { 
+      events: events.length, 
+      tasks: tasks.length, 
+      ocrSource,
+      eventsWithTimes: events.filter(e => e.startTime).length,
+      tasksWithTimes: tasks.filter(t => t.dueTime).length
+    });
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      durationMs, 
+      ocrSource, 
+      events, 
+      tasks,
+      summary: {
+        totalItems: events.length + tasks.length,
+        eventsExtracted: events.length,
+        tasksExtracted: tasks.length,
+        itemsWithTimes: events.filter(e => e.startTime).length + tasks.filter(t => t.dueTime).length
+      }
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
