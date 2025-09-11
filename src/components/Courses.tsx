@@ -302,10 +302,10 @@ export const Courses = () => {
           const filteredAssignments = allAssignments.filter(assignment => getAssignmentStatus(assignment) !== 'overdue');
 
           return (
-            <Card key={course.code} className={`${course.color} border-2`}>
+            <Card key={course.code} className={`${course.color} border-2 transition-all duration-200`}>
               <Collapsible open={!isCollapsed} onOpenChange={() => toggleCourse(course.code)}>
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-background/10 transition-colors">
+                  <CardHeader className="cursor-pointer hover:bg-background/10 transition-all duration-200 ease-out">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <CourseIcon className="h-6 w-6" />
@@ -323,17 +323,17 @@ export const Courses = () => {
                           </Badge>
                         )}
                         {isCollapsed ? (
-                          <ChevronRight className="h-4 w-4" />
+                          <ChevronRight className="h-4 w-4 transition-transform duration-200 ease-out" />
                         ) : (
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown className="h-4 w-4 transition-transform duration-200 ease-out" />
                         )}
                       </div>
                     </div>
                   </CardHeader>
                 </CollapsibleTrigger>
                 
-                <CollapsibleContent>
-                  <CardContent className="space-y-4">
+                <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                  <CardContent className="space-y-4 animate-fade-in">
                  {allAssignments.length > 0 ? (
                    <div className="space-y-3">
                      {allAssignments
@@ -343,7 +343,7 @@ export const Courses = () => {
                          const dueDate = assignment.due_date || assignment.end_time;
                          
                          return (
-                           <div key={assignment.id || index} className="flex items-center justify-between p-3 bg-background/50 rounded-lg border">
+                           <div key={assignment.id || index} className="flex items-center justify-between p-3 bg-background/50 rounded-lg border transition-all duration-200 hover:bg-background/70 hover:scale-[1.01]">
                              <div className="flex items-center gap-3 min-w-0 flex-1">
                                {status === 'completed' ? (
                                  <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
