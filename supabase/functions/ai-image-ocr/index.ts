@@ -243,7 +243,7 @@ Extract EVERYTHING visible with maximum precision.`;
                       eventType: { type: 'string' },
                       confidence: { type: 'number', minimum: 0, maximum: 100 },
                     },
-                    required: ['title','date','confidence']
+                    required: ['id','title','date','startTime','endTime','location','recurrence','eventType','confidence']
                   }
                 },
                 tasks: {
@@ -262,7 +262,7 @@ Extract EVERYTHING visible with maximum precision.`;
                       taskType: { type: 'string' },
                       confidence: { type: 'number', minimum: 0, maximum: 100 },
                     },
-                    required: ['title','dueDate','confidence']
+                    required: ['id','title','description','dueDate','dueTime','courseName','priority','taskType','confidence']
                   }
                 }
               },
