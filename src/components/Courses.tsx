@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText } from "lucide-react";
+import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
@@ -21,7 +23,20 @@ interface Course {
 export const Courses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+
+  const toggleCourse = (courseCode: string) => {
+    setCollapsedCourses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(courseCode)) {
+        newSet.delete(courseCode);
+      } else {
+        newSet.add(courseCode);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -279,72 +294,88 @@ export const Courses = () => {
             return dateA.getTime() - dateB.getTime();
           });
 
+          const isCollapsed = collapsedCourses.has(course.code);
+          const filteredAssignments = allAssignments.filter(assignment => getAssignmentStatus(assignment) !== 'overdue');
+
           return (
             <Card key={course.code} className={`${course.color} border-2`}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CourseIcon className="h-6 w-6" />
-                    <div>
-                      <CardTitle className="text-xl">{course.code}</CardTitle>
-                      <p className="text-sm opacity-80">
-                        {course.totalAssignments} assignments • {course.completedAssignments} completed
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {course.upcomingAssignments > 0 && (
-                      <Badge variant="outline" className="bg-background/50">
-                        {course.upcomingAssignments} upcoming
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {allAssignments.length > 0 ? (
-                  <div className="space-y-3">
-                    {allAssignments.map((assignment, index) => {
-                      const status = getAssignmentStatus(assignment);
-                      const dueDate = assignment.due_date || assignment.end_time;
-                      
-                      return (
-                        <div key={assignment.id || index} className="flex items-center justify-between p-3 bg-background/50 rounded-lg border">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            {status === 'completed' ? (
-                              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                            ) : (
-                              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm truncate">
-                                {assignment.title.replace(/\[.*?\]/g, '').trim()}
-                              </p>
-                              {dueDate && (
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Calendar className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatAssignmentDate(dueDate)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex-shrink-0">
-                            {getStatusBadge(status)}
-                          </div>
+              <Collapsible open={!isCollapsed} onOpenChange={() => toggleCourse(course.code)}>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-background/10 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CourseIcon className="h-6 w-6" />
+                        <div>
+                          <CardTitle className="text-xl">{course.code}</CardTitle>
+                          <p className="text-sm opacity-80">
+                            {filteredAssignments.length} assignments • {course.completedAssignments} completed
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {course.upcomingAssignments > 0 && (
+                          <Badge variant="outline" className="bg-background/50">
+                            {course.upcomingAssignments} upcoming
+                          </Badge>
+                        )}
+                        {isCollapsed ? (
+                          <ChevronRight className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
+                 {allAssignments.length > 0 ? (
+                   <div className="space-y-3">
+                     {allAssignments
+                       .filter(assignment => getAssignmentStatus(assignment) !== 'overdue')
+                       .map((assignment, index) => {
+                         const status = getAssignmentStatus(assignment);
+                         const dueDate = assignment.due_date || assignment.end_time;
+                         
+                         return (
+                           <div key={assignment.id || index} className="flex items-center justify-between p-3 bg-background/50 rounded-lg border">
+                             <div className="flex items-center gap-3 min-w-0 flex-1">
+                               {status === 'completed' ? (
+                                 <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                               ) : (
+                                 <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                               )}
+                               <div className="min-w-0 flex-1">
+                                 <p className="font-medium text-sm truncate">
+                                   {assignment.title.replace(/\[.*?\]/g, '').trim()}
+                                 </p>
+                                 {dueDate && (
+                                   <div className="flex items-center gap-2 mt-1">
+                                     <Calendar className="h-3 w-3 text-muted-foreground" />
+                                     <span className="text-xs text-muted-foreground">
+                                       {formatAssignmentDate(dueDate)}
+                                     </span>
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                             <div className="flex-shrink-0">
+                               {getStatusBadge(status)}
+                             </div>
+                           </div>
+                         );
+                       })}
+                   </div>
                 ) : (
                   <div className="text-center py-6 text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No assignments found for this course</p>
                   </div>
                 )}
-              </CardContent>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
             </Card>
           );
         })}
