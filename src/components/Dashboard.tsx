@@ -129,6 +129,42 @@ export const Dashboard = () => {
     return 0;
   });
 
+  // Get today's Canvas assignments from events
+  const todaysCanvasAssignments = userEvents.filter(event => {
+    if (event.event_type !== 'assignment' || event.source_provider !== 'canvas') return false;
+    const eventDate = new Date(event.start_time || event.end_time);
+    const today = new Date();
+    return (
+      eventDate.getDate() === today.getDate() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getFullYear() === today.getFullYear()
+    );
+  }).map(event => ({
+    // Convert Canvas events to task-like objects for display
+    id: event.id,
+    title: event.title,
+    due_date: event.start_time || event.end_time,
+    priority_score: 3, // Default to high priority for Canvas assignments
+    completion_status: 'pending',
+    source_provider: 'canvas',
+    course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course',
+    description: event.description || 'Canvas Assignment',
+    event_type: 'assignment'
+  }));
+
+  // Combine tasks and Canvas assignments for today
+  const allTodaysItems = [...todaysTasks, ...todaysCanvasAssignments].sort((a, b) => {
+    // First sort by priority, then by due time
+    if ((b.priority_score || 2) !== (a.priority_score || 2)) {
+      return (b.priority_score || 2) - (a.priority_score || 2);
+    }
+    // If same priority, sort by due time
+    if (a.due_date && b.due_date) {
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    }
+    return 0;
+  });
+
   // Get priority label and color functions
   const getPriorityLabel = (priority: number): string => {
     switch (priority) {
@@ -953,8 +989,8 @@ export const Dashboard = () => {
                   <Brain className="h-6 w-6 animate-pulse text-primary mr-2" />
                   <span className="text-sm text-muted-foreground">AI analyzing your schedule...</span>
                 </div>
-              ) : todaysTasks.length > 0 ? (
-                todaysTasks.map((task) => (
+              ) : allTodaysItems.length > 0 ? (
+                allTodaysItems.map((task) => (
                   <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
                     <div className={`w-3 h-3 rounded-full ${
                       task.priority_score === 4 ? 'bg-destructive' :
@@ -968,6 +1004,11 @@ export const Dashboard = () => {
                         {task.source_provider === 'canvas' && (
                           <Badge variant="outline" className="text-xs px-1 bg-blue-50 border-blue-200 text-blue-700">
                             Canvas
+                          </Badge>
+                        )}
+                        {task.event_type === 'assignment' && (
+                          <Badge variant="outline" className="text-xs px-1 bg-green-50 border-green-200 text-green-700">
+                            Assignment
                           </Badge>
                         )}
                         {task.is_recurring && (
@@ -1103,8 +1144,8 @@ export const Dashboard = () => {
                     </div>
                   </div>
                 ))
-              ) : todaysTasks.length > 0 ? (
-                todaysTasks.map((task, index) => (
+              ) : allTodaysItems.length > 0 ? (
+                allTodaysItems.map((task, index) => (
                   <div 
                     key={task.id} 
                     className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border"
@@ -1127,6 +1168,11 @@ export const Dashboard = () => {
                           {task.source_provider === 'canvas' && (
                             <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
                               Canvas
+                            </Badge>
+                          )}
+                          {task.event_type === 'assignment' && (
+                            <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                              Assignment
                             </Badge>
                           )}
                           {task.course_name && (
