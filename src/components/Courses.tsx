@@ -48,12 +48,14 @@ export const Courses = () => {
 
         console.log('Canvas events found:', events.length);
         console.log('Canvas tasks found:', tasks.length);
+        console.log('First 5 event titles:', events.slice(0, 5).map(e => e.title));
 
         // Process courses from Canvas events
         const coursesMap = new Map();
 
         // Process events first
-        events.forEach(event => {
+        events.forEach((event, index) => {
+          console.log(`Event ${index + 1}:`, event.title);
           const courseCode = extractCourseCode(event.title, true);
           console.log('Processing event:', event.title, 'extracted course:', courseCode);
           
