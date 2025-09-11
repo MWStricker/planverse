@@ -454,14 +454,71 @@ const Calendar = () => {
       console.log('User ID:', user.id);
       console.log('Feed URL:', canvasFeedUrl.trim());
       
-      // Check current session
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session:', sessionData);
-      
-      // Check auth user
-      const { data: authUser } = await supabase.auth.getUser();
-      console.log('Auth user:', authUser);
-      
+      // Check for existing Canvas connections
+      const { data: existingConnections, error: fetchError } = await supabase
+        .from('calendar_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('provider', 'canvas');
+
+      if (fetchError) {
+        console.error('Error checking existing connections:', fetchError);
+        toast({
+          title: "Error",
+          description: "Failed to check existing connections",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // If there are existing Canvas connections, remove them and their data
+      if (existingConnections && existingConnections.length > 0) {
+        console.log('Removing existing Canvas connections and data...');
+        
+        // Delete all Canvas events for the user
+        const { error: eventsDeleteError } = await supabase
+          .from('events')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('source_provider', 'canvas');
+
+        if (eventsDeleteError) {
+          console.error('Error deleting Canvas events:', eventsDeleteError);
+        }
+
+        // Delete all Canvas tasks for the user (if any)
+        const { error: tasksDeleteError } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('source_provider', 'canvas');
+
+        if (tasksDeleteError) {
+          console.error('Error deleting Canvas tasks:', tasksDeleteError);
+        }
+
+        // Delete the old Canvas connections
+        const { error: connectionsDeleteError } = await supabase
+          .from('calendar_connections')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('provider', 'canvas');
+
+        if (connectionsDeleteError) {
+          console.error('Error deleting Canvas connections:', connectionsDeleteError);
+        } else {
+          console.log('Successfully removed existing Canvas data');
+          toast({
+            title: "Previous Canvas Feed Replaced",
+            description: "Previous Canvas schedule has been removed and will be replaced with the new one",
+          });
+        }
+
+        // Update local state immediately
+        setEvents(prev => prev.filter(event => event.source_provider !== 'canvas'));
+        setTasks(prev => prev.filter(task => task.source_provider !== 'canvas'));
+      }
+
       // Validate URL format (basic check for calendar feed URLs)
       const url = canvasFeedUrl.trim();
       if (!url.startsWith('http') || !url.includes('calendar')) {
@@ -473,33 +530,32 @@ const Calendar = () => {
         return;
       }
 
-      const insertData = {
-        user_id: user.id,
-        provider: 'canvas',
-        provider_id: url,
-        sync_settings: {
-          feed_url: url,
-          sync_type: 'assignments',
-          auto_sync: true
-        },
-        is_active: true
-      };
-      
-      console.log('Attempting to insert:', insertData);
-
+      // Add the new Canvas connection
       const { data, error } = await supabase
         .from('calendar_connections')
-        .insert(insertData)
+        .insert({
+          user_id: user.id,
+          provider: 'canvas',
+          provider_id: url,
+          is_active: true,
+          sync_settings: {
+            feed_url: url,
+            auto_sync: true,
+            sync_type: 'assignments'
+          }
+        })
         .select()
         .single();
 
-      console.log('Supabase response:', { data, error });
-
       if (error) {
-        console.error('Detailed error:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Error details:', error.details);
+        console.error('Error adding calendar feed:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        
         toast({
           title: "Error",
           description: `Failed to add calendar feed: ${error.message}`,
@@ -515,6 +571,7 @@ const Calendar = () => {
         
         // Refresh calendar connections to show the new feed
         fetchCalendarConnections();
+        
         // Trigger Canvas feed sync
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-canvas-feed', {
@@ -545,21 +602,19 @@ const Calendar = () => {
             variant: "destructive",
           });
         }
-        
-        setIsAddingFeed(false);
-        fetchCalendarConnections();
       }
     } catch (error) {
-      console.error('Unexpected error adding calendar feed:', error);
+      console.error('Unexpected error:', error);
       toast({
         title: "Error",
-        description: `An unexpected error occurred: ${error.message || error}`,
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
       setIsAddingFeed(false);
     }
   };
+
 
   const removeCalendarConnection = async (connectionId: string) => {
     try {
