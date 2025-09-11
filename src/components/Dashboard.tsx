@@ -78,6 +78,30 @@ export const Dashboard = () => {
   const [userEvents, setUserEvents] = useState<any[]>([]);
   const [userTasks, setUserTasks] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  
+  const toggleDescription = (taskId: string) => {
+    const newExpanded = new Set(expandedDescriptions);
+    if (newExpanded.has(taskId)) {
+      newExpanded.delete(taskId);
+    } else {
+      newExpanded.add(taskId);
+    }
+    setExpandedDescriptions(newExpanded);
+  };
+
+  const truncateDescription = (description: string, taskId: string, maxLength: number = 100) => {
+    if (!description || description.length <= maxLength) {
+      return description;
+    }
+    
+    const isExpanded = expandedDescriptions.has(taskId);
+    if (isExpanded) {
+      return description;
+    }
+    
+    return description.slice(0, maxLength) + "...";
+  };
   
   const completedTasks = userTasks.filter(task => task.completion_status === 'completed').length;
   const totalTasks = userTasks.length;
@@ -1159,9 +1183,26 @@ export const Dashboard = () => {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          {task.description || "No description available"}
-                        </p>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          {task.description && task.source_provider === 'canvas' ? (
+                            <div>
+                              <span>{truncateDescription(task.description, task.id, 80)}</span>
+                              {task.description.length > 80 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleDescription(task.id);
+                                  }}
+                                  className="ml-1 text-primary hover:underline text-xs font-medium"
+                                >
+                                  {expandedDescriptions.has(task.id) ? "less" : "more"}
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span>{task.description || "No description available"}</span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
