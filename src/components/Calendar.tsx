@@ -533,15 +533,7 @@ const Calendar = () => {
           {format(currentDate, 'MMMM yyyy')}
         </h1>
         <div className="flex gap-2 items-center">
-          <Button 
-            variant={showAllTasks ? "default" : "outline"} 
-            size="sm" 
-            onClick={() => setShowAllTasks(!showAllTasks)}
-            className="flex items-center gap-2"
-          >
-            {showAllTasks ? "Current Month" : "All Tasks"}
-          </Button>
-          <Button 
+          <Button
             variant="outline" 
             size="sm" 
             onClick={refreshWeather}
