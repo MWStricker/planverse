@@ -17,6 +17,9 @@ interface Task {
   priority_score: number;
   completion_status: string;
   course_name: string;
+  is_recurring?: boolean;
+  recurrence_type?: string;
+  recurrence_pattern?: any;
 }
 
 interface Event {
@@ -494,9 +497,33 @@ const Calendar = () => {
   };
 
   const getTasksForDay = (day: Date) => {
-    const dayTasks = tasks.filter(task => 
-      task.due_date && isSameDay(new Date(task.due_date), day)
+    const dayTasks = [];
+    
+    // Get non-recurring tasks for this day
+    const regularTasks = tasks.filter(task => 
+      !task.is_recurring && task.due_date && isSameDay(new Date(task.due_date), day)
     );
+    dayTasks.push(...regularTasks);
+    
+    // Get recurring tasks that should appear on this day
+    const recurringTasks = tasks.filter(task => task.is_recurring);
+    
+    for (const task of recurringTasks) {
+      if (!task.due_date || !task.recurrence_type) continue;
+      
+      const taskDate = new Date(task.due_date);
+      const shouldShow = checkIfRecurringTaskShouldShow(task, taskDate, day);
+      
+      if (shouldShow) {
+        // Create a copy with the specific day's date
+        dayTasks.push({
+          ...task,
+          due_date: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 
+                           taskDate.getHours(), taskDate.getMinutes()).toISOString()
+        });
+      }
+    }
+    
     // Sort by priority (highest first), then by due date
     return dayTasks.sort((a, b) => {
       if (a.priority_score !== b.priority_score) {
@@ -507,6 +534,28 @@ const Calendar = () => {
       }
       return 0;
     });
+  };
+
+  const checkIfRecurringTaskShouldShow = (task: any, originalDate: Date, targetDay: Date) => {
+    if (targetDay < originalDate) return false; // Don't show before start date
+    
+    switch (task.recurrence_type) {
+      case 'daily':
+        return true; // Show every day after start date
+        
+      case 'weekly':
+        if (task.recurrence_pattern?.days) {
+          return task.recurrence_pattern.days.includes(targetDay.getDay());
+        }
+        return isSameDay(targetDay, originalDate) || 
+               (targetDay > originalDate && targetDay.getDay() === originalDate.getDay());
+        
+      case 'monthly':
+        return targetDay.getDate() === originalDate.getDate();
+        
+      default:
+        return false;
+    }
   };
 
   const getEventsForDay = (day: Date) => {
