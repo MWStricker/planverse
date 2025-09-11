@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckCircle, Clock, AlertTriangle, BookOpen, Calendar, Plus, Filter, Search, CalendarIcon, Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
   getPriorityConfig, 
   getPriorityLabel, 
   getPriorityBadgeVariant, 
-  getPriorityIcon,
+  getPriorityIconComponent,
   getPriorityEmoji,
   PRIORITY_CONFIG 
 } from "@/lib/priority-utils";
@@ -1114,7 +1114,7 @@ export const Tasks = () => {
                         )}
                       </h3>
                       <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
-                        {getPriorityIcon(item.priority)}
+                        {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
                         {getPriorityLabel(item.priority)}
                       </Badge>
                       {item.type === 'event' && (

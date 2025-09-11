@@ -80,10 +80,9 @@ export const getPriorityBadgeVariant = (priority: number): "default" | "destruct
   return getPriorityConfig(priority).badgeVariant;
 };
 
-export const getPriorityIcon = (priority: number) => {
+export const getPriorityIconComponent = (priority: number) => {
   const config = getPriorityConfig(priority);
-  const IconComponent = config.icon;
-  return IconComponent;
+  return config.icon;
 };
 
 export const getPriorityEmoji = (priority: number): string => {
