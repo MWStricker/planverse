@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,9 @@ interface Task {
   source_provider?: string;
   created_at: string;
   event_type?: string;
+  is_recurring?: boolean;
+  recurrence_type?: string;
+  recurrence_pattern?: any;
 }
 
 const taskFormSchema = z.object({
@@ -52,6 +56,9 @@ const taskFormSchema = z.object({
   priority: z.enum(["none", "low", "medium", "high", "critical"], {
     required_error: "Priority is required",
   }),
+  is_recurring: z.boolean().default(false),
+  recurrence_type: z.enum(["daily", "weekly", "monthly"]).optional(),
+  recurrence_days: z.array(z.number()).optional(),
 });
 
 const PRIORITY_KEYWORDS = {
@@ -84,6 +91,9 @@ export const Tasks = () => {
       due_date: new Date(),
       due_time: "12:00",
       priority: "none",
+      is_recurring: false,
+      recurrence_type: undefined,
+      recurrence_days: undefined,
     },
   });
 
@@ -109,7 +119,10 @@ export const Tasks = () => {
           due_date: dueDateTime.toISOString(),
           priority_score: calculatedPriority,
           completion_status: 'pending',
-          source_provider: 'manual'
+          source_provider: 'manual',
+          is_recurring: values.is_recurring || false,
+          recurrence_type: values.recurrence_type || null,
+          recurrence_pattern: values.recurrence_days ? { days: values.recurrence_days } : null,
         })
         .select()
         .single();
@@ -191,6 +204,9 @@ export const Tasks = () => {
           course_name: values.course_name || null,
           due_date: dueDateTime.toISOString(),
           priority_score: calculatedPriority,
+          is_recurring: values.is_recurring || false,
+          recurrence_type: values.recurrence_type || null,
+          recurrence_pattern: values.recurrence_days ? { days: values.recurrence_days } : null,
         })
         .eq('id', editingTask.id);
 
@@ -249,6 +265,9 @@ export const Tasks = () => {
       due_date: dueDate,
       due_time: dueTime,
       priority: priorityMap[task.priority_score || 0] || "none",
+      is_recurring: task.is_recurring || false,
+      recurrence_type: (task.recurrence_type as "daily" | "weekly" | "monthly") || undefined,
+      recurrence_days: task.recurrence_pattern?.days || undefined,
     });
     
     setIsEditDialogOpen(true);
@@ -969,6 +988,90 @@ export const Tasks = () => {
                     </FormItem>
                   )}
                 />
+
+                {/* Recurring Task Section */}
+                <FormField
+                  control={form.control}
+                  name="is_recurring"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Recurring Task</FormLabel>
+                        <FormDescription>
+                          Make this task repeat automatically
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch("is_recurring") && (
+                  <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+                    <FormField
+                      control={form.control}
+                      name="recurrence_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Repeat</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select how often to repeat" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch("recurrence_type") === "weekly" && (
+                      <FormField
+                        control={form.control}
+                        name="recurrence_days"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Select Days</FormLabel>
+                            <FormDescription>
+                              Choose which days of the week to repeat
+                            </FormDescription>
+                            <div className="flex flex-wrap gap-2">
+                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                                <Button
+                                  key={day}
+                                  type="button"
+                                  variant={field.value?.includes(index) ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => {
+                                    const currentDays = field.value || [];
+                                    const newDays = currentDays.includes(index)
+                                      ? currentDays.filter(d => d !== index)
+                                      : [...currentDays, index];
+                                    field.onChange(newDays);
+                                  }}
+                                >
+                                  {day}
+                                </Button>
+                              ))}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
 
                 <DialogFooter className="flex-col sm:flex-row gap-2">
                   <div className="flex gap-2 sm:mr-auto">
