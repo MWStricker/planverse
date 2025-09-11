@@ -18,13 +18,28 @@ interface CalendarEvent {
 
 function parseICS(icsContent: string): CalendarEvent[] {
   const events: CalendarEvent[] = [];
-  const lines = icsContent.split('\n').map(line => line.trim());
+  const lines = icsContent.split(/\r?\n/).map(line => line.trim());
   
   let currentEvent: Partial<CalendarEvent> = {};
   let inEvent = false;
+  let multiLineProperty = '';
+  let multiLineValue = '';
+  
+  console.log(`Parsing ICS with ${lines.length} lines`);
   
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    let line = lines[i];
+    
+    // Handle line continuations (lines starting with space or tab)
+    if (line.startsWith(' ') || line.startsWith('\t')) {
+      multiLineValue += line.substring(1);
+      continue;
+    } else if (multiLineProperty && multiLineValue) {
+      // Process the completed multi-line property
+      processProperty(multiLineProperty, multiLineValue, currentEvent);
+      multiLineProperty = '';
+      multiLineValue = '';
+    }
     
     if (line === 'BEGIN:VEVENT') {
       inEvent = true;
@@ -32,59 +47,129 @@ function parseICS(icsContent: string): CalendarEvent[] {
         source_provider: 'canvas',
         event_type: 'assignment'
       };
+      console.log('Starting new event parsing');
     } else if (line === 'END:VEVENT' && inEvent) {
-      if (currentEvent.title && currentEvent.start_time) {
+      if (currentEvent.title) {
+        // If no start_time, use current date
+        if (!currentEvent.start_time) {
+          currentEvent.start_time = new Date().toISOString();
+          console.log(`No start time found for event "${currentEvent.title}", using current date`);
+        }
         // Set end time to start time if not specified
         if (!currentEvent.end_time) {
           currentEvent.end_time = currentEvent.start_time;
         }
+        // Generate a UID if missing
+        if (!currentEvent.source_event_id) {
+          currentEvent.source_event_id = `canvas-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
         events.push(currentEvent as CalendarEvent);
+        console.log(`Added event: "${currentEvent.title}" at ${currentEvent.start_time}`);
+      } else {
+        console.log('Skipped event with no title');
       }
       currentEvent = {};
       inEvent = false;
-    } else if (inEvent) {
-      if (line.startsWith('SUMMARY:')) {
-        currentEvent.title = line.replace('SUMMARY:', '').replace(/\\n/g, ' ').replace(/\\,/g, ',');
-      } else if (line.startsWith('DESCRIPTION:')) {
-        currentEvent.description = line.replace('DESCRIPTION:', '').replace(/\\n/g, '\n').replace(/\\,/g, ',');
-      } else if (line.startsWith('DTSTART:')) {
-        const dateStr = line.replace('DTSTART:', '');
-        currentEvent.start_time = parseICSDate(dateStr);
-      } else if (line.startsWith('DTEND:')) {
-        const dateStr = line.replace('DTEND:', '');
-        currentEvent.end_time = parseICSDate(dateStr);
-      } else if (line.startsWith('LOCATION:')) {
-        currentEvent.location = line.replace('LOCATION:', '').replace(/\\,/g, ',');
-      } else if (line.startsWith('UID:')) {
-        currentEvent.source_event_id = line.replace('UID:', '');
+    } else if (inEvent && line.includes(':')) {
+      const colonIndex = line.indexOf(':');
+      const property = line.substring(0, colonIndex);
+      const value = line.substring(colonIndex + 1);
+      
+      // Check if this might be a multi-line property
+      if (value && !line.endsWith('\\')) {
+        processProperty(property, value, currentEvent);
+      } else {
+        multiLineProperty = property;
+        multiLineValue = value;
       }
     }
   }
   
+  console.log(`Parsed ${events.length} events from ICS`);
   return events;
 }
 
-function parseICSDate(dateStr: string): string {
-  // Handle different date formats from ICS
-  if (dateStr.includes('T')) {
-    // DateTime format: 20241201T140000Z or 20241201T140000
-    const cleanDate = dateStr.replace(/[TZ]/g, '');
-    const year = cleanDate.substr(0, 4);
-    const month = cleanDate.substr(4, 2);
-    const day = cleanDate.substr(6, 2);
-    const hour = cleanDate.substr(8, 2) || '00';
-    const minute = cleanDate.substr(10, 2) || '00';
-    const second = cleanDate.substr(12, 2) || '00';
-    
-    return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
-  } else {
-    // Date only format: 20241201
-    const year = dateStr.substr(0, 4);
-    const month = dateStr.substr(4, 2);
-    const day = dateStr.substr(6, 2);
-    
-    return `${year}-${month}-${day}T00:00:00Z`;
+function processProperty(property: string, value: string, currentEvent: Partial<CalendarEvent>) {
+  const cleanValue = value.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+  
+  if (property.startsWith('SUMMARY')) {
+    currentEvent.title = cleanValue;
+  } else if (property.startsWith('DESCRIPTION')) {
+    currentEvent.description = cleanValue;
+  } else if (property.startsWith('DTSTART')) {
+    currentEvent.start_time = parseICSDate(value);
+  } else if (property.startsWith('DTEND')) {
+    currentEvent.end_time = parseICSDate(value);
+  } else if (property.startsWith('DUE')) {
+    // Canvas often uses DUE instead of DTSTART for assignments
+    if (!currentEvent.start_time) {
+      currentEvent.start_time = parseICSDate(value);
+    }
+    currentEvent.end_time = parseICSDate(value);
+  } else if (property.startsWith('LOCATION')) {
+    currentEvent.location = cleanValue;
+  } else if (property.startsWith('UID')) {
+    currentEvent.source_event_id = cleanValue;
+  } else if (property.startsWith('CATEGORIES')) {
+    // Canvas sometimes includes course info in categories
+    if (cleanValue && !currentEvent.description) {
+      currentEvent.description = `Course: ${cleanValue}`;
+    }
   }
+}
+
+function parseICSDate(dateStr: string): string {
+  console.log(`Parsing date: ${dateStr}`);
+  
+  // Remove any parameter info (like TZID)
+  const cleanDateStr = dateStr.split(';')[0].split(':').pop() || dateStr;
+  
+  try {
+    // Handle different date formats from ICS
+    if (cleanDateStr.includes('T')) {
+      // DateTime format: 20241201T140000Z or 20241201T140000
+      const isUTC = cleanDateStr.endsWith('Z');
+      const datePart = cleanDateStr.replace(/[TZ]/g, '');
+      
+      if (datePart.length >= 8) {
+        const year = datePart.substr(0, 4);
+        const month = datePart.substr(4, 2);
+        const day = datePart.substr(6, 2);
+        const hour = datePart.substr(8, 2) || '23';
+        const minute = datePart.substr(10, 2) || '59';
+        const second = datePart.substr(12, 2) || '59';
+        
+        const result = `${year}-${month}-${day}T${hour}:${minute}:${second}${isUTC ? 'Z' : ''}`;
+        console.log(`Parsed datetime: ${result}`);
+        return result;
+      }
+    } else if (cleanDateStr.length >= 8) {
+      // Date only format: 20241201
+      const year = cleanDateStr.substr(0, 4);
+      const month = cleanDateStr.substr(4, 2);
+      const day = cleanDateStr.substr(6, 2);
+      
+      const result = `${year}-${month}-${day}T23:59:59Z`;
+      console.log(`Parsed date: ${result}`);
+      return result;
+    }
+    
+    // Fallback: try to parse as regular date string
+    const date = new Date(cleanDateStr);
+    if (!isNaN(date.getTime())) {
+      const result = date.toISOString();
+      console.log(`Parsed fallback date: ${result}`);
+      return result;
+    }
+  } catch (error) {
+    console.error(`Error parsing date ${dateStr}:`, error);
+  }
+  
+  // Ultimate fallback: use current date
+  const fallback = new Date().toISOString();
+  console.log(`Using fallback date: ${fallback}`);
+  return fallback;
 }
 
 Deno.serve(async (req) => {
@@ -154,12 +239,24 @@ Deno.serve(async (req) => {
     const events = parseICS(icsContent);
     console.log('Parsed events count:', events.length);
 
+    // Log first few characters of ICS content for debugging
+    console.log('ICS content sample:', icsContent.substring(0, 500));
+
     if (events.length === 0) {
+      console.log('No events found - this might indicate parsing issues');
+      console.log('ICS content length:', icsContent.length);
+      console.log('Contains VEVENT:', icsContent.includes('VEVENT'));
+      
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'No events found in Canvas feed',
-          events_processed: 0 
+          message: 'No events found in Canvas feed. Check if the feed URL contains calendar events.',
+          events_processed: 0,
+          debug_info: {
+            content_length: icsContent.length,
+            contains_vevent: icsContent.includes('VEVENT'),
+            content_sample: icsContent.substring(0, 200)
+          }
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -174,6 +271,8 @@ Deno.serve(async (req) => {
 
     if (deleteError) {
       console.error('Error deleting existing Canvas events:', deleteError);
+    } else {
+      console.log('Deleted existing Canvas events to avoid duplicates');
     }
 
     // Insert new events
