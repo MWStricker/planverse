@@ -29,19 +29,27 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an expert calendar parser. Extract ALL visible events from calendar images. ALWAYS return something, even if confidence is low.
+    const systemPrompt = `You are an expert calendar parser specializing in Canvas LMS and other academic calendars. Extract ALL visible events and assignments.
 
 Context: Today is ${nowIso} in ${tz}
 
-CRITICAL RULES:
-1. Extract EVERY event you see, even partial ones
-2. For Google Calendar grids: each colored block = 1 event  
-3. Default missing info: year=${new Date().getFullYear()}, time=09:00-10:00, location=""
-4. Convert times: "2 PM" → "14:00", "9a" → "09:00" 
-5. MINIMUM confidence = 30 (be generous)
+CANVAS CALENDAR RULES:
+1. Canvas shows ASSIGNMENTS (not events) - these go in "tasks" array
+2. Canvas assignments show DUE DATES only (no times) - leave startTime/endTime empty for tasks if no time shown
+3. Look for assignment names and due dates on the calendar grid
+4. Each item on Canvas calendar = 1 assignment/task
 
-Event Types: class, meeting, exam, appointment, other
-Task Types: homework, assignment, project, quiz, exam, other
+GENERAL RULES:
+1. Extract EVERY visible item, even if partially cut off
+2. For Google Calendar: colored blocks = events with times
+3. For Canvas: assignment text = tasks with due dates only
+4. Only add times if explicitly shown (like "2:00 PM" or "14:00")
+5. If no time visible, leave time fields empty/null
+6. Default year: ${new Date().getFullYear()}
+7. MINIMUM confidence = 30 (be generous)
+
+Event Types: class, meeting, exam, appointment, lecture, other
+Task Types: assignment, homework, project, quiz, exam, discussion, other
 
 MUST extract at least 1 item unless image is completely blank.`;
 
@@ -64,14 +72,14 @@ MUST extract at least 1 item unless image is completely blank.`;
                     id: { type: 'string' },
                     title: { type: 'string' },
                     date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-                    startTime: { type: 'string', pattern: '^\\d{2}:\\d{2}$' },
-                    endTime: { type: 'string', pattern: '^\\d{2}:\\d{2}$' },
+                    startTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
+                    endTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
                     location: { type: 'string' },
                     recurrence: { type: 'string' },
                     eventType: { type: 'string' },
                     confidence: { type: 'number', minimum: 0, maximum: 100 },
                   },
-                  required: ['title','date','startTime','endTime','confidence']
+                  required: ['title','date','confidence']
                 }
               },
               tasks: {
@@ -84,13 +92,13 @@ MUST extract at least 1 item unless image is completely blank.`;
                     title: { type: 'string' },
                     description: { type: 'string' },
                     dueDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-                    dueTime: { type: 'string', pattern: '^\\d{2}:\\d{2}$' },
+                    dueTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
                     courseName: { type: 'string' },
                     priority: { type: 'number', minimum: 1, maximum: 4 },
                     taskType: { type: 'string' },
                     confidence: { type: 'number', minimum: 0, maximum: 100 },
                   },
-                  required: ['title','dueDate','priority','confidence']
+                  required: ['title','dueDate','confidence']
                 }
               }
             },
@@ -171,7 +179,13 @@ MUST extract at least 1 item unless image is completely blank.`;
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
     // Build simple prompt: focus on extracting everything visible
-    const instruction = `Look at this calendar image carefully. Extract EVERY visible event/appointment as separate items. For Google Calendar: each colored block is an event. Include ALL text you can see, even if partially cut off.`;
+    const instruction = `Look at this calendar image carefully. 
+
+IF THIS IS CANVAS LMS: Extract assignments as TASKS (not events). Canvas shows assignment names and due dates only - do not add times unless explicitly shown.
+
+IF THIS IS GOOGLE CALENDAR: Extract colored blocks as EVENTS with times if visible.
+
+Extract EVERYTHING visible, even if partially cut off. Be generous with extraction.`;
 
     const contentParts: any[] = [];
     contentParts.push({ type: 'text', text: instruction });
@@ -272,8 +286,8 @@ MUST extract at least 1 item unless image is completely blank.`;
         id: event.id || `extracted_event_${Date.now()}_${index}`,
         title: String(event.title || '').trim().slice(0, 120),
         date: event.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
-        startTime: String(event.startTime || '09:00').slice(0, 5),
-        endTime: String(event.endTime || '10:00').slice(0, 5),
+        startTime: event.startTime && event.startTime !== 'null' ? String(event.startTime).slice(0, 5) : null,
+        endTime: event.endTime && event.endTime !== 'null' ? String(event.endTime).slice(0, 5) : null,
         location: String(event.location || '').trim().slice(0, 120),
         recurrence: event.recurrence || null,
         eventType: String(event.eventType || 'class').trim().slice(0, 50),
@@ -290,7 +304,7 @@ MUST extract at least 1 item unless image is completely blank.`;
         title: String(task.title || '').trim().slice(0, 120),
         description: String(task.description || '').trim().slice(0, 500),
         dueDate: task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`,
-        dueTime: String(task.dueTime || '23:59').slice(0, 5),
+        dueTime: task.dueTime && task.dueTime !== 'null' ? String(task.dueTime).slice(0, 5) : null,
         courseName: String(task.courseName || '').trim().slice(0, 100),
         priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
         taskType: String(task.taskType || 'assignment').trim().slice(0, 50),

@@ -469,10 +469,12 @@ export const OCRUpload = () => {
                       <Calendar className="h-3 w-3" />
                       {new Date(event.date).toLocaleDateString()}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {event.startTime} - {event.endTime}
-                    </div>
+                    {event.startTime && event.endTime && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {event.startTime} - {event.endTime}
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
                       {event.location}
@@ -554,10 +556,10 @@ export const OCRUpload = () => {
                     </div>
                     
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Due: {new Date(task.dueDate).toLocaleDateString()} at {task.dueTime}
-                      </div>
+                       <div className="flex items-center gap-1">
+                         <Calendar className="h-3 w-3" />
+                         Due: {new Date(task.dueDate).toLocaleDateString()}{task.dueTime ? ` at ${task.dueTime}` : ''}
+                       </div>
                       {task.courseName && (
                         <div className="flex items-center gap-1">
                           <BookOpen className="h-3 w-3" />
