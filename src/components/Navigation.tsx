@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,7 +19,6 @@ interface NavigationProps {
 
 export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   const [notifications] = useState(0);
-  const [isCoursesExpanded, setIsCoursesExpanded] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -195,62 +194,7 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
       </nav>
 
 
-      {/* Courses Section - Minimized Dropdown */}
-      {courses.length > 0 && (
-        <div className="px-4 pb-4">
-          <Button
-            variant="ghost"
-            onClick={() => setIsCoursesExpanded(!isCoursesExpanded)}
-            className="w-full justify-between p-0 h-auto hover:bg-transparent group"
-          >
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              <h3 className="text-sm font-semibold text-muted-foreground">My Courses</h3>
-              <Badge variant="secondary" className="text-xs">
-                {courses.length}
-              </Badge>
-            </div>
-            {isCoursesExpanded ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            )}
-          </Button>
-          
-          {isCoursesExpanded && (
-            <div className="mt-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
-              {courses.slice(0, 5).map((course) => (
-                <div
-                  key={course.code}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all duration-200 hover:scale-[1.02] ${course.color}`}
-                  onClick={() => onPageChange('calendar')}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-current opacity-60"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{course.code}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {course.totalAssignments || course.events.length + course.tasks.length} assignments
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {courses.length > 5 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onPageChange('calendar')}
-                  className="w-full text-xs text-muted-foreground hover:text-foreground"
-                >
-                  View all {courses.length} courses
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* User Section */}
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-10 w-10">
