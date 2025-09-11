@@ -20,8 +20,9 @@ serve(async (req) => {
 
     // OpenAI is required for structuring; Google Vision (VISION_API_KEY) is optional for OCR accuracy
     if (!OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ success: false, error: 'OpenAI API key not configured', events: [] }), {
+      return new Response(JSON.stringify({ success: false, error: 'OpenAI API key not configured', events: [], tasks: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       });
     }
 
@@ -185,7 +186,7 @@ MUST extract at least 1 item unless image is completely blank.`;
       const durationMs = Date.now() - tStart;
       return new Response(
         JSON.stringify({ success: false, error: 'No image or text provided for analysis', events: [], tasks: [], durationMs }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -224,8 +225,9 @@ MUST extract at least 1 item unless image is completely blank.`;
       const errText = await response.text();
       console.error('OpenAI error:', response.status, errText);
       const durationMs = Date.now() - tStart;
-      return new Response(JSON.stringify({ success: false, error: `OpenAI error ${response.status}: ${response.statusText}`, details: errText, events: [], durationMs }), {
+      return new Response(JSON.stringify({ success: false, error: `OpenAI error ${response.status}: ${response.statusText}`, details: errText, events: [], tasks: [], durationMs }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       });
     }
 
@@ -257,6 +259,7 @@ MUST extract at least 1 item unless image is completely blank.`;
       const durationMs = Date.now() - tStart;
       return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', events: [], tasks: [], durationMs }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       });
     }
 
@@ -301,8 +304,10 @@ MUST extract at least 1 item unless image is completely blank.`;
     });
   } catch (error: any) {
     const durationMs = Date.now() - tStart;
+    console.error('Function error:', error);
     return new Response(JSON.stringify({ success: false, error: error?.message || 'Unexpected error', events: [], tasks: [], durationMs }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
     });
   }
 });
