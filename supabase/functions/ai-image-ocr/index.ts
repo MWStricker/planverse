@@ -29,51 +29,69 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an expert calendar parser specializing in Canvas LMS and academic calendars. Extract ALL visible assignments and events with PRECISE due dates.
+    const systemPrompt = `You are an expert calendar parser with perfect accuracy for Canvas LMS and academic calendars. You MUST extract ALL visible assignments and events with ABSOLUTELY PRECISE due dates.
 
-Context: Today is ${nowIso} in ${tz}
+CRITICAL CONTEXT: Today is ${nowIso} in timezone ${tz}
 
-CRITICAL DATE ACCURACY RULES:
-1. CANVAS CALENDARS: Each assignment appears on its EXACT due date
-2. Look carefully at the calendar grid structure - the day number shown IS the due date
-3. If an assignment appears on "Sep 14", the due date is exactly September 14th of the current year
-4. DO NOT add or subtract days - use the EXACT date where the assignment appears
-5. Pay attention to month names/abbreviations in the calendar header
-6. Use the calendar grid position to determine the precise date
+FUNDAMENTAL CANVAS CALENDAR RULES (NEVER VIOLATE):
+1. Canvas calendars display a monthly grid where EACH DAY SQUARE corresponds to ONE SPECIFIC DATE
+2. Any assignment/task appearing in a day square has its due date on THAT EXACT DAY
+3. The calendar shows the month/year at the top (e.g., "September 2025")
+4. Days are arranged in a 7-column grid (Sunday through Saturday)
+5. Each assignment appears in the EXACT day square when it's due
 
-CANVAS STRUCTURE ANALYSIS:
-- Canvas shows a monthly grid with days 1-31
-- Assignments appear on their exact due date squares
-- Multiple assignments can be on the same day
-- Look for partial assignment names that might be cut off
+ABSOLUTE DATE ACCURACY PROTOCOL:
+1. STEP 1: Identify the month and year from the calendar header
+2. STEP 2: Map each assignment to its exact day square position
+3. STEP 3: Use the day number IN THAT SQUARE as the due date
+4. STEP 4: NEVER adjust dates by ±1 day - use the EXACT visible date
+5. EXAMPLE: If "Quiz 1.2" appears in the square labeled "14", the due date is the 14th of that month
 
-CROSSED-OUT ITEM DETECTION:
-- IGNORE any items that appear crossed out, struck through, or completed
-- Look for visual indicators like strikethrough text, checkmarks, or "completed" status
-- Only extract active/pending assignments and events
-- If text appears with a line through it, do NOT include it
+CANVAS STRUCTURE RECOGNITION:
+- Assignment titles may be truncated (e.g., "Homework 04 - Telescopes...")
+- Multiple items can appear in the same day square
+- Course codes often shown (e.g., "AA-100", "BUS-100")
+- Due times are rarely shown for assignments (usually just dates)
 
-CALENDAR TYPE DETECTION:
-- Canvas/LMS calendars: Show assignments with due dates (no specific times)
-- Event calendars: Show meetings/classes with start/end times
-- Mixed calendars: Can contain both types
+CROSSED-OUT/COMPLETED ITEM DETECTION:
+- CRITICAL: Completely IGNORE any items with visual completion indicators:
+  * Strikethrough/crossed-out text
+  * Checkmarks or completion symbols
+  * Grayed out or faded appearance
+  * "Completed" or "Done" status
+- Only extract ACTIVE/PENDING items
 
-DATA EXTRACTION RULES:
-1. Extract EVERY visible assignment/event that is NOT crossed out
-2. Assignment names go in "tasks" array (Canvas assignments)
-3. Events with times go in "events" array (meetings, classes)
-4. Only add times if explicitly shown (like "11:59 PM" or "2:00 PM")
-5. If no time visible, leave dueTime/startTime as null
-6. Default year: ${new Date().getFullYear()}
-7. MINIMUM confidence = 85 (be precise, not generous)
+CALENDAR TYPE CLASSIFICATION:
+- CANVAS/ASSIGNMENT CALENDARS: Show homework, quizzes, exams with due dates
+  → Put these in "tasks" array with dueTime: null
+- EVENT CALENDARS: Show meetings, classes with specific times (e.g., "3:15 PM")
+  → Put these in "events" array with startTime/endTime
+- MIXED CALENDARS: Contain both types - classify each item appropriately
 
-COLUMN ALIGNMENT (CRITICAL):
-- Use the 7 column guides to determine which day column each item is in
-- Compare each item's x-coordinate to the 7 column midpoints
-- Assign items to the column with the closest midpoint
-- Be extremely careful with items near column boundaries
+GRID POSITION ANALYSIS:
+- Use the 7-column layout (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
+- Match each item's horizontal position to the correct day column
+- Use the provided column guides for precise alignment
+- For items spanning multiple columns, use the starting position
 
-MUST extract at least 1 item unless image is completely blank or all items are crossed out.`;
+EXTRACTION REQUIREMENTS:
+1. Extract EVERY visible, non-crossed-out item
+2. Maintain original assignment names (even if truncated)
+3. Include course information when visible
+4. Set confidence to 90+ for clearly visible items
+5. Minimum confidence threshold: 85
+
+OUTPUT FORMAT:
+- Tasks: Canvas assignments, homework, quizzes, exams (no specific times)
+- Events: Meetings, classes, appointments (with visible times)
+- Use EXACT dates from grid positions
+- Convert 24-hour times to 12-hour format (e.g., "14:30" → "2:30 PM")
+
+QUALITY CONTROL:
+- Double-check each date against its grid position
+- Verify month/year from calendar header
+- Ensure no crossed-out items are included
+- Validate that confidence scores reflect actual visibility`;
 
     // No longer using function calling - simple JSON response
 
@@ -173,57 +191,61 @@ MUST extract at least 1 item unless image is completely blank or all items are c
 
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
-    // Build detailed prompt for precise calendar analysis
-    const instruction = `Analyze this calendar image with EXTREME PRECISION for column alignment and crossed-out detection.
+    // Build ultra-precise prompt for calendar analysis
+    const instruction = `Analyze this calendar image with PERFECT ACCURACY. You are analyzing a ${calendarTypeHint || 'calendar'} and must extract every visible item with absolute precision.
 
-CRITICAL GRID ANALYSIS:
-- This is a 7-column calendar grid (Sunday-Saturday)
-- Each column represents ONE specific day of the week
-- Items must be assigned to the EXACT column they appear in
-- Use the column guides provided to determine which column each item belongs to
-- If an item appears between columns, assign it to the nearest column boundary
+CANVAS CALENDAR ANALYSIS PROTOCOL:
+1. HEADER ANALYSIS: Find the month/year display (e.g., "September 2025", "Oct 2025")
+2. GRID MAPPING: Identify the 7-column layout (Sun-Sat) with numbered day squares
+3. ITEM POSITIONING: Map each assignment to its exact day square position
+4. DATE CALCULATION: Use day square number + header month/year = exact due date
 
-CROSSED-OUT DETECTION (CRITICAL):
-- IGNORE any items that appear crossed out, struck through, or completed
-- Look for visual indicators: strikethrough text, checkmarks, grayed out text, "completed" status
-- Only extract active/pending assignments and events
-- If text has a line through it or appears "done", do NOT include it
+CRITICAL DATE EXTRACTION RULES:
+- If assignment appears in day square "14" → due date is 14th of that month
+- If assignment appears in day square "28" → due date is 28th of that month
+- NEVER adjust dates by ±1 day from the visible square position
+- Use the calendar header to determine month/year context
 
-CANVAS CALENDAR SPECIFICS:
-- Canvas assignments appear on their exact due date (no time adjustment needed)
-- Look for assignment titles like "Quiz", "Homework", "Discussion", "Midterm"
-- Assignments typically don't show specific times unless explicitly stated
-- Course codes may appear (like "AA-100", "BUS-100") - include these in courseName
+VISUAL COMPLETION DETECTION (CRITICAL):
+- COMPLETELY IGNORE items with completion indicators:
+  * Strikethrough/crossed-out text (line through text)
+  * Checkmarks or ✓ symbols
+  * Grayed out, faded, or dimmed appearance
+  * "Completed", "Done", "Submitted" status text
+  * Different background color indicating completion
+- Only extract ACTIVE items that appear normal/highlighted
 
-EVENT CALENDAR SPECIFICS:
-- Events have visible start/end times (like "3:15p" or "2:00 PM - 3:30 PM")
-- Class meetings, office hours, exams with specific times
-- Location information may be present
+CANVAS VS EVENT CALENDAR DISTINCTION:
+- CANVAS ASSIGNMENTS: Homework, quizzes, discussions, projects (no times shown)
+  → Extract to tasks[] with dueTime: null
+- TIMED EVENTS: Classes, meetings, appointments with visible times ("3:15 PM", "2:00-3:30")
+  → Extract to events[] with startTime/endTime
 
-CALENDAR TYPE RULES:
-- Canvas/tasks calendars: Assignments have due dates only (no times). Output these in tasks[] with dueTime null.
-- Events calendars: Events have visible times next to titles. Output these in events[] with startTime/endTime.
-- Mixed calendars: Can contain both - classify each item appropriately
+PRECISION REQUIREMENTS:
+- Use exact assignment names (even if truncated with "...")
+- Include visible course codes (e.g., "2025FA-AA-100-001")
+- Maintain original capitalization and formatting
+- Set confidence 90+ for clearly visible items
 
-DATE ACCURACY (no off-by-one):
-- STEP 1: Identify the month/year from the calendar header
-- STEP 2: Use the 7 column guides to determine which day column each item is in
-- STEP 3: Match the column position to the day number in that column
-- STEP 4: Use the exact day number from the grid cell, do NOT adjust ±1 day
-- Never shift/normalize dates. Do not add or subtract days.
+COLUMN ALIGNMENT USING GUIDES:
+- Compare each item's horizontal position to the 7 column midpoints provided
+- Assign to the closest column guide position
+- For items spanning columns, use the primary/starting position
+- Be extra careful with items near column boundaries
 
-COLUMN ALIGNMENT RULES:
-- Use the provided COLUMN GUIDES to snap each item to the correct column
-- Compare each item's x-coordinate to the 7 column midpoints
-- Assign items to the column with the closest midpoint
-- Be extremely careful with items near column boundaries
+TIME FORMAT STANDARDIZATION:
+- Convert all times to 12-hour format with AM/PM
+- "14:30" becomes "2:30 PM"
+- "3:15p" becomes "3:15 PM"
+- Keep existing AM/PM designations
 
-OUTPUT RULES:
-- Extract EVERYTHING visible that is NOT crossed out
-- ALL TIMES must be in 12-hour format with AM/PM (e.g., "2:30 PM", "11:59 PM")
-- If you see 24-hour time (e.g., "14:30"), convert it to 12-hour format ("2:30 PM")
-- Keep titles as shown (trimmed)
-- If no time visible, classify as task (assignment), not event`;
+QUALITY ASSURANCE:
+- Cross-reference each date with its visual grid position
+- Verify month/year from header context
+- Ensure no completed/crossed-out items included
+- Double-check time format conversions
+
+EXTRACTION MANDATE: Extract EVERY visible, non-completed item with 100% date accuracy`;
 
     const contentParts: any[] = [];
     contentParts.push({ type: 'text', text: instruction + (calendarTypeHint ? `\n\nUSER HINT: calendarTypeHint=${calendarTypeHint}` : '') });
