@@ -303,14 +303,6 @@ const Calendar = () => {
     try {
       console.log('fetchCalendarConnections - User object:', user);
       console.log('fetchCalendarConnections - User ID:', user?.id);
-      
-      // Test if we can query the table at all
-      const testQuery = await supabase
-        .from('calendar_connections')
-        .select('count(*)')
-        .limit(1);
-      
-      console.log('Test query result:', testQuery);
 
       const { data, error } = await supabase
         .from('calendar_connections')
@@ -322,11 +314,14 @@ const Calendar = () => {
 
       if (error) {
         console.error('Error fetching calendar connections:', error);
+        // For now, show empty state instead of erroring
+        setCalendarConnections([]);
       } else {
         setCalendarConnections(data || []);
       }
     } catch (error) {
       console.error('Error fetching calendar connections:', error);
+      setCalendarConnections([]);
     }
   };
 
