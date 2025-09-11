@@ -29,7 +29,7 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an expert calendar parser specializing in Canvas LMS and academic calendars. Extract ALL visible assignments with PRECISE due dates.
+    const systemPrompt = `You are an expert calendar parser specializing in Canvas LMS and academic calendars. Extract ALL visible assignments and events with PRECISE due dates.
 
 Context: Today is ${nowIso} in ${tz}
 
@@ -47,15 +47,33 @@ CANVAS STRUCTURE ANALYSIS:
 - Multiple assignments can be on the same day
 - Look for partial assignment names that might be cut off
 
-DATA EXTRACTION RULES:
-1. Extract EVERY visible assignment, even if text is partially cut off
-2. Assignment names go in "tasks" array (not events)
-3. Only add times if explicitly shown (like "11:59 PM" or "2:00 PM")
-4. If no time visible, leave dueTime as null
-5. Default year: ${new Date().getFullYear()}
-6. MINIMUM confidence = 85 (be precise, not generous)
+CROSSED-OUT ITEM DETECTION:
+- IGNORE any items that appear crossed out, struck through, or completed
+- Look for visual indicators like strikethrough text, checkmarks, or "completed" status
+- Only extract active/pending assignments and events
+- If text appears with a line through it, do NOT include it
 
-MUST extract at least 1 item unless image is completely blank.`;
+CALENDAR TYPE DETECTION:
+- Canvas/LMS calendars: Show assignments with due dates (no specific times)
+- Event calendars: Show meetings/classes with start/end times
+- Mixed calendars: Can contain both types
+
+DATA EXTRACTION RULES:
+1. Extract EVERY visible assignment/event that is NOT crossed out
+2. Assignment names go in "tasks" array (Canvas assignments)
+3. Events with times go in "events" array (meetings, classes)
+4. Only add times if explicitly shown (like "11:59 PM" or "2:00 PM")
+5. If no time visible, leave dueTime/startTime as null
+6. Default year: ${new Date().getFullYear()}
+7. MINIMUM confidence = 85 (be precise, not generous)
+
+COLUMN ALIGNMENT (CRITICAL):
+- Use the 7 column guides to determine which day column each item is in
+- Compare each item's x-coordinate to the 7 column midpoints
+- Assign items to the column with the closest midpoint
+- Be extremely careful with items near column boundaries
+
+MUST extract at least 1 item unless image is completely blank or all items are crossed out.`;
 
     // No longer using function calling - simple JSON response
 
@@ -156,7 +174,7 @@ MUST extract at least 1 item unless image is completely blank.`;
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
     // Build detailed prompt for precise calendar analysis
-    const instruction = `Analyze this calendar image with EXTREME PRECISION for column alignment.
+    const instruction = `Analyze this calendar image with EXTREME PRECISION for column alignment and crossed-out detection.
 
 CRITICAL GRID ANALYSIS:
 - This is a 7-column calendar grid (Sunday-Saturday)
@@ -165,9 +183,27 @@ CRITICAL GRID ANALYSIS:
 - Use the column guides provided to determine which column each item belongs to
 - If an item appears between columns, assign it to the nearest column boundary
 
+CROSSED-OUT DETECTION (CRITICAL):
+- IGNORE any items that appear crossed out, struck through, or completed
+- Look for visual indicators: strikethrough text, checkmarks, grayed out text, "completed" status
+- Only extract active/pending assignments and events
+- If text has a line through it or appears "done", do NOT include it
+
+CANVAS CALENDAR SPECIFICS:
+- Canvas assignments appear on their exact due date (no time adjustment needed)
+- Look for assignment titles like "Quiz", "Homework", "Discussion", "Midterm"
+- Assignments typically don't show specific times unless explicitly stated
+- Course codes may appear (like "AA-100", "BUS-100") - include these in courseName
+
+EVENT CALENDAR SPECIFICS:
+- Events have visible start/end times (like "3:15p" or "2:00 PM - 3:30 PM")
+- Class meetings, office hours, exams with specific times
+- Location information may be present
+
 CALENDAR TYPE RULES:
-- Events calendars (e.g., Google): Events have visible times next to titles. Output these in events[] with startTime/endTime.
-- Canvas/tasks calendars: Assignments have due dates only (no times). Output these in tasks[] with dueTime null. Do NOT invent times.
+- Canvas/tasks calendars: Assignments have due dates only (no times). Output these in tasks[] with dueTime null.
+- Events calendars: Events have visible times next to titles. Output these in events[] with startTime/endTime.
+- Mixed calendars: Can contain both - classify each item appropriately
 
 DATE ACCURACY (no off-by-one):
 - STEP 1: Identify the month/year from the calendar header
@@ -183,10 +219,11 @@ COLUMN ALIGNMENT RULES:
 - Be extremely careful with items near column boundaries
 
 OUTPUT RULES:
-- Extract EVERYTHING visible. If an item has no time visible, put it in tasks (not events).
+- Extract EVERYTHING visible that is NOT crossed out
 - ALL TIMES must be in 12-hour format with AM/PM (e.g., "2:30 PM", "11:59 PM")
 - If you see 24-hour time (e.g., "14:30"), convert it to 12-hour format ("2:30 PM")
-- Keep titles as shown (trimmed).`;
+- Keep titles as shown (trimmed)
+- If no time visible, classify as task (assignment), not event`;
 
     const contentParts: any[] = [];
     contentParts.push({ type: 'text', text: instruction + (calendarTypeHint ? `\n\nUSER HINT: calendarTypeHint=${calendarTypeHint}` : '') });
