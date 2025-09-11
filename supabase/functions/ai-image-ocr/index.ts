@@ -28,7 +28,30 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an academic schedule extractor. Return structured EVENTS and TASKS via the provided function only.\n\nContext:\n- Today: ${nowIso}\n- User timezone: ${tz}\n\nStrict formatting:\n- Dates: YYYY-MM-DD (infer year from context like \"Fall 2025\" or nearest future within 12 months)\n- Times: 24h HH:MM. Normalize inputs like \"9–11a\", \"12p\", \"noon\", \"midnight\". If only duration is present (e.g., \"50 min\"), infer endTime from start or use 08:00–17:00 defaults.\n- Map US-style dates (MM/DD) unless explicitly otherwise.\n\nClassification:\n- EVENTS: classes, labs, lectures, meetings, office hours, exams scheduled in time blocks. Include eventType (lecture, lab, meeting, exam, other).\n- TASKS: assignments to complete. Include taskType (homework, quiz, exam, project, paper, reading, lab report, discussion, other), dueDate, optional dueTime, courseName.\n\nRules:\n- Only include items with confidence >= 60.\n- Trim titles, keep locations concise.\n- If day-of-week and month grid appear, align dates correctly.\n- Prefer future dates relative to Today.`;
+    const systemPrompt = `You are an expert academic schedule extractor specializing in calendar layouts (Google Calendar, Outlook, etc). Return structured EVENTS and TASKS via the provided function only.
+
+Context:
+- Today: ${nowIso}
+- User timezone: ${tz}
+
+Calendar Parsing Rules:
+- Look for recurring patterns: "MWF", "TR", "Mon Wed Fri", "Tues Thurs"
+- Time formats: "9:00 AM", "2-3 PM", "14:00-15:30", "9a-11a", "2p"
+- Date formats: "Jan 15", "Monday", "Mon 1/15", "15 Jan 2025"
+- Course codes: "CS 101", "MATH 201", "ENG-302", "PHYS-1510"
+- Event types: Lecture, Lab, Discussion, Office Hours, Exam, Quiz
+- Assignment keywords: homework, assignment, project, paper, essay, lab report, quiz, exam, midterm, final
+
+Formatting:
+- Dates: YYYY-MM-DD (infer year from "Fall 2025", "Spring 2025", or use ${new Date().getFullYear()} if unclear)
+- Times: 24h HH:MM format. Convert "2 PM" → "14:00", "9a" → "09:00"
+- If only start time given, estimate end time (+1 hour for classes, +2 for labs)
+
+Classification:
+- EVENTS: scheduled time blocks (classes, meetings, office hours, exams)
+- TASKS: assignments with due dates (homework, projects, papers, quizzes)
+
+Only include items with confidence ≥ 70. If text is unclear or partially visible, still attempt extraction with lower confidence.`;
 
     const tools = [
       {
@@ -56,7 +79,7 @@ serve(async (req) => {
                     eventType: { type: 'string' },
                     confidence: { type: 'number', minimum: 0, maximum: 100 },
                   },
-                  required: ['title','date','startTime','endTime','location','confidence']
+                  required: ['title','date','startTime','endTime','confidence']
                 }
               },
               tasks: {
@@ -104,7 +127,10 @@ serve(async (req) => {
         const text = visionData?.responses?.[0]?.fullTextAnnotation?.text
           || visionData?.responses?.[0]?.textAnnotations?.[0]?.description
           || '';
-        return (typeof text === 'string' ? text : '').trim();
+        const extractedText = (typeof text === 'string' ? text : '').trim();
+        console.log('GCV extracted text length:', extractedText.length);
+        console.log('GCV text preview:', extractedText.slice(0, 500));
+        return extractedText;
       } catch (e) {
         console.error('GCV OCR error:', e);
         return null;
@@ -119,6 +145,9 @@ serve(async (req) => {
       if (gcvText && gcvText.length > 0) {
         resolvedText = gcvText;
         ocrSource = 'gcv';
+        console.log('Using GCV text, length:', gcvText.length);
+      } else {
+        console.log('GCV failed or returned empty text');
       }
     }
 
