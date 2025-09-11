@@ -88,6 +88,15 @@ const getCourseIcon = (title: string, isCanvas: boolean) => {
   return BookOpen; // Default Canvas icon
 };
 
+// Get course color for tasks based on course_name
+const getTaskCourseColor = (task: Task) => {
+  if (!task.course_name) return 'bg-secondary/20 border-secondary text-secondary-foreground';
+  
+  // Create a pseudo Canvas title format for color consistency
+  const pseudoTitle = `[${task.course_name}]`;
+  return getCourseColor(pseudoTitle, true);
+};
+
 interface Task {
   id: string;
   title: string;
@@ -941,59 +950,63 @@ const Calendar = () => {
                 {/* Only show content for current month days */}
                 {isCurrentMonth && (
                   <div className="flex-1 overflow-y-auto space-y-0.5 min-h-0">
-                     {/* Tasks with individual priority indicators - ALL tasks shown */}
-                    {dayTasks.map(task => (
-                      <Popover key={task.id}>
-                        <PopoverTrigger asChild>
-                          <div className={`flex flex-col gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors ${
-                            completingTasks.has(task.id) ? 'bg-green-100 animate-pulse' : ''
-                          }`}>
-                            <div className="flex items-center gap-0.5">
-                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
-                              <Badge variant="secondary" className={`text-xs w-full justify-start overflow-hidden group ${
-                                task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
-                              } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
-                                 <div 
-                                   className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
-                                   style={{ '--animation-duration': `${getAnimationDuration(task.title)}s` } as React.CSSProperties}
-                                 >
-                                    <span className="whitespace-nowrap text-xs">{task.title}</span>
-                                   {completingTasks.has(task.id) && <CheckCircle className="h-3 w-3 text-green-600 animate-bounce" />}
-                                </div>
-                              </Badge>
-                            </div>
-                            {task.due_date && (
-                              <div className="text-xs text-muted-foreground ml-2.5 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {format(new Date(task.due_date), 'h:mm a')}
-                              </div>
-                            )}
-                          </div>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-48 p-2" align="start">
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="justify-start h-8"
-                              onClick={() => toggleTaskCompletion(task.id, task.completion_status)}
-                            >
-                              <Check className="h-4 w-4 mr-2" />
-                              {task.completion_status === 'completed' ? 'Mark Pending' : 'Mark Complete'}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="justify-start h-8 text-destructive hover:text-destructive"
-                              onClick={() => deleteTask(task.id)}
-                            >
-                              <X className="h-4 w-4 mr-2" />
-                              Delete Task
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    ))}
+                     {/* Tasks with course-based colors matching events */}
+                     {dayTasks.map(task => {
+                       const taskCourseColor = getTaskCourseColor(task);
+                       
+                       return (
+                         <Popover key={task.id}>
+                           <PopoverTrigger asChild>
+                             <div className={`flex flex-col gap-0.5 cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors ${
+                               completingTasks.has(task.id) ? 'bg-green-100 animate-pulse' : ''
+                             }`}>
+                               <div className="flex items-center gap-0.5">
+                                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
+                                 <Badge variant="outline" className={`text-xs w-full justify-start overflow-hidden group border ${taskCourseColor} ${
+                                   task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
+                                 } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
+                                    <div 
+                                      className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
+                                      style={{ '--animation-duration': `${getAnimationDuration(task.title)}s` } as React.CSSProperties}
+                                    >
+                                      <span className="whitespace-nowrap text-xs">{task.title}</span>
+                                     {completingTasks.has(task.id) && <CheckCircle className="h-3 w-3 text-green-600 animate-bounce" />}
+                                   </div>
+                                 </Badge>
+                               </div>
+                               {task.due_date && (
+                                 <div className="text-xs text-muted-foreground ml-2.5 flex items-center gap-1">
+                                   <Clock className="h-3 w-3" />
+                                   {format(new Date(task.due_date), 'h:mm a')}
+                                 </div>
+                               )}
+                             </div>
+                           </PopoverTrigger>
+                           <PopoverContent className="w-48 p-2" align="start">
+                             <div className="flex flex-col gap-2">
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="justify-start h-8"
+                                 onClick={() => toggleTaskCompletion(task.id, task.completion_status)}
+                               >
+                                 <Check className="h-4 w-4 mr-2" />
+                                 {task.completion_status === 'completed' ? 'Mark Pending' : 'Mark Complete'}
+                               </Button>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="justify-start h-8 text-destructive hover:text-destructive"
+                                 onClick={() => deleteTask(task.id)}
+                               >
+                                 <X className="h-4 w-4 mr-2" />
+                                 Delete Task
+                               </Button>
+                             </div>
+                           </PopoverContent>
+                         </Popover>
+                       );
+                     })}
 
                      {/* Events with color coding */}
                      {dayEvents.map(event => {
@@ -1316,66 +1329,70 @@ const Calendar = () => {
                       Tasks ({getTasksForDay(selectedDay).length})
                     </h3>
                     <div className="space-y-3">
-                      {getTasksForDay(selectedDay).map(task => (
-                        <div key={task.id} className="p-4 bg-card border rounded-lg">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h4 className={`font-medium ${task.completion_status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
-                                  {task.title}
-                                </h4>
-                                <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority_score || 0)}`}>
-                                  {getPriorityLabel(task.priority_score || 0)}
-                                </Badge>
-                                {task.completion_status === 'completed' && (
-                                  <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
-                                    Completed
+                      {getTasksForDay(selectedDay).map(task => {
+                        const taskCourseColor = getTaskCourseColor(task);
+                        
+                        return (
+                          <div key={task.id} className={`p-4 border rounded-lg transition-all duration-200 ${taskCourseColor}`}>
+                            <div className="flex items-start gap-3">
+                              <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className={`font-medium ${task.completion_status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                                    {task.title}
+                                  </h4>
+                                  <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority_score || 0)}`}>
+                                    {getPriorityLabel(task.priority_score || 0)}
+                                  </Badge>
+                                  {task.completion_status === 'completed' && (
+                                    <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                                      Completed
+                                    </Badge>
+                                  )}
+                                </div>
+                                
+                                {task.due_date && (
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                                    <Clock className="h-3 w-3" />
+                                    Due: {format(new Date(task.due_date), 'h:mm a')}
+                                  </div>
+                                )}
+                                
+                                {task.course_name && (
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    Course: {task.course_name}
+                                  </p>
+                                )}
+                                
+                                {task.is_recurring && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Recurring {task.recurrence_type}
                                   </Badge>
                                 )}
                               </div>
                               
-                              {task.due_date && (
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                                  <Clock className="h-3 w-3" />
-                                  Due: {format(new Date(task.due_date), 'h:mm a')}
-                                </div>
-                              )}
-                              
-                              {task.course_name && (
-                                <p className="text-sm text-muted-foreground mb-2">
-                                  Course: {task.course_name}
-                                </p>
-                              )}
-                              
-                              {task.is_recurring && (
-                                <Badge variant="outline" className="text-xs">
-                                  Recurring {task.recurrence_type}
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => toggleTaskCompletion(task.id, task.completion_status)}
-                                className="h-8"
-                              >
-                                <Check className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => deleteTask(task.id)}
-                                className="h-8 text-destructive hover:text-destructive"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toggleTaskCompletion(task.id, task.completion_status)}
+                                  className="h-8"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => deleteTask(task.id)}
+                                  className="h-8 text-destructive hover:text-destructive"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
