@@ -117,7 +117,17 @@ export const Dashboard = () => {
       dueDate.getMonth() === today.getMonth() &&
       dueDate.getFullYear() === today.getFullYear()
     );
-  }).sort((a, b) => (b.priority_score || 2) - (a.priority_score || 2));
+  }).sort((a, b) => {
+    // First sort by priority, then by due time
+    if ((b.priority_score || 2) !== (a.priority_score || 2)) {
+      return (b.priority_score || 2) - (a.priority_score || 2);
+    }
+    // If same priority, sort by due time
+    if (a.due_date && b.due_date) {
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    }
+    return 0;
+  });
 
   // Get priority label and color functions
   const getPriorityLabel = (priority: number): string => {
@@ -983,7 +993,7 @@ export const Dashboard = () => {
                 </div>
               ) : todaysTasks.length > 0 ? (
                 todaysTasks.map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
                     <div className={`w-3 h-3 rounded-full ${
                       task.priority_score === 4 ? 'bg-destructive' :
                       task.priority_score === 3 ? 'bg-primary' :
@@ -993,17 +1003,31 @@ export const Dashboard = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm truncate">{task.title}</p>
+                        {task.source_provider === 'canvas' && (
+                          <Badge variant="outline" className="text-xs px-1 bg-blue-50 border-blue-200 text-blue-700">
+                            Canvas
+                          </Badge>
+                        )}
                         {task.is_recurring && (
                           <Badge variant="outline" className="text-xs px-1">
                             Recurring
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
-                      </p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span className="font-medium">
+                          {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
+                        </span>
+                        {task.due_date && format(new Date(task.due_date), "h:mm a") !== "12:00 AM" && (
+                          <span className="text-orange-600 font-medium">• Due Today</span>
+                        )}
+                      </div>
                       {task.course_name && (
-                        <p className="text-xs text-muted-foreground">{task.course_name}</p>
+                        <p className="text-xs text-muted-foreground font-medium">{task.course_name}</p>
+                      )}
+                      {task.description && task.source_provider === 'canvas' && (
+                        <p className="text-xs text-muted-foreground truncate mt-1">{task.description}</p>
                       )}
                       {task.is_recurring && (
                         <p className="text-xs text-muted-foreground">
@@ -1014,9 +1038,14 @@ export const Dashboard = () => {
                         </p>
                       )}
                     </div>
-                    <Badge variant={getPriorityColor(task.priority_score || 2)} className="text-xs">
-                      {getPriorityLabel(task.priority_score || 2)}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={getPriorityColor(task.priority_score || 2)} className="text-xs">
+                        {getPriorityLabel(task.priority_score || 2)}
+                      </Badge>
+                      {task.source_provider === 'canvas' && (
+                        <div className="text-xs text-blue-600 font-medium">📚</div>
+                      )}
+                    </div>
                   </div>
                 ))
               ) : (aiSchedule && aiSchedule.length > 0) ? (
