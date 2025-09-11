@@ -387,19 +387,21 @@ export const Tasks = () => {
             : task
         ));
 
-        // If task was completed, show completion state for 5 seconds then remove
-        if (newStatus === 'completed') {
-          setCompletingTasks(prev => new Set(prev).add(taskId));
-          
-          setTimeout(() => {
-            setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-            setCompletingTasks(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(taskId);
-              return newSet;
-            });
-          }, 5000);
-        }
+        // Briefly highlight the task that was just toggled
+        setCompletingTasks(prev => new Set(prev).add(taskId));
+        
+        setTimeout(() => {
+          setCompletingTasks(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(taskId);
+            return newSet;
+          });
+        }, 1000); // Remove highlight after 1 second
+        
+        toast({
+          title: "Task updated",
+          description: `Task marked as ${newStatus}`,
+        });
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -468,7 +470,9 @@ export const Tasks = () => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = filterStatus === 'all' || item.completion_status === filterStatus;
+    // Always show recently toggled tasks regardless of filter status
+    const isRecentlyToggled = completingTasks.has(item.id);
+    const matchesStatus = filterStatus === 'all' || item.completion_status === filterStatus || isRecentlyToggled;
     
     const matchesPriority = filterPriority === 'all' || 
                            getPriorityLabel(item.priority).toLowerCase() === filterPriority;
