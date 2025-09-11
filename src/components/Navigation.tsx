@@ -193,40 +193,6 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
         })}
       </nav>
 
-      {/* Courses Section */}
-      {courses.length > 0 && (
-        <div className="px-4 pb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-muted-foreground">My Courses</h3>
-            <Badge variant="secondary" className="text-xs">
-              {courses.length}
-            </Badge>
-          </div>
-          <ScrollArea className="h-60">
-            <div className="space-y-2">
-              {courses.map((course, index) => (
-                <Card 
-                  key={course.code} 
-                  className={`transition-all duration-200 hover:scale-[1.02] cursor-pointer border ${course.color}`}
-                  onClick={() => onPageChange('calendar')}
-                >
-                   <CardContent className="p-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <BookOpen className="h-4 w-4 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{course.code}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {course.totalAssignments || course.events.length + course.tasks.length} assignments
-                          </p>
-                        </div>
-                      </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-      )}
 
       {/* User Section */}
       <div className="p-4 border-t border-border">
