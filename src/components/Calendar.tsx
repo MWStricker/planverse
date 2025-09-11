@@ -513,6 +513,8 @@ const Calendar = () => {
         });
         setCanvasFeedUrl('');
         
+        // Refresh calendar connections to show the new feed
+        fetchCalendarConnections();
         // Trigger Canvas feed sync
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-canvas-feed', {
