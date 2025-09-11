@@ -13,13 +13,25 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getPriorityColor } from "@/lib/priority-utils";
 
+// Extract course code consistently from titles or course names
+const extractCourseCode = (title: string, isCanvas: boolean = false) => {
+  if (!isCanvas) return null;
+  
+  // For Canvas events, extract from format like [2025FA-PSY-100-007]
+  const courseMatch = title.match(/\[([A-Z0-9]+-)?([A-Z]+-\d+)/);
+  if (courseMatch) {
+    return courseMatch[2]; // Return just the PSY-100 part
+  }
+  
+  return null;
+};
+
 // Generate unique colors for each course
 const getCourseColor = (title: string, isCanvas: boolean) => {
   if (!isCanvas) return 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
   
-  // Extract course code from title (e.g., "PSY-100", "MU-100", "LIFE-102")
-  const courseMatch = title.match(/\[([A-Z]+-\d+)/);
-  const courseCode = courseMatch ? courseMatch[1] : title;
+  const courseCode = extractCourseCode(title, isCanvas);
+  if (!courseCode) return 'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200';
   
   // Generate a hash from the course code for consistent color assignment
   const hashCode = (str: string) => {
@@ -88,13 +100,24 @@ const getCourseIcon = (title: string, isCanvas: boolean) => {
   return BookOpen; // Default Canvas icon
 };
 
-// Get course color for tasks based on course_name
+// Get course color for tasks - try to match with Canvas events 
 const getTaskCourseColor = (task: Task) => {
-  if (!task.course_name) return 'bg-secondary/20 border-secondary text-secondary-foreground';
+  // If task has a course_name, try to match it with Canvas course codes
+  if (task.course_name) {
+    // Create a pseudo Canvas title to generate the same color as events
+    const pseudoTitle = `[2025FA-${task.course_name}]`;
+    return getCourseColor(pseudoTitle, true);
+  }
   
-  // Create a pseudo Canvas title format for color consistency
-  const pseudoTitle = `[${task.course_name}]`;
-  return getCourseColor(pseudoTitle, true);
+  // Check if task title contains course info
+  const courseFromTitle = extractCourseCode(task.title, true);
+  if (courseFromTitle) {
+    const pseudoTitle = `[2025FA-${courseFromTitle}]`;
+    return getCourseColor(pseudoTitle, true);
+  }
+  
+  // Default color for tasks without course info
+  return 'bg-secondary/20 border-secondary text-secondary-foreground';
 };
 
 interface Task {
@@ -107,6 +130,8 @@ interface Task {
   is_recurring?: boolean;
   recurrence_type?: string;
   recurrence_pattern?: any;
+  source_assignment_id?: string;
+  source_provider?: string;
 }
 
 interface Event {
