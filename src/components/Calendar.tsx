@@ -716,40 +716,51 @@ const Calendar = () => {
       </div>
 
       {/* Current Weather Display */}
-      {weather.current && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-2xl">
-                {getWeatherIcon(weather.current.icon)}
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-foreground">
-                  {weather.current.temp}°F
-                </div>
-                <div className="text-sm text-muted-foreground capitalize">
-                  {weather.current.description}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {weather.current.location && (
-                <div className="text-sm text-muted-foreground">
-                  📍 {weather.current.location}
-                </div>
+      <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">
+              {weather.current ? (
+                getWeatherIcon(weather.current.icon)
+              ) : (
+                <Thermometer className="h-5 w-5 text-muted-foreground" />
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={refreshWeather}
-                className="h-8 w-8 p-0"
-              >
-                <Thermometer className="h-4 w-4" />
-              </Button>
+            </div>
+            <div>
+              {weather.current ? (
+                <>
+                  <div className="text-lg font-semibold text-foreground">
+                    {weather.current.temp}°F
+                  </div>
+                  <div className="text-sm text-muted-foreground capitalize">
+                    {weather.current.description}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm font-medium text-foreground">Weather unavailable</div>
+                  <div className="text-xs text-muted-foreground">Unable to load weather. Try refresh.</div>
+                </>
+              )}
             </div>
           </div>
+          <div className="flex items-center gap-3">
+            {weather.current?.location && (
+              <div className="text-sm text-muted-foreground">
+                📍 {weather.current.location}
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={refreshWeather}
+              className="h-8 w-8 p-0"
+            >
+              <Thermometer className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Legend */}
       <div className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground">
