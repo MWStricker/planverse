@@ -1,1 +1,4 @@
 project_id = "pvhymyhsawelopclpdke"
+
+[functions.sync-canvas-feed]
+verify_jwt = false

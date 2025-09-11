@@ -393,12 +393,43 @@ const Calendar = () => {
         console.log('Successfully added calendar feed:', data);
         toast({
           title: "Success",
-          description: "Canvas calendar feed added successfully",
+          description: "Canvas calendar feed added successfully. Syncing events...",
         });
         setCanvasFeedUrl('');
+        
+        // Trigger Canvas feed sync
+        try {
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-canvas-feed', {
+            body: { connection_id: data.id }
+          });
+          
+          if (syncError) {
+            console.error('Sync error:', syncError);
+            toast({
+              title: "Sync Warning",
+              description: "Calendar feed added but sync failed. Events may not appear immediately.",
+              variant: "destructive",
+            });
+          } else {
+            console.log('Sync result:', syncData);
+            toast({
+              title: "Sync Complete",
+              description: `${syncData.events_processed || 0} events synced from Canvas`,
+            });
+            // Refresh calendar data to show new events
+            fetchData();
+          }
+        } catch (syncError) {
+          console.error('Sync error:', syncError);
+          toast({
+            title: "Sync Warning", 
+            description: "Calendar feed added but sync failed. Events may not appear immediately.",
+            variant: "destructive",
+          });
+        }
+        
         setIsAddingFeed(false);
         fetchCalendarConnections();
-        // Optionally trigger a sync here
       }
     } catch (error) {
       console.error('Unexpected error adding calendar feed:', error);
