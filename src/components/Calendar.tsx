@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { getPriorityColor, getPriorityEmoji } from "@/lib/priority-utils";
+import { getPriorityColor } from "@/lib/priority-utils";
 
 // Course color coding for Canvas events
 const getCourseColor = (title: string, isCanvas: boolean) => {
@@ -46,30 +46,30 @@ const getCourseColor = (title: string, isCanvas: boolean) => {
 };
 
 const getCourseIcon = (title: string, isCanvas: boolean) => {
-  if (!isCanvas) return '📅';
+  if (!isCanvas) return CalendarIcon;
   
   const courseMatch = title.match(/\[([A-Z]+-\d+)/);
   const courseCode = courseMatch ? courseMatch[1] : title;
   
   const courseIcons = {
-    'PSY': '🧠',
-    'MU': '🎵', 
-    'LIFE': '🧬',
-    'MATH': '📐',
-    'PHYS': '⚛️',
-    'CHEM': '🧪',
-    'ENG': '📚',
-    'HIST': '🏛️',
-    'CS': '💻',
+    'PSY': BookOpen,
+    'MU': BookOpen, 
+    'LIFE': BookOpen,
+    'MATH': BookOpen,
+    'PHYS': BookOpen,
+    'CHEM': BookOpen,
+    'ENG': BookOpen,
+    'HIST': BookOpen,
+    'CS': BookOpen,
   };
   
-  for (const [prefix, icon] of Object.entries(courseIcons)) {
+  for (const [prefix, IconComponent] of Object.entries(courseIcons)) {
     if (courseCode.startsWith(prefix)) {
-      return icon;
+      return IconComponent;
     }
   }
   
-  return '🎓'; // Default Canvas icon
+  return BookOpen; // Default Canvas icon
 };
 
 interface Task {
@@ -941,8 +941,8 @@ const Calendar = () => {
                                    className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
                                    style={{ '--animation-duration': `${getAnimationDuration(task.title)}s` } as React.CSSProperties}
                                  >
-                                   {getPriorityEmoji(task.priority_score || 0)} <span className="whitespace-nowrap text-xs">{task.title}</span>
-                                  {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
+                                    <span className="whitespace-nowrap text-xs">{task.title}</span>
+                                   {completingTasks.has(task.id) && <CheckCircle className="h-3 w-3 text-green-600 animate-bounce" />}
                                 </div>
                               </Badge>
                             </div>
@@ -983,7 +983,7 @@ const Calendar = () => {
                      {dayEvents.map(event => {
                        const isCanvas = event.source_provider === 'canvas';
                        const courseColor = getCourseColor(event.title, isCanvas);
-                       const courseIcon = getCourseIcon(event.title, isCanvas);
+                       const CourseIcon = getCourseIcon(event.title, isCanvas);
                        
                        return (
                          <Popover key={event.id}>
@@ -994,8 +994,8 @@ const Calendar = () => {
                                     className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
                                     style={{ '--animation-duration': `${getAnimationDuration(event.title)}s` } as React.CSSProperties}
                                   >
-                                    {courseIcon} <span className="whitespace-nowrap">{event.title}</span>
-                                    {isCanvas && <span className="text-xs opacity-60">📚</span>}
+                                    <CourseIcon className="h-3 w-3" /> <span className="whitespace-nowrap">{event.title}</span>
+                                    {isCanvas && <BookOpen className="h-3 w-3 opacity-60" />}
                                   </div>
                                 </Badge>
                                 {event.start_time && (
@@ -1028,9 +1028,9 @@ const Calendar = () => {
                       <Popover key={session.id}>
                         <PopoverTrigger asChild>
                           <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors">
-                            <Badge variant="default" className="text-xs w-full justify-start truncate">
-                              📚 {session.title}
-                            </Badge>
+                             <Badge variant="default" className="text-xs w-full justify-start truncate flex items-center gap-1">
+                               <BookOpen className="h-3 w-3" /> {session.title}
+                             </Badge>
                           </div>
                         </PopoverTrigger>
                         <PopoverContent className="w-48 p-2" align="start">
@@ -1186,19 +1186,19 @@ const Calendar = () => {
             <div className="font-medium text-foreground">Event Types</div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span>📝</span>
+                <div className="w-3 h-3 rounded border bg-secondary" />
                 <span>Tasks & Assignments</span>
               </div>
               <div className="flex items-center gap-2">
-                <span>🎓</span>
+                <div className="w-3 h-3 rounded border bg-blue-400" />
                 <span>Canvas Synced</span>
               </div>
               <div className="flex items-center gap-2">
-                <span>📅</span>
+                <div className="w-3 h-3 rounded border bg-primary" />
                 <span>Personal Events</span>
               </div>
               <div className="flex items-center gap-2">
-                <span>📚</span>
+                <div className="w-3 h-3 rounded border bg-accent" />
                 <span>Study Sessions</span>
               </div>
             </div>
@@ -1233,19 +1233,19 @@ const Calendar = () => {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-purple-400" />
-                <span>🧠 Psychology</span>
+                <span>Psychology</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                <span>🎵 Music</span>
+                <span>Music</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-green-400" />
-                <span>🧬 Life Sciences</span>
+                <span>Life Sciences</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-orange-400" />
-                <span>📐 Math & More</span>
+                <span>Math & More</span>
               </div>
             </div>
           </div>
@@ -1372,12 +1372,12 @@ const Calendar = () => {
                       {getEventsForDay(selectedDay).map(event => {
                         const isCanvas = event.source_provider === 'canvas';
                         const courseColor = getCourseColor(event.title, isCanvas);
-                        const courseIcon = getCourseIcon(event.title, isCanvas);
+                        const CourseIcon = getCourseIcon(event.title, isCanvas);
                         
                         return (
                           <div key={event.id} className={`p-4 border rounded-lg transition-all duration-200 ${courseColor}`}>
                             <div className="flex items-start gap-3">
-                              <div className="text-lg">{courseIcon}</div>
+                              <div className="text-lg"><CourseIcon className="h-5 w-5" /></div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
                                   <h4 className="font-medium">{event.title}</h4>
@@ -1430,7 +1430,7 @@ const Calendar = () => {
                       {getSessionsForDay(selectedDay).map(session => (
                         <div key={session.id} className="p-4 bg-card border rounded-lg">
                           <div className="flex items-start gap-3">
-                            <div className="text-lg">📚</div>
+                            <div className="text-lg"><BookOpen className="h-5 w-5" /></div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-medium mb-2">{session.title}</h4>
                               
