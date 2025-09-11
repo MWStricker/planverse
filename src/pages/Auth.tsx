@@ -12,8 +12,8 @@ import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle } fro
 import { Header } from "@/components/Header";
 
 const Auth = () => {
-  const [email, setEmail] = useState("test@example.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
