@@ -185,20 +185,20 @@ export const Courses = () => {
   const getCourseColor = (title: string, forCanvas = false) => {
     if (!forCanvas) return 'bg-muted/50 border-muted';
     
-    // Canvas-style colors matching their actual course color scheme
+    // Colorado State University Canvas colors - matching their green theme
     const colors = [
-      'bg-[#394B59] text-white border-[#394B59]', // Canvas dark blue
-      'bg-[#008EE2] text-white border-[#008EE2]', // Canvas primary blue  
-      'bg-[#00AC18] text-white border-[#00AC18]', // Canvas green
-      'bg-[#FC5E13] text-white border-[#FC5E13]', // Canvas orange
-      'bg-[#8F3E97] text-white border-[#8F3E97]', // Canvas purple
-      'bg-[#BD3C14] text-white border-[#BD3C14]', // Canvas red
-      'bg-[#2D3B45] text-white border-[#2D3B45]', // Canvas slate
-      'bg-[#127A1B] text-white border-[#127A1B]', // Canvas dark green
-      'bg-[#D97900] text-white border-[#D97900]', // Canvas amber
-      'bg-[#68777D] text-white border-[#68777D]', // Canvas gray
-      'bg-[#AD439A] text-white border-[#AD439A]', // Canvas magenta  
-      'bg-[#0076D1] text-white border-[#0076D1]'  // Canvas bright blue
+      'bg-[#1E7040] text-white border-[#1E7040]', // CSU primary green
+      'bg-[#2E8050] text-white border-[#2E8050]', // CSU light green
+      'bg-[#0E6030] text-white border-[#0E6030]', // CSU dark green
+      'bg-[#3E9060] text-white border-[#3E9060]', // CSU bright green
+      'bg-[#1E5030] text-white border-[#1E5030]', // CSU forest green
+      'bg-[#2E6040] text-white border-[#2E6040]', // CSU medium green
+      'bg-[#4EA070] text-white border-[#4EA070]', // CSU sage green
+      'bg-[#1A6B3A] text-white border-[#1A6B3A]', // CSU evergreen
+      'bg-[#5EB080] text-white border-[#5EB080]', // CSU mint green
+      'bg-[#0F4F2F] text-white border-[#0F4F2F]', // CSU deep green
+      'bg-[#6EC090] text-white border-[#6EC090]', // CSU light mint
+      'bg-[#154A35] text-white border-[#154A35]'  // CSU pine green
     ];
     
     let hash = 0;
