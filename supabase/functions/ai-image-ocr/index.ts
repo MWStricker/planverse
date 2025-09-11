@@ -209,16 +209,31 @@ MUST extract at least 1 item unless image is completely blank.`;
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
     // Build detailed prompt for precise calendar analysis
-    const instruction = `Analyze this calendar image with EXTREME PRECISION.
+    const instruction = `Analyze this calendar image with EXTREME PRECISION for column alignment.
+
+CRITICAL GRID ANALYSIS:
+- This is a 7-column calendar grid (Sunday-Saturday)
+- Each column represents ONE specific day of the week
+- Items must be assigned to the EXACT column they appear in
+- Use the column guides provided to determine which column each item belongs to
+- If an item appears between columns, assign it to the nearest column boundary
 
 CALENDAR TYPE RULES:
 - Events calendars (e.g., Google): Events have visible times next to titles. Output these in events[] with startTime/endTime.
 - Canvas/tasks calendars: Assignments have due dates only (no times). Output these in tasks[] with dueTime null. Do NOT invent times.
 
 DATE ACCURACY (no off-by-one):
-- Use the exact day number inside the SAME grid cell as the text.
-- Take month/year from the header (e.g., "September 2025").
+- STEP 1: Identify the month/year from the calendar header
+- STEP 2: Use the 7 column guides to determine which day column each item is in
+- STEP 3: Match the column position to the day number in that column
+- STEP 4: Use the exact day number from the grid cell, do NOT adjust ±1 day
 - Never shift/normalize dates. Do not add or subtract days.
+
+COLUMN ALIGNMENT RULES:
+- Use the provided COLUMN GUIDES to snap each item to the correct column
+- Compare each item's x-coordinate to the 7 column midpoints
+- Assign items to the column with the closest midpoint
+- Be extremely careful with items near column boundaries
 
 OUTPUT RULES:
 - Extract EVERYTHING visible. If an item has no time visible, put it in tasks (not events).
