@@ -1186,17 +1186,36 @@ export const Dashboard = () => {
                         <div className="text-sm text-muted-foreground mb-1">
                           {task.description && task.source_provider === 'canvas' ? (
                             <div>
-                              <span>{truncateDescription(task.description, task.id, 80)}</span>
-                              {task.description.length > 80 && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleDescription(task.id);
-                                  }}
-                                  className="ml-1 text-primary hover:underline text-xs font-medium"
-                                >
-                                  {expandedDescriptions.has(task.id) ? "less" : "more"}
-                                </button>
+                              {task.description.length > 80 ? (
+                                expandedDescriptions.has(task.id) ? (
+                                  <>
+                                    <span>{task.description}</span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDescription(task.id);
+                                      }}
+                                      className="ml-1 text-primary hover:underline text-xs font-medium"
+                                    >
+                                      less
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>{task.description.slice(0, 80)}...</span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDescription(task.id);
+                                      }}
+                                      className="ml-1 text-primary hover:underline text-xs font-medium"
+                                    >
+                                      more
+                                    </button>
+                                  </>
+                                )
+                              ) : (
+                                <span>{task.description}</span>
                               )}
                             </div>
                           ) : (
