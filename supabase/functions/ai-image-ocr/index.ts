@@ -62,47 +62,41 @@ MUST extract at least 1 item unless image is completely blank.`;
         type: 'function',
         function: {
           name: 'return_schedule_items',
-          description: 'Return ALL extracted events and tasks as JSON - never return empty arrays',
+          description: 'Return extracted calendar events and tasks as JSON',
           parameters: {
             type: 'object',
-            additionalProperties: false,
             properties: {
               events: {
                 type: 'array',
+                description: 'Events with specific start/end times',
                 items: {
                   type: 'object',
-                  additionalProperties: false,
                   properties: {
-                    id: { type: 'string' },
-                    title: { type: 'string' },
-                    date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-                    startTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
-                    endTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
-                    location: { type: 'string' },
-                    recurrence: { type: 'string' },
-                    eventType: { type: 'string' },
-                    confidence: { type: 'number', minimum: 0, maximum: 100 },
+                    title: { type: 'string', description: 'Event title' },
+                    date: { type: 'string', description: 'Date in YYYY-MM-DD format' },
+                    startTime: { type: 'string', description: 'Start time in HH:MM format or null' },
+                    endTime: { type: 'string', description: 'End time in HH:MM format or null' },
+                    location: { type: 'string', description: 'Event location' },
+                    confidence: { type: 'number', description: 'Confidence score 0-100' }
                   },
-                  required: ['title','date','confidence']
+                  required: ['title', 'date', 'confidence']
                 }
               },
               tasks: {
                 type: 'array',
+                description: 'Assignments and tasks with due dates',
                 items: {
                   type: 'object',
-                  additionalProperties: false,
                   properties: {
-                    id: { type: 'string' },
-                    title: { type: 'string' },
-                    description: { type: 'string' },
-                    dueDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-                    dueTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
-                    courseName: { type: 'string' },
-                    priority: { type: 'number', minimum: 1, maximum: 4 },
-                    taskType: { type: 'string' },
-                    confidence: { type: 'number', minimum: 0, maximum: 100 },
+                    title: { type: 'string', description: 'Task title' },
+                    dueDate: { type: 'string', description: 'Due date in YYYY-MM-DD format' },
+                    dueTime: { type: 'string', description: 'Due time in HH:MM format or null' },
+                    courseName: { type: 'string', description: 'Course name' },
+                    priority: { type: 'number', description: 'Priority 1-4' },
+                    taskType: { type: 'string', description: 'Type of task' },
+                    confidence: { type: 'number', description: 'Confidence score 0-100' }
                   },
-                  required: ['title','dueDate','confidence']
+                  required: ['title', 'dueDate', 'confidence']
                 }
               }
             },
@@ -306,8 +300,27 @@ OUTPUT RULES:
     }
 
     if (!response.ok) {
-      console.log('GPT-5 failed, trying GPT-4o-mini as compatibility fallback');
-      response = await callOpenAI('gpt-4o-mini', 'legacy');
+      console.log('GPT-5 failed, trying without forced function calling');
+      // Try without forced function calling as fallback
+      const fallbackBody: any = {
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: contentParts as any },
+        ],
+        tools,
+        max_tokens: 1200,
+        temperature: 0.1
+      };
+      
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(fallbackBody),
+      });
     }
 
     if (!response.ok) {
