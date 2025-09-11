@@ -12,13 +12,13 @@ import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle } fro
 import { Header } from "@/components/Header";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("test@example.com");
+  const [password, setPassword] = useState("password123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [emailValid, setEmailValid] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [emailValid, setEmailValid] = useState(true);
+  const [passwordStrength, setPasswordStrength] = useState(3);
   const [isTyping, setIsTyping] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
