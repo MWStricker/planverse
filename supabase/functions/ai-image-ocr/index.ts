@@ -57,54 +57,7 @@ DATA EXTRACTION RULES:
 
 MUST extract at least 1 item unless image is completely blank.`;
 
-    const tools = [
-      {
-        type: 'function',
-        function: {
-          name: 'return_schedule_items',
-          description: 'Return extracted calendar events and tasks as JSON',
-          parameters: {
-            type: 'object',
-            properties: {
-              events: {
-                type: 'array',
-                description: 'Events with specific start/end times',
-                items: {
-                  type: 'object',
-                  properties: {
-                    title: { type: 'string', description: 'Event title' },
-                    date: { type: 'string', description: 'Date in YYYY-MM-DD format' },
-                    startTime: { type: 'string', description: 'Start time in HH:MM format or null' },
-                    endTime: { type: 'string', description: 'End time in HH:MM format or null' },
-                    location: { type: 'string', description: 'Event location' },
-                    confidence: { type: 'number', description: 'Confidence score 0-100' }
-                  },
-                  required: ['title', 'date', 'confidence']
-                }
-              },
-              tasks: {
-                type: 'array',
-                description: 'Assignments and tasks with due dates',
-                items: {
-                  type: 'object',
-                  properties: {
-                    title: { type: 'string', description: 'Task title' },
-                    dueDate: { type: 'string', description: 'Due date in YYYY-MM-DD format' },
-                    dueTime: { type: 'string', description: 'Due time in HH:MM format or null' },
-                    courseName: { type: 'string', description: 'Course name' },
-                    priority: { type: 'number', description: 'Priority 1-4' },
-                    taskType: { type: 'string', description: 'Type of task' },
-                    confidence: { type: 'number', description: 'Confidence score 0-100' }
-                  },
-                  required: ['title', 'dueDate', 'confidence']
-                }
-              }
-            },
-            required: ['events', 'tasks']
-          }
-        }
-      }
-    ];
+    // No longer using function calling - simple JSON response
 
     // Prefer Google Cloud Vision for OCR if available
     async function extractTextWithGCV(base64: string, apiKey?: string): Promise<{ text: string; layout: { x: number; y: number; text: string }[] } | null> {
@@ -266,11 +219,9 @@ OUTPUT RULES:
       const body: any = {
         model,
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Return your response as a JSON object with "events" and "tasks" arrays. Do NOT use function calling.' },
           { role: 'user', content: contentParts as any },
         ],
-        tools,
-        tool_choice: { type: 'function', function: { name: 'return_schedule_items' } }, // Force function call
       };
 
       if (paramsType === 'legacy') {
@@ -290,37 +241,13 @@ OUTPUT RULES:
       });
     }
 
-    // Use more powerful models for better accuracy
-    console.log('Sending to OpenAI:', { textLength: resolvedText?.length || 0, hasImage });
-    let response = await callOpenAI('gpt-4.1-2025-04-14', 'new');
+    // Use simpler model approach without function calling
+    console.log('Sending to OpenAI (no function calling):', { textLength: resolvedText?.length || 0, hasImage });
+    let response = await callOpenAI('gpt-4o-mini', 'legacy');
 
     if (!response.ok) {
-      console.log('GPT-4.1 failed, trying GPT-5 for maximum accuracy');
-      response = await callOpenAI('gpt-5-2025-08-07', 'new');
-    }
-
-    if (!response.ok) {
-      console.log('GPT-5 failed, trying without forced function calling');
-      // Try without forced function calling as fallback
-      const fallbackBody: any = {
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: contentParts as any },
-        ],
-        tools,
-        max_tokens: 1200,
-        temperature: 0.1
-      };
-      
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(fallbackBody),
-      });
+      console.log('GPT-4o-mini failed, trying GPT-4o');
+      response = await callOpenAI('gpt-4o', 'legacy');
     }
 
     if (!response.ok) {
@@ -334,8 +261,8 @@ OUTPUT RULES:
     }
 
     const aiData = await response.json();
-    console.log('OpenAI response received, full response:', JSON.stringify(aiData, null, 2));
-    console.log('Tool calls count:', aiData?.choices?.[0]?.message?.tool_calls?.length || 0);
+    console.log('OpenAI response received');
+    console.log('Response content:', aiData?.choices?.[0]?.message?.content || 'no content');
     
     // Check for OpenAI errors in response
     if (aiData.error) {
@@ -353,42 +280,25 @@ OUTPUT RULES:
       });
     }
 
-    // Prefer function/tool call output
+    // Parse content as JSON (no function calling)
     let parsed: any = null;
+    const content = aiData?.choices?.[0]?.message?.content ?? '';
+    console.log('Raw content to parse:', content);
+    
     try {
-      const toolCalls = aiData?.choices?.[0]?.message?.tool_calls || [];
-      console.log('Found tool calls:', toolCalls.length);
-      console.log('Tool calls details:', JSON.stringify(toolCalls, null, 2));
-      const fnCall = toolCalls.find((tc: any) => tc?.function?.name === 'return_schedule_items');
-      if (fnCall?.function?.arguments) {
-        console.log('Function call found! Arguments:', fnCall.function.arguments);
-        console.log('Arguments type:', typeof fnCall.function.arguments);
-        console.log('Arguments length:', fnCall.function.arguments.length);
-        parsed = JSON.parse(fnCall.function.arguments);
-        console.log('Successfully parsed function call JSON');
-      } else {
-        console.log('No function call with arguments found');
-        console.log('fnCall:', fnCall);
-      }
-    } catch (e) { 
-      console.error('Error parsing function call JSON:', e); 
-    }
-
-    // Fallback to content JSON extraction if needed
-    if (!parsed) {
-      const content = aiData?.choices?.[0]?.message?.content ?? '';
-      console.log('No function call found, trying content parsing. Content:', content);
-      try { 
-        parsed = JSON.parse(String(content)); 
-        console.log('Successfully parsed content JSON');
-      } catch (e) { 
-        console.log('Content JSON parse failed:', e);
-        const cleaned = String(content).replace(/```json\s*|```/g, '').trim();
-        try { 
-          parsed = JSON.parse(cleaned); 
-          console.log('Successfully parsed cleaned content JSON');
-        } catch (e2) { 
-          console.log('Cleaned content JSON parse also failed:', e2);
+      // Try direct JSON parse
+      parsed = JSON.parse(content);
+      console.log('Successfully parsed content JSON');
+    } catch (e) {
+      console.log('Direct JSON parse failed:', e);
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[1]);
+          console.log('Successfully parsed markdown JSON');
+        } catch (e2) {
+          console.log('Markdown JSON parse failed:', e2);
         }
       }
     }
