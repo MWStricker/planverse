@@ -1176,7 +1176,7 @@ export const Tasks = () => {
 
                     {item.is_recurring && (
                       <div className="mt-1 text-xs text-muted-foreground">
-                        Next: {getNextRecurrences(item, 3).map(date => date.toLocaleDateString()).join(", ")}
+                        Recurrs {item.recurrence_type}
                       </div>
                     )}
                   </div>

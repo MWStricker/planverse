@@ -1004,7 +1004,7 @@ export const Dashboard = () => {
                       )}
                       {task.is_recurring && (
                         <p className="text-xs text-muted-foreground">
-                          Next: {getNextRecurrences(task, 2).map(date => format(date, "MMM dd")).join(", ")}
+                          Recurrs {task.recurrence_type}
                         </p>
                       )}
                     </div>
