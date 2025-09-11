@@ -46,6 +46,16 @@ interface WeatherData {
 }
 
 const Calendar = () => {
+  // Function to calculate animation duration based on text length
+  const getAnimationDuration = (text: string) => {
+    const baseTime = 2; // Base time in seconds
+    const timePerCharacter = 0.08; // Additional time per character
+    const minTime = 2; // Minimum animation time
+    const maxTime = 8; // Maximum animation time
+    
+    const calculatedTime = baseTime + (text.length * timePerCharacter);
+    return Math.min(Math.max(calculatedTime, minTime), maxTime);
+  };
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -616,7 +626,10 @@ const Calendar = () => {
                              <Badge variant="secondary" className={`text-xs w-full justify-start overflow-hidden group ${
                                task.completion_status === 'completed' ? 'opacity-60 line-through' : ''
                              } ${completingTasks.has(task.id) ? 'bg-green-200' : ''}`}>
-                                <div className="flex items-center gap-1 group-hover:animate-[scroll-left-right_4s_ease-in-out_infinite]">
+                                <div 
+                                  className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
+                                  style={{ '--animation-duration': `${getAnimationDuration(task.title)}s` } as React.CSSProperties}
+                                >
                                   {getPriorityEmoji(task.priority_score || 0)} <span className="whitespace-nowrap text-xs">{task.title}</span>
                                  {completingTasks.has(task.id) && <span className="text-green-600 animate-bounce">✓</span>}
                                </div>
@@ -654,7 +667,10 @@ const Calendar = () => {
                         <PopoverTrigger asChild>
                            <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors duration-300">
                              <Badge variant="outline" className="text-xs w-full justify-start overflow-hidden group">
-                               <div className="flex items-center gap-1 group-hover:animate-[scroll-left-right_4s_ease-in-out_infinite]">
+                               <div 
+                                 className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
+                                 style={{ '--animation-duration': `${getAnimationDuration(event.title)}s` } as React.CSSProperties}
+                               >
                                  📅 <span className="whitespace-nowrap">{event.title}</span>
                                </div>
                              </Badge>
