@@ -180,6 +180,32 @@ MUST extract at least 1 item unless image is completely blank.`;
       }
     }
 
+    // Compute column guides from layout hints to avoid off-by-one near boundaries
+    function computeColumnGuides(layout: { x: number; y: number; text: string }[]): number[] | null {
+      const dayTokens = layout.filter(it => {
+        const n = Number(it.text);
+        return Number.isFinite(n) && n >= 1 && n <= 31 && /^[0-9]{1,2}$/.test(it.text);
+      });
+      const xs = dayTokens.map(it => it.x).sort((a, b) => a - b);
+      if (xs.length < 7) return null;
+      const uniq: number[] = [];
+      for (const x of xs) {
+        if (uniq.length === 0 || Math.abs(x - uniq[uniq.length - 1]) > 0.02) uniq.push(x);
+      }
+      const arr = uniq.length >= 7 ? uniq : xs;
+      const n = arr.length;
+      const mids: number[] = [];
+      for (let i = 1; i <= 7; i++) {
+        const q = (i - 0.5) / 7;
+        const idx = Math.max(0, Math.min(n - 1, Math.round(q * (n - 1))));
+        mids.push(+arr[idx].toFixed(3));
+      }
+      mids.sort((a, b) => a - b);
+      return mids;
+    }
+
+    const columnGuides = layoutHints && layoutHints.length > 0 ? computeColumnGuides(layoutHints) : null;
+
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
     // Build detailed prompt for precise calendar analysis
@@ -212,6 +238,10 @@ OUTPUT RULES:
       const maxHints = 200;
       const layoutSummary = layoutHints.slice(0, maxHints).map(it => `${it.x.toFixed(3)},${it.y.toFixed(3)}: ${it.text}`).join('\n');
       contentParts.push({ type: 'text', text: `\n\nLAYOUT HINTS (normalized x,y in [0-1], first ${Math.min(maxHints, layoutHints.length)} items):\n${layoutSummary}` });
+    }
+
+    if (columnGuides) {
+      contentParts.push({ type: 'text', text: `\n\nCOLUMN GUIDES (7 column midpoints x in [0-1]):\n${columnGuides.join(', ')}` });
     }
 
     if (!hasImage && (!resolvedText || resolvedText.trim().length === 0)) {
