@@ -100,6 +100,9 @@ export const Settings = () => {
     school: '',
     major: '',
     campus_location: '',
+    bio: '',
+    graduation_year: '',
+    is_public: true,
     timezone: 'America/New_York'
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -247,6 +250,9 @@ export const Settings = () => {
         school: profile.school || '',
         major: profile.major || '',
         campus_location: profile.campus_location || '',
+        bio: profile.bio || '',
+        graduation_year: profile.graduation_year?.toString() || '',
+        is_public: profile.is_public ?? true,
         timezone: profile.timezone || 'America/New_York'
       });
       setHasUnsavedChanges(false);
@@ -272,7 +278,11 @@ export const Settings = () => {
   };
 
   const handleSaveProfile = async () => {
-    await updateProfile(editedProfile);
+    const updates = {
+      ...editedProfile,
+      graduation_year: editedProfile.graduation_year ? parseInt(editedProfile.graduation_year) : undefined
+    };
+    await updateProfile(updates);
     setHasUnsavedChanges(false);
   };
   const getStatusIcon = (status: string) => {
@@ -813,6 +823,29 @@ export const Settings = () => {
                   value={editedProfile.campus_location}
                   onChange={(e) => handleProfileChange('campus_location', e.target.value)}
                   placeholder="e.g., Main Campus, Downtown, Online"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Input
+                  id="bio"
+                  value={editedProfile.bio}
+                  onChange={(e) => handleProfileChange('bio', e.target.value)}
+                  placeholder="Tell others about yourself..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="graduation_year">Graduation Year</Label>
+                <Input
+                  id="graduation_year"
+                  type="number"
+                  value={editedProfile.graduation_year}
+                  onChange={(e) => handleProfileChange('graduation_year', e.target.value)}
+                  placeholder="e.g., 2025"
+                  min="2020"
+                  max="2030"
                 />
               </div>
             </CardContent>

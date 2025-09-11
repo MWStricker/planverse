@@ -6,6 +6,7 @@ import { Navigation } from "@/components/Navigation";
 import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
 import Calendar from "@/components/Calendar";
+import { Connect } from "@/components/Connect";
 import { Tasks } from "@/components/Tasks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
@@ -50,6 +51,8 @@ const Index = () => {
         return <Settings />;
       case 'calendar':
         return <Calendar />;
+      case 'connect':
+        return <Connect />;
       case 'tasks':
         return <Tasks />;
       case 'courses':

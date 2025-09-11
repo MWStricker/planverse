@@ -13,6 +13,9 @@ export interface UserProfile {
   school?: string;
   timezone?: string;
   campus_location?: string;
+  bio?: string;
+  graduation_year?: number;
+  is_public?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -55,36 +55,57 @@ export const useConnect = () => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch posts
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles!inner(display_name, avatar_url, school, major)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (postsError) throw postsError;
+
+      // Then fetch profiles for these posts
+      const userIds = postsData?.map(post => post.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url, school, major')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map(profilesData?.map(profile => [profile.user_id, profile]) || []);
 
       // Check which posts current user has liked
+      let likedPostIds = new Set<string>();
       if (user) {
-        const postIds = data?.map(post => post.id) || [];
+        const postIds = postsData?.map(post => post.id) || [];
         const { data: likes } = await supabase
           .from('post_likes')
           .select('post_id')
           .eq('user_id', user.id)
           .in('post_id', postIds);
 
-        const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
-        
-        const postsWithLikes = data?.map(post => ({
-          ...post,
-          user_liked: likedPostIds.has(post.id)
-        })) || [];
-
-        setPosts(postsWithLikes);
-      } else {
-        setPosts(data || []);
+        likedPostIds = new Set(likes?.map(like => like.post_id) || []);
       }
+
+      // Combine posts with profiles
+      const formattedPosts = postsData?.map(post => {
+        const profile = profilesMap.get(post.user_id);
+        return {
+          ...post,
+          user_liked: likedPostIds.has(post.id),
+          likes_count: post.likes_count || 0,
+          comments_count: post.comments_count || 0,
+          profiles: {
+            display_name: profile?.display_name || 'Unknown User',
+            avatar_url: profile?.avatar_url,
+            school: profile?.school,
+            major: profile?.major,
+          }
+        };
+      }) || [];
+
+      setPosts(formattedPosts as Post[]);
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast({
@@ -179,17 +200,40 @@ export const useConnect = () => {
   // Fetch comments for a post
   const fetchComments = async (postId: string): Promise<Comment[]> => {
     try {
-      const { data, error } = await supabase
+      // First fetch comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          *,
-          profiles!inner(display_name, avatar_url)
-        `)
+        .select('*')
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+      if (commentsError) throw commentsError;
+
+      // Then fetch profiles for these comments
+      const userIds = commentsData?.map(comment => comment.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map(profilesData?.map(profile => [profile.user_id, profile]) || []);
+
+      // Combine comments with profiles
+      const formattedComments = commentsData?.map(comment => {
+        const profile = profilesMap.get(comment.user_id);
+        return {
+          ...comment,
+          profiles: {
+            display_name: profile?.display_name || 'Unknown User',
+            avatar_url: profile?.avatar_url,
+          }
+        };
+      }) || [];
+
+      return formattedComments as Comment[];
     } catch (error) {
       console.error('Error fetching comments:', error);
       return [];
