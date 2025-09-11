@@ -438,11 +438,11 @@ export const OCRUpload = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-center group">
+            <div className="flex justify-center">
               <img
                 src={URL.createObjectURL(selectedFile)}
                 alt="Uploaded schedule"
-                className="max-w-full max-h-96 rounded-lg border shadow-md group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]"
+                className="max-w-full max-h-96 rounded-lg border shadow-md hover:shadow-lg transition-shadow duration-200"
               />
             </div>
           </CardContent>
