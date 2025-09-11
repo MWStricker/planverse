@@ -1138,9 +1138,9 @@ const Calendar = () => {
 
       {/* Day Detail Dialog */}
       <Dialog open={isDayDialogOpen} onOpenChange={setIsDayDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-w-3xl max-h-[80vh] animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-4 duration-300 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-bottom-4">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 delay-75">
               <CalendarIcon className="h-5 w-5" />
               {selectedDay && format(selectedDay, 'EEEE, MMMM d, yyyy')}
             </DialogTitle>
