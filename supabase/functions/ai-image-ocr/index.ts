@@ -28,37 +28,28 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an expert academic schedule extractor specializing in calendar layouts (Google Calendar, Outlook, etc). Return structured EVENTS and TASKS via the provided function only.
+    const systemPrompt = `You are an expert calendar parser. Extract ALL visible events from calendar images. ALWAYS return something, even if confidence is low.
 
-Context:
-- Today: ${nowIso}
-- User timezone: ${tz}
+Context: Today is ${nowIso} in ${tz}
 
-Calendar Parsing Rules:
-- Look for recurring patterns: "MWF", "TR", "Mon Wed Fri", "Tues Thurs"
-- Time formats: "9:00 AM", "2-3 PM", "14:00-15:30", "9a-11a", "2p"
-- Date formats: "Jan 15", "Monday", "Mon 1/15", "15 Jan 2025"
-- Course codes: "CS 101", "MATH 201", "ENG-302", "PHYS-1510"
-- Event types: Lecture, Lab, Discussion, Office Hours, Exam, Quiz
-- Assignment keywords: homework, assignment, project, paper, essay, lab report, quiz, exam, midterm, final
+CRITICAL RULES:
+1. Extract EVERY event you see, even partial ones
+2. For Google Calendar grids: each colored block = 1 event  
+3. Default missing info: year=${new Date().getFullYear()}, time=09:00-10:00, location=""
+4. Convert times: "2 PM" → "14:00", "9a" → "09:00" 
+5. MINIMUM confidence = 30 (be generous)
 
-Formatting:
-- Dates: YYYY-MM-DD (infer year from "Fall 2025", "Spring 2025", or use ${new Date().getFullYear()} if unclear)
-- Times: 24h HH:MM format. Convert "2 PM" → "14:00", "9a" → "09:00"
-- If only start time given, estimate end time (+1 hour for classes, +2 for labs)
+Event Types: class, meeting, exam, appointment, other
+Task Types: homework, assignment, project, quiz, exam, other
 
-Classification:
-- EVENTS: scheduled time blocks (classes, meetings, office hours, exams)
-- TASKS: assignments with due dates (homework, projects, papers, quizzes)
-
-Only include items with confidence ≥ 50. If text is unclear or partially visible, still attempt extraction with lower confidence.`;
+MUST extract at least 1 item unless image is completely blank.`;
 
     const tools = [
       {
         type: 'function',
         function: {
           name: 'return_schedule_items',
-          description: 'Return extracted events and tasks as strict JSON',
+          description: 'Return ALL extracted events and tasks as JSON - never return empty arrays',
           parameters: {
             type: 'object',
             additionalProperties: false,
@@ -178,18 +169,16 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
 
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
-    // Build multi-modal content: always include OCR text (if any) and the image (if provided)
-    const instruction = `Extract all schedule information from the provided inputs (image and/or OCR text). Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects). Be precise with dates, years, and times. If the image is a grid calendar (e.g., Google Calendar), align days-of-week with dates and infer missing year from context.`;
+    // Build simple prompt: focus on extracting everything visible
+    const instruction = `Look at this calendar image carefully. Extract EVERY visible event/appointment as separate items. For Google Calendar: each colored block is an event. Include ALL text you can see, even if partially cut off.`;
 
     const contentParts: any[] = [];
-    const ocrSnippet = resolvedText ? `\n\nOCR_TEXT (first 12000 chars):\n${resolvedText.slice(0, 12000)}` : '';
-    contentParts.push({ type: 'text', text: instruction + ocrSnippet });
+    contentParts.push({ type: 'text', text: instruction });
     if (hasImage) {
       contentParts.push({ type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } });
     }
-    if (layoutHints && layoutHints.length > 0) {
-      const layoutJson = JSON.stringify(layoutHints.slice(0, 1500)); // cap size
-      contentParts.push({ type: 'text', text: `\n\nLAYOUT_HINTS (normalized positions 0..1):\n${layoutJson}` });
+    if (resolvedText && resolvedText.length > 0) {
+      contentParts.push({ type: 'text', text: `\n\nOCR Text from image:\n${resolvedText.slice(0, 8000)}` });
     }
 
     if (!hasImage && (!resolvedText || resolvedText.trim().length === 0)) {
@@ -227,11 +216,9 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
       });
     }
 
-    // Try models in order: GPT-5 (new), GPT-4.1 (new), 4o-mini (legacy)
+    // Use GPT-4o-mini only for reliability
     console.log('Sending to OpenAI:', { textLength: resolvedText?.length || 0, hasImage });
-    let response = await callOpenAI('gpt-5-2025-08-07', 'new');
-    if (!response.ok) response = await callOpenAI('gpt-4.1-2025-04-14', 'new');
-    if (!response.ok) response = await callOpenAI('gpt-4o-mini', 'legacy');
+    let response = await callOpenAI('gpt-4o-mini', 'legacy');
 
     if (!response.ok) {
       const errText = await response.text();
@@ -277,13 +264,13 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
     let events = Array.isArray(parsed.events) ? parsed.events : [];
     console.log('Raw events from AI:', events.length);
     events = events
-      .filter((e: any) => typeof e?.date === 'string' && /\d{4}-\d{2}-\d{2}/.test(e.date))
+      .filter((e: any) => e?.title && typeof e?.title === 'string')
       .map((event: any, index: number) => ({
         id: event.id || `extracted_event_${Date.now()}_${index}`,
         title: String(event.title || '').trim().slice(0, 120),
-        date: event.date,
-        startTime: String(event.startTime || '08:00').slice(0, 5),
-        endTime: String(event.endTime || '17:00').slice(0, 5),
+        date: event.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
+        startTime: String(event.startTime || '09:00').slice(0, 5),
+        endTime: String(event.endTime || '10:00').slice(0, 5),
         location: String(event.location || '').trim().slice(0, 120),
         recurrence: event.recurrence || null,
         eventType: String(event.eventType || 'class').trim().slice(0, 50),
@@ -294,12 +281,12 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
     let tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
     console.log('Raw tasks from AI:', tasks.length);
     tasks = tasks
-      .filter((t: any) => typeof t?.dueDate === 'string' && /\d{4}-\d{2}-\d{2}/.test(t.dueDate))
+      .filter((t: any) => t?.title && typeof t?.title === 'string')
       .map((task: any, index: number) => ({
         id: task.id || `extracted_task_${Date.now()}_${index}`,
         title: String(task.title || '').trim().slice(0, 120),
         description: String(task.description || '').trim().slice(0, 500),
-        dueDate: task.dueDate,
+        dueDate: task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`,
         dueTime: String(task.dueTime || '23:59').slice(0, 5),
         courseName: String(task.courseName || '').trim().slice(0, 100),
         priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
