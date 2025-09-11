@@ -135,7 +135,7 @@ export const OCRUpload = () => {
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const text = await ocrExtractText(file);
             const { data: textResponse, error: textError } = await supabase.functions.invoke('ai-image-ocr', {
-              body: { text, timeZone: tz, currentDate: new Date().toISOString() }
+              body: { text, imageBase64: base64, mimeType, timeZone: tz, currentDate: new Date().toISOString() }
             });
 
             if (textError) {
