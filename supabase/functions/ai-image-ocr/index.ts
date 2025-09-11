@@ -152,16 +152,18 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
     }
 
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
-    const userImageContent = hasImage ? [
-      { type: 'text', text: 'Extract all schedule information from this image. Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects). Be precise with dates, years, and times.' },
-      { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } }
-    ] : null;
 
-    const userTextContent = `Source: ${ocrSource === 'gcv' ? 'Google Cloud Vision' : 'User text'}\n\nExtract all schedule information with precise DATES (YYYY-MM-DD), TIMES (HH:MM 24h), YEARS, assignment types, and course names from this text:\n\n${resolvedText || ''}`;
+    // Build multi-modal content: always include OCR text (if any) and the image (if provided)
+    const instruction = `Extract all schedule information from the provided inputs (image and/or OCR text). Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects). Be precise with dates, years, and times. If the image is a grid calendar (e.g., Google Calendar), align days-of-week with dates and infer missing year from context.`;
 
-    const useTextInput = (resolvedText && resolvedText.trim().length > 0);
-    const useImageInput = !useTextInput && hasImage;
-    if (!useTextInput && !useImageInput) {
+    const contentParts: any[] = [];
+    const ocrSnippet = resolvedText ? `\n\nOCR_TEXT (first 12000 chars):\n${resolvedText.slice(0, 12000)}` : '';
+    contentParts.push({ type: 'text', text: instruction + ocrSnippet });
+    if (hasImage) {
+      contentParts.push({ type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } });
+    }
+
+    if (!hasImage && (!resolvedText || resolvedText.trim().length === 0)) {
       const durationMs = Date.now() - tStart;
       return new Response(
         JSON.stringify({ success: false, error: 'No image or text provided for analysis', events: [], tasks: [], durationMs }),
@@ -169,12 +171,12 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
       );
     }
 
-    async function callOpenAI(model: string, paramsType: 'legacy' | 'new', useText: boolean): Promise<Response> {
+    async function callOpenAI(model: string, paramsType: 'legacy' | 'new'): Promise<Response> {
       const body: any = {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: useText ? userTextContent : (userImageContent as any) },
+          { role: 'user', content: contentParts as any },
         ],
         tools,
       };
@@ -196,12 +198,9 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
       });
     }
 
-    // Decide content mode (already computed)
-    const useText = useTextInput;
-
     // Try fast path first
-    console.log('Sending to OpenAI:', { useText, textLength: resolvedText?.length || 0, hasImage: hasImage });
-    let response = await callOpenAI('gpt-4o-mini', 'legacy', useText);
+    console.log('Sending to OpenAI:', { textLength: resolvedText?.length || 0, hasImage });
+    let response = await callOpenAI('gpt-4o-mini', 'legacy');
 
     if (!response.ok) {
       const errText = await response.text();
