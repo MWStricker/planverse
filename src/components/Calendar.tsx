@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check, Link, Calendar as CalendarIcon, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check, Link, Calendar as CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
@@ -749,6 +750,63 @@ const Calendar = () => {
     }
   };
 
+  const deleteAllData = async () => {
+    if (!user) return;
+    
+    try {
+      // Delete all tasks for the user
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (tasksError) {
+        throw tasksError;
+      }
+
+      // Delete all events for the user
+      const { error: eventsError } = await supabase
+        .from('events')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (eventsError) {
+        throw eventsError;
+      }
+
+      // Delete all study sessions for the user
+      const { error: sessionsError } = await supabase
+        .from('study_sessions')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (sessionsError) {
+        throw sessionsError;
+      }
+
+      // Immediately update local state for instant UI sync
+      setTasks([]);
+      setEvents([]);
+      setStudySessions([]);
+
+      toast({
+        title: "Success",
+        description: "All tasks, events, and study sessions have been deleted",
+      });
+
+      // Force refresh all data to ensure everything is synced
+      await fetchData();
+      
+    } catch (error) {
+      console.error('Error deleting all data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete all data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getWeatherIcon = (iconCode: string) => {
     // More precise OpenWeatherMap icon mapping for better accuracy
     const iconMap: { [key: string]: JSX.Element } = {
@@ -894,6 +952,36 @@ const Calendar = () => {
           {format(currentDate, 'MMMM yyyy')}
         </h1>
         <div className="flex gap-2 items-center">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive" 
+                size="sm" 
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear All
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete All Data</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete ALL of your tasks, events, and study sessions. 
+                  This action cannot be undone. Are you absolutely sure?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={deleteAllData}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Yes, Delete Everything
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button
             variant="outline" 
             size="sm" 
