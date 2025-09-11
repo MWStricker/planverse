@@ -819,31 +819,34 @@ const Calendar = () => {
           const isCurrentMonth = isSameMonth(day, currentDate);
 
           return (
-            <Card key={index} className={`min-h-[240px] max-h-[240px] p-1 transition-all duration-200 ${
-              isToday(day) 
-                ? 'ring-2 ring-primary bg-primary/5' 
-                : isCurrentMonth 
-                  ? 'bg-card hover:bg-accent/50' 
-                  : 'bg-muted/30'
-            }`}>
+            <Card 
+              key={index} 
+              className={`min-h-[240px] max-h-[240px] p-1 transition-all duration-200 cursor-pointer ${
+                isToday(day) 
+                  ? 'ring-2 ring-primary bg-primary/5' 
+                  : isCurrentMonth 
+                    ? 'bg-card hover:bg-accent/50' 
+                    : 'bg-muted/30'
+              }`}
+              onClick={() => {
+                setSelectedDay(day);
+                setIsDayDialogOpen(true);
+              }}
+            >
               <CardContent className="p-0 space-y-0.5 h-full flex flex-col">
                 {/* Date and Weather */}
                 <div className="flex items-center justify-between text-sm">
-                  <button 
-                    className={`font-semibold hover:bg-accent/50 rounded px-1 py-0.5 transition-colors cursor-pointer ${
+                  <div 
+                    className={`font-semibold rounded px-1 py-0.5 transition-colors ${
                       isToday(day) 
                         ? 'text-primary text-lg' 
                         : isCurrentMonth 
                           ? 'text-foreground' 
                           : 'text-muted-foreground'
                     }`}
-                    onClick={() => {
-                      setSelectedDay(day);
-                      setIsDayDialogOpen(true);
-                    }}
                   >
                     {format(day, 'd')}
-                  </button>
+                  </div>
                   {dayWeather && isCurrentMonth && (
                     <div className="flex items-center gap-1">
                       {getWeatherIcon(dayWeather.icon)}
