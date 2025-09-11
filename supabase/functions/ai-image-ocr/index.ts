@@ -16,7 +16,9 @@ serve(async (req) => {
   try {
     const { imageBase64, mimeType, text, timeZone, currentDate } = await req.json();
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const VISION_API_KEY = Deno.env.get('VISION_API_KEY');
 
+    // OpenAI is required for structuring; Google Vision (VISION_API_KEY) is optional for OCR accuracy
     if (!OPENAI_API_KEY) {
       return new Response(JSON.stringify({ success: false, error: 'OpenAI API key not configured', events: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -26,7 +28,7 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You extract academic schedule items and assignments/tasks and MUST return via the provided function tool.\n\n- Today (for context): ${nowIso}\n- User timezone: ${tz}\n\nRules for dates/times:\n1) Dates: ISO YYYY-MM-DD only.\n2) Infer YEAR from the image/text (e.g., "Fall 2025"), else pick the nearest FUTURE date within 12 months.\n3) Align day-of-week with any month/week grid present.\n4) Times: 24h HH:MM.\n5) If a time is missing, choose a plausible default (start 08:00, end 17:00).\n6) Keep locations short.\n7) Only include items with confidence ≥ 60.\n8) Distinguish between EVENTS (classes, meetings, appointments) and TASKS (assignments, homework, projects, exams).\n9) For tasks, identify due dates and assign priority levels.\n`;
+    const systemPrompt = `You are an academic schedule extractor. Return structured EVENTS and TASKS via the provided function only.\n\nContext:\n- Today: ${nowIso}\n- User timezone: ${tz}\n\nStrict formatting:\n- Dates: YYYY-MM-DD (infer year from context like \"Fall 2025\" or nearest future within 12 months)\n- Times: 24h HH:MM. Normalize inputs like \"9–11a\", \"12p\", \"noon\", \"midnight\". If only duration is present (e.g., \"50 min\"), infer endTime from start or use 08:00–17:00 defaults.\n- Map US-style dates (MM/DD) unless explicitly otherwise.\n\nClassification:\n- EVENTS: classes, labs, lectures, meetings, office hours, exams scheduled in time blocks. Include eventType (lecture, lab, meeting, exam, other).\n- TASKS: assignments to complete. Include taskType (homework, quiz, exam, project, paper, reading, lab report, discussion, other), dueDate, optional dueTime, courseName.\n\nRules:\n- Only include items with confidence >= 60.\n- Trim titles, keep locations concise.\n- If day-of-week and month grid appear, align dates correctly.\n- Prefer future dates relative to Today.`;
 
     const tools = [
       {
@@ -51,6 +53,7 @@ serve(async (req) => {
                     endTime: { type: 'string', pattern: '^\\d{2}:\\d{2}$' },
                     location: { type: 'string' },
                     recurrence: { type: 'string' },
+                    eventType: { type: 'string' },
                     confidence: { type: 'number', minimum: 0, maximum: 100 },
                   },
                   required: ['title','date','startTime','endTime','location','confidence']
@@ -82,12 +85,49 @@ serve(async (req) => {
       }
     ];
 
+    // Prefer Google Cloud Vision for OCR if available
+    async function extractTextWithGCV(base64: string, apiKey?: string): Promise<string | null> {
+      if (!apiKey) return null;
+      try {
+        const visionResp = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requests: [{
+              image: { content: base64 },
+              features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+              imageContext: { languageHints: ['en'] },
+            }],
+          }),
+        });
+        const visionData = await visionResp.json();
+        const text = visionData?.responses?.[0]?.fullTextAnnotation?.text
+          || visionData?.responses?.[0]?.textAnnotations?.[0]?.description
+          || '';
+        return (typeof text === 'string' ? text : '').trim();
+      } catch (e) {
+        console.error('GCV OCR error:', e);
+        return null;
+      }
+    }
+
+    // Resolve best input: prefer Google Cloud Vision text if available
+    let resolvedText = typeof text === 'string' ? text : '';
+    let ocrSource = 'none';
+    if ((!resolvedText || resolvedText.trim().length === 0) && imageBase64 && VISION_API_KEY) {
+      const gcvText = await extractTextWithGCV(imageBase64, VISION_API_KEY);
+      if (gcvText && gcvText.length > 0) {
+        resolvedText = gcvText;
+        ocrSource = 'gcv';
+      }
+    }
+
     const userImageContent = [
-      { type: 'text', text: 'Extract all schedule information from this image. Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects). Be precise with dates and years.' },
+      { type: 'text', text: 'Extract all schedule information from this image. Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects). Be precise with dates, years, and times.' },
       { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } }
     ];
 
-    const userTextContent = `Extract all schedule information with precise dates and years from this text. Identify both EVENTS (classes, meetings) and TASKS (assignments, homework, exams, projects):\n\n${text || ''}`;
+    const userTextContent = `Source: ${ocrSource === 'gcv' ? 'Google Cloud Vision' : 'User text'}\n\nExtract all schedule information with precise DATES (YYYY-MM-DD), TIMES (HH:MM 24h), YEARS, assignment types, and course names from this text:\n\n${resolvedText || ''}`;
 
     async function callOpenAI(model: string, paramsType: 'legacy' | 'new', useText: boolean): Promise<Response> {
       const body: any = {
@@ -117,8 +157,8 @@ serve(async (req) => {
       });
     }
 
-    // Decide if we are using image or text path
-    const useText = typeof text === 'string' && text.trim().length > 0;
+    // Decide if we are using text (preferred if GCV OCR succeeded) or image path
+    const useText = (resolvedText && resolvedText.trim().length > 0);
 
     // Try fast path first
     let response = await callOpenAI('gpt-4o-mini', 'legacy', useText);
@@ -176,6 +216,7 @@ serve(async (req) => {
         endTime: String(event.endTime || '17:00').slice(0, 5),
         location: String(event.location || '').trim().slice(0, 120),
         recurrence: event.recurrence || null,
+        eventType: String(event.eventType || 'class').trim().slice(0, 50),
         confidence: Number.isFinite(event.confidence) ? Math.max(0, Math.min(100, Number(event.confidence))) : 60,
       }));
 
