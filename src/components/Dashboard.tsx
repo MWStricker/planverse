@@ -492,21 +492,28 @@ export const Dashboard = () => {
               };
             });
 
-            const { error: insertError2 } = await supabase
+            const { error: insertError } = await supabase
               .from('events')
               .insert(eventsToInsert);
 
-            if (insertError2) {
-              console.error('Error inserting events (fallback):', insertError2);
+            if (insertError) {
+              console.error('Error inserting fallback events:', insertError);
               throw new Error('Failed to save events to calendar');
             }
 
-            toast({ title: "Schedule uploaded (OCR fallback)", description: `Added ${textResponse.events.length} events to your calendar`, });
+            toast({
+              title: "Schedule uploaded successfully!",
+              description: `Added ${textResponse.events.length} events to your calendar`,
+            });
+
+            // Refresh the dashboard data
             await analyzeUserData();
           } else {
-            const msg = textResponse.error || 'No events found in image/text';
-            toast({ title: 'No events found', description: msg, variant: 'destructive' });
-            setIsAnalyzing(false);
+            toast({
+              title: "No events found",
+              description: "Could not extract any schedule information from the image",
+              variant: "destructive",
+            });
             return;
           }
         }
@@ -811,7 +818,6 @@ export const Dashboard = () => {
                       )}
                     />
 
-                    {/* Recurring Task Section */}
                     <FormField
                       control={form.control}
                       name="is_recurring"
@@ -820,7 +826,7 @@ export const Dashboard = () => {
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Recurring Task</FormLabel>
                             <FormDescription>
-                              Make this task repeat automatically
+                              Set this task to repeat on a schedule
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -834,79 +840,35 @@ export const Dashboard = () => {
                     />
 
                     {form.watch("is_recurring") && (
-                      <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-                        <FormField
-                          control={form.control}
-                          name="recurrence_type"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Repeat</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select how often to repeat" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="daily">Daily</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {form.watch("recurrence_type") === "weekly" && (
-                          <FormField
-                            control={form.control}
-                            name="recurrence_days"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Select Days</FormLabel>
-                                <FormDescription>
-                                  Choose which days of the week to repeat
-                                </FormDescription>
-                                <div className="flex flex-wrap gap-2">
-                                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                                    <Button
-                                      key={day}
-                                      type="button"
-                                      variant={field.value?.includes(index) ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={() => {
-                                        const currentDays = field.value || [];
-                                        const newDays = currentDays.includes(index)
-                                          ? currentDays.filter(d => d !== index)
-                                          : [...currentDays, index];
-                                        field.onChange(newDays);
-                                      }}
-                                    >
-                                      {day}
-                                    </Button>
-                                  ))}
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                      <FormField
+                        control={form.control}
+                        name="recurrence_type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Recurrence Pattern</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select how often to repeat" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                      </div>
+                      />
                     )}
 
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsAddDialogOpen(false);
-                          form.reset();
-                        }}
-                      >
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
+                      <Button type="submit">
                         Create Task
                       </Button>
                     </DialogFooter>
@@ -1185,77 +1147,7 @@ export const Dashboard = () => {
                           </div>
                           {task.estimated_hours && (
                             <span>Est: {task.estimated_hours}h</span>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Suggested Study Blocks */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              Suggested Study Blocks
-              <Badge variant="secondary" className="ml-2 bg-accent/10 text-accent">
-                AI Optimized
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isAnalyzing ? (
-              <div className="flex items-center justify-center py-8">
-                <Brain className="h-8 w-8 animate-pulse text-primary mr-3" />
-                <span className="text-muted-foreground">AI optimizing your study blocks...</span>
-              </div>
-            ) : (aiStudyBlocks && aiStudyBlocks.length > 0) ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {aiStudyBlocks.map((block: any, index: number) => (
-                  <div key={block.id} className={`p-4 rounded-lg ${
-                    index === 0 
-                      ? 'bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20'
-                      : index === 1
-                        ? 'bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20'
-                        : 'bg-gradient-to-br from-muted/50 to-muted border border-border'
-                  }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-foreground">{block.title}</h4>
-                      <Badge className={
-                        block.priority === 'Optimal' 
-                          ? 'bg-primary text-primary-foreground'
-                          : block.priority === 'Good'
-                            ? 'bg-secondary text-secondary-foreground'
-                            : 'bg-outline text-foreground'
-                      }>
-                        {block.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">{block.time} • {block.location}</p>
-                    <p className="text-sm text-foreground mb-3">{block.description}</p>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        className={index === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground'}
-                        onClick={() => handleAcceptStudyBlock(block)}
-                      >
-                        Accept
-                      </Button>
-                      <Button size="sm" variant="outline">Modify</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-8 text-center">
-                <div>
-                  <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No study blocks suggested yet</p>
-                  <p className="text-xs text-muted-foreground">AI will optimize study times after analyzing your schedule</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1277,7 +1169,6 @@ export const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">Tasks and assignments will appear here when due today</p>
                   </div>
                 </div>
-              )
               )}
             </CardContent>
           </Card>
