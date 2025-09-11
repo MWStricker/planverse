@@ -13,6 +13,65 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getPriorityColor, getPriorityEmoji } from "@/lib/priority-utils";
 
+// Course color coding for Canvas events
+const getCourseColor = (title: string, isCanvas: boolean) => {
+  if (!isCanvas) return 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
+  
+  // Extract course code from title (e.g., "PSY-100", "MU-100", "LIFE-102")
+  const courseMatch = title.match(/\[([A-Z]+-\d+)/);
+  const courseCode = courseMatch ? courseMatch[1] : title;
+  
+  // Generate consistent colors based on course code
+  const courseColors = {
+    'PSY': 'bg-purple-100 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-800 dark:text-purple-200',
+    'MU': 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200', 
+    'LIFE': 'bg-green-100 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-800 dark:text-green-200',
+    'MATH': 'bg-orange-100 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200',
+    'PHYS': 'bg-red-100 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200',
+    'CHEM': 'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200',
+    'ENG': 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700 text-indigo-800 dark:text-indigo-200',
+    'HIST': 'bg-rose-100 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-200',
+    'CS': 'bg-cyan-100 dark:bg-cyan-900/20 border-cyan-300 dark:border-cyan-700 text-cyan-800 dark:text-cyan-200',
+  };
+  
+  // Find matching course prefix
+  for (const [prefix, color] of Object.entries(courseColors)) {
+    if (courseCode.startsWith(prefix)) {
+      return color;
+    }
+  }
+  
+  // Default Canvas color if no specific match
+  return 'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 ring-1 ring-blue-300 dark:ring-blue-700';
+};
+
+const getCourseIcon = (title: string, isCanvas: boolean) => {
+  if (!isCanvas) return '📅';
+  
+  const courseMatch = title.match(/\[([A-Z]+-\d+)/);
+  const courseCode = courseMatch ? courseMatch[1] : title;
+  
+  const courseIcons = {
+    'PSY': '🧠',
+    'MU': '🎵', 
+    'LIFE': '🧬',
+    'MATH': '📐',
+    'PHYS': '⚛️',
+    'CHEM': '🧪',
+    'ENG': '📚',
+    'HIST': '🏛️',
+    'CS': '💻',
+  };
+  
+  for (const [prefix, icon] of Object.entries(courseIcons)) {
+    if (courseCode.startsWith(prefix)) {
+      return icon;
+    }
+  }
+  
+  return '🎓'; // Default Canvas icon
+};
+
 interface Task {
   id: string;
   title: string;
@@ -31,6 +90,8 @@ interface Event {
   start_time: string;
   end_time: string;
   event_type: string;
+  source_provider?: string;
+  description?: string;
 }
 
 interface StudySession {
@@ -918,42 +979,49 @@ const Calendar = () => {
                       </Popover>
                     ))}
 
-                     {/* Events */}
-                    {dayEvents.map(event => (
-                      <Popover key={event.id}>
-                        <PopoverTrigger asChild>
-                           <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors duration-300">
-                             <Badge variant="outline" className="text-xs w-full justify-start overflow-hidden group">
-                               <div 
-                                 className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
-                                 style={{ '--animation-duration': `${getAnimationDuration(event.title)}s` } as React.CSSProperties}
+                     {/* Events with color coding */}
+                     {dayEvents.map(event => {
+                       const isCanvas = event.source_provider === 'canvas';
+                       const courseColor = getCourseColor(event.title, isCanvas);
+                       const courseIcon = getCourseIcon(event.title, isCanvas);
+                       
+                       return (
+                         <Popover key={event.id}>
+                           <PopoverTrigger asChild>
+                              <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors duration-300">
+                                <Badge variant="outline" className={`text-xs w-full justify-start overflow-hidden group border ${courseColor}`}>
+                                  <div 
+                                    className="flex items-center gap-1 group-hover:animate-[scroll-left-right_var(--animation-duration,4s)_ease-in-out_infinite]"
+                                    style={{ '--animation-duration': `${getAnimationDuration(event.title)}s` } as React.CSSProperties}
+                                  >
+                                    {courseIcon} <span className="whitespace-nowrap">{event.title}</span>
+                                    {isCanvas && <span className="text-xs opacity-60">📚</span>}
+                                  </div>
+                                </Badge>
+                                {event.start_time && (
+                                  <div className="text-xs text-muted-foreground ml-2 flex items-center gap-1 mt-0.5">
+                                    <Clock className="h-3 w-3" />
+                                    {format(new Date(event.start_time), 'h:mm a')}
+                                  </div>
+                                )}
+                             </div>
+                           </PopoverTrigger>
+                           <PopoverContent className="w-48 p-2" align="start">
+                             <div className="flex flex-col gap-2">
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="justify-start h-8 text-destructive hover:text-destructive"
+                                 onClick={() => deleteEvent(event.id)}
                                >
-                                 📅 <span className="whitespace-nowrap">{event.title}</span>
-                               </div>
-                             </Badge>
-                             {event.start_time && (
-                               <div className="text-xs text-muted-foreground ml-2 flex items-center gap-1 mt-0.5">
-                                 <Clock className="h-3 w-3" />
-                                 {format(new Date(event.start_time), 'h:mm a')}
-                               </div>
-                             )}
-                          </div>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-48 p-2" align="start">
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="justify-start h-8 text-destructive hover:text-destructive"
-                              onClick={() => deleteEvent(event.id)}
-                            >
-                              <X className="h-4 w-4 mr-2" />
-                              Delete Event
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    ))}
+                                 <X className="h-4 w-4 mr-2" />
+                                 Delete Event
+                               </Button>
+                             </div>
+                           </PopoverContent>
+                         </Popover>
+                       );
+                     })}
 
                     {/* Study Sessions */}
                     {daySessions.map(session => (
@@ -1109,29 +1177,77 @@ const Calendar = () => {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-6 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span>📝 Tasks</span>
-          <span>📅 Events</span>
-          <span>📚 Study Sessions</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500" />
-            <span>Critical Priority</span>
+      {/* Enhanced Legend */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">Student Calendar Guide</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+          {/* Event Types */}
+          <div className="space-y-2">
+            <div className="font-medium text-foreground">Event Types</div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span>📝</span>
+                <span>Tasks & Assignments</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>🎓</span>
+                <span>Canvas Synced</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>📅</span>
+                <span>Personal Events</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>📚</span>
+                <span>Study Sessions</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500" />
-            <span>High Priority</span>
+          
+          {/* Priority Levels */}
+          <div className="space-y-2">
+            <div className="font-medium text-foreground">Task Priority</div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <span>Critical Priority</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500" />
+                <span>High Priority</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <span>Medium Priority</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span>Low Priority</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <span>Medium Priority</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span>Low Priority</span>
+          
+          {/* Canvas Course Colors */}
+          <div className="space-y-2">
+            <div className="font-medium text-foreground">Course Colors</div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-purple-400" />
+                <span>🧠 Psychology</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                <span>🎵 Music</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-400" />
+                <span>🧬 Life Sciences</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-400" />
+                <span>📐 Math & More</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1253,39 +1369,52 @@ const Calendar = () => {
                       Events ({getEventsForDay(selectedDay).length})
                     </h3>
                     <div className="space-y-3">
-                      {getEventsForDay(selectedDay).map(event => (
-                        <div key={event.id} className="p-4 bg-card border rounded-lg">
-                          <div className="flex items-start gap-3">
-                            <div className="text-lg">📅</div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium mb-2">{event.title}</h4>
-                              
-                              {event.start_time && (
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                                  <Clock className="h-3 w-3" />
-                                  {format(new Date(event.start_time), 'h:mm a')}
-                                  {event.end_time && event.start_time !== event.end_time && (
-                                    <span> - {format(new Date(event.end_time), 'h:mm a')}</span>
+                      {getEventsForDay(selectedDay).map(event => {
+                        const isCanvas = event.source_provider === 'canvas';
+                        const courseColor = getCourseColor(event.title, isCanvas);
+                        const courseIcon = getCourseIcon(event.title, isCanvas);
+                        
+                        return (
+                          <div key={event.id} className={`p-4 border rounded-lg transition-all duration-200 ${courseColor}`}>
+                            <div className="flex items-start gap-3">
+                              <div className="text-lg">{courseIcon}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className="font-medium">{event.title}</h4>
+                                  {isCanvas && (
+                                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                      Canvas
+                                    </Badge>
                                   )}
                                 </div>
-                              )}
                               
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {event.event_type}
-                              </Badge>
+                                {event.start_time && (
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                                    <Clock className="h-3 w-3" />
+                                    {format(new Date(event.start_time), 'h:mm a')}
+                                    {event.end_time && event.start_time !== event.end_time && (
+                                      <span> - {format(new Date(event.end_time), 'h:mm a')}</span>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {event.event_type}
+                                </Badge>
+                              </div>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => deleteEvent(event.id)}
+                                className="h-8 text-destructive hover:text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
                             </div>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => deleteEvent(event.id)}
-                              className="h-8 text-destructive hover:text-destructive"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
