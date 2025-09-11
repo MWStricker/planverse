@@ -1201,7 +1201,7 @@ export const Dashboard = () => {
                                   </button>
                                   {expandedDescriptions.has(task.id) && (
                                     <div className="mt-1">
-                                      <span>{task.description.slice(60)}</span>
+                                      <span>{task.description.substring(60).trim()}</span>
                                     </div>
                                   )}
                                 </>
