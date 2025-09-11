@@ -29,27 +29,31 @@ serve(async (req) => {
     const nowIso = currentDate || new Date().toISOString();
     const tz = timeZone || 'UTC';
 
-    const systemPrompt = `You are an expert calendar parser specializing in Canvas LMS and other academic calendars. Extract ALL visible events and assignments.
+    const systemPrompt = `You are an expert calendar parser specializing in Canvas LMS and academic calendars. Extract ALL visible assignments with PRECISE due dates.
 
 Context: Today is ${nowIso} in ${tz}
 
-CANVAS CALENDAR RULES:
-1. Canvas shows ASSIGNMENTS (not events) - these go in "tasks" array
-2. Canvas assignments show DUE DATES only (no times) - leave startTime/endTime empty for tasks if no time shown
-3. Look for assignment names and due dates on the calendar grid
-4. Each item on Canvas calendar = 1 assignment/task
+CRITICAL DATE ACCURACY RULES:
+1. CANVAS CALENDARS: Each assignment appears on its EXACT due date
+2. Look carefully at the calendar grid structure - the day number shown IS the due date
+3. If an assignment appears on "Sep 14", the due date is exactly September 14th of the current year
+4. DO NOT add or subtract days - use the EXACT date where the assignment appears
+5. Pay attention to month names/abbreviations in the calendar header
+6. Use the calendar grid position to determine the precise date
 
-GENERAL RULES:
-1. Extract EVERY visible item, even if partially cut off
-2. For Google Calendar: colored blocks = events with times
-3. For Canvas: assignment text = tasks with due dates only
-4. Only add times if explicitly shown (like "2:00 PM" or "14:00")
-5. If no time visible, leave time fields empty/null
-6. Default year: ${new Date().getFullYear()}
-7. MINIMUM confidence = 30 (be generous)
+CANVAS STRUCTURE ANALYSIS:
+- Canvas shows a monthly grid with days 1-31
+- Assignments appear on their exact due date squares
+- Multiple assignments can be on the same day
+- Look for partial assignment names that might be cut off
 
-Event Types: class, meeting, exam, appointment, lecture, other
-Task Types: assignment, homework, project, quiz, exam, discussion, other
+DATA EXTRACTION RULES:
+1. Extract EVERY visible assignment, even if text is partially cut off
+2. Assignment names go in "tasks" array (not events)
+3. Only add times if explicitly shown (like "11:59 PM" or "2:00 PM")
+4. If no time visible, leave dueTime as null
+5. Default year: ${new Date().getFullYear()}
+6. MINIMUM confidence = 85 (be precise, not generous)
 
 MUST extract at least 1 item unless image is completely blank.`;
 
@@ -178,14 +182,18 @@ MUST extract at least 1 item unless image is completely blank.`;
 
     const hasImage = typeof imageBase64 === 'string' && imageBase64.length > 0;
 
-    // Build simple prompt: focus on extracting everything visible
-    const instruction = `Look at this calendar image carefully. 
+    // Build detailed prompt for precise calendar analysis
+    const instruction = `Analyze this calendar image with EXTREME PRECISION:
 
-IF THIS IS CANVAS LMS: Extract assignments as TASKS (not events). Canvas shows assignment names and due dates only - do not add times unless explicitly shown.
+1. CANVAS LMS CALENDAR: Look at the monthly grid structure carefully
+2. Each assignment appears on its EXACT due date square
+3. Read the day numbers in the grid - that IS the due date
+4. Extract assignment names as TASKS (not events)
+5. Be 100% accurate with dates - do not guess or estimate
+6. Look for month/year information in headers
+7. Pay attention to calendar grid layout and positioning
 
-IF THIS IS GOOGLE CALENDAR: Extract colored blocks as EVENTS with times if visible.
-
-Extract EVERYTHING visible, even if partially cut off. Be generous with extraction.`;
+Extract EVERYTHING visible with maximum precision.`;
 
     const contentParts: any[] = [];
     contentParts.push({ type: 'text', text: instruction });
@@ -231,9 +239,14 @@ Extract EVERYTHING visible, even if partially cut off. Be generous with extracti
       });
     }
 
-    // Use GPT-4o-mini only for reliability
+    // Use more powerful models for better accuracy
     console.log('Sending to OpenAI:', { textLength: resolvedText?.length || 0, hasImage });
-    let response = await callOpenAI('gpt-4o-mini', 'legacy');
+    let response = await callOpenAI('gpt-4.1-2025-04-14', 'new');
+
+    if (!response.ok) {
+      console.log('GPT-4.1 failed, trying GPT-5 for maximum accuracy');
+      response = await callOpenAI('gpt-5-2025-08-07', 'new');
+    }
 
     if (!response.ok) {
       const errText = await response.text();
