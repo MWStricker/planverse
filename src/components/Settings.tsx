@@ -16,6 +16,7 @@ import { usePreferences } from "@/hooks/usePreferences";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { universities, getUniversityById, getPublicUniversities, searchPublicUniversities } from "@/data/universities";
+import { collegeMajors } from "@/data/collegeMajors";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AccountIntegration {
@@ -761,6 +762,58 @@ export const Settings = () => {
                 <p className="text-xs text-muted-foreground">
                   Email cannot be changed from this page
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Academic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🎓 Academic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="school">School/University</Label>
+                <Input
+                  id="school"
+                  value={editedProfile.school}
+                  onChange={(e) => handleProfileChange('school', e.target.value)}
+                  placeholder="Enter your school or university"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="major">Major</Label>
+                <Select 
+                  value={editedProfile.major} 
+                  onValueChange={(value) => handleProfileChange('major', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your major" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                    {collegeMajors.map((major) => (
+                      <SelectItem key={major} value={major}>
+                        {major}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {majorError && (
+                  <p className="text-xs text-red-500">{majorError}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="campus_location">Campus Location</Label>
+                <Input
+                  id="campus_location"
+                  value={editedProfile.campus_location}
+                  onChange={(e) => handleProfileChange('campus_location', e.target.value)}
+                  placeholder="e.g., Main Campus, Downtown, Online"
+                />
               </div>
             </CardContent>
           </Card>
