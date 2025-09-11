@@ -1060,6 +1060,8 @@ const Calendar = () => {
       return newSet;
     });
   };
+
+  const getSessionsForDay = (day: Date) => {
     return studySessions.filter(session => 
       isSameDay(new Date(session.start_time), day)
     );
