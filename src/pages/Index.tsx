@@ -55,7 +55,6 @@ const Index = () => {
         return <Connect />;
       case 'tasks':
         return <Tasks />;
-      case 'courses':
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">
