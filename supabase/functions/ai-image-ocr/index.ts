@@ -305,6 +305,50 @@ OUTPUT RULES:
       });
     }
 
+    // Infer canonical month/year from OCR text (e.g., "September 2025") to prevent off-by-one
+    function monthFromName(name: string): number | null {
+      const m = name.toLowerCase();
+      const map: Record<string, number> = {
+        jan: 1, january: 1,
+        feb: 2, february: 2,
+        mar: 3, march: 3,
+        apr: 4, april: 4,
+        may: 5,
+        jun: 6, june: 6,
+        jul: 7, july: 7,
+        aug: 8, august: 8,
+        sep: 9, sept: 9, september: 9,
+        oct: 10, october: 10,
+        nov: 11, november: 11,
+        dec: 12, december: 12,
+      };
+      return map[m] || null;
+    }
+    function parseCanonicalMonthYear(text: string): { month: number; year: number } | null {
+      const rx = /(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s*,?\s*(20\d{2})/i;
+      const m = text.match(rx);
+      if (!m) return null;
+      const month = monthFromName(m[1]);
+      const year = parseInt(m[2], 10);
+      if (!month || !year) return null;
+      return { month, year };
+    }
+    function daysInMonth(year: number, month1to12: number) {
+      return new Date(year, month1to12, 0).getDate();
+    }
+    const canonical = parseCanonicalMonthYear(resolvedText || '');
+    function coerceDateToCanonical(dateStr: string): string {
+      if (!canonical) return dateStr;
+      const m = dateStr?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return dateStr;
+      const day = parseInt(m[3], 10);
+      const maxDay = daysInMonth(canonical.year, canonical.month);
+      const safeDay = Math.min(Math.max(day, 1), maxDay);
+      const mm = String(canonical.month).padStart(2, '0');
+      const dd = String(safeDay).padStart(2, '0');
+      return `${canonical.year}-${mm}-${dd}`;
+    }
+
     // Normalize & sanitize events
     let events = Array.isArray(parsed.events) ? parsed.events : [];
     console.log('Raw events from AI:', events.length);
@@ -313,7 +357,9 @@ OUTPUT RULES:
       .map((event: any, index: number) => ({
         id: event.id || `extracted_event_${Date.now()}_${index}`,
         title: String(event.title || '').trim().slice(0, 120),
-        date: event.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
+        date: coerceDateToCanonical(
+          event.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
+        ),
         startTime: event.startTime && event.startTime !== 'null' ? String(event.startTime).slice(0, 5) : null,
         endTime: event.endTime && event.endTime !== 'null' ? String(event.endTime).slice(0, 5) : null,
         location: String(event.location || '').trim().slice(0, 120),
@@ -331,7 +377,9 @@ OUTPUT RULES:
         id: task.id || `extracted_task_${Date.now()}_${index}`,
         title: String(task.title || '').trim().slice(0, 120),
         description: String(task.description || '').trim().slice(0, 500),
-        dueDate: task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`,
+        dueDate: coerceDateToCanonical(
+          task.dueDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate() + 7).padStart(2, '0')}`
+        ),
         dueTime: task.dueTime && task.dueTime !== 'null' ? String(task.dueTime).slice(0, 5) : null,
         courseName: String(task.courseName || '').trim().slice(0, 100),
         priority: Number.isFinite(task.priority) ? Math.max(1, Math.min(4, Number(task.priority))) : 2,
