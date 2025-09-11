@@ -103,7 +103,7 @@ export const OCRUpload = () => {
         });
         mimeType = 'image/png';
       } else {
-        const res = await imageFileToBase64Compressed(file, 1200, 'image/jpeg', 0.75);
+        const res = await imageFileToBase64Compressed(file, 1800, 'image/jpeg', 0.85);
         base64 = res.base64;
         mimeType = res.mimeType;
       }

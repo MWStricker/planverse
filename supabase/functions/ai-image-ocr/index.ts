@@ -109,7 +109,7 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
     ];
 
     // Prefer Google Cloud Vision for OCR if available
-    async function extractTextWithGCV(base64: string, apiKey?: string): Promise<string | null> {
+    async function extractTextWithGCV(base64: string, apiKey?: string): Promise<{ text: string; layout: { x: number; y: number; text: string }[] } | null> {
       if (!apiKey) return null;
       try {
         const visionResp = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
@@ -124,13 +124,36 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
           }),
         });
         const visionData = await visionResp.json();
+
         const text = visionData?.responses?.[0]?.fullTextAnnotation?.text
           || visionData?.responses?.[0]?.textAnnotations?.[0]?.description
           || '';
         const extractedText = (typeof text === 'string' ? text : '').trim();
+
+        // Build lightweight layout from individual textAnnotations (words)
+        const items = visionData?.responses?.[0]?.textAnnotations || [];
+        const words = Array.isArray(items) ? items.slice(1) : []; // skip full text at index 0
+        let maxX = 0, maxY = 0;
+        const layout: { x: number; y: number; text: string }[] = [];
+        for (const w of words) {
+          const desc = String(w?.description || '').trim();
+          const verts = w?.boundingPoly?.vertices || [];
+          if (!desc || verts.length === 0) continue;
+          const xs = verts.map((v: any) => v?.x || 0);
+          const ys = verts.map((v: any) => v?.y || 0);
+          const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+          const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+          maxX = Math.max(maxX, ...xs);
+          maxY = Math.max(maxY, ...ys);
+          layout.push({ x: cx, y: cy, text: desc });
+        }
+        const normLayout = maxX > 0 && maxY > 0
+          ? layout.map(it => ({ x: +(it.x / maxX).toFixed(4), y: +(it.y / maxY).toFixed(4), text: it.text }))
+          : layout;
+
         console.log('GCV extracted text length:', extractedText.length);
-        console.log('GCV text preview:', extractedText.slice(0, 500));
-        return extractedText;
+        console.log('GCV words count:', normLayout.length);
+        return { text: extractedText, layout: normLayout };
       } catch (e) {
         console.error('GCV OCR error:', e);
         return null;
@@ -140,12 +163,14 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
     // Resolve best input: prefer Google Cloud Vision text if available
     let resolvedText = typeof text === 'string' ? text : '';
     let ocrSource = 'none';
+    let layoutHints: { x: number; y: number; text: string }[] = [];
     if ((!resolvedText || resolvedText.trim().length === 0) && imageBase64 && VISION_API_KEY) {
-      const gcvText = await extractTextWithGCV(imageBase64, VISION_API_KEY);
-      if (gcvText && gcvText.length > 0) {
-        resolvedText = gcvText;
+      const gcvRes = await extractTextWithGCV(imageBase64, VISION_API_KEY);
+      if (gcvRes && gcvRes.text.length > 0) {
+        resolvedText = gcvRes.text;
+        layoutHints = gcvRes.layout || [];
         ocrSource = 'gcv';
-        console.log('Using GCV text, length:', gcvText.length);
+        console.log('Using GCV text, length:', gcvRes.text.length, 'layout items:', layoutHints.length);
       } else {
         console.log('GCV failed or returned empty text');
       }
@@ -161,6 +186,10 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
     contentParts.push({ type: 'text', text: instruction + ocrSnippet });
     if (hasImage) {
       contentParts.push({ type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } });
+    }
+    if (layoutHints && layoutHints.length > 0) {
+      const layoutJson = JSON.stringify(layoutHints.slice(0, 1500)); // cap size
+      contentParts.push({ type: 'text', text: `\n\nLAYOUT_HINTS (normalized positions 0..1):\n${layoutJson}` });
     }
 
     if (!hasImage && (!resolvedText || resolvedText.trim().length === 0)) {
@@ -198,9 +227,11 @@ Only include items with confidence ≥ 50. If text is unclear or partially visib
       });
     }
 
-    // Try fast path first
+    // Try models in order: GPT-5 (new), GPT-4.1 (new), 4o-mini (legacy)
     console.log('Sending to OpenAI:', { textLength: resolvedText?.length || 0, hasImage });
-    let response = await callOpenAI('gpt-4o-mini', 'legacy');
+    let response = await callOpenAI('gpt-5-2025-08-07', 'new');
+    if (!response.ok) response = await callOpenAI('gpt-4.1-2025-04-14', 'new');
+    if (!response.ok) response = await callOpenAI('gpt-4o-mini', 'legacy');
 
     if (!response.ok) {
       const errText = await response.text();
