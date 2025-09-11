@@ -89,6 +89,33 @@ export type Database = {
         }
         Relationships: []
       }
+      course_colors: {
+        Row: {
+          canvas_color: string
+          course_code: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canvas_color: string
+          course_code: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canvas_color?: string
+          course_code?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string

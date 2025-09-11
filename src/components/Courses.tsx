@@ -24,6 +24,7 @@ export const Courses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
+  const [storedColors, setStoredColors] = useState<Record<string, string>>({});
   const { user } = useAuth();
 
   const toggleCourse = (courseCode: string) => {
@@ -37,6 +38,28 @@ export const Courses = () => {
       return newSet;
     });
   };
+
+  // Fetch stored course colors
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchStoredColors = async () => {
+      const { data: colors } = await supabase
+        .from('course_colors')
+        .select('course_code, canvas_color')
+        .eq('user_id', user.id);
+
+      if (colors) {
+        const colorMap: Record<string, string> = {};
+        colors.forEach(item => {
+          colorMap[item.course_code] = item.canvas_color;
+        });
+        setStoredColors(colorMap);
+      }
+    };
+
+    fetchStoredColors();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -76,13 +99,13 @@ export const Courses = () => {
           
           if (courseCode) {
             if (!coursesMap.has(courseCode)) {
-              coursesMap.set(courseCode, {
-                code: courseCode,
-                color: getCourseColor(event.title, true),
-                icon: getCourseIcon(courseCode),
-                events: [],
-                tasks: []
-              });
+            coursesMap.set(courseCode, {
+              code: courseCode,
+              color: getCourseColor(event.title, true, courseCode),
+              icon: getCourseIcon(courseCode),
+              events: [],
+              tasks: []
+            });
             }
             coursesMap.get(courseCode).events.push(event);
           }
@@ -94,13 +117,13 @@ export const Courses = () => {
           if (courseCode) {
             if (!coursesMap.has(courseCode)) {
               const pseudoTitle = `[2025FA-${courseCode}]`;
-              coursesMap.set(courseCode, {
-                code: courseCode,
-                color: getCourseColor(pseudoTitle, true),
-                icon: getCourseIcon(courseCode),
-                events: [],
-                tasks: []
-              });
+            coursesMap.set(courseCode, {
+              code: courseCode,
+              color: getCourseColor(pseudoTitle, true, courseCode),
+              icon: getCourseIcon(courseCode),
+              events: [],
+              tasks: []
+            });
             }
             coursesMap.get(courseCode).tasks.push(task);
           }
@@ -182,10 +205,16 @@ export const Courses = () => {
     return null;
   };
 
-  const getCourseColor = (title: string, forCanvas = false) => {
+  const getCourseColor = (title: string, forCanvas = false, courseCode?: string) => {
     if (!forCanvas) return 'bg-muted/50 border-muted';
     
-    // Colorado State University Canvas colors - matching their green theme
+    // First, try to use stored Canvas color
+    if (courseCode && storedColors[courseCode]) {
+      const color = storedColors[courseCode];
+      return `bg-[${color}] text-white border-[${color}]`;
+    }
+    
+    // Fallback to Colorado State University Canvas colors if no stored color
     const colors = [
       'bg-[#1E7040] text-white border-[#1E7040]', // CSU primary green
       'bg-[#2E8050] text-white border-[#2E8050]', // CSU light green
