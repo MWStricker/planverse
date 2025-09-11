@@ -407,6 +407,27 @@ export const OCRUpload = () => {
         </CardContent>
       </Card>
 
+      {/* Uploaded Image Display */}
+      {selectedFile && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileImage className="h-5 w-5 text-primary" />
+              Uploaded Image
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center group">
+              <img
+                src={URL.createObjectURL(selectedFile)}
+                alt="Uploaded schedule"
+                className="max-w-full max-h-96 rounded-lg border shadow-md group-hover:animate-[scroll-boomerang_6s_ease-in-out_infinite]"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Parsed Events and Tasks */}
       {(parsedEvents.length > 0 || parsedTasks.length > 0) && (
         <div className="space-y-6">
