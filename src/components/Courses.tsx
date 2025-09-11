@@ -125,7 +125,11 @@ export const Courses = () => {
           };
         });
 
-        setCourses(processedCourses.sort((a, b) => a.code.localeCompare(b.code)));
+        const sortedCourses = processedCourses.sort((a, b) => a.code.localeCompare(b.code));
+        setCourses(sortedCourses);
+        
+        // Initialize all courses as collapsed
+        setCollapsedCourses(new Set(sortedCourses.map(course => course.code)));
       } catch (error) {
         console.error('Error fetching courses data:', error);
       } finally {
