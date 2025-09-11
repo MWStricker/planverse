@@ -5,6 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check, Link, Calendar as CalendarIcon, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
@@ -106,6 +108,8 @@ const Calendar = () => {
     return null;
   });
   const [loading, setLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [isDayDialogOpen, setIsDayDialogOpen] = useState(false);
 
   // Calculate proper calendar grid (6 weeks)
   const monthStart = startOfMonth(currentDate);
@@ -834,21 +838,8 @@ const Calendar = () => {
                           : 'text-muted-foreground'
                     }`}
                     onClick={() => {
-                      const tasksForDay = getTasksForDay(day);
-                      const eventsForDay = getEventsForDay(day);
-                      const sessionsForDay = getSessionsForDay(day);
-                      
-                      if (tasksForDay.length > 0 || eventsForDay.length > 0 || sessionsForDay.length > 0) {
-                        toast({
-                          title: `${format(day, 'MMMM d, yyyy')}`,
-                          description: `${tasksForDay.length} tasks, ${eventsForDay.length} events, ${sessionsForDay.length} study sessions`,
-                        });
-                      } else {
-                        toast({
-                          title: `${format(day, 'MMMM d, yyyy')}`,
-                          description: "No tasks or events for this day",
-                        });
-                      }
+                      setSelectedDay(day);
+                      setIsDayDialogOpen(true);
                     }}
                   >
                     {format(day, 'd')}
@@ -1141,6 +1132,220 @@ const Calendar = () => {
           </div>
         </div>
       </div>
+
+      {/* Day Detail Dialog */}
+      <Dialog open={isDayDialogOpen} onOpenChange={setIsDayDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5" />
+              {selectedDay && format(selectedDay, 'EEEE, MMMM d, yyyy')}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedDay && (
+            <ScrollArea className="h-[60vh] pr-4">
+              <div className="space-y-6">
+                {/* Weather Section */}
+                {weather.forecast[format(selectedDay, 'yyyy-MM-dd')] && (
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <Thermometer className="h-4 w-4" />
+                      Weather
+                    </h3>
+                    <div className="flex items-center gap-4">
+                      {getWeatherIcon(weather.forecast[format(selectedDay, 'yyyy-MM-dd')].icon)}
+                      <div>
+                        <p className="font-medium">
+                          {weather.forecast[format(selectedDay, 'yyyy-MM-dd')].maxTemp && weather.forecast[format(selectedDay, 'yyyy-MM-dd')].minTemp 
+                            ? `${weather.forecast[format(selectedDay, 'yyyy-MM-dd')].maxTemp}°/${weather.forecast[format(selectedDay, 'yyyy-MM-dd')].minTemp}°F`
+                            : `${weather.forecast[format(selectedDay, 'yyyy-MM-dd')].temp}°F`
+                          }
+                        </p>
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {weather.forecast[format(selectedDay, 'yyyy-MM-dd')].description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tasks Section */}
+                {getTasksForDay(selectedDay).length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      Tasks ({getTasksForDay(selectedDay).length})
+                    </h3>
+                    <div className="space-y-3">
+                      {getTasksForDay(selectedDay).map(task => (
+                        <div key={task.id} className="p-4 bg-card border rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getPriorityColor(task.priority_score || 0)}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className={`font-medium ${task.completion_status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                                  {task.title}
+                                </h4>
+                                <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority_score || 0)}`}>
+                                  {getPriorityLabel(task.priority_score || 0)}
+                                </Badge>
+                                {task.completion_status === 'completed' && (
+                                  <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                                    Completed
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {task.due_date && (
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                                  <Clock className="h-3 w-3" />
+                                  Due: {format(new Date(task.due_date), 'h:mm a')}
+                                </div>
+                              )}
+                              
+                              {task.course_name && (
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  Course: {task.course_name}
+                                </p>
+                              )}
+                              
+                              {task.is_recurring && (
+                                <Badge variant="outline" className="text-xs">
+                                  Recurring {task.recurrence_type}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleTaskCompletion(task.id, task.completion_status)}
+                                className="h-8"
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => deleteTask(task.id)}
+                                className="h-8 text-destructive hover:text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Events Section */}
+                {getEventsForDay(selectedDay).length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      Events ({getEventsForDay(selectedDay).length})
+                    </h3>
+                    <div className="space-y-3">
+                      {getEventsForDay(selectedDay).map(event => (
+                        <div key={event.id} className="p-4 bg-card border rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="text-lg">📅</div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium mb-2">{event.title}</h4>
+                              
+                              {event.start_time && (
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(event.start_time), 'h:mm a')}
+                                  {event.end_time && event.start_time !== event.end_time && (
+                                    <span> - {format(new Date(event.end_time), 'h:mm a')}</span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {event.event_type}
+                              </Badge>
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteEvent(event.id)}
+                              className="h-8 text-destructive hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Study Sessions Section */}
+                {getSessionsForDay(selectedDay).length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      Study Sessions ({getSessionsForDay(selectedDay).length})
+                    </h3>
+                    <div className="space-y-3">
+                      {getSessionsForDay(selectedDay).map(session => (
+                        <div key={session.id} className="p-4 bg-card border rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="text-lg">📚</div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium mb-2">{session.title}</h4>
+                              
+                              {session.start_time && (
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(session.start_time), 'h:mm a')}
+                                </div>
+                              )}
+                              
+                              <Badge variant="default" className="text-xs capitalize">
+                                {session.session_type}
+                              </Badge>
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteStudySession(session.id)}
+                              className="h-8 text-destructive hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {getTasksForDay(selectedDay).length === 0 && 
+                 getEventsForDay(selectedDay).length === 0 && 
+                 getSessionsForDay(selectedDay).length === 0 && (
+                  <div className="text-center py-8">
+                    <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-medium text-muted-foreground mb-2">No activities scheduled</h3>
+                    <p className="text-sm text-muted-foreground">
+                      This day is free - a great time to catch up on other tasks or take a break!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
