@@ -305,7 +305,7 @@ export const Courses = () => {
             <Card key={course.code} className={`${course.color} border-2 transition-all duration-300 ease-in-out`}>
               <Collapsible open={!isCollapsed} onOpenChange={() => toggleCourse(course.code)}>
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-background/10 transition-colors duration-200">
+                  <CardHeader className="cursor-pointer hover:bg-background/10 transition-colors duration-200 select-none">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <CourseIcon className="h-6 w-6" />
