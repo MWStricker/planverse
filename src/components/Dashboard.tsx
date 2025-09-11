@@ -91,6 +91,9 @@ export const Dashboard = () => {
       course_name: "",
       due_time: "12:00",
       priority: "medium",
+      is_recurring: false,
+      recurrence_type: undefined,
+      recurrence_days: undefined,
     },
   });
 
