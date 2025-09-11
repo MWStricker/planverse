@@ -1208,11 +1208,23 @@ export const Dashboard = () => {
                                   {expandedDescriptions.has(task.id) && (
                                     <div className="mt-1">
                                       <span>{task.description.substring(60).trim()}</span>
+                                      {task.source_provider === 'canvas' && task.description.length === 63 && (
+                                        <div className="mt-1 text-xs text-orange-600">
+                                          ⚠️ May be incomplete - check Canvas for full instructions
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </>
                               ) : (
-                                <span>{task.description}</span>
+                                <div>
+                                  <span>{task.description}</span>
+                                  {task.source_provider === 'canvas' && task.description.length === 63 && (
+                                    <div className="mt-1 text-xs text-orange-600">
+                                      ⚠️ May be incomplete - check Canvas for full instructions
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           ) : (
@@ -1371,6 +1383,12 @@ export const Dashboard = () => {
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {selectedTask.description}
                     </p>
+                    {selectedTask.source_provider === 'canvas' && selectedTask.description.length === 63 && (
+                      <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-800">
+                        <p className="font-medium">⚠️ Description may be incomplete</p>
+                        <p>This Canvas assignment description appears to be truncated. Check Canvas directly for full instructions.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
