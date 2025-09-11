@@ -46,17 +46,23 @@ export const Courses = () => {
         const events = eventsResult.data || [];
         const tasks = tasksResult.data || [];
 
-        // Process courses similar to Calendar component
+        console.log('Canvas events found:', events.length);
+        console.log('Canvas tasks found:', tasks.length);
+
+        // Process courses from Canvas events
         const coursesMap = new Map();
 
+        // Process events first
         events.forEach(event => {
           const courseCode = extractCourseCode(event.title, true);
+          console.log('Processing event:', event.title, 'extracted course:', courseCode);
+          
           if (courseCode) {
             if (!coursesMap.has(courseCode)) {
               coursesMap.set(courseCode, {
                 code: courseCode,
                 color: getCourseColor(event.title, true),
-                icon: getCourseIcon(event.title, true),
+                icon: getCourseIcon(courseCode),
                 events: [],
                 tasks: []
               });
@@ -65,6 +71,7 @@ export const Courses = () => {
           }
         });
 
+        // Process tasks
         tasks.forEach(task => {
           const courseCode = task.course_name || extractCourseCode(task.title, true);
           if (courseCode) {
@@ -73,7 +80,7 @@ export const Courses = () => {
               coursesMap.set(courseCode, {
                 code: courseCode,
                 color: getCourseColor(pseudoTitle, true),
-                icon: getCourseIcon(pseudoTitle, true),
+                icon: getCourseIcon(courseCode),
                 events: [],
                 tasks: []
               });
@@ -81,6 +88,8 @@ export const Courses = () => {
             coursesMap.get(courseCode).tasks.push(task);
           }
         });
+
+        console.log('Courses found:', Array.from(coursesMap.keys()));
 
         // Calculate statistics for each course
         const processedCourses = Array.from(coursesMap.values()).map(course => {
@@ -114,19 +123,37 @@ export const Courses = () => {
   const extractCourseCode = (title: string, forCanvas = false) => {
     if (!forCanvas) return null;
     
+    // More comprehensive patterns for Canvas course extraction
     const patterns = [
-      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}\d{3,4}[A-Z]?)\]/,
-      /\[([A-Z]{2,4}\d{3,4}[A-Z]?)-(\d{4}[A-Z]{2})\]/,
-      /([A-Z]{2,4}\s?\d{3,4}[A-Z]?)/,
-      /\b([A-Z]{2,4}\d{3,4}[A-Z]?)\b/
+      // [2025FA-PSY-100-007] format
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}[A-Z]?-?\d*)\]/i,
+      // [PSY-100-007-2025FA] format
+      /\[([A-Z]{2,4}-?\d{3,4}[A-Z]?-?\d*)-(\d{4}[A-Z]{2})\]/i,
+      // Simple course codes like PSY-100, MATH-118, etc.
+      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?)\b/i,
+      // Course codes with sections like PSY-100-007
+      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?-?\d{3})\b/i
     ];
     
     for (const pattern of patterns) {
       const match = title.match(pattern);
       if (match) {
-        return match[2] || match[1];
+        // Return the course code, cleaning up any extra formatting
+        let courseCode = match[2] || match[1];
+        // Remove semester info and normalize format
+        courseCode = courseCode.replace(/\d{4}[A-Z]{2}/, '').replace(/^-|-$/, '');
+        
+        // If it's a course with section number, keep just the base course
+        if (courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
+          courseCode = courseCode.replace(/-\d{3}$/, '');
+        }
+        
+        console.log('Extracted course code:', courseCode, 'from title:', title);
+        return courseCode.toUpperCase();
       }
     }
+    
+    console.log('No course code found in:', title);
     return null;
   };
 
@@ -151,10 +178,8 @@ export const Courses = () => {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const getCourseIcon = (title: string, forCanvas = false) => {
-    if (!forCanvas) return BookOpen;
-    
-    const code = extractCourseCode(title, true)?.toLowerCase() || '';
+  const getCourseIcon = (courseCode: string) => {
+    const code = courseCode.toLowerCase();
     
     if (code.includes('math') || code.includes('calc') || code.includes('algebra')) return GraduationCap;
     if (code.includes('psy') || code.includes('psychology')) return BookOpen;
