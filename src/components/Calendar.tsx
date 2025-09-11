@@ -149,7 +149,15 @@ interface StudySession {
   id: string;
   title: string;
   start_time: string;
+  end_time: string;
   session_type: string;
+  location?: string;
+  notes?: string;
+  is_confirmed?: boolean;
+  task_id?: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface WeatherData {
@@ -485,6 +493,8 @@ const Calendar = () => {
 
         if (eventsDeleteError) {
           console.error('Error deleting Canvas events:', eventsDeleteError);
+        } else {
+          console.log('Successfully deleted existing Canvas events');
         }
 
         // Delete all Canvas tasks for the user (if any)
@@ -496,6 +506,38 @@ const Calendar = () => {
 
         if (tasksDeleteError) {
           console.error('Error deleting Canvas tasks:', tasksDeleteError);
+        } else {
+          console.log('Successfully deleted existing Canvas tasks');
+        }
+
+        // Delete study sessions that might be related to Canvas assignments
+        // Only delete if they have Canvas-related content in title or notes
+        const { data: existingSessions } = await supabase
+          .from('study_sessions')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (existingSessions && existingSessions.length > 0) {
+          const canvasSessionIds = existingSessions
+            .filter(session => 
+              session.title?.toLowerCase().includes('canvas') ||
+              session.notes?.toLowerCase().includes('canvas') ||
+              session.title?.match(/\[20\d{2}[A-Z]{2}-[A-Z]+-\d+/) // Match course code pattern
+            )
+            .map(session => session.id);
+
+          if (canvasSessionIds.length > 0) {
+            const { error: sessionsDeleteError } = await supabase
+              .from('study_sessions')
+              .delete()
+              .in('id', canvasSessionIds);
+
+            if (sessionsDeleteError) {
+              console.error('Error deleting Canvas study sessions:', sessionsDeleteError);
+            } else {
+              console.log('Successfully deleted Canvas-related study sessions');
+            }
+          }
         }
 
         // Delete the old Canvas connections
@@ -508,16 +550,21 @@ const Calendar = () => {
         if (connectionsDeleteError) {
           console.error('Error deleting Canvas connections:', connectionsDeleteError);
         } else {
-          console.log('Successfully removed existing Canvas data');
+          console.log('Successfully removed existing Canvas connections');
           toast({
             title: "Previous Canvas Feed Replaced",
             description: "Previous Canvas schedule has been removed and will be replaced with the new one",
           });
         }
 
-        // Update local state immediately
+        // Update local state to only remove Canvas items
         setEvents(prev => prev.filter(event => event.source_provider !== 'canvas'));
         setTasks(prev => prev.filter(task => task.source_provider !== 'canvas'));
+        setStudySessions(prev => prev.filter(session => 
+          !(session.title?.toLowerCase().includes('canvas') ||
+            session.notes?.toLowerCase().includes('canvas') ||
+            session.title?.match(/\[20\d{2}[A-Z]{2}-[A-Z]+-\d+/))
+        ));
       }
 
       // Validate URL format (basic check for calendar feed URLs)
