@@ -301,11 +301,24 @@ const Calendar = () => {
 
   const fetchCalendarConnections = async () => {
     try {
+      console.log('fetchCalendarConnections - User object:', user);
+      console.log('fetchCalendarConnections - User ID:', user?.id);
+      
+      // Test if we can query the table at all
+      const testQuery = await supabase
+        .from('calendar_connections')
+        .select('count(*)')
+        .limit(1);
+      
+      console.log('Test query result:', testQuery);
+
       const { data, error } = await supabase
         .from('calendar_connections')
         .select('*')
         .eq('user_id', user?.id)
         .eq('is_active', true);
+
+      console.log('Fetch calendar connections result:', { data, error });
 
       if (error) {
         console.error('Error fetching calendar connections:', error);
@@ -318,13 +331,25 @@ const Calendar = () => {
   };
 
   const addCanvasFeed = async () => {
-    if (!canvasFeedUrl.trim() || !user) return;
+    if (!canvasFeedUrl.trim() || !user) {
+      console.log('Validation failed:', { canvasFeedUrl: canvasFeedUrl.trim(), user });
+      return;
+    }
 
     try {
       setIsAddingFeed(true);
       
-      console.log('Adding Canvas feed with user:', user.id);
+      console.log('Adding Canvas feed with user:', user);
+      console.log('User ID:', user.id);
       console.log('Feed URL:', canvasFeedUrl.trim());
+      
+      // Check current session
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session:', sessionData);
+      
+      // Check auth user
+      const { data: authUser } = await supabase.auth.getUser();
+      console.log('Auth user:', authUser);
       
       // Validate URL format (basic check for calendar feed URLs)
       const url = canvasFeedUrl.trim();
