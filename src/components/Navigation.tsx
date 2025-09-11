@@ -1,13 +1,16 @@
-import { useState } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { getUniversityById } from "@/data/universities";
 import { AnalogClock } from "@/components/AnalogClock";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavigationProps {
   currentPage: string;
@@ -16,9 +19,108 @@ interface NavigationProps {
 
 export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
   const [notifications] = useState(0);
+  const [courses, setCourses] = useState<any[]>([]);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { liveEditedProfile } = useProfileEditing();
+
+  // Fetch courses data
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchCourses = async () => {
+      const { data: events } = await supabase
+        .from('events')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('source_provider', 'canvas');
+
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('source_provider', 'canvas');
+
+      // Process courses similar to Calendar component
+      const coursesMap = new Map();
+
+      events?.forEach(event => {
+        const courseCode = extractCourseCode(event.title, true);
+        if (courseCode) {
+          if (!coursesMap.has(courseCode)) {
+            coursesMap.set(courseCode, {
+              code: courseCode,
+              color: getCourseColor(event.title, true),
+              events: [],
+              tasks: []
+            });
+          }
+          coursesMap.get(courseCode).events.push(event);
+        }
+      });
+
+      tasks?.forEach(task => {
+        const courseCode = task.course_name || extractCourseCode(task.title, true);
+        if (courseCode) {
+          if (!coursesMap.has(courseCode)) {
+            const pseudoTitle = `[2025FA-${courseCode}]`;
+            coursesMap.set(courseCode, {
+              code: courseCode,
+              color: getCourseColor(pseudoTitle, true),
+              events: [],
+              tasks: []
+            });
+          }
+          coursesMap.get(courseCode).tasks.push(task);
+        }
+      });
+
+      setCourses(Array.from(coursesMap.values()));
+    };
+
+    fetchCourses();
+  }, [user?.id]);
+
+  // Helper functions
+  const extractCourseCode = (title: string, forCanvas = false) => {
+    if (!forCanvas) return null;
+    
+    const patterns = [
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}\d{3,4}[A-Z]?)\]/,
+      /\[([A-Z]{2,4}\d{3,4}[A-Z]?)-(\d{4}[A-Z]{2})\]/,
+      /([A-Z]{2,4}\s?\d{3,4}[A-Z]?)/,
+      /\b([A-Z]{2,4}\d{3,4}[A-Z]?)\b/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = title.match(pattern);
+      if (match) {
+        return match[2] || match[1];
+      }
+    }
+    return null;
+  };
+
+  const getCourseColor = (title: string, forCanvas = false) => {
+    if (!forCanvas) return 'bg-muted/50';
+    
+    const colors = [
+      'bg-gradient-to-br from-blue-500/20 to-blue-600/30 border-blue-500/30',
+      'bg-gradient-to-br from-green-500/20 to-green-600/30 border-green-500/30',
+      'bg-gradient-to-br from-purple-500/20 to-purple-600/30 border-purple-500/30',
+      'bg-gradient-to-br from-orange-500/20 to-orange-600/30 border-orange-500/30',
+      'bg-gradient-to-br from-red-500/20 to-red-600/30 border-red-500/30',
+      'bg-gradient-to-br from-pink-500/20 to-pink-600/30 border-pink-500/30',
+      'bg-gradient-to-br from-indigo-500/20 to-indigo-600/30 border-indigo-500/30',
+      'bg-gradient-to-br from-teal-500/20 to-teal-600/30 border-teal-500/30'
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+      hash = ((hash << 5) - hash + title.charCodeAt(i)) & 0xffffffff;
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -89,6 +191,44 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
           );
         })}
       </nav>
+
+      {/* Courses Section */}
+      {courses.length > 0 && (
+        <div className="px-4 pb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-muted-foreground">My Courses</h3>
+            <Badge variant="secondary" className="text-xs">
+              {courses.length}
+            </Badge>
+          </div>
+          <ScrollArea className="h-40">
+            <div className="space-y-2">
+              {courses.slice(0, 4).map((course, index) => (
+                <Card 
+                  key={course.code} 
+                  className={`transition-all duration-200 hover:scale-[1.02] cursor-pointer border ${course.color}`}
+                  onClick={() => onPageChange('calendar')}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <BookOpen className="h-4 w-4 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{course.code}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {course.tasks.length} assignments
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 flex-shrink-0 opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
 
       {/* User Section */}
       <div className="p-4 border-t border-border">
