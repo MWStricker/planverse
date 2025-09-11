@@ -233,7 +233,7 @@ serve(async (req) => {
       }));
 
     const durationMs = Date.now() - tStart;
-    return new Response(JSON.stringify({ success: true, durationMs, events, tasks }), {
+    return new Response(JSON.stringify({ success: true, durationMs, ocrSource, events, tasks }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
