@@ -74,6 +74,13 @@ export const OCRUpload = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  const formatLocalDate = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return iso;
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString();
+  };
+
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast({
@@ -467,7 +474,7 @@ export const OCRUpload = () => {
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {new Date(event.date).toLocaleDateString()}
+                      {formatLocalDate(event.date)}
                     </div>
                     {event.startTime && event.endTime && (
                       <div className="flex items-center gap-1">
@@ -558,7 +565,7 @@ export const OCRUpload = () => {
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                        <div className="flex items-center gap-1">
                          <Calendar className="h-3 w-3" />
-                         Due: {new Date(task.dueDate).toLocaleDateString()}{task.dueTime ? ` at ${task.dueTime}` : ''}
+                         Due: {formatLocalDate(task.dueDate)}{task.dueTime ? ` at ${task.dueTime}` : ''}
                        </div>
                       {task.courseName && (
                         <div className="flex items-center gap-1">
