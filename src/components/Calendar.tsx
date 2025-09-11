@@ -539,7 +539,7 @@ const Calendar = () => {
             onClick={() => setShowAllTasks(!showAllTasks)}
             className="flex items-center gap-2"
           >
-            📅 {showAllTasks ? "Current Month" : "All Tasks"}
+            {showAllTasks ? "Current Month" : "All Tasks"}
           </Button>
           <Button 
             variant="outline" 
