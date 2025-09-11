@@ -123,16 +123,16 @@ export const Courses = () => {
   const extractCourseCode = (title: string, forCanvas = false) => {
     if (!forCanvas) return null;
     
-    // More comprehensive patterns for Canvas course extraction
+    // Enhanced patterns for Canvas course extraction
     const patterns = [
-      // [2025FA-PSY-100-007] format
-      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}[A-Z]?-?\d*)\]/i,
+      // [2025FA-PSY-100-007] or [2025FA-LIFE-102-003] format
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)\]/i,
       // [PSY-100-007-2025FA] format
-      /\[([A-Z]{2,4}-?\d{3,4}[A-Z]?-?\d*)-(\d{4}[A-Z]{2})\]/i,
-      // Simple course codes like PSY-100, MATH-118, etc.
+      /\[([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)-(\d{4}[A-Z]{2})\]/i,
+      // Simple course codes like PSY-100, MATH-118, LIFE-102, etc.
       /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?)\b/i,
-      // Course codes with sections like PSY-100-007
-      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?-?\d{3})\b/i
+      // Lab courses like LIFE-102-L16
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}-?L\d*)\]/i
     ];
     
     for (const pattern of patterns) {
@@ -143,8 +143,12 @@ export const Courses = () => {
         // Remove semester info and normalize format
         courseCode = courseCode.replace(/\d{4}[A-Z]{2}/, '').replace(/^-|-$/, '');
         
-        // If it's a course with section number, keep just the base course
-        if (courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
+        // Handle lab courses - keep the L designation but remove section numbers
+        if (courseCode.includes('-L')) {
+          courseCode = courseCode.replace(/-L\d+$/, '-L');
+        }
+        // If it's a regular course with section number, keep just the base course
+        else if (courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
           courseCode = courseCode.replace(/-\d{3}$/, '');
         }
         
