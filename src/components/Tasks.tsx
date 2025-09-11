@@ -140,6 +140,37 @@ export const Tasks = () => {
     }
   };
 
+  const getNextRecurrences = (task: any, count: number = 3) => {
+    if (!task.is_recurring || !task.recurrence_type) return [];
+    
+    const baseDate = new Date(task.due_date);
+    const dates = [];
+    
+    for (let i = 0; i < count; i++) {
+      if (task.recurrence_type === 'daily') {
+        const nextDate = new Date(baseDate);
+        nextDate.setDate(baseDate.getDate() + i);
+        dates.push(nextDate);
+      } else if (task.recurrence_type === 'weekly' && task.recurrence_pattern?.days) {
+        for (const dayOfWeek of task.recurrence_pattern.days) {
+          const nextDate = new Date(baseDate);
+          const daysUntilTarget = (dayOfWeek - nextDate.getDay() + 7) % 7;
+          nextDate.setDate(baseDate.getDate() + daysUntilTarget + (Math.floor(i / task.recurrence_pattern.days.length) * 7));
+          
+          if (nextDate >= baseDate && dates.length < count) {
+            dates.push(nextDate);
+          }
+        }
+      } else if (task.recurrence_type === 'monthly') {
+        const nextDate = new Date(baseDate);
+        nextDate.setMonth(baseDate.getMonth() + i);
+        dates.push(nextDate);
+      }
+    }
+    
+    return dates.slice(0, count);
+  };
+
   const onEditTask = async (values: z.infer<typeof taskFormSchema>) => {
     if (!user || !editingTask) return;
 
@@ -1114,6 +1145,11 @@ export const Tasks = () => {
                       {item.type === 'event' && (
                         <Badge variant="outline">From Calendar</Badge>
                       )}
+                      {item.is_recurring && (
+                        <Badge variant="outline" className="text-xs">
+                          Recurring
+                        </Badge>
+                      )}
                     </div>
                     
                     {item.description && (
@@ -1137,6 +1173,19 @@ export const Tasks = () => {
                         <span>Source: {item.source_provider}</span>
                       )}
                     </div>
+
+                    {item.is_recurring && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        <p className="font-medium">Next occurrences:</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {getNextRecurrences(item, 4).map((date, index) => (
+                            <span key={index} className="bg-muted px-2 py-1 rounded text-xs">
+                              {date.toLocaleDateString()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Edit button for tasks (not events) */}

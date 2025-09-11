@@ -215,50 +215,35 @@ export const Dashboard = () => {
     }
   }, [user]);
 
-  const createRecurringTasks = async (baseTask: any, recurrenceType: string, recurrenceDays?: number[]) => {
-    const tasks = [];
-    const baseDate = new Date(baseTask.due_date);
+  const getNextRecurrences = (task: any, count: number = 5) => {
+    if (!task.is_recurring || !task.recurrence_type) return [];
     
-    // Create tasks for the next 12 weeks
-    for (let i = 0; i < 12; i++) {
-      if (recurrenceType === 'daily') {
-        const taskDate = new Date(baseDate);
-        taskDate.setDate(baseDate.getDate() + i);
-        tasks.push({
-          ...baseTask,
-          due_date: taskDate.toISOString(),
-          is_recurring: true,
-          recurrence_type: recurrenceType,
-        });
-      } else if (recurrenceType === 'weekly' && recurrenceDays && recurrenceDays.length > 0) {
-        for (const dayOfWeek of recurrenceDays) {
-          const taskDate = new Date(baseDate);
-          const daysUntilTarget = (dayOfWeek - taskDate.getDay() + 7) % 7;
-          taskDate.setDate(baseDate.getDate() + daysUntilTarget + (i * 7));
+    const baseDate = new Date(task.due_date);
+    const dates = [];
+    
+    for (let i = 0; i < count; i++) {
+      if (task.recurrence_type === 'daily') {
+        const nextDate = new Date(baseDate);
+        nextDate.setDate(baseDate.getDate() + i);
+        dates.push(nextDate);
+      } else if (task.recurrence_type === 'weekly' && task.recurrence_pattern?.days) {
+        for (const dayOfWeek of task.recurrence_pattern.days) {
+          const nextDate = new Date(baseDate);
+          const daysUntilTarget = (dayOfWeek - nextDate.getDay() + 7) % 7;
+          nextDate.setDate(baseDate.getDate() + daysUntilTarget + (Math.floor(i / task.recurrence_pattern.days.length) * 7));
           
-          if (taskDate >= baseDate) {
-            tasks.push({
-              ...baseTask,
-              due_date: taskDate.toISOString(),
-              is_recurring: true,
-              recurrence_type: recurrenceType,
-              recurrence_pattern: { days: recurrenceDays },
-            });
+          if (nextDate >= baseDate && dates.length < count) {
+            dates.push(nextDate);
           }
         }
-      } else if (recurrenceType === 'monthly') {
-        const taskDate = new Date(baseDate);
-        taskDate.setMonth(baseDate.getMonth() + i);
-        tasks.push({
-          ...baseTask,
-          due_date: taskDate.toISOString(),
-          is_recurring: true,
-          recurrence_type: recurrenceType,
-        });
+      } else if (task.recurrence_type === 'monthly') {
+        const nextDate = new Date(baseDate);
+        nextDate.setMonth(baseDate.getMonth() + i);
+        dates.push(nextDate);
       }
     }
     
-    return tasks;
+    return dates.slice(0, count);
   };
 
   const onSubmitTask = async (values: z.infer<typeof taskFormSchema>) => {
@@ -276,7 +261,7 @@ export const Dashboard = () => {
     const [hours, minutes] = values.due_time.split(':');
     dueDateTime.setHours(parseInt(hours), parseInt(minutes));
 
-    const baseTask = {
+    const taskData = {
       user_id: user.id,
       title: values.title,
       description: values.description || null,
@@ -291,17 +276,11 @@ export const Dashboard = () => {
     };
 
     try {
-      let tasksToInsert = [baseTask];
-      
-      // If recurring, create multiple tasks
-      if (values.is_recurring && values.recurrence_type) {
-        tasksToInsert = await createRecurringTasks(baseTask, values.recurrence_type, values.recurrence_days);
-      }
-
       const { data, error } = await supabase
         .from('tasks')
-        .insert(tasksToInsert)
-        .select();
+        .insert(taskData)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error creating task:', error);
@@ -314,12 +293,12 @@ export const Dashboard = () => {
         toast({
           title: "Success",
           description: values.is_recurring 
-            ? `Created ${tasksToInsert.length} recurring tasks successfully`
+            ? "Recurring task created successfully"
             : "Task created successfully",
         });
         setIsAddDialogOpen(false);
         form.reset();
-        fetchDashboardData(); // Use faster fetch function
+        fetchDashboardData();
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -1009,12 +988,31 @@ export const Dashboard = () => {
                       'bg-secondary'
                     }`} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{task.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">{task.title}</p>
+                        {task.is_recurring && (
+                          <Badge variant="outline" className="text-xs px-1">
+                            Recurring
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
                       </p>
                       {task.course_name && (
                         <p className="text-xs text-muted-foreground">{task.course_name}</p>
+                      )}
+                      {task.is_recurring && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          <p className="font-medium">Next occurrences:</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {getNextRecurrences(task, 3).map((date, index) => (
+                              <span key={index} className="bg-muted px-1 rounded text-xs">
+                                {format(date, "MMM dd")}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                     <Badge variant={getPriorityColor(task.priority_score || 2)} className="text-xs">
