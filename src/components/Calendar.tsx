@@ -653,9 +653,11 @@ const Calendar = () => {
                       <Popover key={event.id}>
                         <PopoverTrigger asChild>
                            <div className="cursor-pointer hover:bg-accent/50 rounded p-0.5 transition-colors duration-300">
-                            <Badge variant="outline" className="text-xs w-full justify-start truncate">
-                              📅 {event.title}
-                            </Badge>
+                             <Badge variant="outline" className="text-xs w-full justify-start overflow-hidden group">
+                               <div className="flex items-center gap-1 group-hover:animate-[scroll-left-right_4s_ease-in-out_infinite]">
+                                 📅 <span className="whitespace-nowrap">{event.title}</span>
+                               </div>
+                             </Badge>
                           </div>
                         </PopoverTrigger>
                         <PopoverContent className="w-48 p-2" align="start">
