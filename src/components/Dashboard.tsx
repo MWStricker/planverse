@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +57,9 @@ const taskFormSchema = z.object({
   priority: z.enum(["low", "medium", "high", "critical"], {
     required_error: "Priority is required",
   }),
+  is_recurring: z.boolean().default(false),
+  recurrence_type: z.enum(["daily", "weekly", "monthly"]).optional(),
+  recurrence_days: z.array(z.number()).optional(),
 });
 
 // Empty mock data for testing
@@ -211,6 +215,52 @@ export const Dashboard = () => {
     }
   }, [user]);
 
+  const createRecurringTasks = async (baseTask: any, recurrenceType: string, recurrenceDays?: number[]) => {
+    const tasks = [];
+    const baseDate = new Date(baseTask.due_date);
+    
+    // Create tasks for the next 12 weeks
+    for (let i = 0; i < 12; i++) {
+      if (recurrenceType === 'daily') {
+        const taskDate = new Date(baseDate);
+        taskDate.setDate(baseDate.getDate() + i);
+        tasks.push({
+          ...baseTask,
+          due_date: taskDate.toISOString(),
+          is_recurring: true,
+          recurrence_type: recurrenceType,
+        });
+      } else if (recurrenceType === 'weekly' && recurrenceDays && recurrenceDays.length > 0) {
+        for (const dayOfWeek of recurrenceDays) {
+          const taskDate = new Date(baseDate);
+          const daysUntilTarget = (dayOfWeek - taskDate.getDay() + 7) % 7;
+          taskDate.setDate(baseDate.getDate() + daysUntilTarget + (i * 7));
+          
+          if (taskDate >= baseDate) {
+            tasks.push({
+              ...baseTask,
+              due_date: taskDate.toISOString(),
+              is_recurring: true,
+              recurrence_type: recurrenceType,
+              recurrence_pattern: { days: recurrenceDays },
+            });
+          }
+        }
+      } else if (recurrenceType === 'monthly') {
+        const taskDate = new Date(baseDate);
+        taskDate.setMonth(baseDate.getMonth() + i);
+        tasks.push({
+          ...baseTask,
+          due_date: taskDate.toISOString(),
+          is_recurring: true,
+          recurrence_type: recurrenceType,
+        });
+      }
+    }
+    
+    return tasks;
+  };
+
   const onSubmitTask = async (values: z.infer<typeof taskFormSchema>) => {
     if (!user) return;
 
@@ -226,21 +276,32 @@ export const Dashboard = () => {
     const [hours, minutes] = values.due_time.split(':');
     dueDateTime.setHours(parseInt(hours), parseInt(minutes));
 
+    const baseTask = {
+      user_id: user.id,
+      title: values.title,
+      description: values.description || null,
+      course_name: values.course_name || null,
+      due_date: dueDateTime.toISOString(),
+      priority_score: priorityMap[values.priority],
+      completion_status: 'pending',
+      source_provider: 'manual',
+      is_recurring: values.is_recurring || false,
+      recurrence_type: values.recurrence_type || null,
+      recurrence_pattern: values.recurrence_days ? { days: values.recurrence_days } : null,
+    };
+
     try {
+      let tasksToInsert = [baseTask];
+      
+      // If recurring, create multiple tasks
+      if (values.is_recurring && values.recurrence_type) {
+        tasksToInsert = await createRecurringTasks(baseTask, values.recurrence_type, values.recurrence_days);
+      }
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          user_id: user.id,
-          title: values.title,
-          description: values.description || null,
-          course_name: values.course_name || null,
-          due_date: dueDateTime.toISOString(),
-          priority_score: priorityMap[values.priority],
-          completion_status: 'pending',
-          source_provider: 'manual'
-        })
-        .select()
-        .single();
+        .insert(tasksToInsert)
+        .select();
 
       if (error) {
         console.error('Error creating task:', error);
@@ -252,7 +313,9 @@ export const Dashboard = () => {
       } else {
         toast({
           title: "Success",
-          description: "Task created successfully",
+          description: values.is_recurring 
+            ? `Created ${tasksToInsert.length} recurring tasks successfully`
+            : "Task created successfully",
         });
         setIsAddDialogOpen(false);
         form.reset();
@@ -755,6 +818,90 @@ export const Dashboard = () => {
                         </FormItem>
                       )}
                     />
+
+                    {/* Recurring Task Section */}
+                    <FormField
+                      control={form.control}
+                      name="is_recurring"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Recurring Task</FormLabel>
+                            <FormDescription>
+                              Make this task repeat automatically
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch("is_recurring") && (
+                      <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+                        <FormField
+                          control={form.control}
+                          name="recurrence_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Repeat</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select how often to repeat" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="daily">Daily</SelectItem>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {form.watch("recurrence_type") === "weekly" && (
+                          <FormField
+                            control={form.control}
+                            name="recurrence_days"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Select Days</FormLabel>
+                                <FormDescription>
+                                  Choose which days of the week to repeat
+                                </FormDescription>
+                                <div className="flex flex-wrap gap-2">
+                                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                                    <Button
+                                      key={day}
+                                      type="button"
+                                      variant={field.value?.includes(index) ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        const currentDays = field.value || [];
+                                        const newDays = currentDays.includes(index)
+                                          ? currentDays.filter(d => d !== index)
+                                          : [...currentDays, index];
+                                        field.onChange(newDays);
+                                      }}
+                                    >
+                                      {day}
+                                    </Button>
+                                  ))}
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    )}
 
                     <DialogFooter>
                       <Button
