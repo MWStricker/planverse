@@ -323,6 +323,9 @@ const Calendar = () => {
     try {
       setIsAddingFeed(true);
       
+      console.log('Adding Canvas feed with user:', user.id);
+      console.log('Feed URL:', canvasFeedUrl.trim());
+      
       // Validate URL format (basic check for calendar feed URLs)
       const url = canvasFeedUrl.trim();
       if (!url.startsWith('http') || !url.includes('calendar')) {
@@ -334,30 +337,40 @@ const Calendar = () => {
         return;
       }
 
+      const insertData = {
+        user_id: user.id,
+        provider: 'canvas',
+        provider_id: url,
+        sync_settings: {
+          feed_url: url,
+          sync_type: 'assignments',
+          auto_sync: true
+        },
+        is_active: true
+      };
+      
+      console.log('Attempting to insert:', insertData);
+
       const { data, error } = await supabase
         .from('calendar_connections')
-        .insert({
-          user_id: user.id,
-          provider: 'canvas',
-          provider_id: url,
-          sync_settings: {
-            feed_url: url,
-            sync_type: 'assignments',
-            auto_sync: true
-          },
-          is_active: true
-        })
+        .insert(insertData)
         .select()
         .single();
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
-        console.error('Error adding calendar feed:', error);
+        console.error('Detailed error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
         toast({
           title: "Error",
-          description: "Failed to add calendar feed",
+          description: `Failed to add calendar feed: ${error.message}`,
           variant: "destructive",
         });
       } else {
+        console.log('Successfully added calendar feed:', data);
         toast({
           title: "Success",
           description: "Canvas calendar feed added successfully",
@@ -368,10 +381,10 @@ const Calendar = () => {
         // Optionally trigger a sync here
       }
     } catch (error) {
-      console.error('Error adding calendar feed:', error);
+      console.error('Unexpected error adding calendar feed:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: `An unexpected error occurred: ${error.message || error}`,
         variant: "destructive",
       });
     } finally {
