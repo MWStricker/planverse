@@ -51,7 +51,7 @@ Classification:
 - EVENTS: scheduled time blocks (classes, meetings, office hours, exams)
 - TASKS: assignments with due dates (homework, projects, papers, quizzes)
 
-Only include items with confidence ≥ 70. If text is unclear or partially visible, still attempt extraction with lower confidence.`;
+Only include items with confidence ≥ 50. If text is unclear or partially visible, still attempt extraction with lower confidence.`;
 
     const tools = [
       {
@@ -200,11 +200,12 @@ Only include items with confidence ≥ 70. If text is unclear or partially visib
     const useText = useTextInput;
 
     // Try fast path first
+    console.log('Sending to OpenAI:', { useText, textLength: resolvedText?.length || 0, hasImage: hasImage });
     let response = await callOpenAI('gpt-4o-mini', 'legacy', useText);
-
 
     if (!response.ok) {
       const errText = await response.text();
+      console.error('OpenAI error:', response.status, errText);
       const durationMs = Date.now() - tStart;
       return new Response(JSON.stringify({ success: false, error: `OpenAI error ${response.status}: ${response.statusText}`, details: errText, events: [], durationMs }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -212,6 +213,7 @@ Only include items with confidence ≥ 70. If text is unclear or partially visib
     }
 
     const aiData = await response.json();
+    console.log('OpenAI response received, tool_calls:', aiData?.choices?.[0]?.message?.tool_calls?.length || 0);
 
     // Prefer function/tool call output
     let parsed: any = null;
@@ -234,6 +236,7 @@ Only include items with confidence ≥ 70. If text is unclear or partially visib
     }
 
     if (!parsed) {
+      console.log('No valid JSON parsed from OpenAI response');
       const durationMs = Date.now() - tStart;
       return new Response(JSON.stringify({ success: false, error: 'Invalid JSON from model', events: [], tasks: [], durationMs }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -242,6 +245,7 @@ Only include items with confidence ≥ 70. If text is unclear or partially visib
 
     // Normalize & sanitize events
     let events = Array.isArray(parsed.events) ? parsed.events : [];
+    console.log('Raw events from AI:', events.length);
     events = events
       .filter((e: any) => typeof e?.date === 'string' && /\d{4}-\d{2}-\d{2}/.test(e.date))
       .map((event: any, index: number) => ({
@@ -258,6 +262,7 @@ Only include items with confidence ≥ 70. If text is unclear or partially visib
 
     // Normalize & sanitize tasks
     let tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+    console.log('Raw tasks from AI:', tasks.length);
     tasks = tasks
       .filter((t: any) => typeof t?.dueDate === 'string' && /\d{4}-\d{2}-\d{2}/.test(t.dueDate))
       .map((task: any, index: number) => ({
@@ -273,6 +278,7 @@ Only include items with confidence ≥ 70. If text is unclear or partially visib
       }));
 
     const durationMs = Date.now() - tStart;
+    console.log('Final result:', { events: events.length, tasks: tasks.length, ocrSource });
     return new Response(JSON.stringify({ success: true, durationMs, ocrSource, events, tasks }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
