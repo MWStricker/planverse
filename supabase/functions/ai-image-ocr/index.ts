@@ -219,59 +219,7 @@ Extract EVERYTHING visible with maximum precision.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: contentParts as any },
         ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'schedule_items',
-            schema: {
-              type: 'object',
-              additionalProperties: false,
-              properties: {
-                events: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    additionalProperties: false,
-                    properties: {
-                      id: { type: 'string' },
-                      title: { type: 'string' },
-                      date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-                      startTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
-                      endTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
-                      location: { type: 'string' },
-                      recurrence: { type: ['string', 'null'] },
-                      eventType: { type: 'string' },
-                      confidence: { type: 'number', minimum: 0, maximum: 100 },
-                    },
-                    required: ['id','title','date','startTime','endTime','location','recurrence','eventType','confidence']
-                  }
-                },
-                tasks: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    additionalProperties: false,
-                    properties: {
-                      id: { type: 'string' },
-                      title: { type: 'string' },
-                      description: { type: 'string' },
-                      dueDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-                      dueTime: { type: ['string', 'null'], pattern: '^\\d{2}:\\d{2}$' },
-                      courseName: { type: 'string' },
-                      priority: { type: 'number', minimum: 1, maximum: 4 },
-                      taskType: { type: 'string' },
-                      confidence: { type: 'number', minimum: 0, maximum: 100 },
-                    },
-                    required: ['id','title','description','dueDate','dueTime','courseName','priority','taskType','confidence']
-                  }
-                }
-              },
-              required: ['events','tasks']
-            },
-            strict: true,
-          },
-        },
-        tool_choice: 'none',
+        response_format: { type: 'json_object' },
       };
 
       if (paramsType === 'legacy') {
