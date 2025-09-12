@@ -11,13 +11,16 @@ import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { getUniversityById } from "@/data/universities";
 import { AnalogClock } from "@/components/AnalogClock";
 import { supabase } from "@/integrations/supabase/client";
+import { useTabReorder } from "@/hooks/useTabReorder";
+import { SortableTabItem } from "@/components/SortableTabItem";
 
 interface NavigationProps {
   currentPage: string;
   onPageChange: (page: string) => void;
+  isReorderMode?: boolean;
 }
 
-export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
+export const Navigation = ({ currentPage, onPageChange, isReorderMode = false }: NavigationProps) => {
   const [notifications] = useState(0);
   const [courses, setCourses] = useState<any[]>([]);
   const { user } = useAuth();
@@ -131,6 +134,18 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
     { id: 'upload', label: 'Image Upload', icon: Upload },
   ];
 
+  const {
+    sensors,
+    handleDragEnd,
+    getOrderedNavItems,
+    DndContext,
+    SortableContext,
+    verticalListSortingStrategy,
+    closestCenter
+  } = useTabReorder(navItems);
+
+  const orderedNavItems = getOrderedNavItems();
+
   return (
     <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Logo */}
@@ -145,52 +160,30 @@ export const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-3">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentPage === item.id;
-          
-          return (
-            <Button
-              key={item.id}
-              variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start h-14 text-base transition-all duration-200 ease-out group relative overflow-hidden ${
-                isActive 
-                  ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-l-primary-foreground/20' 
-                  : 'text-foreground hover:bg-muted/30 hover:scale-[1.01]'
-              }`}
-              onClick={() => onPageChange(item.id)}
-            >
-              {/* Shimmer effect for active items */}
-              {isActive && (
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-              )}
-              
-              <Icon className={`h-5 w-5 mr-3 transition-all duration-200 ease-out ${
-                isActive 
-                  ? 'text-primary-foreground scale-110' 
-                  : 'group-hover:scale-105'
-              }`} />
-              <span className={`font-medium transition-all duration-150 ease-out ${
-                isActive ? 'tracking-wide' : ''
-              }`}>
-                {item.label}
-              </span>
-              {item.id === 'tasks' && notifications > 0 && (
-                <Badge 
-                  className="ml-auto bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs animate-pulse shadow-sm"
-                  variant="secondary"
-                >
-                  {notifications}
-                </Badge>
-              )}
-              
-              {/* Glow effect for active items */}
-              {isActive && (
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-all duration-300 ease-out"></div>
-              )}
-            </Button>
-          );
-        })}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          autoScroll={false}
+        >
+          <SortableContext
+            items={orderedNavItems.map(item => item.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {orderedNavItems.map((item) => (
+                <SortableTabItem
+                  key={item.id}
+                  item={item}
+                  isActive={currentPage === item.id}
+                  isReorderMode={isReorderMode}
+                  notifications={item.id === 'tasks' ? notifications : 0}
+                  onClick={() => onPageChange(item.id)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       </nav>
 
 
