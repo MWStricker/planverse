@@ -46,19 +46,32 @@
 
   <body>
     <script>
-      // Run IMMEDIATELY to prevent any autofill
-      document.documentElement.setAttribute('autocomplete', 'off');
-      document.documentElement.setAttribute('data-form-type', 'other');
-      
-      // Block all autofill events
-      ['focus', 'click', 'input', 'change'].forEach(event => {
-        document.addEventListener(event, function(e) {
-          if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-            e.target.setAttribute('autocomplete', 'off');
-            e.target.setAttribute('data-form-type', 'other');
-          }
-        }, true);
+      // NUCLEAR OPTION - Override browser autofill completely
+      Object.defineProperty(window, 'chrome', { value: undefined });
+      Object.defineProperty(window, 'navigator', { 
+        value: { ...navigator, credentials: undefined, userAgent: navigator.userAgent.replace(/Chrome/g, 'NotChrome') },
+        writable: false 
       });
+      
+      // Block ALL form-related events
+      const blockAutofill = (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.contentEditable === 'true')) {
+          e.target.setAttribute('autocomplete', 'nope');
+          e.target.setAttribute('data-form-type', 'search');
+          e.target.setAttribute('data-lpignore', 'true');
+          e.target.setAttribute('data-1p-ignore', 'true');
+          e.target.setAttribute('data-bwignore', 'true');
+          e.target.setAttribute('readonly', 'true');
+          setTimeout(() => e.target.removeAttribute('readonly'), 10);
+        }
+      };
+      
+      ['mousedown', 'mouseup', 'click', 'focus', 'focusin', 'input', 'change', 'keydown'].forEach(event => {
+        document.addEventListener(event, blockAutofill, { capture: true, passive: false });
+      });
+      
+      // Override form submission
+      HTMLFormElement.prototype.submit = function() { return false; };
     </script>
     
     <div id="root"></div>

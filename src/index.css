@@ -92,7 +92,39 @@
 }
 
 /* Prevent Chrome autofill/autocomplete popups */
-/* NUCLEAR AUTOFILL PREVENTION */
+/* NUCLEAR AUTOFILL PREVENTION - DISABLE EVERYTHING */
+input, textarea, select, [contenteditable], 
+input *, textarea *, select *, [contenteditable] *,
+*[type], *[name], *[id], *[class] {
+  -webkit-autocomplete: off !important;
+  -webkit-autofill: none !important;
+  autocomplete: nope !important;
+  autofill: none !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide ALL autofill related UI elements */
+*::-webkit-credentials-auto-fill-button,
+*::-webkit-contacts-auto-fill-button,
+*::-webkit-caps-lock-indicator,
+*::-webkit-clear-button,
+*::-webkit-search-cancel-button,
+*::-webkit-search-decoration,
+*::-webkit-search-results-button,
+*::-webkit-search-results-decoration {
+  visibility: hidden !important;
+  display: none !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: -99999px !important;
+  top: -99999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+}
+
+/* Remove autofill styling completely */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -105,24 +137,12 @@ select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 30px hsl(var(--background)) inset !important;
   -webkit-text-fill-color: hsl(var(--foreground)) !important;
-  transition: background-color 5000s ease-in-out 0s !important;
+  transition: none !important;
   background: transparent !important;
+  background-color: transparent !important;
 }
 
-/* Completely disable autofill UI */
-input::-webkit-credentials-auto-fill-button,
-input::-webkit-contacts-auto-fill-button,
-input::-webkit-caps-lock-indicator,
-input::-webkit-clear-button,
-input::-webkit-search-cancel-button {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  right: -9999px !important;
-}
-
-/* Global autofill blocking */
+/* Disable autofill on EVERYTHING */
 * {
   -webkit-autofill: none !important;
   -webkit-autocomplete: off !important;
