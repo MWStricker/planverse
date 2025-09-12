@@ -205,58 +205,66 @@ export const Courses = () => {
     return null;
   };
 
+  // Use the exact same color logic as Calendar component
   const getCourseColor = (title: string, forCanvas = false, courseCode?: string) => {
     if (!forCanvas) return 'bg-muted/50 border-muted';
     
+    const extractedCourseCode = courseCode || extractCourseCode(title, true);
+    
     // First, try to use stored Canvas color
-    if (courseCode && storedColors[courseCode]) {
-      const color = storedColors[courseCode];
-      return `border-2 text-white` + ` ` + `bg-[${color}] border-[${color}]`;
+    if (storedColors && extractedCourseCode && storedColors[extractedCourseCode]) {
+      const color = storedColors[extractedCourseCode];
+      return `bg-[${color}]/20 border-[${color}]/30 text-[${color}] dark:bg-[${color}]/10 dark:border-[${color}]/40 dark:text-[${color}]`;
     }
     
-    // Subject-based color mapping as fallback - lighter/opaque versions
-    const subjectColors: Record<string, string> = {
-      'HES': 'bg-red-100 text-red-800 border-red-200',         // Health - Light Red
-      'HES-145': 'bg-red-100 text-red-800 border-red-200',     // Health - Light Red
-      'PSY': 'bg-red-100 text-red-800 border-red-200',         // Psychology - Light Red  
-      'PSY-100': 'bg-red-100 text-red-800 border-red-200',     // Psychology - Light Red  
-      'LIFE': 'bg-green-100 text-green-800 border-green-200',    // Life Sciences - Light Green
-      'LIFE-102': 'bg-green-100 text-green-800 border-green-200', // Life Sciences - Light Green
-      'LIFE-102-L': 'bg-green-100 text-green-800 border-green-200', // Life Sciences Lab - Light Green
-      'MU': 'bg-green-100 text-green-800 border-green-200',      // Music - Light Green
-      'MU-100': 'bg-green-100 text-green-800 border-green-200',  // Music - Light Green
-      'MATH': 'bg-amber-100 text-amber-800 border-amber-200',    // Mathematics - Light Brown
-      'MATH-118': 'bg-amber-100 text-amber-800 border-amber-200', // Mathematics - Light Brown
+    // Fallback color mapping based on course type - same as Calendar
+    const colorMappings: Record<string, string> = {
+      'HES': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+      'HES-145': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+      'PSY': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+      'PSY-100': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+      'LIFE': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+      'LIFE-102': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+      'LIFE-102-L': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+      'MU': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+      'MU-100': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+      'MATH': 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200',
+      'MATH-118': 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200',
     };
     
-    if (courseCode) {
-      // Try exact match first
-      if (subjectColors[courseCode]) {
-        return subjectColors[courseCode];
-      }
-      
-      // Try base code match
-      const baseCode = courseCode.split('-')[0];
-      if (subjectColors[baseCode]) {
-        return subjectColors[baseCode];
+    // Direct match first
+    if (extractedCourseCode && colorMappings[extractedCourseCode]) {
+      return colorMappings[extractedCourseCode];
+    }
+    
+    // Try base code match (e.g., PSY from PSY-100)
+    if (extractedCourseCode) {
+      const baseCode = extractedCourseCode.split('-')[0];
+      if (colorMappings[baseCode]) {
+        return colorMappings[baseCode];
       }
     }
     
-    // Final fallback to light CSU green colors
-    const colors = [
-      'bg-emerald-100 text-emerald-800 border-emerald-200',
-      'bg-green-100 text-green-800 border-green-200',
-      'bg-teal-100 text-teal-800 border-teal-200',
-      'bg-emerald-50 text-emerald-700 border-emerald-200',
-      'bg-green-50 text-green-700 border-green-200',
-      'bg-teal-50 text-teal-700 border-teal-200',
+    // Generate consistent color for unknown courses using hash
+    const courseColors = [
+      'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200',
+      'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-200',
+      'bg-teal-100 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200',
+      'bg-orange-100 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200',
+      'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200',
+      'bg-pink-100 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800 text-pink-800 dark:text-pink-200',
     ];
     
+    // Simple hash function
     let hash = 0;
-    for (let i = 0; i < title.length; i++) {
-      hash = ((hash << 5) - hash + title.charCodeAt(i)) & 0xffffffff;
+    const textToHash = extractedCourseCode || title;
+    for (let i = 0; i < textToHash.length; i++) {
+      hash = ((hash << 5) - hash + textToHash.charCodeAt(i)) & 0xffffffff;
     }
-    return colors[Math.abs(hash) % colors.length];
+    
+    // Use hash to select a color from the array
+    const colorIndex = Math.abs(hash) % courseColors.length;
+    return courseColors[colorIndex];
   };
 
   const getCourseIcon = (courseCode: string) => {
