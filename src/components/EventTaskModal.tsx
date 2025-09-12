@@ -174,14 +174,21 @@ export const EventTaskModal = ({
             </Label>
             {isCreatingNew || isEditing ? (
               <Input
+                type="search"
                 id="title"
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
                 placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
                 className="text-lg font-medium"
-                autoComplete="nope"
+                autoComplete="chrome-off"
+                data-lpignore="true"
                 data-form-type="search"
-                name={`title-${Date.now()}`}
+                name={`search-${Math.random().toString(36)}`}
+                onFocus={(e) => {
+                  e.target.setAttribute('autocomplete', 'chrome-off');
+                  e.target.setAttribute('readonly', 'true');
+                  setTimeout(() => e.target.removeAttribute('readonly'), 100);
+                }}
               />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
@@ -334,9 +341,15 @@ export const EventTaskModal = ({
                 onChange={(e) => setEditedNotes(e.target.value)}
                 placeholder="Add notes or description..."
                 rows={4}
-                autoComplete="nope"
+                autoComplete="chrome-off"
+                data-lpignore="true"
                 data-form-type="search"
-                name={`notes-${Date.now()}`}
+                name={`search-notes-${Math.random().toString(36)}`}
+                onFocus={(e) => {
+                  e.target.setAttribute('autocomplete', 'chrome-off');
+                  e.target.setAttribute('readonly', 'true');
+                  setTimeout(() => e.target.removeAttribute('readonly'), 100);
+                }}
               />
             ) : (
               <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
