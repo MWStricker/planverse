@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { CustomInput } from "@/components/ui/custom-input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { CustomTextarea } from "@/components/ui/custom-textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, BookOpen, AlertCircle, Edit3, Save, X } from "lucide-react";
@@ -264,19 +264,12 @@ export const EventTaskModal = ({
           <div className="space-y-2">
             <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
             {isEditing ? (
-              <Textarea
+              <CustomTextarea
                 id="notes"
                 value={editedNotes}
-                onChange={(e) => setEditedNotes(e.target.value)}
+                onChange={setEditedNotes}
                 placeholder="Add notes or description..."
                 rows={4}
-                autoComplete="new-password"
-                data-form-type="other"
-                name="event-task-notes-unique"
-                spellCheck={false}
-                data-1p-ignore="true"
-                data-lpignore="true"
-                data-bwignore="true"
               />
             ) : (
               <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
