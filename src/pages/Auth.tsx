@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
-import { Header } from "@/components/Header";
+
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -182,8 +182,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-      <Header />
-      <div className="flex items-center justify-center p-4" style={{ minHeight: 'calc(100vh - 88px)' }}>
+      <div className="flex items-center justify-center p-4 min-h-screen">
         <Card className="w-full max-w-md animate-fade-in shadow-xl border-0 bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center space-y-3">
             <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center mb-2">

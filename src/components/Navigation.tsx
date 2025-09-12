@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight } from "lucide-react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,9 +18,19 @@ interface NavigationProps {
   currentPage: string;
   onPageChange: (page: string) => void;
   isReorderMode?: boolean;
+  onToggleReorder?: () => void;
+  onSaveOrder?: () => void;
+  onCancelReorder?: () => void;
 }
 
-export const Navigation = ({ currentPage, onPageChange, isReorderMode = false }: NavigationProps) => {
+export const Navigation = ({ 
+  currentPage, 
+  onPageChange, 
+  isReorderMode = false,
+  onToggleReorder,
+  onSaveOrder,
+  onCancelReorder
+}: NavigationProps) => {
   const [notifications] = useState(0);
   const [courses, setCourses] = useState<any[]>([]);
   const { user } = useAuth();
@@ -150,12 +160,53 @@ export const Navigation = ({ currentPage, onPageChange, isReorderMode = false }:
     <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Logo */}
       <div className="p-4 pt-1 border-b border-border">
-        <div className="flex justify-center items-center">
-          <div className="text-center">
+        <div className="flex items-center justify-between">
+          <div className="text-center flex-1">
             <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
             <p className="text-xs text-muted-foreground">Smart Scheduling</p>
           </div>
+          
+          {/* Small Reorder Button */}
+          <div className="flex flex-col gap-1">
+            {!isReorderMode ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleReorder}
+                className="h-6 w-6 p-0 hover:bg-muted/30"
+              >
+                <Settings className="h-3 w-3" />
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCancelReorder}
+                  className="h-6 w-6 p-0 hover:bg-muted/30"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onSaveOrder}
+                  className="h-6 w-6 p-0 hover:bg-primary/20"
+                >
+                  <Save className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
+        
+        {isReorderMode && (
+          <div className="mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20 animate-fade-in">
+            <p className="text-xs text-foreground font-medium text-center">
+              Drag tabs to reorder
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

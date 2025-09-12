@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Dashboard } from "@/components/Dashboard";
 import { OCRUpload } from "@/components/OCRUpload";
 import { Navigation } from "@/components/Navigation";
-import { Header } from "@/components/Header";
+
 import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
 import Calendar from "@/components/Calendar";
@@ -95,24 +95,19 @@ const Index = () => {
 
   return (
     <ProfileEditingProvider>
-      <div className="flex flex-col h-screen bg-background">
-        <Header 
-          isReorderMode={isReorderMode}
-          onToggleReorder={() => setIsReorderMode(true)}
-          onSaveOrder={saveTabOrder}
-          onCancelReorder={cancelReorder}
-        />
-        <div className="flex flex-1 overflow-hidden">
-          <div className="w-64 flex-shrink-0">
-            <Navigation 
-              currentPage={currentPage} 
-              onPageChange={setCurrentPage}
-              isReorderMode={isReorderMode}
-            />
-          </div>
-          <div className="flex-1 overflow-auto">
-            {renderPage()}
-          </div>
+      <div className="flex h-screen bg-background">
+        <div className="w-64 flex-shrink-0">
+          <Navigation 
+            currentPage={currentPage} 
+            onPageChange={setCurrentPage}
+            isReorderMode={isReorderMode}
+            onToggleReorder={() => setIsReorderMode(true)}
+            onSaveOrder={saveTabOrder}
+            onCancelReorder={cancelReorder}
+          />
+        </div>
+        <div className="flex-1 overflow-auto">
+          {renderPage()}
         </div>
       </div>
     </ProfileEditingProvider>
