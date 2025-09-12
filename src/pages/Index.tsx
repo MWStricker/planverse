@@ -103,7 +103,6 @@ const Index = () => {
             onPageChange={setCurrentPage}
             isReorderMode={isReorderMode}
             onToggleReorder={() => setIsReorderMode(true)}
-            onSaveOrder={saveTabOrder}
             onCancelReorder={cancelReorder}
           />
         </div>

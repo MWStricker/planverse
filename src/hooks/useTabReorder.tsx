@@ -70,7 +70,7 @@ export const useTabReorder = (navItems: TabItem[]) => {
     loadTabOrder();
   }, [user?.id]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (active.id !== over?.id) {
@@ -78,18 +78,40 @@ export const useTabReorder = (navItems: TabItem[]) => {
       const newIndex = tabOrder.findIndex(id => id === over?.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        // Use setTimeout to defer state updates and prevent flash
-        setTimeout(() => {
-          const newOrder = arrayMove(tabOrder, oldIndex, newIndex);
-          setTabOrder(newOrder);
-          
-          // Add a subtle success feedback
-          toast({
-            title: "Tab reordered",
-            description: "Don't forget to save your changes!",
-            duration: 2000,
-          });
-        }, 0);
+        const newOrder = arrayMove(tabOrder, oldIndex, newIndex);
+        setTabOrder(newOrder);
+        
+        // Auto-save the new order
+        if (user?.id) {
+          try {
+            const { error } = await supabase
+              .from('user_settings')
+              .upsert({
+                user_id: user.id,
+                settings_type: 'tab_order',
+                settings_data: { order: newOrder } as any
+              }, {
+                onConflict: 'user_id,settings_type'
+              });
+
+            if (error) {
+              console.error('Error auto-saving tab order:', error);
+              toast({
+                title: "Error",
+                description: "Failed to save tab order",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Tab reordered",
+                description: "Changes saved automatically",
+                duration: 2000,
+              });
+            }
+          } catch (error) {
+            console.error('Error auto-saving tab order:', error);
+          }
+        }
       }
     }
   };

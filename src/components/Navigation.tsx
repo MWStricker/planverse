@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, Save, X, MoreVertical } from "lucide-react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,7 +19,6 @@ interface NavigationProps {
   onPageChange: (page: string) => void;
   isReorderMode?: boolean;
   onToggleReorder?: () => void;
-  onSaveOrder?: () => void;
   onCancelReorder?: () => void;
 }
 
@@ -28,7 +27,6 @@ export const Navigation = ({
   onPageChange, 
   isReorderMode = false,
   onToggleReorder,
-  onSaveOrder,
   onCancelReorder
 }: NavigationProps) => {
   const [notifications] = useState(0);
@@ -177,25 +175,15 @@ export const Navigation = ({
               >
                 <MoreVertical className="h-3 w-3" />
               </Button>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onCancelReorder}
-                  className="h-6 w-6 p-0 hover:bg-muted/30"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onSaveOrder}
-                  className="h-6 w-6 p-0 hover:bg-primary/20"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </>
+             ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancelReorder}
+                className="h-6 w-6 p-0 hover:bg-muted/30"
+              >
+                <X className="h-3 w-3" />
+              </Button>
             )}
           </div>
         </div>
