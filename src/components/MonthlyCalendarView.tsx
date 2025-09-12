@@ -232,14 +232,14 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                     <div className="font-semibold leading-tight truncate mb-1">{event.title}</div>
                     <div className="text-xs opacity-80 truncate flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-current opacity-60"></span>
-                      {event.start_time ? (() => {
-                        const date = new Date(event.start_time);
-                        if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-                          const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                          return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                        }
-                        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                      })() : 'All day'}
+                        {event.start_time ? (() => {
+                          const date = new Date(event.start_time);
+                          if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
+                            const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                            return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                          }
+                          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                        })() : 'All day'}
                     </div>
                   </div>
                 ))}
@@ -261,7 +261,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                       {task.title}
                     </div>
                     <div className="text-xs opacity-70 truncate">
-                      Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'Today'}
+                      Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Today'}
                     </div>
                   </div>
                 ))}
