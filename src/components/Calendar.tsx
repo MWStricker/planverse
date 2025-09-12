@@ -219,6 +219,14 @@ const Calendar = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
+  
+  // Cache for preloaded data
+  const [dataCache, setDataCache] = useState<Map<string, {
+    tasks: Task[];
+    events: Event[];
+    sessions: StudySession[];
+    timestamp: number;
+  }>>(new Map());
   const [canvasFeedUrl, setCanvasFeedUrl] = useState('');
   const [isAddingFeed, setIsAddingFeed] = useState(false);
   const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
@@ -319,7 +327,8 @@ const Calendar = () => {
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      fetchDataWithCache();
+      preloadAdjacentPeriods();
     }
   }, [user, currentDate, showAllTasks]);
 
@@ -353,49 +362,87 @@ const Calendar = () => {
     fetchStoredColors();
   }, [user?.id]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const getCacheKey = (date: Date, mode: 'month' | 'week') => {
+    if (mode === 'week') {
+      const weekStart = startOfWeek(date, { weekStartsOn: 0 });
+      return `week-${format(weekStart, 'yyyy-MM-dd')}`;
+    } else {
+      return `month-${format(date, 'yyyy-MM')}`;
+    }
+  };
+
+  const fetchDataForPeriod = async (date: Date, mode: 'month' | 'week') => {
+    const cacheKey = getCacheKey(date, mode);
+    
+    // Check cache first (valid for 5 minutes)
+    const cached = dataCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+      return cached;
+    }
+
+    // Calculate date range for the period
+    let rangeStart: Date, rangeEnd: Date;
+    if (mode === 'week') {
+      rangeStart = startOfWeek(date, { weekStartsOn: 0 });
+      rangeEnd = endOfWeek(date, { weekStartsOn: 0 });
+    } else {
+      const monthStart = startOfMonth(date);
+      const monthEnd = endOfMonth(date);
+      rangeStart = startOfWeek(monthStart);
+      rangeEnd = endOfWeek(monthEnd);
+    }
+
     try {
-      // Fetch all data in parallel for better performance
+      // Fetch data for this specific period
       const tasksQuery = supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user?.id);
       
-      // Only apply date filter if not showing all tasks
       if (!showAllTasks) {
         tasksQuery
-          .gte('due_date', calendarStart.toISOString())
-          .lte('due_date', calendarEnd.toISOString());
+          .gte('due_date', rangeStart.toISOString())
+          .lte('due_date', rangeEnd.toISOString());
       }
 
       const [tasksResult, eventsResult, sessionsResult] = await Promise.allSettled([
         tasksQuery,
-        
-        // For events, fetch ALL Canvas events (not date-filtered) to show courses correctly
         supabase
           .from('events')
           .select('*')
           .eq('user_id', user?.id),
-        
         supabase
           .from('study_sessions')
           .select('*')
           .eq('user_id', user?.id)
-          .gte('start_time', calendarStart.toISOString())
-          .lte('start_time', calendarEnd.toISOString())
+          .gte('start_time', rangeStart.toISOString())
+          .lte('start_time', rangeEnd.toISOString())
       ]);
 
-      // Set data from successful requests
-      if (tasksResult.status === 'fulfilled') {
-        setTasks(tasksResult.value.data || []);
-      }
-      if (eventsResult.status === 'fulfilled') {
-        setEvents(eventsResult.value.data || []);
-      }
-      if (sessionsResult.status === 'fulfilled') {
-        setStudySessions(sessionsResult.value.data || []);
-      }
+      const data = {
+        tasks: tasksResult.status === 'fulfilled' ? (tasksResult.value.data || []) : [],
+        events: eventsResult.status === 'fulfilled' ? (eventsResult.value.data || []) : [],
+        sessions: sessionsResult.status === 'fulfilled' ? (sessionsResult.value.data || []) : [],
+        timestamp: Date.now()
+      };
+
+      // Cache the result
+      setDataCache(prev => new Map(prev.set(cacheKey, data)));
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching data for period:', error);
+      return { tasks: [], events: [], sessions: [], timestamp: Date.now() };
+    }
+  };
+
+  const fetchDataWithCache = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchDataForPeriod(currentDate, viewMode);
+      setTasks(data.tasks);
+      setEvents(data.events);
+      setStudySessions(data.sessions);
 
       // Fetch weather data in parallel (don't block calendar render)
       if (userLocation) {
@@ -408,6 +455,26 @@ const Calendar = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const preloadAdjacentPeriods = async () => {
+    if (!user) return;
+    
+    // Preload previous and next periods in the background
+    const prevDate = viewMode === 'week' ? subWeeks(currentDate, 1) : subMonths(currentDate, 1);
+    const nextDate = viewMode === 'week' ? addWeeks(currentDate, 1) : addMonths(currentDate, 1);
+    
+    // Don't wait for these - preload in background
+    fetchDataForPeriod(prevDate, viewMode).catch(error => 
+      console.error('Preload previous period failed:', error)
+    );
+    fetchDataForPeriod(nextDate, viewMode).catch(error => 
+      console.error('Preload next period failed:', error)
+    );
+  };
+
+  const fetchData = async () => {
+    return fetchDataWithCache();
   };
 
   const fetchWeatherData = async () => {
@@ -1176,10 +1243,23 @@ const Calendar = () => {
   };
 
   const navigate = (direction: 'prev' | 'next') => {
-    if (viewMode === 'week') {
-      navigateWeek(direction);
+    const newDate = viewMode === 'week' 
+      ? (direction === 'prev' ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1))
+      : (direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
+    
+    // Check if data is already cached for instant navigation
+    const cacheKey = getCacheKey(newDate, viewMode);
+    const cached = dataCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+      // Instant navigation with cached data
+      setCurrentDate(newDate);
+      setTasks(cached.tasks);
+      setEvents(cached.events);
+      setStudySessions(cached.sessions);
     } else {
-      navigateMonth(direction);
+      // Fallback to normal navigation if not cached
+      setCurrentDate(newDate);
     }
   };
 
