@@ -89,6 +89,9 @@ export const CanvasColorSync = () => {
             onChange={(e) => setIcsUrl(e.target.value)}
             placeholder="https://colostate.instructure.com/feeds/calendars/user_..."
             className="w-full"
+            autoComplete="off"
+            data-form-type="other"
+            name="canvas-feed-url"
           />
           <p className="text-xs text-muted-foreground">
             You can find this URL in your Canvas Calendar → Calendar Feed

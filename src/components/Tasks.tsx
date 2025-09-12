@@ -730,7 +730,12 @@ export const Tasks = () => {
                     <FormItem>
                       <FormLabel>Task Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter task title..." {...field} />
+                        <Input 
+                          placeholder="Enter task title..." 
+                          autoComplete="off" 
+                          data-form-type="other"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -758,7 +763,12 @@ export const Tasks = () => {
                     <FormItem>
                       <FormLabel>Course (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter course name..." {...field} />
+                        <Input 
+                          placeholder="Enter course name..." 
+                          autoComplete="off" 
+                          data-form-type="other"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -949,7 +959,12 @@ export const Tasks = () => {
                     <FormItem>
                       <FormLabel>Task Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter task title..." {...field} />
+                        <Input 
+                          placeholder="Enter task title..." 
+                          autoComplete="off" 
+                          data-form-type="other"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -977,7 +992,12 @@ export const Tasks = () => {
                     <FormItem>
                       <FormLabel>Course (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter course name..." {...field} />
+                        <Input 
+                          placeholder="Enter course name..." 
+                          autoComplete="off" 
+                          data-form-type="other"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1244,6 +1264,9 @@ export const Tasks = () => {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search tasks and assignments..."
+                  autoComplete="off"
+                  data-form-type="other"
+                  name="task-search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"

@@ -862,7 +862,12 @@ export const Dashboard = () => {
                         <FormItem>
                           <FormLabel>Task Title</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter task title..." {...field} />
+                            <Input 
+                              placeholder="Enter task title..." 
+                              autoComplete="off" 
+                              data-form-type="other"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -890,7 +895,12 @@ export const Dashboard = () => {
                         <FormItem>
                           <FormLabel>Course (Optional)</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter course name..." {...field} />
+                            <Input 
+                              placeholder="Enter course name..." 
+                              autoComplete="off" 
+                              data-form-type="other"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
