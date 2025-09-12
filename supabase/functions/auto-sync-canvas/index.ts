@@ -191,9 +191,10 @@ function parseICSDate(dateStr: string): string {
           }
           console.log(`Applied timezone offset for ${timezone}: ${offset || 'UTC'}`);
         } else {
-          // No timezone specified - for Canvas assignments, assume this is already in the intended local time
-          // Don't convert to UTC, just add the local timezone offset to maintain the intended time
-          result += '-07:00'; // Mountain Time offset for assignments due at 11:59 PM
+          // No timezone specified - Canvas assignments should be treated as local time
+          // Don't add any timezone offset, let the database store it as provided
+          // This preserves the intended 11:59 PM time
+          console.log(`No timezone specified, treating as local time: ${result}`);
         }
         
         console.log(`Parsed datetime: ${result} (original: ${dateStr})`);
@@ -205,8 +206,8 @@ function parseICSDate(dateStr: string): string {
       const month = cleanDateStr.substr(4, 2);
       const day = cleanDateStr.substr(6, 2);
       
-      // For date-only events, use end of day (11:59:59 PM)
-      const result = `${year}-${month}-${day}T23:59:59Z`;
+      // For date-only events, use end of day (11:59:59 PM) without timezone conversion
+      const result = `${year}-${month}-${day}T23:59:59`;
       console.log(`Parsed date-only: ${result} (original: ${dateStr})`);
       return result;
     }

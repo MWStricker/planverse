@@ -200,10 +200,26 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                       <div className="font-medium leading-tight">{task.title}</div>
                       <div className="text-xs opacity-70">
                         Due: {task.due_date ? (() => {
-                          const date = new Date(task.due_date);
-                          console.log('Task due_date raw:', task.due_date);
-                          console.log('Task due_date parsed:', date);
-                          console.log('Task due_date time:', date.toLocaleTimeString());
+                          // Parse the date and show the intended time (11:59 PM should show as 11:59 PM)
+                          const dateStr = task.due_date;
+                          let date;
+                          
+                          if (!dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
+                            // No timezone info, treat as intended local time
+                            date = new Date(dateStr);
+                          } else {
+                            // Has timezone info - for assignments that should be 11:59 PM, 
+                            // we need to interpret the time correctly
+                            date = new Date(dateStr);
+                            
+                            // Check if this looks like a Canvas assignment (ends in 23:59:59)
+                            if (dateStr.includes('23:59:59') && date.getHours() !== 23) {
+                              // This is a Canvas assignment that got timezone-converted
+                              // Create a new date with the intended 11:59 PM time
+                              date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                            }
+                          }
+                          
                           return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                         })() : 'No time'}
                       </div>
