@@ -47,60 +47,60 @@ const timeSlots = [
 
 const getEventColor = (title: string, eventType: string, sourceProvider?: string) => {
   // Fitness-related events (pink/red family)
-  if (title.toLowerCase().includes('fitness') || title.toLowerCase().includes('workout')) {
-    return 'bg-red-200 border-red-300 text-red-800';
+  if (title.toLowerCase().includes("fitness") || title.toLowerCase().includes("workout")) {
+    return "bg-red-200 border-red-300 text-red-800";
   }
   
   // Writing/academic related (yellow family)
-  if (title.toLowerCase().includes('write') || title.toLowerCase().includes('writing') || title.toLowerCase().includes('publish')) {
-    return 'bg-yellow-200 border-yellow-300 text-yellow-800';
+  if (title.toLowerCase().includes("write") || title.toLowerCase().includes("writing") || title.toLowerCase().includes("publish")) {
+    return "bg-yellow-200 border-yellow-300 text-yellow-800";
   }
   
   // Travel/validation related (cyan family)
-  if (title.toLowerCase().includes('travel') || title.toLowerCase().includes('validation')) {
-    return 'bg-cyan-200 border-cyan-300 text-cyan-800';
+  if (title.toLowerCase().includes("travel") || title.toLowerCase().includes("validation")) {
+    return "bg-cyan-200 border-cyan-300 text-cyan-800";
   }
   
   // Booking/tickets (blue family)
-  if (title.toLowerCase().includes('book') || title.toLowerCase().includes('ticket')) {
-    return 'bg-blue-400 border-blue-500 text-white';
+  if (title.toLowerCase().includes("book") || title.toLowerCase().includes("ticket")) {
+    return "bg-blue-400 border-blue-500 text-white";
   }
   
   // Agency/work related (light blue family)
-  if (title.toLowerCase().includes('agency') || title.toLowerCase().includes('work') || title.toLowerCase().includes('weekly') || title.toLowerCase().includes('commons')) {
-    return 'bg-blue-200 border-blue-300 text-blue-800';
+  if (title.toLowerCase().includes("agency") || title.toLowerCase().includes("work") || title.toLowerCase().includes("weekly") || title.toLowerCase().includes("commons")) {
+    return "bg-blue-200 border-blue-300 text-blue-800";
   }
   
   // Food/dining (orange family)
-  if (title.toLowerCase().includes('lunch') || title.toLowerCase().includes('dinner') || title.toLowerCase().includes('food') || title.toLowerCase().includes('salad')) {
-    return 'bg-orange-200 border-orange-300 text-orange-800';
+  if (title.toLowerCase().includes("lunch") || title.toLowerCase().includes("dinner") || title.toLowerCase().includes("food") || title.toLowerCase().includes("salad")) {
+    return "bg-orange-200 border-orange-300 text-orange-800";
   }
   
   // Learning/education (purple family)
-  if (title.toLowerCase().includes('learn') || title.toLowerCase().includes('class') || title.toLowerCase().includes('lesson')) {
-    return 'bg-purple-200 border-purple-300 text-purple-800';
+  if (title.toLowerCase().includes("learn") || title.toLowerCase().includes("class") || title.toLowerCase().includes("lesson")) {
+    return "bg-purple-200 border-purple-300 text-purple-800";
   }
   
   // Testing/validation (light green family)
-  if (title.toLowerCase().includes('test') || title.toLowerCase().includes('testing')) {
-    return 'bg-green-200 border-green-300 text-green-800';
+  if (title.toLowerCase().includes("test") || title.toLowerCase().includes("testing")) {
+    return "bg-green-200 border-green-300 text-green-800";
   }
   
   // DONE tasks (light gray)
-  if (title.toLowerCase().includes('done')) {
-    return 'bg-gray-200 border-gray-300 text-gray-700';
+  if (title.toLowerCase().includes("done")) {
+    return "bg-gray-200 border-gray-300 text-gray-700";
   }
   
   // Default colors based on event type
   switch (eventType) {
-    case 'assignment':
-      return 'bg-red-300 border-red-400 text-red-900';
-    case 'exam':
-      return 'bg-red-400 border-red-500 text-white';
-    case 'class':
-      return 'bg-blue-200 border-blue-300 text-blue-800';
+    case "assignment":
+      return "bg-red-300 border-red-400 text-red-900";
+    case "exam":
+      return "bg-red-400 border-red-500 text-white";
+    case "class":
+      return "bg-blue-200 border-blue-300 text-blue-800";
     default:
-      return 'bg-gray-200 border-gray-300 text-gray-800';
+      return "bg-gray-200 border-gray-300 text-gray-800";
   }
 };
 
@@ -120,8 +120,8 @@ export const WeeklyCalendarView = ({ events, tasks, storedColors }: WeeklyCalend
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
   
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    setCurrentWeek(direction === 'prev' ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1));
+  const navigateWeek = (direction: "prev" | "next") => {
+    setCurrentWeek(direction === "prev" ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1));
   };
   
   const getEventsForDay = (day: Date) => {
@@ -168,13 +168,13 @@ export const WeeklyCalendarView = ({ events, tasks, storedColors }: WeeklyCalend
           Week of {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
         </h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigateWeek('prev')}>
+          <Button variant="outline" size="sm" onClick={() => navigateWeek("prev")}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentWeek(new Date())}>
             Today
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigateWeek('next')}>
+          <Button variant="outline" size="sm" onClick={() => navigateWeek("next")}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -191,11 +191,11 @@ export const WeeklyCalendarView = ({ events, tasks, storedColors }: WeeklyCalend
             <div
               key={day.toISOString()}
               className={`p-2 text-center border-r border-gray-300 last:border-r-0 ${
-                isToday(day) ? 'bg-blue-100 text-blue-800 font-semibold' : 'bg-gray-50'
+                isToday(day) ? "bg-blue-100 text-blue-800 font-semibold" : "bg-gray-50"
               }`}
             >
               <div className="text-sm font-medium">
-                {format(day, 'EEE')} {format(day, 'M/d')}
+                {format(day, "EEE")} {format(day, "M/d")}
               </div>
             </div>
           ))}
@@ -242,16 +242,16 @@ export const WeeklyCalendarView = ({ events, tasks, storedColors }: WeeklyCalend
                           height: `${height - 2}px`,
                           top: '2px'
                         }}
-                        title={`${event.title} - ${format(parseISO(event.start_time), 'h:mm a')}${event.end_time ? ` to ${format(parseISO(event.end_time), 'h:mm a')}` : ''}`}
+                        title={`${event.title} - ${format(parseISO(event.start_time), "h:mm a")}${event.end_time ? ` to ${format(parseISO(event.end_time), "h:mm a")}` : ""}`}
                       >
                         <div className="font-medium text-xs leading-tight">
                           {event.title}
                         </div>
                         {event.start_time && (
                           <div className="text-xs opacity-80 mt-0.5">
-                            {format(parseISO(event.start_time), 'h:mm a')}
+                            {format(parseISO(event.start_time), "h:mm a")}
                             {event.end_time && event.start_time !== event.end_time && (
-                              <span> - {format(parseISO(event.end_time), 'h:mm a')}</span>
+                              <span> - {format(parseISO(event.end_time), "h:mm a")}</span>
                             )}
                           </div>
                         )}
@@ -277,7 +277,7 @@ export const WeeklyCalendarView = ({ events, tasks, storedColors }: WeeklyCalend
                       <div className="font-medium truncate text-xs">{task.title}</div>
                       {task.due_date && (
                         <div className="text-xs opacity-70">
-                          Due: {format(parseISO(task.due_date), 'h:mm a')}
+                          Due: {format(parseISO(task.due_date), "h:mm a")}
                         </div>
                       )}
                     </div>
