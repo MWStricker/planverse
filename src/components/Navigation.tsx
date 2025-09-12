@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, Save, X, MoreHorizontal } from "lucide-react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, Save, X, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -175,7 +175,7 @@ export const Navigation = ({
                 onClick={onToggleReorder}
                 className="h-6 w-6 p-0 hover:bg-muted/30"
               >
-                <MoreHorizontal className="h-3 w-3" />
+                <MoreVertical className="h-3 w-3" />
               </Button>
             ) : (
               <>
