@@ -1347,15 +1347,6 @@ const Calendar = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button
-            variant="outline" 
-            size="sm" 
-            onClick={refreshWeather}
-            className="flex items-center gap-2"
-          >
-            <Thermometer className="h-4 w-4" />
-            Refresh Weather
-          </Button>
           <Button variant="outline" size="sm" onClick={() => navigate('prev')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
