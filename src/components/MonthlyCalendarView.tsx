@@ -144,11 +144,14 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
       <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg">
         {/* Header Row - Days of Week */}
         <div className="grid grid-cols-7 bg-gradient-to-r from-muted/30 to-muted/50 backdrop-blur-sm">
-          {weekDays.map((day) => (
+          {weekDays.map((day, index) => (
             <div
               key={day}
               className="p-3 text-center border-r border-border/40 last:border-r-0 relative overflow-hidden bg-muted/20"
             >
+              {index === 0 && (
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-primary/20"></div>
+              )}
               <div className="text-sm font-semibold relative z-10 text-muted-foreground">
                 {day}
               </div>
@@ -163,6 +166,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
             const isCurrentMonthDay = isCurrentMonth(day);
             const isTodayDay = isToday(day);
             const rowIndex = Math.floor(index / 7);
+            const colIndex = index % 7;
             
             return (
               <div
@@ -182,15 +186,26 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary shadow-sm shadow-primary/50"></div>
                 )}
                 
+                {/* Weekly indicator lines */}
+                {colIndex === 0 && (
+                  <div className="absolute left-0 top-0 bottom-0 w-px bg-primary/20"></div>
+                )}
+                
                 {/* Date Number */}
-                <div className={`text-lg font-bold mb-2 relative z-10 ${
-                  isTodayDay 
-                    ? "text-primary" 
-                    : isCurrentMonthDay 
-                      ? "text-foreground" 
-                      : "text-muted-foreground"
-                }`}>
-                  {format(day, "d")}
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-lg font-bold relative z-10 ${
+                    isTodayDay 
+                      ? "text-primary" 
+                      : isCurrentMonthDay 
+                        ? "text-foreground" 
+                        : "text-muted-foreground"
+                  }`}>
+                    {format(day, "d")}
+                  </div>
+                  {/* Today indicator badge */}
+                  {isTodayDay && (
+                    <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+                  )}
                 </div>
                 
                 {/* Add icon for empty cells */}
