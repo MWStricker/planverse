@@ -227,13 +227,20 @@ export const Settings = () => {
   };
 
   const handleSignOut = async () => {
+    console.log('Sign out button clicked');
+    console.log('Current user:', user);
+    console.log('User ID:', user?.id);
+    
     try {
+      console.log('Calling signOut function...');
       await signOut();
+      console.log('SignOut completed successfully');
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",
       });
     } catch (error) {
+      console.error('Sign out error in Settings:', error);
       toast({
         title: "Sign out failed",
         description: "An error occurred while signing out. Please try again.",
