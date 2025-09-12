@@ -67,7 +67,10 @@ export const CanvasColorSync = () => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <form autoComplete="off" data-form-type="other" onSubmit={(e) => e.preventDefault()}>
+      <input type="password" autoComplete="new-password" style={{display:'none', position:'absolute', left:'-9999px'}} />
+      <input type="text" autoComplete="off" style={{display:'none', position:'absolute', left:'-9999px'}} />
+      <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Palette className="h-5 w-5" />
@@ -89,9 +92,13 @@ export const CanvasColorSync = () => {
             onChange={(e) => setIcsUrl(e.target.value)}
             placeholder="https://colostate.instructure.com/feeds/calendars/user_..."
             className="w-full"
-            autoComplete="off"
+            autoComplete="new-password"
             data-form-type="other"
-            name="canvas-feed-url"
+            name="canvas-feed-url-unique"
+            spellCheck={false}
+            data-1p-ignore="true"
+            data-lpignore="true"
+            data-bwignore="true"
           />
           <p className="text-xs text-muted-foreground">
             You can find this URL in your Canvas Calendar → Calendar Feed
@@ -130,5 +137,6 @@ export const CanvasColorSync = () => {
         </div>
       </CardContent>
     </Card>
+    </form>
   );
 };

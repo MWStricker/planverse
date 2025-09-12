@@ -89,7 +89,33 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+}
+
+/* Prevent Chrome autofill/autocomplete popups */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px hsl(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Hide autofill suggestion dropdown */
+input::-webkit-credentials-auto-fill-button,
+input::-webkit-caps-lock-indicator,
+input::-webkit-clear-button,
+input::-webkit-search-cancel-button {
+  display: none !important;
+}
+
+/* Prevent password managers from showing suggestions */
+input[data-form-type="other"],
+input[data-1p-ignore],
+input[data-lpignore],
+input[data-bwignore] {
+  background-image: none !important;
+}
 
   .dark {
     --background: 0 0% 0%;
