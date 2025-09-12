@@ -262,6 +262,9 @@ export const Connect = () => {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
+                      autoComplete="off"
+                      data-form-type="other"
+                      name="comment-input"
                     />
                     <Button 
                       size="sm" 

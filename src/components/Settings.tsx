@@ -767,6 +767,9 @@ export const Settings = () => {
                   value={editedProfile.display_name}
                   onChange={(e) => handleProfileChange('display_name', e.target.value)}
                   placeholder="Enter your display name"
+                  autoComplete="off"
+                  data-form-type="other"
+                  name="display-name"
                 />
               </div>
               
@@ -841,6 +844,9 @@ export const Settings = () => {
                   value={editedProfile.campus_location}
                   onChange={(e) => handleProfileChange('campus_location', e.target.value)}
                   placeholder="e.g., Main Campus, Downtown, Online"
+                  autoComplete="off"
+                  data-form-type="other"
+                  name="campus-location"
                 />
               </div>
               
@@ -851,6 +857,9 @@ export const Settings = () => {
                   value={editedProfile.bio}
                   onChange={(e) => handleProfileChange('bio', e.target.value)}
                   placeholder="Tell others about yourself..."
+                  autoComplete="off"
+                  data-form-type="other"
+                  name="user-bio"
                 />
               </div>
               
@@ -864,6 +873,9 @@ export const Settings = () => {
                   placeholder="e.g., 2025"
                   min="2020"
                   max="2030"
+                  autoComplete="off"
+                  data-form-type="other"
+                  name="graduation-year"
                 />
               </div>
             </CardContent>

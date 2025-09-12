@@ -423,6 +423,9 @@ export const OCRUpload = () => {
                   onChange={handleFileSelect}
                   className="hidden"
                   id="file-upload"
+                  autoComplete="off"
+                  data-form-type="other"
+                  name="file-upload"
                 />
               </div>
             )}
