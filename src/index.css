@@ -203,66 +203,58 @@
   }
 }
 
-/* Force scrollbars to always be visible on calendar cells */
-.force-scrollbar {
+/* Force scrollbars to ALWAYS be visible when there are multiple items */
+.force-scrollbar-always {
   scrollbar-width: auto !important;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.7) hsl(var(--muted) / 0.4) !important;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.8) hsl(var(--muted) / 0.5) !important;
   overflow-y: scroll !important;
+  /* Force scrollbar space to always be reserved */
+  scrollbar-gutter: stable both-edges !important;
 }
 
-.force-scrollbar::-webkit-scrollbar {
-  width: 8px !important;
-  height: 8px !important;
+.force-scrollbar-always::-webkit-scrollbar {
+  width: 10px !important;
+  background: hsl(var(--muted) / 0.5) !important;
   display: block !important;
-  -webkit-appearance: auto !important;
+  -webkit-appearance: none !important;
 }
 
-.force-scrollbar::-webkit-scrollbar-track {
-  background: hsl(var(--muted) / 0.4) !important;
-  border-radius: 4px !important;
+.force-scrollbar-always::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.5) !important;
+  border-radius: 5px !important;
   display: block !important;
+  box-shadow: inset 0 0 2px hsl(var(--muted-foreground) / 0.2) !important;
 }
 
-.force-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.7) !important;
-  border-radius: 4px !important;
-  min-height: 24px !important;
+.force-scrollbar-always::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.8) !important;
+  border-radius: 5px !important;
+  min-height: 30px !important;
   display: block !important;
   visibility: visible !important;
+  /* Force the thumb to always show */
+  height: 100% !important;
 }
 
-.force-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.9) !important;
+.force-scrollbar-always::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.8) !important;
 }
 
-/* Custom scrollbar styles for calendar day cells - always visible */
+/* Fallback scrollbar for cells with fewer items */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.6) hsl(var(--muted) / 0.3);
-  scrollbar-gutter: stable;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
-  display: block;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: hsl(var(--muted) / 0.3);
-  border-radius: 3px;
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.6);
+  background: hsl(var(--muted-foreground) / 0.4);
   border-radius: 3px;
-  transition: background-color 0.2s ease;
-  min-height: 20px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.8);
-}
-
-.custom-scrollbar::-webkit-scrollbar-corner {
-  background: transparent;
 }
