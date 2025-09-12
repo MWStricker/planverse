@@ -634,8 +634,9 @@ const SortableCourseCard = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : (transition || 'transform 200ms cubic-bezier(0.2, 0, 0, 1)'),
+    transition: isDragging ? 'none' : undefined,
     zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.8 : 1,
   };
 
   const CourseIcon = course.icon;
@@ -697,11 +698,10 @@ const SortableCourseCard = ({
     <Card 
       ref={setNodeRef} 
       style={style} 
-      className={`${course.color} border-2 transition-all duration-200 ease-out ${
-        isDragging ? 'shadow-2xl ring-4 ring-primary/20 scale-105 rotate-1' : 
-        isOver ? 'ring-2 ring-primary/40' : ''
+      className={`${course.color} border-2 transition-opacity duration-150 ${
+        isDragging ? 'shadow-lg' : ''
       } ${
-        isReorderMode ? 'cursor-grab active:cursor-grabbing hover:shadow-lg' : ''
+        isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
       {...(isReorderMode ? { ...attributes, ...listeners } : {})}
     >
