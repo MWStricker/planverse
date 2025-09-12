@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, getHours } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
 
 interface Event {
   id: string;
@@ -88,23 +87,14 @@ const getEventColorClass = (title: string) => {
 };
 
 export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek }: WeeklyCalendarViewProps) => {
-  const { toast } = useToast();
+  const [expandedCell, setExpandedCell] = useState<string | null>(null);
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const handleCellClick = (day: Date, hour: number) => {
-    const clickedDateTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0);
-    toast({
-      title: "Time Slot Clicked",
-      description: `${format(day, 'EEE, MMM d')} at ${hour > 12 ? hour - 12 : hour === 0 ? 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`,
-    });
-    console.log('Clicked time slot:', {
-      date: clickedDateTime.toLocaleDateString(),
-      time: clickedDateTime.toLocaleTimeString(),
-      day: day,
-      hour: hour
-    });
+    const cellKey = `${day.toISOString()}-${hour}`;
+    setExpandedCell(expandedCell === cellKey ? null : cellKey);
   };
   
   const getItemsForTimeSlot = (day: Date, hour: number) => {
@@ -166,16 +156,32 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
             {/* Day Cells */}
             {weekDays.map((day) => {
               const { events: slotEvents, tasks: slotTasks } = getItemsForTimeSlot(day, timeSlot.hour);
+              const cellKey = `${day.toISOString()}-${timeSlot.hour}`;
+              const isExpanded = expandedCell === cellKey;
               
               return (
                 <div
-                  key={`${day.toISOString()}-${timeSlot.hour}`}
-                  className="min-h-[50px] border-r border-b border-gray-300 last:border-r-0 p-1 space-y-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative group"
+                  key={cellKey}
+                  className={`${isExpanded ? 'min-h-[200px]' : 'min-h-[50px]'} border-r border-b border-gray-300 last:border-r-0 p-1 space-y-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 relative group ${isExpanded ? 'bg-blue-50 dark:bg-blue-900/20 shadow-lg z-10' : ''}`}
                   onClick={() => handleCellClick(day, timeSlot.hour)}
-                  title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to add event/task`}
+                  title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to ${isExpanded ? 'collapse' : 'expand'} details`}
                 >
+                  {/* Expanded cell header */}
+                  {isExpanded && (
+                    <div className="mb-2 p-2 bg-white dark:bg-gray-800 rounded border">
+                      <h3 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
+                        {format(day, 'EEEE, MMMM d')} at {timeSlot.label}
+                      </h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {slotEvents.length + slotTasks.length === 0 
+                          ? 'No events or tasks scheduled' 
+                          : `${slotEvents.length} events, ${slotTasks.length} tasks`}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Add icon for empty cells */}
-                  {slotEvents.length === 0 && slotTasks.length === 0 && (
+                  {!isExpanded && slotEvents.length === 0 && slotTasks.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
                       <div className="text-gray-400 text-xs">+</div>
                     </div>
@@ -189,29 +195,41 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                       title={event.title}
                       onClick={(e) => {
                         e.stopPropagation();
-                        toast({
-                          title: "Event Clicked",
-                          description: event.title,
-                        });
                         console.log('Clicked event:', event);
                       }}
                     >
                       <div className="font-medium leading-tight">{event.title}</div>
-                      <div className="text-xs opacity-80">
-                        {event.start_time ? (() => {
-                          // Fix Canvas assignments that should be 11:59 PM but show as 5:59 PM
-                          const date = new Date(event.start_time);
-                          
-                          // Check if this is a Canvas assignment with 23:59:59+00 (UTC midnight) that should display as 11:59 PM local
-                          if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-                            // Create a new date with 11:59 PM local time
-                            const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                            return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                          }
-                          
-                          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                        })() : 'No time'}
-                      </div>
+                      {isExpanded ? (
+                        <div className="space-y-1 mt-1">
+                          <div className="text-xs opacity-80">
+                            Time: {event.start_time ? (() => {
+                              const date = new Date(event.start_time);
+                              if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
+                                const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                                return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                              }
+                              return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            })() : 'No time'}
+                          </div>
+                          {event.event_type && (
+                            <div className="text-xs opacity-70">Type: {event.event_type}</div>
+                          )}
+                          {event.source_provider && (
+                            <div className="text-xs opacity-70">Source: {event.source_provider}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-xs opacity-80">
+                          {event.start_time ? (() => {
+                            const date = new Date(event.start_time);
+                            if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
+                              const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                              return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            }
+                            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                          })() : 'No time'}
+                        </div>
+                      )}
                     </div>
                   ))}
                   
@@ -223,17 +241,30 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                       title={task.title}
                       onClick={(e) => {
                         e.stopPropagation();
-                        toast({
-                          title: "Task Clicked",
-                          description: task.title,
-                        });
                         console.log('Clicked task:', task);
                       }}
                     >
                       <div className="font-medium leading-tight">{task.title}</div>
-                      <div className="text-xs opacity-70">
-                        Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
-                      </div>
+                      {isExpanded ? (
+                        <div className="space-y-1 mt-1">
+                          <div className="text-xs opacity-70">
+                            Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
+                          </div>
+                          {task.priority_score !== undefined && (
+                            <div className="text-xs opacity-70">Priority: {task.priority_score}</div>
+                          )}
+                          {task.completion_status && (
+                            <div className="text-xs opacity-70">Status: {task.completion_status}</div>
+                          )}
+                          {task.course_name && (
+                            <div className="text-xs opacity-70">Course: {task.course_name}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-xs opacity-70">
+                          Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
