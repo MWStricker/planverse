@@ -59,10 +59,27 @@ export const EventTaskModal = ({
   const isCreatingNew = !event && !task;
 
   const handleSave = async () => {
+    console.log('handleSave called');
+    console.log('editedTitle:', editedTitle);
+    console.log('editedNotes:', editedNotes);
+    console.log('user:', user);
+    console.log('isCreatingNew:', isCreatingNew);
+
     if (!editedTitle.trim()) {
+      console.log('No title provided');
       toast({
         title: "Error",
         description: "Please enter a title",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      console.log('No user ID found');
+      toast({
+        title: "Error",
+        description: "You must be logged in to create tasks",
         variant: "destructive",
       });
       return;
@@ -72,23 +89,33 @@ export const EventTaskModal = ({
 
     try {
       if (isCreatingNew) {
+        console.log('Creating new task...');
         // Create new task
         const dueDate = selectedDate 
           ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), selectedHour || 12, 0)
           : new Date();
 
-        const { error } = await supabase
+        console.log('Due date:', dueDate);
+
+        const taskData = {
+          user_id: user.id,
+          title: editedTitle,
+          description: editedNotes,
+          due_date: dueDate.toISOString(),
+          priority_score: parseInt(editedPriority),
+          completion_status: editedStatus,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('Task data:', taskData);
+
+        const { data, error } = await supabase
           .from('tasks')
-          .insert({
-            user_id: user?.id,
-            title: editedTitle,
-            description: editedNotes,
-            due_date: dueDate.toISOString(),
-            priority_score: parseInt(editedPriority),
-            completion_status: editedStatus,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
+          .insert(taskData)
+          .select();
+
+        console.log('Supabase response:', { data, error });
 
         if (error) throw error;
 
@@ -178,12 +205,21 @@ export const EventTaskModal = ({
                 suppressContentEditableWarning
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-lg font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
                 data-placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
-                onInput={(e) => setEditedTitle(e.currentTarget.textContent || "")}
+                onInput={(e) => {
+                  const newValue = e.currentTarget.textContent || "";
+                  console.log('Title input changed:', newValue);
+                  setEditedTitle(newValue);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') e.preventDefault();
                 }}
-                dangerouslySetInnerHTML={{ __html: editedTitle }}
-              />
+                onBlur={(e) => {
+                  const newValue = e.currentTarget.textContent || "";
+                  setEditedTitle(newValue);
+                }}
+              >
+                {editedTitle}
+              </div>
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
                 {event?.title || task?.title}
@@ -334,9 +370,18 @@ export const EventTaskModal = ({
                 suppressContentEditableWarning
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 whitespace-pre-wrap empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
                 data-placeholder="Add notes or description..."
-                onInput={(e) => setEditedNotes(e.currentTarget.textContent || "")}
-                dangerouslySetInnerHTML={{ __html: editedNotes }}
-              />
+                onInput={(e) => {
+                  const newValue = e.currentTarget.textContent || "";
+                  console.log('Notes input changed:', newValue);
+                  setEditedNotes(newValue);
+                }}
+                onBlur={(e) => {
+                  const newValue = e.currentTarget.textContent || "";
+                  setEditedNotes(newValue);
+                }}
+              >
+                {editedNotes}
+              </div>
             ) : (
               <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
                 <p className="text-sm text-muted-foreground">
