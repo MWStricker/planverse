@@ -53,36 +53,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('Current user before signout:', user);
     
     try {
+      // Clear local state first
+      console.log('Clearing local state first...');
+      setSession(null);
+      setUser(null);
+      
+      // Clear localStorage manually to ensure session is removed
+      console.log('Clearing localStorage...');
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.clear();
+      
       console.log('Calling supabase.auth.signOut()...');
       const { error } = await supabase.auth.signOut();
       console.log('Supabase signOut response:', { error });
       
       if (error) {
         console.error('Sign out error:', error);
-        // Clear local state even if signOut fails
-        setSession(null);
-        setUser(null);
-        // Force redirect to auth page
-        console.log('Redirecting to /auth due to error...');
-        window.location.href = '/auth';
-        return;
       }
       
-      // Clear local state on successful signout
-      console.log('Sign out successful, clearing state...');
-      setSession(null);
-      setUser(null);
+      // Force redirect to auth page
+      console.log('Force redirecting to /auth...');
+      window.location.replace('/auth');
       
-      // Navigate to auth page
-      console.log('Redirecting to /auth...');
-      window.location.href = '/auth';
     } catch (error) {
       console.error('Unexpected sign out error:', error);
-      // Force clear session and redirect
+      // Force clear everything and redirect
       setSession(null);
       setUser(null);
-      console.log('Redirecting to /auth due to unexpected error...');
-      window.location.href = '/auth';
+      localStorage.clear();
+      console.log('Force redirecting to /auth due to error...');
+      window.location.replace('/auth');
     }
   };
 
