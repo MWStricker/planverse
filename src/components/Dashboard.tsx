@@ -1031,7 +1031,7 @@ export const Dashboard = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium text-sm text-foreground">{task.title}</p>
                             {task.source_provider === 'canvas' && (
-                              <Badge variant="outline" className="text-xs h-5 px-2 bg-blue-50 border-blue-200 text-blue-700">
+                              <Badge variant="secondary" className="text-xs h-5 px-2 bg-transparent border-0">
                                 Canvas
                               </Badge>
                             )}
@@ -1123,7 +1123,7 @@ export const Dashboard = () => {
                             {task.title}
                           </h3>
                           {task.course && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="secondary" className="text-xs bg-transparent border-0">
                               {task.course}
                             </Badge>
                           )}
@@ -1174,12 +1174,12 @@ export const Dashboard = () => {
                             {task.title}
                           </h3>
                           {task.source_provider === 'canvas' && (
-                            <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                            <Badge variant="secondary" className="text-xs bg-transparent border-0">
                               Canvas
                             </Badge>
                           )}
                           {task.event_type === 'assignment' && (
-                            <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                            <Badge variant="secondary" className="text-xs bg-transparent border-0">
                               Assignment
                             </Badge>
                           )}
@@ -1354,17 +1354,17 @@ export const Dashboard = () => {
               {/* Badges */}
               <div className="flex flex-wrap gap-2">
                 {selectedTask.source_provider === 'canvas' && (
-                  <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-700">
+                  <Badge variant="secondary" className="bg-transparent border-0">
                     Canvas
                   </Badge>
                 )}
                 {selectedTask.event_type === 'assignment' && (
-                  <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                  <Badge variant="secondary" className="bg-transparent border-0">
                     Assignment
                   </Badge>
                 )}
                 {selectedTask.course_name && (
-                  <Badge variant="outline">
+                  <Badge variant="secondary" className="bg-transparent border-0">
                     {selectedTask.course_name}
                   </Badge>
                 )}
