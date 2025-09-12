@@ -213,7 +213,7 @@ const Calendar = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('week');
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -1297,15 +1297,6 @@ const Calendar = () => {
           </h1>
           <div className="flex gap-1 p-1 bg-muted rounded-lg">
             <Button
-              variant={viewMode === 'month' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('month')}
-              className="flex items-center gap-1"
-            >
-              <Grid className="h-4 w-4" />
-              Month
-            </Button>
-            <Button
               variant={viewMode === 'week' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('week')}
@@ -1313,6 +1304,15 @@ const Calendar = () => {
             >
               <List className="h-4 w-4" />
               Week
+            </Button>
+            <Button
+              variant={viewMode === 'month' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('month')}
+              className="flex items-center gap-1"
+            >
+              <Grid className="h-4 w-4" />
+              Month
             </Button>
           </div>
         </div>
