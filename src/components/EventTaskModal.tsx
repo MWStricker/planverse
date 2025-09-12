@@ -83,9 +83,9 @@ export const EventTaskModal = ({
     let displayTime;
     if (sourceProvider === 'canvas' && dateString.includes('23:59:59+00')) {
       const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-      displayTime = fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      displayTime = fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     } else {
-      displayTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      displayTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     }
     
     return {

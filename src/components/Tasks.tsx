@@ -837,10 +837,10 @@ export const Tasks = () => {
                               const hour = Math.floor(i / 4);
                               const minute = (i % 4) * 15;
                               const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                              const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
+                               const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                                 hour: '2-digit',
+                                 minute: '2-digit',
+                                 hour12: true
                               });
                               return (
                                 <SelectItem key={timeString} value={timeString}>
@@ -1051,10 +1051,10 @@ export const Tasks = () => {
                               const hour = Math.floor(i / 4);
                               const minute = (i % 4) * 15;
                               const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                              const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
+                               const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                                 hour: '2-digit',
+                                 minute: '2-digit',
+                                 hour12: true
                               });
                               return (
                                 <SelectItem key={timeString} value={timeString}>

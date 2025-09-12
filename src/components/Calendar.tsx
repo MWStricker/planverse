@@ -1470,7 +1470,7 @@ const Calendar = () => {
                                {task.due_date && (
                                  <div className="text-xs text-muted-foreground ml-2.5 flex items-center gap-1">
                                    <Clock className="h-3 w-3" />
-                                   {format(new Date(task.due_date), 'h:mm a')}
+                                    {format(new Date(task.due_date), 'hh:mm a')}
                                  </div>
                                )}
                              </div>
@@ -1523,7 +1523,7 @@ const Calendar = () => {
                                 {event.start_time && (
                                   <div className="text-xs text-muted-foreground ml-2 flex items-center gap-1 mt-0.5">
                                     <Clock className="h-3 w-3" />
-                                    {format(new Date(event.start_time), 'h:mm a')}
+                                     {format(new Date(event.start_time), 'hh:mm a')}
                                   </div>
                                 )}
                              </div>
@@ -1846,7 +1846,7 @@ const Calendar = () => {
                                   {item.dueDate && (
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <Clock className="h-3 w-3" />
-                                      Due: {format(item.dueDate, 'MMM d, yyyy h:mm a')}
+                                      Due: {format(item.dueDate, 'MMM d, yyyy hh:mm a')}
                                     </div>
                                   )}
                                   {item.description && (
@@ -1969,7 +1969,7 @@ const Calendar = () => {
                                 {task.due_date && (
                                   <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                                     <Clock className="h-3 w-3" />
-                                    Due: {format(new Date(task.due_date), 'h:mm a')}
+                                    Due: {format(new Date(task.due_date), 'hh:mm a')}
                                   </div>
                                 )}
                                 
@@ -2042,10 +2042,10 @@ const Calendar = () => {
                                 {event.start_time && (
                                   <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                                     <Clock className="h-3 w-3" />
-                                    {format(new Date(event.start_time), 'h:mm a')}
-                                    {event.end_time && event.start_time !== event.end_time && (
-                                      <span> - {format(new Date(event.end_time), 'h:mm a')}</span>
-                                    )}
+                                     {format(new Date(event.start_time), 'hh:mm a')}
+                                     {event.end_time && event.start_time !== event.end_time && (
+                                       <span> - {format(new Date(event.end_time), 'hh:mm a')}</span>
+                                     )}
                                   </div>
                                 )}
                                 
@@ -2088,7 +2088,7 @@ const Calendar = () => {
                               {session.start_time && (
                                 <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                                   <Clock className="h-3 w-3" />
-                                  {format(new Date(session.start_time), 'h:mm a')}
+                                  {format(new Date(session.start_time), 'hh:mm a')}
                                 </div>
                               )}
                               
