@@ -211,35 +211,45 @@ export const Courses = () => {
     // First, try to use stored Canvas color
     if (courseCode && storedColors[courseCode]) {
       const color = storedColors[courseCode];
-      return `bg-[${color}] text-white border-[${color}]`;
+      return `border-2 text-white` + ` ` + `bg-[${color}] border-[${color}]`;
     }
     
     // Subject-based color mapping as fallback
     const subjectColors: Record<string, string> = {
-      'HES': '#E74C3C',    // Health - Red
-      'PSY': '#E74C3C',    // Psychology - Red  
-      'LIFE': '#27AE60',   // Life Sciences - Green
-      'LIFE-L': '#27AE60', // Life Sciences Lab - Green
-      'MU': '#27AE60',     // Music - Green
-      'MATH': '#8B4513',   // Mathematics - Brown
+      'HES': 'bg-red-600 text-white border-red-600',         // Health - Red
+      'HES-145': 'bg-red-600 text-white border-red-600',     // Health - Red
+      'PSY': 'bg-red-600 text-white border-red-600',         // Psychology - Red  
+      'PSY-100': 'bg-red-600 text-white border-red-600',     // Psychology - Red  
+      'LIFE': 'bg-green-600 text-white border-green-600',    // Life Sciences - Green
+      'LIFE-102': 'bg-green-600 text-white border-green-600', // Life Sciences - Green
+      'LIFE-102-L': 'bg-green-600 text-white border-green-600', // Life Sciences Lab - Green
+      'MU': 'bg-green-600 text-white border-green-600',      // Music - Green
+      'MU-100': 'bg-green-600 text-white border-green-600',  // Music - Green
+      'MATH': 'bg-amber-700 text-white border-amber-700',    // Mathematics - Brown
+      'MATH-118': 'bg-amber-700 text-white border-amber-700', // Mathematics - Brown
     };
     
     if (courseCode) {
+      // Try exact match first
+      if (subjectColors[courseCode]) {
+        return subjectColors[courseCode];
+      }
+      
+      // Try base code match
       const baseCode = courseCode.split('-')[0];
-      if (subjectColors[courseCode] || subjectColors[baseCode]) {
-        const color = subjectColors[courseCode] || subjectColors[baseCode];
-        return `bg-[${color}] text-white border-[${color}]`;
+      if (subjectColors[baseCode]) {
+        return subjectColors[baseCode];
       }
     }
     
     // Final fallback to CSU green colors
     const colors = [
-      'bg-[#1E7040] text-white border-[#1E7040]', // CSU primary green
-      'bg-[#2E8050] text-white border-[#2E8050]', // CSU light green
-      'bg-[#0E6030] text-white border-[#0E6030]', // CSU dark green
-      'bg-[#3E9060] text-white border-[#3E9060]', // CSU bright green
-      'bg-[#1E5030] text-white border-[#1E5030]', // CSU forest green
-      'bg-[#2E6040] text-white border-[#2E6040]', // CSU medium green
+      'bg-emerald-700 text-white border-emerald-700',
+      'bg-green-700 text-white border-green-700',
+      'bg-teal-700 text-white border-teal-700',
+      'bg-emerald-600 text-white border-emerald-600',
+      'bg-green-600 text-white border-green-600',
+      'bg-teal-600 text-white border-teal-600',
     ];
     
     let hash = 0;
