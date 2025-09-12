@@ -117,16 +117,19 @@ export const EventTaskModal = ({
             {isEditing ? (
               <Input
                 id="title"
+                type="search"
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
                 className="text-lg font-medium"
-                autoComplete="new-password"
-                data-form-type="other"
-                name="event-task-title-unique"
+                autoComplete="nope"
+                data-form-type="search"
+                name={`task-title-${Math.random().toString(36)}`}
                 spellCheck={false}
                 data-1p-ignore="true"
-                data-lpignore="true"
+                data-lpignore="true" 
                 data-bwignore="true"
+                role="textbox"
+                aria-label="Task title input"
               />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
