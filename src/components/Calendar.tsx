@@ -910,6 +910,10 @@ const Calendar = () => {
         });
         // Update local state
         setEvents(events.filter(event => event.id !== eventId));
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        window.dispatchEvent(new CustomEvent('eventsCleared'));
       }
     } catch (error) {
       console.error('Unexpected error:', error);

@@ -146,6 +146,9 @@ export const Dashboard = () => {
         title: isCompleted ? "Item completed" : "Item uncompleted",
         description: "Status updated successfully",
       });
+      
+      // Notify other components to refresh
+      window.dispatchEvent(new CustomEvent('dataRefresh'));
     } catch (error) {
       console.error('Error toggling item completion:', error);
     }
@@ -497,6 +500,9 @@ export const Dashboard = () => {
         setIsAddDialogOpen(false);
         form.reset();
         fetchDashboardData();
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
       }
     } catch (error) {
       console.error('Unexpected error:', error);

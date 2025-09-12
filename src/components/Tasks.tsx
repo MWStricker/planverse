@@ -143,6 +143,9 @@ export const Tasks = () => {
         setIsAddDialogOpen(false);
         resetForm();
         fetchTasks(); // Refresh tasks
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -227,6 +230,9 @@ export const Tasks = () => {
         setEditingTask(null);
         form.reset();
         fetchTasks(); // Refresh tasks
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -405,6 +411,9 @@ export const Tasks = () => {
           description: "Event converted to task successfully",
         });
         fetchTasks(); // Refresh tasks
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -453,6 +462,9 @@ export const Tasks = () => {
           title: "Task updated",
           description: `Task marked as ${newStatus}`,
         });
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -483,6 +495,9 @@ export const Tasks = () => {
         setIsEditDialogOpen(false);
         setEditingTask(null);
         fetchTasks(); // Refresh tasks
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
       }
     } catch (error) {
       console.error('Unexpected error:', error);
