@@ -14,36 +14,17 @@
     <meta name="form-detect" content="off" />
     
     <style>
-      /* ULTRA NUCLEAR - Hide autofill completely */
-      input, textarea, select {
-        display: none !important;
-        visibility: hidden !important;
-        position: absolute !important;
-        left: -99999px !important;
+      /* Simple autofill prevention */
+      input[data-form-type="search"], textarea[data-form-type="search"] {
+        -webkit-autocomplete: off !important;
+        autocomplete: off !important;
       }
       
-      /* Hide all autofill UI */
-      *::-webkit-credentials-auto-fill-button,
-      *::-webkit-contacts-auto-fill-button,
-      *::-webkit-caps-lock-indicator {
+      /* Hide autofill dropdowns */
+      input::-webkit-credentials-auto-fill-button,
+      input::-webkit-contacts-auto-fill-button {
         display: none !important;
         visibility: hidden !important;
-        pointer-events: none !important;
-        position: absolute !important;
-        left: -99999px !important;
-      }
-      
-      /* Block autofill popups */
-      body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        pointer-events: none;
-        z-index: 999999;
-        background: transparent;
       }
     </style>
 

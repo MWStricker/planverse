@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CustomInput } from "@/components/ui/custom-input";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CustomTextarea } from "@/components/ui/custom-textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, BookOpen, AlertCircle, Edit3, Save, X } from "lucide-react";
@@ -172,13 +172,16 @@ export const EventTaskModal = ({
             <Label htmlFor="title" className="text-sm font-medium">
               {event ? "Event" : "Task"} Title
             </Label>
-            {isEditing ? (
-              <CustomInput
+            {isCreatingNew || isEditing ? (
+              <Input
                 id="title"
                 value={editedTitle}
-                onChange={setEditedTitle}
-                placeholder="Enter title..."
+                onChange={(e) => setEditedTitle(e.target.value)}
+                placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
                 className="text-lg font-medium"
+                autoComplete="nope"
+                data-form-type="search"
+                name={`title-${Date.now()}`}
               />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
@@ -251,15 +254,7 @@ export const EventTaskModal = ({
                 
                 <div>
                   <Label className="text-xs text-muted-foreground">Priority</Label>
-            {isCreatingNew ? (
-              <CustomInput
-                id="title"
-                value={editedTitle}
-                onChange={setEditedTitle}
-                placeholder="Enter task title..."
-                className="text-lg font-medium"
-              />
-            ) : isEditing ? (
+                  {isCreatingNew || isEditing ? (
                     <Select value={editedPriority} onValueChange={setEditedPriority}>
                       <SelectTrigger className="w-full mt-1">
                         <SelectValue />
@@ -332,13 +327,16 @@ export const EventTaskModal = ({
           {/* Notes Section */}
           <div className="space-y-2">
             <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
-            {isEditing ? (
-              <CustomTextarea
+            {isCreatingNew || isEditing ? (
+              <Textarea
                 id="notes"
                 value={editedNotes}
-                onChange={setEditedNotes}
+                onChange={(e) => setEditedNotes(e.target.value)}
                 placeholder="Add notes or description..."
                 rows={4}
+                autoComplete="nope"
+                data-form-type="search"
+                name={`notes-${Date.now()}`}
               />
             ) : (
               <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
