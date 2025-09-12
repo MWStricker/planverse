@@ -117,6 +117,9 @@ export const EventTaskModal = ({
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
                 className="text-lg font-medium"
+                autoComplete="off"
+                data-form-type="other"
+                name="event-task-title"
               />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
