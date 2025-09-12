@@ -1184,7 +1184,7 @@ export const Dashboard = () => {
                             </Badge>
                           )}
                           {task.course_name && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge className="text-xs">
                               {task.course_name}
                             </Badge>
                           )}
