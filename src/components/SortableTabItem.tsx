@@ -53,7 +53,7 @@ export const SortableTabItem = ({
       } ${
         isActive 
           ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-l-primary-foreground/20' 
-          : 'text-foreground hover:bg-muted/30 hover:scale-[1.01]'
+          : 'text-foreground hover:bg-muted/30 hover:text-foreground hover:scale-[1.01]'
       } ${
         isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
