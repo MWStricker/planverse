@@ -121,11 +121,8 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
           Week of {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
         </h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={goToPrevWeek}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>
-            Today
+            <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={goToNextWeek}>
             <ChevronRight className="h-4 w-4" />
