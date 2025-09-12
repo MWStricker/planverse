@@ -214,19 +214,19 @@ export const Courses = () => {
       return `border-2 text-white` + ` ` + `bg-[${color}] border-[${color}]`;
     }
     
-    // Subject-based color mapping as fallback
+    // Subject-based color mapping as fallback - lighter/opaque versions
     const subjectColors: Record<string, string> = {
-      'HES': 'bg-red-600 text-white border-red-600',         // Health - Red
-      'HES-145': 'bg-red-600 text-white border-red-600',     // Health - Red
-      'PSY': 'bg-red-600 text-white border-red-600',         // Psychology - Red  
-      'PSY-100': 'bg-red-600 text-white border-red-600',     // Psychology - Red  
-      'LIFE': 'bg-green-600 text-white border-green-600',    // Life Sciences - Green
-      'LIFE-102': 'bg-green-600 text-white border-green-600', // Life Sciences - Green
-      'LIFE-102-L': 'bg-green-600 text-white border-green-600', // Life Sciences Lab - Green
-      'MU': 'bg-green-600 text-white border-green-600',      // Music - Green
-      'MU-100': 'bg-green-600 text-white border-green-600',  // Music - Green
-      'MATH': 'bg-amber-700 text-white border-amber-700',    // Mathematics - Brown
-      'MATH-118': 'bg-amber-700 text-white border-amber-700', // Mathematics - Brown
+      'HES': 'bg-red-100 text-red-800 border-red-200',         // Health - Light Red
+      'HES-145': 'bg-red-100 text-red-800 border-red-200',     // Health - Light Red
+      'PSY': 'bg-red-100 text-red-800 border-red-200',         // Psychology - Light Red  
+      'PSY-100': 'bg-red-100 text-red-800 border-red-200',     // Psychology - Light Red  
+      'LIFE': 'bg-green-100 text-green-800 border-green-200',    // Life Sciences - Light Green
+      'LIFE-102': 'bg-green-100 text-green-800 border-green-200', // Life Sciences - Light Green
+      'LIFE-102-L': 'bg-green-100 text-green-800 border-green-200', // Life Sciences Lab - Light Green
+      'MU': 'bg-green-100 text-green-800 border-green-200',      // Music - Light Green
+      'MU-100': 'bg-green-100 text-green-800 border-green-200',  // Music - Light Green
+      'MATH': 'bg-amber-100 text-amber-800 border-amber-200',    // Mathematics - Light Brown
+      'MATH-118': 'bg-amber-100 text-amber-800 border-amber-200', // Mathematics - Light Brown
     };
     
     if (courseCode) {
@@ -242,14 +242,14 @@ export const Courses = () => {
       }
     }
     
-    // Final fallback to CSU green colors
+    // Final fallback to light CSU green colors
     const colors = [
-      'bg-emerald-700 text-white border-emerald-700',
-      'bg-green-700 text-white border-green-700',
-      'bg-teal-700 text-white border-teal-700',
-      'bg-emerald-600 text-white border-emerald-600',
-      'bg-green-600 text-white border-green-600',
-      'bg-teal-600 text-white border-teal-600',
+      'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'bg-green-100 text-green-800 border-green-200',
+      'bg-teal-100 text-teal-800 border-teal-200',
+      'bg-emerald-50 text-emerald-700 border-emerald-200',
+      'bg-green-50 text-green-700 border-green-200',
+      'bg-teal-50 text-teal-700 border-teal-200',
     ];
     
     let hash = 0;
