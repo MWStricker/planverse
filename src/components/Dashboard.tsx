@@ -126,13 +126,29 @@ export const Dashboard = () => {
 
   // Calculate free time and due items from real data
   const freeTimeToday = userEvents.length > 0 ? "4.5 hrs" : "N/A";
-  const dueThisWeek = userTasks.length > 0 ? userTasks.filter(task => {
+  
+  // Get assignments due this week from events (Canvas assignments) and tasks
+  const eventsThisWeek = userEvents.filter(event => {
+    if (!event.start_time && !event.end_time) return false;
+    const eventDate = new Date(event.start_time || event.end_time);
+    const weekFromNow = new Date();
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return eventDate >= today && eventDate <= weekFromNow;
+  });
+  
+  const tasksThisWeek = userTasks.filter(task => {
     if (!task.due_date) return false;
     const dueDate = new Date(task.due_date);
     const weekFromNow = new Date();
     weekFromNow.setDate(weekFromNow.getDate() + 7);
-    return dueDate <= weekFromNow && task.completion_status !== 'completed';
-  }).length : "N/A";
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dueDate >= today && dueDate <= weekFromNow && task.completion_status !== 'completed';
+  });
+  
+  const dueThisWeek = eventsThisWeek.length + tasksThisWeek.length || "N/A";
 
   // Get today's tasks ordered by priority (optimized for instant updates)
   const todaysTasks = userTasks.filter(task => {
@@ -156,16 +172,15 @@ export const Dashboard = () => {
     return 0;
   });
 
-  // Get today's Canvas assignments from events
-  const todaysCanvasAssignments = userEvents.filter(event => {
+  // Get all assignments due this week from events (Canvas assignments)
+  const weeklyCanvasAssignments = userEvents.filter(event => {
     if (event.event_type !== 'assignment' || event.source_provider !== 'canvas') return false;
     const eventDate = new Date(event.start_time || event.end_time);
+    const weekFromNow = new Date();
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
     const today = new Date();
-    return (
-      eventDate.getDate() === today.getDate() &&
-      eventDate.getMonth() === today.getMonth() &&
-      eventDate.getFullYear() === today.getFullYear()
-    );
+    today.setHours(0, 0, 0, 0);
+    return eventDate >= today && eventDate <= weekFromNow;
   }).map(event => ({
     // Convert Canvas events to task-like objects for display
     id: event.id,
@@ -178,6 +193,17 @@ export const Dashboard = () => {
     description: event.description || 'Canvas Assignment',
     event_type: 'assignment'
   }));
+
+  // Get today's Canvas assignments from events
+  const todaysCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
+    const eventDate = new Date(assignment.due_date);
+    const today = new Date();
+    return (
+      eventDate.getDate() === today.getDate() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getFullYear() === today.getFullYear()
+    );
+  });
 
   // Combine tasks and Canvas assignments for today
   const allTodaysItems = [...todaysTasks, ...todaysCanvasAssignments].sort((a, b) => {
@@ -1148,8 +1174,22 @@ export const Dashboard = () => {
                     </div>
                   </div>
                 ))
-              ) : allTodaysItems.length > 0 ? (
-                allTodaysItems.map((task, index) => (
+              ) : [...tasksThisWeek, ...weeklyCanvasAssignments].sort((a, b) => {
+                // Sort by due date, then by priority
+                if (a.due_date && b.due_date) {
+                  const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+                  if (dateComparison !== 0) return dateComparison;
+                }
+                return (b.priority_score || 2) - (a.priority_score || 2);
+              }).length > 0 ? (
+                [...tasksThisWeek, ...weeklyCanvasAssignments].sort((a, b) => {
+                  // Sort by due date, then by priority
+                  if (a.due_date && b.due_date) {
+                    const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+                    if (dateComparison !== 0) return dateComparison;
+                  }
+                  return (b.priority_score || 2) - (a.priority_score || 2);
+                }).map((task, index) => (
                   <div 
                     key={task.id} 
                     className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border cursor-pointer hover:bg-muted/50"
