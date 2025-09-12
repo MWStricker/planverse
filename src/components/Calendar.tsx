@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check, Link, Calendar as CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Cloud, Sun, CloudRain, Snowflake, Thermometer, AlertTriangle, Clock, BookOpen, CheckCircle, X, Check, Link, Calendar as CalendarIcon, Plus, Trash2, Grid, List } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,6 +13,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getPriorityColor, getPriorityLabel } from "@/lib/priority-utils";
+import { WeeklyCalendarView } from "@/components/WeeklyCalendarView";
 
 // Extract course code consistently from titles or course names
 const extractCourseCode = (title: string, isCanvas: boolean = false) => {
@@ -212,6 +213,7 @@ const Calendar = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -1181,9 +1183,31 @@ const Calendar = () => {
   return (
     <div className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-foreground">
-          {format(currentDate, 'MMMM yyyy')}
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-foreground">
+            {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : 'Weekly View'}
+          </h1>
+          <div className="flex gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              variant={viewMode === 'month' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('month')}
+              className="flex items-center gap-1"
+            >
+              <Grid className="h-4 w-4" />
+              Month
+            </Button>
+            <Button
+              variant={viewMode === 'week' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('week')}
+              className="flex items-center gap-1"
+            >
+              <List className="h-4 w-4" />
+              Week
+            </Button>
+          </div>
+        </div>
         <div className="flex gap-2 items-center">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -1227,13 +1251,26 @@ const Calendar = () => {
           <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+            Today
+          </Button>
           <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      
+      {/* Conditional rendering based on view mode */}
+      {viewMode === 'week' ? (
+        <WeeklyCalendarView 
+          events={events}
+          tasks={tasks}
+          storedColors={storedColors}
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-7 gap-1 mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div key={day} className="text-center font-semibold text-muted-foreground p-1">
             {day}
@@ -1430,8 +1467,10 @@ const Calendar = () => {
           );
         })}
       </div>
+        </>
+      )}
 
-      {/* Canvas Calendar Feed Section */}
+      {/* Canvas Calendar Feed Section - shown for both views */}
       <Card className="mt-4">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
