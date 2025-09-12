@@ -1166,7 +1166,14 @@ export const Dashboard = () => {
                           </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <Clock className="h-3 w-3" />
-                            <span>{task.due_date ? format(new Date(task.due_date), "hh:mm a") : "No time"}</span>
+                            <span>{task.due_date ? (() => {
+                              const date = new Date(task.due_date);
+                              if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+                                const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                                return format(fixedDate, "hh:mm a");
+                              }
+                              return format(date, "hh:mm a");
+                            })() : "No time"}</span>
                           </div>
                           {task.course_name && (
                             <p className="text-xs text-muted-foreground">{task.course_name}</p>
@@ -1464,7 +1471,14 @@ export const Dashboard = () => {
                                      <div className="flex items-center gap-1">
                                       <Clock className="h-3 w-3" />
                                       <span className="font-medium">
-                                        {task.due_date ? format(new Date(task.due_date), "hh:mm a") : "No time set"}
+                                         {task.due_date ? (() => {
+                                           const date = new Date(task.due_date);
+                                           if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+                                             const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                                             return format(fixedDate, "hh:mm a");
+                                           }
+                                           return format(date, "hh:mm a");
+                                         })() : "No time set"}
                                       </span>
                                     </div>
                                     {task.estimated_hours && (
@@ -1636,7 +1650,14 @@ export const Dashboard = () => {
                     <Clock className="h-4 w-4" />
                     <span>
                       {selectedTask.due_date 
-                        ? format(new Date(selectedTask.due_date), "PPP 'at' hh:mm a")
+                        ? (() => {
+                            const date = new Date(selectedTask.due_date);
+                            if (selectedTask.source_provider === 'canvas' && selectedTask.due_date.includes('23:59:59+00')) {
+                              const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                              return format(fixedDate, "PPP 'at' hh:mm a");
+                            }
+                            return format(date, "PPP 'at' hh:mm a");
+                          })()
                         : "No due date set"
                       }
                     </span>
