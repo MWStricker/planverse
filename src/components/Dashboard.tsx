@@ -1182,118 +1182,167 @@ export const Dashboard = () => {
                 }
                 return (b.priority_score || 2) - (a.priority_score || 2);
               }).length > 0 ? (
-                [...tasksThisWeek, ...weeklyCanvasAssignments].sort((a, b) => {
-                  // Sort by due date, then by priority
-                  if (a.due_date && b.due_date) {
-                    const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-                    if (dateComparison !== 0) return dateComparison;
-                  }
-                  return (b.priority_score || 2) - (a.priority_score || 2);
-                }).map((task, index) => (
-                  <div 
-                    key={task.id} 
-                    className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border cursor-pointer hover:bg-muted/50"
-                    onClick={() => {
-                      setSelectedTask(task);
-                      setIsTaskDetailOpen(true);
-                    }}
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
-                        <div className={`w-2 h-2 rounded-full ${
-                          task.priority_score === 4 ? 'bg-destructive' :
-                          task.priority_score === 3 ? 'bg-primary' :
-                          task.priority_score === 1 ? 'bg-muted-foreground' :
-                          'bg-secondary'
-                        }`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-foreground">
-                            {task.title}
-                          </h3>
-                          {task.source_provider === 'canvas' && (
-                            <Badge variant="secondary" className="text-xs bg-transparent border-0">
-                              Canvas
-                            </Badge>
-                          )}
-                          {task.event_type === 'assignment' && (
-                            <Badge variant="secondary" className="text-xs bg-transparent border-0">
-                              Assignment
-                            </Badge>
-                          )}
-                          {task.course_name && (
-                            <Badge variant="secondary" className="text-xs bg-transparent border-0">
-                              {task.course_name}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground mb-1">
-                          {task.description ? (
-                            <div>
-                              {task.description.length > 60 ? (
-                                <>
-                                  <span>{task.description.slice(0, 60)}</span>
-                                  {!expandedDescriptions.has(task.id) && <span>...</span>}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleDescription(task.id);
-                                    }}
-                                    className="ml-1 text-primary hover:underline text-xs font-medium"
-                                  >
-                                    {expandedDescriptions.has(task.id) ? "less" : "more"}
-                                  </button>
-                                  {expandedDescriptions.has(task.id) && (
-                                    <div className="mt-1">
-                                      <span>{task.description.substring(60).trim()}</span>
-                                      {task.source_provider === 'canvas' && task.description.length === 63 && (
-                                        <div className="mt-1 text-xs text-orange-600">
-                                          ⚠️ Canvas description appears truncated - check Canvas directly for complete instructions
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <div>
-                                  <span>{task.description}</span>
-                                  {task.source_provider === 'canvas' && task.description.length === 63 && (
-                                    <div className="mt-1 text-xs text-orange-600">
-                                      ⚠️ Canvas description appears truncated - check Canvas directly for complete instructions
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span>No description available</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span className="font-medium">
-                              Due: {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
+                (() => {
+                  const sortedItems = [...tasksThisWeek, ...weeklyCanvasAssignments].sort((a, b) => {
+                    if (a.due_date && b.due_date) {
+                      const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+                      if (dateComparison !== 0) return dateComparison;
+                    }
+                    return (b.priority_score || 2) - (a.priority_score || 2);
+                  });
+
+                  // Group items by date
+                  const groupedItems = sortedItems.reduce((groups: any, item: any) => {
+                    const date = item.due_date ? new Date(item.due_date) : new Date();
+                    const dateKey = format(date, 'yyyy-MM-dd');
+                    
+                    if (!groups[dateKey]) {
+                      groups[dateKey] = {
+                        date: date,
+                        items: []
+                      };
+                    }
+                    groups[dateKey].items.push(item);
+                    return groups;
+                  }, {});
+
+                  const today = new Date();
+                  const tomorrow = new Date(today);
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+
+                  const getDateLabel = (date: Date) => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    const todayStr = format(today, 'yyyy-MM-dd');
+                    const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
+                    
+                    if (dateStr === todayStr) return 'Today';
+                    if (dateStr === tomorrowStr) return 'Tomorrow';
+                    return format(date, 'EEEE, MMM d');
+                  };
+
+                  return (
+                    <div className="space-y-6">
+                      {Object.values(groupedItems).map((group: any, groupIndex: number) => (
+                        <div key={groupIndex} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-sm text-foreground">
+                              {getDateLabel(group.date)}
+                            </h4>
+                            <div className="h-px bg-border flex-1" />
+                            <span className="text-xs text-muted-foreground">
+                              {format(group.date, 'MMM d, yyyy')}
                             </span>
                           </div>
-                          {task.estimated_hours && (
-                            <span>Est: {task.estimated_hours}h</span>
-                          )}
+                          {group.items.map((task: any, index: number) => (
+                            <div 
+                              key={task.id} 
+                              className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border cursor-pointer hover:bg-muted/50"
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setIsTaskDetailOpen(true);
+                              }}
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    task.priority_score === 4 ? 'bg-destructive' :
+                                    task.priority_score === 3 ? 'bg-primary' :
+                                    task.priority_score === 1 ? 'bg-muted-foreground' :
+                                    'bg-secondary'
+                                  }`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-medium text-foreground">
+                                      {task.title}
+                                    </h3>
+                                    {task.source_provider === 'canvas' && (
+                                      <Badge variant="secondary" className="text-xs bg-transparent border-0">
+                                        Canvas
+                                      </Badge>
+                                    )}
+                                    {task.event_type === 'assignment' && (
+                                      <Badge variant="secondary" className="text-xs bg-transparent border-0">
+                                        Assignment
+                                      </Badge>
+                                    )}
+                                    {task.course_name && (
+                                      <Badge variant="secondary" className="text-xs bg-transparent border-0">
+                                        {task.course_name}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground mb-1">
+                                    {task.description ? (
+                                      <div>
+                                        {task.description.length > 60 ? (
+                                          <>
+                                            <span>{task.description.slice(0, 60)}</span>
+                                            {!expandedDescriptions.has(task.id) && <span>...</span>}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleDescription(task.id);
+                                              }}
+                                              className="ml-1 text-primary hover:underline text-xs font-medium"
+                                            >
+                                              {expandedDescriptions.has(task.id) ? "less" : "more"}
+                                            </button>
+                                            {expandedDescriptions.has(task.id) && (
+                                              <div className="mt-1">
+                                                <span>{task.description.substring(60).trim()}</span>
+                                                {task.source_provider === 'canvas' && task.description.length === 63 && (
+                                                  <div className="mt-1 text-xs text-orange-600">
+                                                    ⚠️ Canvas description appears truncated - check Canvas directly for complete instructions
+                                                  </div>
+                                                )}
+                                              </div>
+                                            )}
+                                          </>
+                                        ) : (
+                                          <div>
+                                            <span>{task.description}</span>
+                                            {task.source_provider === 'canvas' && task.description.length === 63 && (
+                                              <div className="mt-1 text-xs text-orange-600">
+                                                ⚠️ Canvas description appears truncated - check Canvas directly for complete instructions
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span>No description available</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      <span className="font-medium">
+                                        {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
+                                      </span>
+                                    </div>
+                                    {task.estimated_hours && (
+                                      <span>Est: {task.estimated_hours}h</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant={getPriorityColor(task.priority_score || 2)}
+                                  className="text-xs"
+                                >
+                                  {getPriorityLabel(task.priority_score || 2)}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant={getPriorityColor(task.priority_score || 2)}
-                        className="text-xs"
-                      >
-                        {getPriorityLabel(task.priority_score || 2)}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
+                  );
+                })()
               ) : (
                 <div className="flex items-center justify-center py-8 text-center">
                   <div>
