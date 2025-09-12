@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks, startOfDay } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getPriorityColor, getPriorityLabel } from "@/lib/priority-utils";
 import { WeeklyCalendarView } from "@/components/WeeklyCalendarView";
+import { DailyCalendarView } from "@/components/DailyCalendarView";
 
 // Extract course code consistently from titles or course names
 const extractCourseCode = (title: string, isCanvas: boolean = false) => {
@@ -213,7 +214,7 @@ const Calendar = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('week');
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('day');
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -361,16 +362,18 @@ const Calendar = () => {
     fetchStoredColors();
   }, [user?.id]);
 
-  const getCacheKey = (date: Date, mode: 'month' | 'week') => {
+  const getCacheKey = (date: Date, mode: 'month' | 'week' | 'day') => {
     if (mode === 'week') {
       const weekStart = startOfWeek(date, { weekStartsOn: 0 });
       return `week-${format(weekStart, 'yyyy-MM-dd')}`;
+    } else if (mode === 'day') {
+      return `day-${format(date, 'yyyy-MM-dd')}`;
     } else {
       return `month-${format(date, 'yyyy-MM')}`;
     }
   };
 
-  const fetchDataForPeriod = async (date: Date, mode: 'month' | 'week') => {
+  const fetchDataForPeriod = async (date: Date, mode: 'month' | 'week' | 'day') => {
     const cacheKey = getCacheKey(date, mode);
     
     // Check cache first (valid for 5 minutes)
@@ -384,6 +387,10 @@ const Calendar = () => {
     if (mode === 'week') {
       rangeStart = startOfWeek(date, { weekStartsOn: 0 });
       rangeEnd = endOfWeek(date, { weekStartsOn: 0 });
+    } else if (mode === 'day') {
+      rangeStart = startOfDay(date);
+      rangeEnd = new Date(date);
+      rangeEnd.setHours(23, 59, 59, 999);
     } else {
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
@@ -1302,28 +1309,8 @@ const Calendar = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-foreground">
-            {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : 'Weekly View'}
+            {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : viewMode === 'week' ? 'Weekly View' : 'Daily Planner'}
           </h1>
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
-            <Button
-              variant={viewMode === 'week' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('week')}
-              className="flex items-center gap-1"
-            >
-              <List className="h-4 w-4" />
-              Week
-            </Button>
-            <Button
-              variant={viewMode === 'month' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('month')}
-              className="flex items-center gap-1"
-            >
-              <Grid className="h-4 w-4" />
-              Month
-            </Button>
-          </div>
         </div>
         <div className="flex gap-2 items-center">
           <AlertDialog>
@@ -1369,8 +1356,46 @@ const Calendar = () => {
       </div>
 
       
+      {/* View Mode Buttons */}
+      <div className="flex justify-center mb-6">
+        <div className="flex bg-muted rounded-lg p-1">
+          <Button
+            variant={viewMode === 'day' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('day')}
+            className="rounded-md"
+          >
+            Day
+          </Button>
+          <Button
+            variant={viewMode === 'week' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('week')}
+            className="rounded-md"
+          >
+            Week
+          </Button>
+          <Button
+            variant={viewMode === 'month' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('month')}
+            className="rounded-md"
+          >
+            Month
+          </Button>
+        </div>
+      </div>
+
       {/* Conditional rendering based on view mode */}
-      {viewMode === 'week' ? (
+      {viewMode === 'day' ? (
+        <DailyCalendarView 
+          events={events}
+          tasks={tasks}
+          storedColors={storedColors}
+          currentDay={currentDate}
+          setCurrentDay={setCurrentDate}
+        />
+      ) : viewMode === 'week' ? (
         <WeeklyCalendarView 
           events={events}
           tasks={tasks}
