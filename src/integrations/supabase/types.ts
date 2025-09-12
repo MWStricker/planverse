@@ -124,6 +124,7 @@ export type Database = {
           event_type: string | null
           id: string
           is_all_day: boolean | null
+          is_completed: boolean | null
           location: string | null
           recurrence_rule: string | null
           source_event_id: string | null
@@ -140,6 +141,7 @@ export type Database = {
           event_type?: string | null
           id?: string
           is_all_day?: boolean | null
+          is_completed?: boolean | null
           location?: string | null
           recurrence_rule?: string | null
           source_event_id?: string | null
@@ -156,6 +158,7 @@ export type Database = {
           event_type?: string | null
           id?: string
           is_all_day?: boolean | null
+          is_completed?: boolean | null
           location?: string | null
           recurrence_rule?: string | null
           source_event_id?: string | null

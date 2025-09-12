@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface Course {
   code: string;
@@ -26,6 +28,7 @@ export const Courses = () => {
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
   const [storedColors, setStoredColors] = useState<Record<string, string>>({});
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const toggleCourse = (courseCode: string) => {
     setCollapsedCourses(prev => {
@@ -37,6 +40,43 @@ export const Courses = () => {
       }
       return newSet;
     });
+  };
+
+  const handleEventToggle = async (eventId: string, isCompleted: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ is_completed: isCompleted })
+        .eq('id', eventId)
+        .eq('user_id', user?.id);
+
+      if (error) {
+        console.error('Error updating event completion:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update assignment status",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setCourses(prevCourses => 
+        prevCourses.map(course => ({
+          ...course,
+          events: course.events.map(event => 
+            event.id === eventId ? { ...event, is_completed: isCompleted } : event
+          )
+        }))
+      );
+
+      toast({
+        title: isCompleted ? "Assignment completed" : "Assignment uncompleted",
+        description: "Status updated successfully",
+      });
+    } catch (error) {
+      console.error('Error toggling event completion:', error);
+    }
   };
 
   // Fetch stored course colors
@@ -288,7 +328,7 @@ export const Courses = () => {
   };
 
   const getAssignmentStatus = (item: any) => {
-    if (item.completion_status === 'completed') return 'completed';
+    if (item.completion_status === 'completed' || item.is_completed) return 'completed';
     
     const dueDate = item.due_date || item.end_time;
     if (dueDate && isPast(new Date(dueDate))) return 'overdue';
@@ -356,14 +396,27 @@ export const Courses = () => {
       <div className="grid gap-6">
         {courses.map((course) => {
           const CourseIcon = course.icon;
-          const allAssignments = [...course.events, ...course.tasks].sort((a, b) => {
+          const allAssignments = [...course.events, ...course.tasks];
+          
+          // Separate completed and active assignments
+          const completedAssignments = allAssignments.filter(assignment => 
+            getAssignmentStatus(assignment) === 'completed'
+          ).sort((a, b) => {
+            const dateA = new Date(a.due_date || a.end_time || a.start_time);
+            const dateB = new Date(b.due_date || b.end_time || b.start_time);
+            return dateA.getTime() - dateB.getTime();
+          });
+          
+          const activeAssignments = allAssignments.filter(assignment => 
+            getAssignmentStatus(assignment) !== 'completed' && getAssignmentStatus(assignment) !== 'overdue'
+          ).sort((a, b) => {
             const dateA = new Date(a.due_date || a.end_time || a.start_time);
             const dateB = new Date(b.due_date || b.end_time || b.start_time);
             return dateA.getTime() - dateB.getTime();
           });
 
           const isCollapsed = collapsedCourses.has(course.code);
-          const filteredAssignments = allAssignments.filter(assignment => getAssignmentStatus(assignment) !== 'overdue');
+          const visibleAssignments = [...activeAssignments, ...completedAssignments];
 
           return (
             <Card key={course.code} className={`${course.color} border-2 transition-all duration-300 ease-in-out`}>
@@ -376,14 +429,14 @@ export const Courses = () => {
                         <div>
                           <CardTitle className="text-xl">{course.code}</CardTitle>
                           <p className="text-sm opacity-80">
-                            {filteredAssignments.length} assignments • {course.completedAssignments} completed
+                            {activeAssignments.length} active • {completedAssignments.length} completed
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {course.upcomingAssignments > 0 && (
+                        {activeAssignments.length > 0 && (
                           <Badge variant="outline" className="bg-background/50">
-                            {course.upcomingAssignments} upcoming
+                            {activeAssignments.length} upcoming
                           </Badge>
                         )}
                         {isCollapsed ? (
@@ -397,44 +450,56 @@ export const Courses = () => {
                 </CollapsibleTrigger>
                 
                 <CollapsibleContent className="overflow-hidden transition-all duration-300 ease-in-out">
-                  <CardContent className="space-y-4">
-                 {allAssignments.length > 0 ? (
-                   <div className="space-y-3">
-                     {allAssignments
-                       .filter(assignment => getAssignmentStatus(assignment) !== 'overdue')
-                       .map((assignment, index) => {
-                         const status = getAssignmentStatus(assignment);
-                         const dueDate = assignment.due_date || assignment.end_time;
-                         
-                         return (
-                           <div key={assignment.id || index} className="flex items-center justify-between p-3 bg-background/50 rounded-lg border transition-colors duration-200 hover:bg-background/70">
-                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                               {status === 'completed' ? (
-                                 <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                               ) : (
-                                 <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                               )}
-                               <div className="min-w-0 flex-1">
-                                 <p className="font-medium text-sm truncate">
-                                   {assignment.title.replace(/\[.*?\]/g, '').trim()}
-                                 </p>
-                                 {dueDate && (
-                                   <div className="flex items-center gap-2 mt-1">
-                                     <Calendar className="h-3 w-3 text-muted-foreground" />
-                                     <span className="text-xs text-muted-foreground">
-                                       {formatAssignmentDate(dueDate)}
-                                     </span>
-                                   </div>
-                                 )}
-                               </div>
-                             </div>
-                             <div className="flex-shrink-0">
-                               {getStatusBadge(status)}
-                             </div>
-                           </div>
-                         );
-                       })}
-                   </div>
+                   <CardContent className="space-y-4">
+                  {visibleAssignments.length > 0 ? (
+                    <div className="space-y-3">
+                      {visibleAssignments.map((assignment, index) => {
+                          const status = getAssignmentStatus(assignment);
+                          const dueDate = assignment.due_date || assignment.end_time;
+                          const isCompleted = status === 'completed';
+                          
+                          return (
+                            <div key={assignment.id || index} className={`flex items-center gap-3 p-3 bg-background/50 rounded-lg border transition-colors duration-200 hover:bg-background/70 ${isCompleted ? 'opacity-75' : ''}`}>
+                              <Checkbox
+                                checked={isCompleted}
+                                onCheckedChange={(checked) => {
+                                  // Only handle events (Canvas assignments), not manual tasks
+                                  if (assignment.source_provider === 'canvas' && assignment.id) {
+                                    handleEventToggle(assignment.id, !!checked);
+                                  }
+                                }}
+                                disabled={assignment.source_provider !== 'canvas'}
+                                className="flex-shrink-0"
+                              />
+                              <div className="flex items-center justify-between flex-1">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  {isCompleted ? (
+                                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                  ) : (
+                                    <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className={`font-medium text-sm truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                                      {assignment.title.replace(/\[.*?\]/g, '').trim()}
+                                    </p>
+                                    {dueDate && (
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                                        <span className={`text-xs ${isCompleted ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                                          {formatAssignmentDate(dueDate)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex-shrink-0">
+                                  {getStatusBadge(status)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
                 ) : (
                   <div className="text-center py-6 text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
