@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, parseISO, getHours } from "date-fns";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, getHours } from "date-fns";
 
 interface Event {
   id: string;
@@ -96,15 +96,15 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
   const getItemsForTimeSlot = (day: Date, hour: number) => {
     const dayEvents = events.filter(event => {
       if (!event.start_time) return false;
-      const eventDate = parseISO(event.start_time);
-      const eventHour = getHours(eventDate);
+      const eventDate = new Date(event.start_time);
+      const eventHour = eventDate.getHours();
       return isSameDay(eventDate, day) && eventHour === hour;
     });
     
     const dayTasks = tasks.filter(task => {
       if (!task.due_date) return false;
-      const taskDate = parseISO(task.due_date);
-      const taskHour = getHours(taskDate);
+      const taskDate = new Date(task.due_date);
+      const taskHour = taskDate.getHours();
       return isSameDay(taskDate, day) && taskHour === hour;
     });
     
@@ -178,7 +178,7 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                     >
                       <div className="font-medium leading-tight">{event.title}</div>
                       <div className="text-xs opacity-80">
-                        {format(parseISO(event.start_time), "h:mm a")}
+                        {format(new Date(event.start_time), "h:mm a")}
                       </div>
                     </div>
                   ))}
@@ -192,7 +192,7 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                     >
                       <div className="font-medium leading-tight">{task.title}</div>
                       <div className="text-xs opacity-70">
-                        Due: {format(parseISO(task.due_date!), "h:mm a")}
+                        Due: {format(new Date(task.due_date!), "h:mm a")}
                       </div>
                     </div>
                   ))}
