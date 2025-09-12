@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -321,11 +321,6 @@ const Calendar = () => {
     }
   }, [user, currentDate, showAllTasks]);
 
-  useEffect(() => {
-    if (user) {
-      fetchCalendarConnections();
-    }
-  }, [user]);
 
   // Ensure weather loads once geolocation resolves (even after initial render)
   useEffect(() => {
@@ -471,22 +466,22 @@ const Calendar = () => {
     }
   };
 
-  const fetchCalendarConnections = async () => {
+  const fetchCalendarConnections = useCallback(async () => {
+    if (!user) return;
+    
     try {
-      console.log('fetchCalendarConnections - User object:', user);
-      console.log('fetchCalendarConnections - User ID:', user?.id);
+      console.log('fetchCalendarConnections - User ID:', user.id);
 
       const { data, error } = await supabase
         .from('calendar_connections')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
       console.log('Fetch calendar connections result:', { data, error });
 
       if (error) {
         console.error('Error fetching calendar connections:', error);
-        // For now, show empty state instead of erroring
         setCalendarConnections([]);
       } else {
         setCalendarConnections(data || []);
@@ -495,7 +490,11 @@ const Calendar = () => {
       console.error('Error fetching calendar connections:', error);
       setCalendarConnections([]);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchCalendarConnections();
+  }, [fetchCalendarConnections]);
 
   const addCanvasFeed = async () => {
     if (!canvasFeedUrl.trim() || !user) {
