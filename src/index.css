@@ -139,6 +139,13 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent layout shifts during drag operations */
+    overflow-x: hidden;
+  }
+
+  /* Prevent white flashes during drag operations */
+  .dndkit-drag-overlay {
+    background: transparent !important;
   }
 }
 

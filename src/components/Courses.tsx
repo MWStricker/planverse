@@ -279,7 +279,7 @@ export const Courses = () => {
 
   useEffect(() => {
     fetchCoursesData();
-  }, [user?.id, courseOrder]);
+  }, [user?.id]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -289,16 +289,19 @@ export const Courses = () => {
       const newIndex = courses.findIndex(course => course.code === over?.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        const newCourses = arrayMove(courses, oldIndex, newIndex);
-        setCourses(newCourses);
-        setCourseOrder(newCourses.map(course => course.code));
-        
-        // Add a subtle success feedback
-        toast({
-          title: "Course reordered",
-          description: "Don't forget to save your changes!",
-          duration: 2000,
-        });
+        // Use setTimeout to defer state updates and prevent flash
+        setTimeout(() => {
+          const newCourses = arrayMove(courses, oldIndex, newIndex);
+          setCourses(newCourses);
+          setCourseOrder(newCourses.map(course => course.code));
+          
+          // Add a subtle success feedback
+          toast({
+            title: "Course reordered",
+            description: "Don't forget to save your changes!",
+            duration: 2000,
+          });
+        }, 0);
       }
     }
   };
@@ -582,6 +585,7 @@ export const Courses = () => {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
+        autoScroll={false}
       >
         <SortableContext
           items={courses.map(course => course.code)}
