@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CustomInput } from "@/components/ui/custom-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -97,9 +97,6 @@ export const EventTaskModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
-          <input type="password" autoComplete="new-password" style={{display:'none', position:'absolute', left:'-9999px'}} />
-          <input type="text" autoComplete="off" style={{display:'none', position:'absolute', left:'-9999px'}} />
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {event && <Calendar className="h-5 w-5 text-primary" />}
@@ -115,21 +112,12 @@ export const EventTaskModal = ({
               {event ? "Event" : "Task"} Title
             </Label>
             {isEditing ? (
-              <Input
+              <CustomInput
                 id="title"
-                type="search"
                 value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
+                onChange={setEditedTitle}
+                placeholder="Enter title..."
                 className="text-lg font-medium"
-                autoComplete="nope"
-                data-form-type="search"
-                name={`task-title-${Math.random().toString(36)}`}
-                spellCheck={false}
-                data-1p-ignore="true"
-                data-lpignore="true" 
-                data-bwignore="true"
-                role="textbox"
-                aria-label="Task title input"
               />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
@@ -343,8 +331,7 @@ export const EventTaskModal = ({
               )}
             </div>
           </div>
-          </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
