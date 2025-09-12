@@ -1,20 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Loader2, Calendar as CalendarIcon, Home, Upload, Target, Users, BookOpen } from "lucide-react";
+
 import { Dashboard } from "@/components/Dashboard";
 import { OCRUpload } from "@/components/OCRUpload";
 import { Navigation } from "@/components/Navigation";
-
 import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
 import Calendar from "@/components/Calendar";
 import { Connect } from "@/components/Connect";
 import { Tasks } from "@/components/Tasks";
 import { Courses } from "@/components/Courses";
+
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useTabReorder } from "@/hooks/useTabReorder";
 import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
-import { Loader2, Calendar as CalendarIcon, Home, Upload, Target, Users, BookOpen } from "lucide-react";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
