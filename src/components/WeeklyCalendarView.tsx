@@ -88,13 +88,16 @@ const getEventColorClass = (title: string) => {
 
 export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek }: WeeklyCalendarViewProps) => {
   const [expandedCell, setExpandedCell] = useState<string | null>(null);
+  console.log('WeeklyCalendarView rendered, expandedCell:', expandedCell);
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const handleCellClick = (day: Date, hour: number) => {
     const cellKey = `${day.toISOString()}-${hour}`;
+    console.log('Cell clicked!', { cellKey, expandedCell });
     setExpandedCell(expandedCell === cellKey ? null : cellKey);
+    console.log('Setting expanded cell to:', expandedCell === cellKey ? null : cellKey);
   };
   
   const getItemsForTimeSlot = (day: Date, hour: number) => {
