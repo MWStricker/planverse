@@ -203,6 +203,38 @@
   }
 }
 
+/* Force scrollbars to always be visible on calendar cells */
+.force-scrollbar {
+  scrollbar-width: auto !important;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.7) hsl(var(--muted) / 0.4) !important;
+  overflow-y: scroll !important;
+}
+
+.force-scrollbar::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important;
+  -webkit-appearance: auto !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.4) !important;
+  border-radius: 4px !important;
+  display: block !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.7) !important;
+  border-radius: 4px !important;
+  min-height: 24px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.9) !important;
+}
+
 /* Custom scrollbar styles for calendar day cells - always visible */
 .custom-scrollbar {
   scrollbar-width: thin;

@@ -223,7 +223,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
 
                 {/* Events and Tasks */}
                 {isCurrentMonth && (
-                  <div className="space-y-1 max-h-[100px] overflow-y-scroll custom-scrollbar pr-1">{/* Events and Tasks with always-visible scrollbar */}
+                  <div className="space-y-1 max-h-[80px] overflow-y-scroll custom-scrollbar pr-1 force-scrollbar">{/* Events and Tasks with forced scrollbar visibility */}
                     {/* Events */}
                     {dayEvents.map((event, eventIndex) => (
                       <div
