@@ -23,12 +23,14 @@
   </head>
 
   <body>
-    <!-- Global autofill prevention -->
-    <form style="display:none;" autocomplete="off">
-      <input type="password" autocomplete="new-password" />
-      <input type="text" autocomplete="off" />
-      <input type="email" autocomplete="off" />
-    </form>
+    <!-- Autofill trap - Chrome will focus here instead of your real inputs -->
+    <div style="position: absolute; left: -9999px; top: -9999px; visibility: hidden;" aria-hidden="true">
+      <form autocomplete="on">
+        <input type="email" name="email" autocomplete="email" tabindex="-1" />
+        <input type="password" name="password" autocomplete="current-password" tabindex="-1" />
+        <input type="text" name="username" autocomplete="username" tabindex="-1" />
+      </form>
+    </div>
     
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

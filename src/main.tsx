@@ -3,53 +3,32 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Aggressive autofill prevention
-const disableAutofill = () => {
-  // Disable autofill on all existing inputs
-  const inputs = document.querySelectorAll('input, textarea');
-  inputs.forEach((input: any) => {
-    input.setAttribute('autocomplete', 'new-password');
-    input.setAttribute('data-form-type', 'other');
-    input.setAttribute('data-1p-ignore', 'true');
-    input.setAttribute('data-lpignore', 'true');
-    input.setAttribute('data-bwignore', 'true');
-  });
-  
-  // Override browser autofill behaviors
-  if (typeof window !== 'undefined') {
-    // Prevent autofill on form submission
-    document.addEventListener('submit', (e) => {
-      const form = e.target as HTMLFormElement;
-      if (form) {
-        form.setAttribute('autocomplete', 'off');
+// Simple autofill prevention - just make sure no input looks like an email field
+const preventEmailAutofill = () => {
+  const observer = new MutationObserver(() => {
+    const inputs = document.querySelectorAll('input:not([data-autofill-processed])');
+    inputs.forEach((input: any) => {
+      // Mark as processed
+      input.setAttribute('data-autofill-processed', 'true');
+      
+      // Only apply to non-email inputs to prevent email autofill on task forms
+      if (input.type !== 'email') {
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('data-form-type', 'other');
+        
+        // Make sure Chrome doesn't think this is an email field
+        if (input.name && (input.name.includes('email') || input.name.includes('user'))) {
+          input.name = `task-${input.name}-${Date.now()}`;
+        }
       }
     });
-    
-    // Monitor for new inputs being added to DOM
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node: any) => {
-          if (node.nodeType === 1) { // Element node
-            const inputs = node.querySelectorAll ? node.querySelectorAll('input, textarea') : [];
-            inputs.forEach((input: any) => {
-              input.setAttribute('autocomplete', 'new-password');
-              input.setAttribute('data-form-type', 'other');
-              input.setAttribute('data-1p-ignore', 'true');
-              input.setAttribute('data-lpignore', 'true');
-              input.setAttribute('data-bwignore', 'true');
-            });
-          }
-        });
-      });
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
 };
 
-// Run immediately and after DOM loads
-disableAutofill();
-document.addEventListener('DOMContentLoaded', disableAutofill);
+// Run after DOM loads
+document.addEventListener('DOMContentLoaded', preventEmailAutofill);
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
