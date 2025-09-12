@@ -204,11 +204,13 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                 <div className="font-semibold text-sm mb-1">{event.title}</div>
                 <div className="text-xs opacity-80">
                   {event.start_time ? (() => {
-                    const date = new Date(event.start_time);
+                    // Check if this is a Canvas 23:59:59+00:00 time BEFORE parsing the date
                     if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-                      const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                      return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                      // For Canvas events that end at 23:59:59+00:00, show 11:59 PM
+                      return "11:59 PM";
                     }
+                    
+                    const date = new Date(event.start_time);
                     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                   })() : 'All day event'}
                 </div>
@@ -230,11 +232,11 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                 <div className="text-xs opacity-80 space-y-1">
                   <div>
                     Due: {task.due_date ? (() => {
-                      const date = new Date(task.due_date);
+                      // Check if this is a Canvas 23:59:59+00:00 time BEFORE parsing the date
                       if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
-                        const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                        return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                        return "11:59 PM";
                       }
+                      const date = new Date(task.due_date);
                       return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                     })() : 'Today'}
                   </div>
@@ -313,11 +315,11 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                       </div>
                       <div className="text-xs opacity-80">
                         {event.start_time ? (() => {
-                          const date = new Date(event.start_time);
+                          // Check if this is a Canvas 23:59:59+00:00 time BEFORE parsing the date
                           if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-                            const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                            return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                            return "11:59 PM";
                           }
+                          const date = new Date(event.start_time);
                           return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                         })() : 'All day'}
                       </div>
@@ -344,11 +346,11 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                       <div className="text-xs opacity-80 space-y-1">
                         <div>
                           Due: {task.due_date ? (() => {
-                            const date = new Date(task.due_date);
+                            // Check if this is a Canvas 23:59:59+00:00 time BEFORE parsing the date
                             if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
-                              const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                              return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                              return "11:59 PM";
                             }
+                            const date = new Date(task.due_date);
                             return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                           })() : 'Today'}
                         </div>
