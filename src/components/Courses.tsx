@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X, GripVertical } from "lucide-react";
+import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -571,7 +571,6 @@ export const Courses = () => {
       {isReorderMode && courses.length > 0 && (
         <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border-2 border-dashed border-primary/30 animate-fade-in">
           <div className="flex items-center justify-center gap-2">
-            <GripVertical className="h-4 w-4 text-primary animate-pulse" />
             <p className="text-sm text-foreground font-medium">
               Click and drag any course card to reorder them
             </p>
@@ -714,11 +713,6 @@ const SortableCourseCard = ({
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {isReorderMode && (
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
-                    <GripVertical className="h-5 w-5" />
-                  </div>
-                )}
                 <CourseIcon className="h-6 w-6" />
                 <div>
                   <CardTitle className="text-xl">{course.code}</CardTitle>
