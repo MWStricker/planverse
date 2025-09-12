@@ -180,12 +180,7 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                     >
                       <div className="font-medium leading-tight">{event.title}</div>
                       <div className="text-xs opacity-80">
-                        {event.start_time ? (() => {
-                          const date = new Date(event.start_time);
-                          console.log('Event start_time raw:', event.start_time);
-                          console.log('Event start_time parsed:', date);
-                          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                        })() : 'No time'}
+                        {event.start_time ? new Date(event.start_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
                       </div>
                     </div>
                   ))}
@@ -199,29 +194,7 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                     >
                       <div className="font-medium leading-tight">{task.title}</div>
                       <div className="text-xs opacity-70">
-                        Due: {task.due_date ? (() => {
-                          // Parse the date and show the intended time (11:59 PM should show as 11:59 PM)
-                          const dateStr = task.due_date;
-                          let date;
-                          
-                          if (!dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
-                            // No timezone info, treat as intended local time
-                            date = new Date(dateStr);
-                          } else {
-                            // Has timezone info - for assignments that should be 11:59 PM, 
-                            // we need to interpret the time correctly
-                            date = new Date(dateStr);
-                            
-                            // Check if this looks like a Canvas assignment (ends in 23:59:59)
-                            if (dateStr.includes('23:59:59') && date.getHours() !== 23) {
-                              // This is a Canvas assignment that got timezone-converted
-                              // Create a new date with the intended 11:59 PM time
-                              date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                            }
-                          }
-                          
-                          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                        })() : 'No time'}
+                        Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
                       </div>
                     </div>
                   ))}
