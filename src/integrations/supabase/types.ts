@@ -394,6 +394,42 @@ export type Database = {
           },
         ]
       }
+      sync_stats: {
+        Row: {
+          connections_processed: number | null
+          created_at: string
+          details: Json | null
+          error_count: number | null
+          events_processed: number | null
+          id: string
+          success_count: number | null
+          sync_duration_ms: number | null
+          sync_type: string
+        }
+        Insert: {
+          connections_processed?: number | null
+          created_at?: string
+          details?: Json | null
+          error_count?: number | null
+          events_processed?: number | null
+          id?: string
+          success_count?: number | null
+          sync_duration_ms?: number | null
+          sync_type: string
+        }
+        Update: {
+          connections_processed?: number | null
+          created_at?: string
+          details?: Json | null
+          error_count?: number | null
+          events_processed?: number | null
+          id?: string
+          success_count?: number | null
+          sync_duration_ms?: number | null
+          sync_type?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           actual_hours: number | null
