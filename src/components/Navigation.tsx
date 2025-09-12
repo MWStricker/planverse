@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical } from "lucide-react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical, ChevronLeft, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +20,8 @@ interface NavigationProps {
   isReorderMode?: boolean;
   onToggleReorder?: () => void;
   onCancelReorder?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const Navigation = ({ 
@@ -27,7 +29,9 @@ export const Navigation = ({
   onPageChange, 
   isReorderMode = false,
   onToggleReorder,
-  onCancelReorder
+  onCancelReorder,
+  isCollapsed = false,
+  onToggleCollapse
 }: NavigationProps) => {
   const [notifications] = useState(0);
   const [courses, setCourses] = useState<any[]>([]);
@@ -155,40 +159,58 @@ export const Navigation = ({
   const orderedNavItems = getOrderedNavItems();
 
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
+    <div className="flex flex-col h-full bg-card border-r border-border relative">
+      {/* Collapse/Expand Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onToggleCollapse}
+        className={`absolute -right-3 top-4 z-10 h-6 w-6 p-0 bg-card border border-border rounded-full hover:bg-muted/30 transition-all duration-300 ${
+          isCollapsed ? 'rotate-180' : ''
+        }`}
+      >
+        <ChevronLeft className="h-3 w-3" />
+      </Button>
+
       {/* Logo */}
       <div className="p-4 pt-1 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className="text-center flex-1">
-            <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
-            <p className="text-xs text-muted-foreground">Smart Scheduling</p>
+          <div className={`text-center flex-1 transition-all duration-300 ${isCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+            {!isCollapsed && (
+              <>
+                <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
+                <p className="text-xs text-muted-foreground">Smart Scheduling</p>
+              </>
+            )}
           </div>
           
           {/* Small Reorder Button */}
-          <div className="flex flex-col gap-1">
-            {!isReorderMode ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggleReorder}
-                className="h-6 w-6 p-0 hover:bg-muted/30"
-              >
-                <MoreVertical className="h-3 w-3" />
-              </Button>
-             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onCancelReorder}
-                className="h-6 w-6 p-0 hover:bg-muted/30"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col gap-1 transition-all duration-300">
+              {!isReorderMode ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onToggleReorder}
+                  className="h-6 w-6 p-0 hover:bg-muted/30"
+                >
+                  <MoreVertical className="h-3 w-3" />
+                </Button>
+               ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCancelReorder}
+                  className="h-6 w-6 p-0 hover:bg-muted/30"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
         
-        {isReorderMode && (
+        {isReorderMode && !isCollapsed && (
           <div className="mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20 animate-fade-in">
             <p className="text-xs text-foreground font-medium text-center">
               Drag tabs to reorder
@@ -218,6 +240,7 @@ export const Navigation = ({
                   isReorderMode={isReorderMode}
                   notifications={item.id === 'tasks' ? notifications : 0}
                   onClick={() => onPageChange(item.id)}
+                  isCollapsed={isCollapsed}
                 />
               ))}
             </div>
@@ -228,7 +251,7 @@ export const Navigation = ({
 
       {/* User Section */}
       <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3 mb-3">
+        <div className={`flex items-center gap-3 mb-3 transition-all duration-300 ${isCollapsed ? 'justify-center' : ''}`}>
           <Avatar className="h-10 w-10">
             <AvatarImage src={profile?.avatar_url} />
             <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white">
@@ -236,47 +259,55 @@ export const Navigation = ({
                user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0 transition-all duration-300">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
+                </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {(() => {
+                  const currentMajor = liveEditedProfile.major || profile?.major;
+                  if (!currentMajor) return 'Student';
+                  
+                  // Format predefined majors with proper capitalization
+                  return currentMajor.includes('-') ? 
+                    currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                    currentMajor;
+                })()}
               </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {(() => {
-                const currentMajor = liveEditedProfile.major || profile?.major;
-                if (!currentMajor) return 'Student';
-                
-                // Format predefined majors with proper capitalization
-                return currentMajor.includes('-') ? 
-                  currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-                  currentMajor;
-              })()}
-            </p>
-          </div>
+            </div>
+          )}
         </div>
         
-        <div className="flex gap-2">
+        <div className={`flex gap-2 transition-all duration-300 ${isCollapsed ? 'flex-col items-center' : ''}`}>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="flex-1 hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group"
+            className={`hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group ${
+              isCollapsed ? 'w-10 h-10 p-0' : 'flex-1'
+            }`}
           >
-            <Bell className="h-4 w-4 mr-2 transition-all duration-200 ease-out" />
-            <span className="transition-all duration-150 ease-out">Alerts</span>
+            <Bell className="h-4 w-4 transition-all duration-200 ease-out" />
+            {!isCollapsed && <span className="ml-2 transition-all duration-150 ease-out">Alerts</span>}
           </Button>
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => onPageChange('settings')}
-            className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group"
+            className={`hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group ${
+              isCollapsed ? 'w-10 h-10 p-0' : ''
+            }`}
           >
             <Settings className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 ease-out" />
           </Button>
         </div>
         
         {/* Digital Clock */}
-        <div className="mt-3">
-          <AnalogClock />
-        </div>
+        {!isCollapsed && (
+          <div className="mt-3 transition-all duration-300">
+            <AnalogClock />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -19,11 +19,21 @@ import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   
   // Initialize user preferences on app load
   usePreferences();
+
+  // Auto-collapse sidebar when on calendar page
+  useEffect(() => {
+    if (currentPage === 'calendar') {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(false);
+    }
+  }, [currentPage]);
 
   // Tab reordering functionality
   const navItems = [
@@ -97,13 +107,19 @@ const Index = () => {
   return (
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
-        <div className="w-64 flex-shrink-0">
+        <div 
+          className={`flex-shrink-0 transition-all duration-300 ease-in-out ${
+            isCollapsed ? 'w-16' : 'w-64'
+          }`}
+        >
           <Navigation 
             currentPage={currentPage} 
             onPageChange={setCurrentPage}
             isReorderMode={isReorderMode}
             onToggleReorder={() => setIsReorderMode(true)}
             onCancelReorder={cancelReorder}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
         </div>
         <div className="flex-1 overflow-auto">

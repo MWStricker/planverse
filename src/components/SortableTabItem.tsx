@@ -13,6 +13,7 @@ interface SortableTabItemProps {
   isReorderMode: boolean;
   notifications?: number;
   onClick: () => void;
+  isCollapsed?: boolean;
 }
 
 export const SortableTabItem = ({ 
@@ -20,7 +21,8 @@ export const SortableTabItem = ({
   isActive, 
   isReorderMode, 
   notifications = 0, 
-  onClick 
+  onClick,
+  isCollapsed = false
 }: SortableTabItemProps) => {
   const {
     attributes,
@@ -48,7 +50,9 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full justify-start h-14 text-base transition-opacity duration-150 ${
+      className={`w-full h-14 text-base transition-all duration-300 ${
+        isCollapsed ? 'justify-center px-2' : 'justify-start'
+      } ${
         isDragging ? 'shadow-lg' : ''
       } ${
         isActive 
@@ -65,23 +69,35 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 mr-3 transition-all duration-200 ease-out ${
+      <Icon className={`h-5 w-5 transition-all duration-300 ease-out ${
+        isCollapsed ? '' : 'mr-3'
+      } ${
         isActive 
           ? 'text-primary-foreground scale-110' 
           : 'group-hover:scale-105'
       }`} />
-      <span className={`font-medium transition-all duration-150 ease-out ${
-        isActive ? 'tracking-wide' : ''
-      }`}>
-        {item.label}
-      </span>
-      {item.id === 'tasks' && notifications > 0 && (
-        <Badge 
-          className="ml-auto bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs animate-pulse shadow-sm"
-          variant="secondary"
-        >
-          {notifications}
-        </Badge>
+      
+      {!isCollapsed && (
+        <>
+          <span className={`font-medium transition-all duration-300 ease-out ${
+            isActive ? 'tracking-wide' : ''
+          }`}>
+            {item.label}
+          </span>
+          {item.id === 'tasks' && notifications > 0 && (
+            <Badge 
+              className="ml-auto bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs animate-pulse shadow-sm"
+              variant="secondary"
+            >
+              {notifications}
+            </Badge>
+          )}
+        </>
+      )}
+      
+      {/* Show notification as a dot when collapsed */}
+      {isCollapsed && item.id === 'tasks' && notifications > 0 && (
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-pulse shadow-sm"></div>
       )}
       
       {/* Glow effect for active items */}
