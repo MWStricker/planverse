@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X, GripVertical } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -10,6 +10,25 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Course {
   code: string;
@@ -27,8 +46,17 @@ export const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
   const [storedColors, setStoredColors] = useState<Record<string, string>>({});
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [courseOrder, setCourseOrder] = useState<string[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const toggleCourse = (courseCode: string) => {
     setCollapsedCourses(prev => {
@@ -79,6 +107,26 @@ export const Courses = () => {
     }
   };
 
+  // Load saved course order
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const loadCourseOrder = async () => {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('settings_data')
+        .eq('user_id', user.id)
+        .eq('settings_type', 'course_order')
+        .single();
+
+      if (data?.settings_data && typeof data.settings_data === 'object' && 'order' in data.settings_data) {
+        setCourseOrder((data.settings_data as { order: string[] }).order);
+      }
+    };
+
+    loadCourseOrder();
+  }, [user?.id]);
+
   // Fetch stored course colors
   useEffect(() => {
     if (!user?.id) return;
@@ -101,107 +149,188 @@ export const Courses = () => {
     fetchStoredColors();
   }, [user?.id]);
 
+  // Main data fetching function
+  const fetchCoursesData = async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    
+    try {
+      const [eventsResult, tasksResult] = await Promise.all([
+        supabase
+          .from('events')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('source_provider', 'canvas'),
+        supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('source_provider', 'canvas')
+      ]);
+
+      const events = eventsResult.data || [];
+      const tasks = tasksResult.data || [];
+
+      console.log('Canvas events found:', events.length);
+      console.log('Canvas tasks found:', tasks.length);
+      console.log('First 5 event titles:', events.slice(0, 5).map(e => e.title));
+
+      // Process courses from Canvas events
+      const coursesMap = new Map();
+
+      // Process events first
+      events.forEach((event, index) => {
+        console.log(`Event ${index + 1}:`, event.title);
+        const courseCode = extractCourseCode(event.title, true);
+        console.log('Processing event:', event.title, 'extracted course:', courseCode);
+        
+        if (courseCode) {
+          if (!coursesMap.has(courseCode)) {
+          coursesMap.set(courseCode, {
+            code: courseCode,
+            color: getCourseColor(event.title, true, courseCode),
+            icon: getCourseIcon(courseCode),
+            events: [],
+            tasks: []
+          });
+          }
+          coursesMap.get(courseCode).events.push(event);
+        }
+      });
+
+      // Process tasks
+      tasks.forEach(task => {
+        const courseCode = task.course_name || extractCourseCode(task.title, true);
+        if (courseCode) {
+          if (!coursesMap.has(courseCode)) {
+            const pseudoTitle = `[2025FA-${courseCode}]`;
+          coursesMap.set(courseCode, {
+            code: courseCode,
+            color: getCourseColor(pseudoTitle, true, courseCode),
+            icon: getCourseIcon(courseCode),
+            events: [],
+            tasks: []
+          });
+          }
+          coursesMap.get(courseCode).tasks.push(task);
+        }
+      });
+
+      console.log('Courses found:', Array.from(coursesMap.keys()));
+
+      // Calculate statistics for each course
+      const processedCourses = Array.from(coursesMap.values()).map(course => {
+        const allAssignments = [...course.events, ...course.tasks];
+        const completedTasks = course.tasks.filter(task => task.completion_status === 'completed').length;
+        const upcomingAssignments = allAssignments.filter(item => {
+          const dueDate = item.due_date || item.end_time;
+          return dueDate && !isPast(new Date(dueDate));
+        }).length;
+
+        return {
+          ...course,
+          totalAssignments: allAssignments.length,
+          completedAssignments: completedTasks,
+          upcomingAssignments
+        };
+      });
+
+      // Apply saved course order if available
+      let orderedCourses = processedCourses;
+      if (courseOrder.length > 0) {
+        orderedCourses = processedCourses.sort((a, b) => {
+          const aIndex = courseOrder.indexOf(a.code);
+          const bIndex = courseOrder.indexOf(b.code);
+          
+          // If both courses are in the saved order, use that order
+          if (aIndex !== -1 && bIndex !== -1) {
+            return aIndex - bIndex;
+          }
+          // If only one is in the saved order, prioritize it
+          if (aIndex !== -1) return -1;
+          if (bIndex !== -1) return 1;
+          // If neither is in the saved order, sort alphabetically
+          return a.code.localeCompare(b.code);
+        });
+      } else {
+        orderedCourses = processedCourses.sort((a, b) => a.code.localeCompare(b.code));
+      }
+
+      setCourses(orderedCourses);
+      
+      // Update course order state if not set
+      if (courseOrder.length === 0) {
+        setCourseOrder(orderedCourses.map(course => course.code));
+      }
+      
+      // Initialize all courses as collapsed
+      setCollapsedCourses(new Set(orderedCourses.map(course => course.code)));
+    } catch (error) {
+      console.error('Error fetching courses data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
+    fetchCoursesData();
+  }, [user?.id, courseOrder]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = courses.findIndex(course => course.code === active.id);
+      const newIndex = courses.findIndex(course => course.code === over?.id);
+
+      const newCourses = arrayMove(courses, oldIndex, newIndex);
+      setCourses(newCourses);
+      setCourseOrder(newCourses.map(course => course.code));
+    }
+  };
+
+  const saveCourseOrder = async () => {
     if (!user?.id) return;
 
-    const fetchCoursesData = async () => {
-      setLoading(true);
-      
-      try {
-        const [eventsResult, tasksResult] = await Promise.all([
-          supabase
-            .from('events')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('source_provider', 'canvas'),
-          supabase
-            .from('tasks')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('source_provider', 'canvas')
-        ]);
-
-        const events = eventsResult.data || [];
-        const tasks = tasksResult.data || [];
-
-        console.log('Canvas events found:', events.length);
-        console.log('Canvas tasks found:', tasks.length);
-        console.log('First 5 event titles:', events.slice(0, 5).map(e => e.title));
-
-        // Process courses from Canvas events
-        const coursesMap = new Map();
-
-        // Process events first
-        events.forEach((event, index) => {
-          console.log(`Event ${index + 1}:`, event.title);
-          const courseCode = extractCourseCode(event.title, true);
-          console.log('Processing event:', event.title, 'extracted course:', courseCode);
-          
-          if (courseCode) {
-            if (!coursesMap.has(courseCode)) {
-            coursesMap.set(courseCode, {
-              code: courseCode,
-              color: getCourseColor(event.title, true, courseCode),
-              icon: getCourseIcon(courseCode),
-              events: [],
-              tasks: []
-            });
-            }
-            coursesMap.get(courseCode).events.push(event);
-          }
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          settings_type: 'course_order',
+          settings_data: { order: courseOrder }
+        }, {
+          onConflict: 'user_id,settings_type'
         });
 
-        // Process tasks
-        tasks.forEach(task => {
-          const courseCode = task.course_name || extractCourseCode(task.title, true);
-          if (courseCode) {
-            if (!coursesMap.has(courseCode)) {
-              const pseudoTitle = `[2025FA-${courseCode}]`;
-            coursesMap.set(courseCode, {
-              code: courseCode,
-              color: getCourseColor(pseudoTitle, true, courseCode),
-              icon: getCourseIcon(courseCode),
-              events: [],
-              tasks: []
-            });
-            }
-            coursesMap.get(courseCode).tasks.push(task);
-          }
+      if (error) {
+        console.error('Error saving course order:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save course order",
+          variant: "destructive",
         });
-
-        console.log('Courses found:', Array.from(coursesMap.keys()));
-
-        // Calculate statistics for each course
-        const processedCourses = Array.from(coursesMap.values()).map(course => {
-          const allAssignments = [...course.events, ...course.tasks];
-          const completedTasks = course.tasks.filter(task => task.completion_status === 'completed').length;
-          const upcomingAssignments = allAssignments.filter(item => {
-            const dueDate = item.due_date || item.end_time;
-            return dueDate && !isPast(new Date(dueDate));
-          }).length;
-
-          return {
-            ...course,
-            totalAssignments: allAssignments.length,
-            completedAssignments: completedTasks,
-            upcomingAssignments
-          };
-        });
-
-        const sortedCourses = processedCourses.sort((a, b) => a.code.localeCompare(b.code));
-        setCourses(sortedCourses);
-        
-        // Initialize all courses as collapsed
-        setCollapsedCourses(new Set(sortedCourses.map(course => course.code)));
-      } catch (error) {
-        console.error('Error fetching courses data:', error);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
-    fetchCoursesData();
-  }, [user?.id]);
+      setIsReorderMode(false);
+      toast({
+        title: "Success",
+        description: "Course order saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving course order:', error);
+    }
+  };
+
+  const cancelReorder = () => {
+    setIsReorderMode(false);
+    // Reset to original order by refetching
+    if (user?.id) {
+      fetchCoursesData();
+    }
+  };
 
   // Helper functions
   const extractCourseCode = (title: string, forCanvas = false) => {
@@ -387,132 +516,277 @@ export const Courses = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-background">
-            {courses.reduce((sum, course) => sum + course.totalAssignments, 0)} Total Assignments
-          </Badge>
+          {!isReorderMode ? (
+            <>
+              <Badge variant="outline" className="bg-background">
+                {courses.reduce((sum, course) => sum + course.totalAssignments, 0)} Total Assignments
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsReorderMode(true)}
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Reorder Courses
+              </Button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cancelReorder}
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveCourseOrder}
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save Order
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-6">
-        {courses.map((course) => {
-          const CourseIcon = course.icon;
-          const allAssignments = [...course.events, ...course.tasks];
-          
-          // Separate completed and active assignments
-          const completedAssignments = allAssignments.filter(assignment => 
-            getAssignmentStatus(assignment) === 'completed'
-          ).sort((a, b) => {
-            const dateA = new Date(a.due_date || a.end_time || a.start_time);
-            const dateB = new Date(b.due_date || b.end_time || b.start_time);
-            return dateA.getTime() - dateB.getTime();
-          });
-          
-          const activeAssignments = allAssignments.filter(assignment => 
-            getAssignmentStatus(assignment) !== 'completed' && getAssignmentStatus(assignment) !== 'overdue'
-          ).sort((a, b) => {
-            const dateA = new Date(a.due_date || a.end_time || a.start_time);
-            const dateB = new Date(b.due_date || b.end_time || b.start_time);
-            return dateA.getTime() - dateB.getTime();
-          });
+      {isReorderMode && courses.length > 0 && (
+        <div className="mb-4 p-4 bg-muted/50 rounded-lg border-2 border-dashed border-primary/30">
+          <p className="text-sm text-muted-foreground text-center">
+            <GripVertical className="h-4 w-4 inline mr-1" />
+            Drag and drop courses to reorder them, then click "Save Order" to persist your changes.
+          </p>
+        </div>
+      )}
 
-          const isCollapsed = collapsedCourses.has(course.code);
-          const visibleAssignments = [...activeAssignments, ...completedAssignments];
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={courses.map(course => course.code)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="grid gap-6">
+            {courses.map((course) => (
+              <SortableCourseCard
+                key={course.code}
+                course={course}
+                isReorderMode={isReorderMode}
+                isCollapsed={collapsedCourses.has(course.code)}
+                onToggle={() => toggleCourse(course.code)}
+                onEventToggle={handleEventToggle}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+};
 
-          return (
-            <Card key={course.code} className={`${course.color} border-2 transition-all duration-300 ease-in-out`}>
-              <Collapsible open={!isCollapsed} onOpenChange={() => toggleCourse(course.code)}>
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-background/10 transition-colors duration-200 select-none">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <CourseIcon className="h-6 w-6" />
-                        <div>
-                          <CardTitle className="text-xl">{course.code}</CardTitle>
-                          <p className="text-sm opacity-80">
-                            {activeAssignments.length} active • {completedAssignments.length} completed
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {activeAssignments.length > 0 && (
-                          <Badge variant="outline" className="bg-background/50">
-                            {activeAssignments.length} upcoming
-                          </Badge>
-                        )}
-                        {isCollapsed ? (
-                          <ChevronRight className="h-4 w-4 transition-transform duration-300 ease-in-out" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 transition-transform duration-300 ease-in-out" />
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent className="overflow-hidden transition-all duration-300 ease-in-out">
-                   <CardContent className="space-y-4">
-                  {visibleAssignments.length > 0 ? (
-                    <div className="space-y-3">
-                      {visibleAssignments.map((assignment, index) => {
-                          const status = getAssignmentStatus(assignment);
-                          const dueDate = assignment.due_date || assignment.end_time;
-                          const isCompleted = status === 'completed';
-                          
-                          return (
-                            <div key={assignment.id || index} className={`flex items-center gap-3 p-3 bg-background/50 rounded-lg border transition-colors duration-200 hover:bg-background/70 ${isCompleted ? 'opacity-75' : ''}`}>
-                              <Checkbox
-                                checked={isCompleted}
-                                onCheckedChange={(checked) => {
-                                  // Only handle events (Canvas assignments), not manual tasks
-                                  if (assignment.source_provider === 'canvas' && assignment.id) {
-                                    handleEventToggle(assignment.id, !!checked);
-                                  }
-                                }}
-                                disabled={assignment.source_provider !== 'canvas'}
-                                className="flex-shrink-0"
-                              />
-                              <div className="flex items-center justify-between flex-1">
-                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                  {isCompleted ? (
-                                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                  ) : (
-                                    <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                  )}
-                                  <div className="min-w-0 flex-1">
-                                    <p className={`font-medium text-sm truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                                      {assignment.title.replace(/\[.*?\]/g, '').trim()}
-                                    </p>
-                                    {dueDate && (
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                                        <span className={`text-xs ${isCompleted ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
-                                          {formatAssignmentDate(dueDate)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex-shrink-0">
-                                  {getStatusBadge(status)}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No assignments found for this course</p>
+// Sortable Course Card Component
+const SortableCourseCard = ({ 
+  course, 
+  isReorderMode, 
+  isCollapsed, 
+  onToggle, 
+  onEventToggle 
+}: {
+  course: Course;
+  isReorderMode: boolean;
+  isCollapsed: boolean;
+  onToggle: () => void;
+  onEventToggle: (eventId: string, isCompleted: boolean) => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: course.code });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const CourseIcon = course.icon;
+  const allAssignments = [...course.events, ...course.tasks];
+  
+  // Separate completed and active assignments
+  const completedAssignments = allAssignments.filter(assignment => 
+    assignment.completion_status === 'completed' || assignment.is_completed
+  ).sort((a, b) => {
+    const dateA = new Date(a.due_date || a.end_time || a.start_time);
+    const dateB = new Date(b.due_date || b.end_time || b.start_time);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  const activeAssignments = allAssignments.filter(assignment => 
+    assignment.completion_status !== 'completed' && !assignment.is_completed
+  ).sort((a, b) => {
+    const dateA = new Date(a.due_date || a.end_time || a.start_time);
+    const dateB = new Date(b.due_date || b.end_time || b.start_time);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  const visibleAssignments = [...activeAssignments, ...completedAssignments];
+
+  const getAssignmentStatus = (item: any) => {
+    if (item.completion_status === 'completed' || item.is_completed) return 'completed';
+    
+    const dueDate = item.due_date || item.end_time;
+    if (dueDate && isPast(new Date(dueDate))) return 'overdue';
+    if (dueDate && isToday(new Date(dueDate))) return 'due-today';
+    if (dueDate && isTomorrow(new Date(dueDate))) return 'due-tomorrow';
+    return 'upcoming';
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>;
+      case 'overdue':
+        return <Badge variant="destructive">Overdue</Badge>;
+      case 'due-today':
+        return <Badge variant="destructive" className="bg-orange-100 text-orange-800">Due Today</Badge>;
+      case 'due-tomorrow':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Due Tomorrow</Badge>;
+      default:
+        return <Badge variant="outline">Upcoming</Badge>;
+    }
+  };
+
+  const formatAssignmentDate = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isToday(date)) return "Today";
+    if (isTomorrow(date)) return "Tomorrow";
+    if (isPast(date)) return `Past due - ${format(date, 'MMM d')}`;
+    return format(date, 'MMM d, yyyy');
+  };
+
+  return (
+    <Card 
+      ref={setNodeRef} 
+      style={style} 
+      className={`${course.color} border-2 transition-all duration-300 ease-in-out ${
+        isDragging ? 'ring-2 ring-primary shadow-lg' : ''
+      } ${isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
+    >
+      <Collapsible open={!isCollapsed} onOpenChange={onToggle}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className={`cursor-pointer hover:bg-background/10 transition-colors duration-200 select-none ${
+            isReorderMode ? 'pointer-events-none' : ''
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {isReorderMode && (
+                  <div 
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing p-1 hover:bg-background/20 rounded pointer-events-auto"
+                  >
+                    <GripVertical className="h-5 w-5" />
                   </div>
                 )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
+                <CourseIcon className="h-6 w-6" />
+                <div>
+                  <CardTitle className="text-xl">{course.code}</CardTitle>
+                  <p className="text-sm opacity-80">
+                    {activeAssignments.length} active • {completedAssignments.length} completed
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeAssignments.length > 0 && (
+                  <Badge variant="outline" className="bg-background/50">
+                    {activeAssignments.length} upcoming
+                  </Badge>
+                )}
+                {!isReorderMode && (
+                  isCollapsed ? (
+                    <ChevronRight className="h-4 w-4 transition-transform duration-300 ease-in-out" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 ease-in-out" />
+                  )
+                )}
+              </div>
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        
+        {!isReorderMode && (
+          <CollapsibleContent className="overflow-hidden transition-all duration-300 ease-in-out">
+            <CardContent className="space-y-4">
+              {visibleAssignments.length > 0 ? (
+                <div className="space-y-3">
+                  {visibleAssignments.map((assignment, index) => {
+                    const status = getAssignmentStatus(assignment);
+                    const dueDate = assignment.due_date || assignment.end_time;
+                    const isCompleted = status === 'completed';
+                    
+                    return (
+                      <div key={assignment.id || index} className={`flex items-center gap-3 p-3 bg-background/50 rounded-lg border transition-colors duration-200 hover:bg-background/70 ${isCompleted ? 'opacity-75' : ''}`}>
+                        <Checkbox
+                          checked={isCompleted}
+                          onCheckedChange={(checked) => {
+                            // Only handle events (Canvas assignments), not manual tasks
+                            if (assignment.source_provider === 'canvas' && assignment.id) {
+                              onEventToggle(assignment.id, !!checked);
+                            }
+                          }}
+                          disabled={assignment.source_provider !== 'canvas'}
+                          className="flex-shrink-0"
+                        />
+                        <div className="flex items-center justify-between flex-1">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {isCompleted ? (
+                              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className={`font-medium text-sm truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                                {assignment.title.replace(/\[.*?\]/g, '').trim()}
+                              </p>
+                              {dueDate && (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                                  <span className={`text-xs ${isCompleted ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                                    {formatAssignmentDate(dueDate)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {getStatusBadge(status)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No assignments found for this course</p>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        )}
+      </Collapsible>
+    </Card>
   );
 };
