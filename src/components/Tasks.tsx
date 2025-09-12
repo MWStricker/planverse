@@ -722,7 +722,9 @@ export const Tasks = () => {
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4" autoComplete="off">
+                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+                <input type="password" autoComplete="new-password" style={{display:'none'}} />
                 <FormField
                   control={form.control}
                   name="title"
@@ -951,7 +953,9 @@ export const Tasks = () => {
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onEditTask)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onEditTask)} className="space-y-4" autoComplete="off">
+                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+                <input type="password" autoComplete="new-password" style={{display:'none'}} />
                 <FormField
                   control={form.control}
                   name="title"

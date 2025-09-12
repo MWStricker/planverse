@@ -205,7 +205,9 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin" className="mt-6">
-              <form onSubmit={handleSignIn} className="space-y-6">
+              <form onSubmit={handleSignIn} className="space-y-6" autoComplete="off">
+                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+                <input type="password" autoComplete="new-password" style={{display:'none'}} />
                 <div className="space-y-2">
                   <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
                   <div className="relative group">
@@ -286,7 +288,9 @@ const Auth = () => {
             </TabsContent>
             
             <TabsContent value="signup" className="mt-6">
-              <form onSubmit={handleSignUp} className="space-y-6">
+              <form onSubmit={handleSignUp} className="space-y-6" autoComplete="off">
+                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+                <input type="password" autoComplete="new-password" style={{display:'none'}} />
                 <div className="space-y-2">
                   <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
                   <div className="relative group">
