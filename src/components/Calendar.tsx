@@ -327,8 +327,7 @@ const Calendar = () => {
 
   useEffect(() => {
     if (user) {
-      fetchDataWithCache();
-      preloadAdjacentPeriods();
+      loadDataForCurrentPeriod();
     }
   }, [user, currentDate, showAllTasks]);
 
@@ -436,22 +435,47 @@ const Calendar = () => {
     }
   };
 
-  const fetchDataWithCache = async () => {
+  const loadDataForCurrentPeriod = async () => {
+    const cacheKey = getCacheKey(currentDate, viewMode);
+    const cached = dataCache.get(cacheKey);
+    
+    // If data is cached and fresh, use it instantly without loading state
+    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+      setTasks(cached.tasks);
+      setEvents(cached.events);
+      setStudySessions(cached.sessions);
+      
+      // Preload adjacent periods in background
+      preloadAdjacentPeriods();
+      
+      // Fetch weather if needed
+      if (userLocation) {
+        fetchWeatherData().catch(error => 
+          console.error('Weather fetch failed:', error)
+        );
+      }
+      return;
+    }
+    
+    // Only show loading if data is not cached
     setLoading(true);
     try {
       const data = await fetchDataForPeriod(currentDate, viewMode);
       setTasks(data.tasks);
       setEvents(data.events);
       setStudySessions(data.sessions);
+      
+      // Preload adjacent periods in background
+      preloadAdjacentPeriods();
 
-      // Fetch weather data in parallel (don't block calendar render)
+      // Fetch weather data in parallel
       if (userLocation) {
         fetchWeatherData().catch(error => 
           console.error('Weather fetch failed:', error)
         );
       }
     } catch (error) {
-      console.error('Error fetching calendar data:', error);
+      console.error('Error loading calendar data:', error);
     } finally {
       setLoading(false);
     }
@@ -474,7 +498,7 @@ const Calendar = () => {
   };
 
   const fetchData = async () => {
-    return fetchDataWithCache();
+    return loadDataForCurrentPeriod();
   };
 
   const fetchWeatherData = async () => {
@@ -1247,20 +1271,10 @@ const Calendar = () => {
       ? (direction === 'prev' ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1))
       : (direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
     
-    // Check if data is already cached for instant navigation
-    const cacheKey = getCacheKey(newDate, viewMode);
-    const cached = dataCache.get(cacheKey);
+    // Always set the new date immediately for instant navigation
+    setCurrentDate(newDate);
     
-    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
-      // Instant navigation with cached data
-      setCurrentDate(newDate);
-      setTasks(cached.tasks);
-      setEvents(cached.events);
-      setStudySessions(cached.sessions);
-    } else {
-      // Fallback to normal navigation if not cached
-      setCurrentDate(newDate);
-    }
+    // The useEffect will handle loading cached data or fetching new data
   };
 
   if (loading) {
