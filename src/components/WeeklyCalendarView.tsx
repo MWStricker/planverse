@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, getHours } from "date-fns";
+import { EventTaskModal } from "./EventTaskModal";
 
 interface Event {
   id: string;
@@ -87,17 +88,42 @@ const getEventColorClass = (title: string) => {
 };
 
 export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek }: WeeklyCalendarViewProps) => {
-  const [expandedCell, setExpandedCell] = useState<string | null>(null);
-  console.log('WeeklyCalendarView rendered, expandedCell:', expandedCell);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedHour, setSelectedHour] = useState<number | null>(null);
+  
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const handleCellClick = (day: Date, hour: number) => {
-    const cellKey = `${day.toISOString()}-${hour}`;
-    console.log('Cell clicked!', { cellKey, expandedCell });
-    setExpandedCell(expandedCell === cellKey ? null : cellKey);
-    console.log('Setting expanded cell to:', expandedCell === cellKey ? null : cellKey);
+    setSelectedDate(day);
+    setSelectedHour(hour);
+    setSelectedEvent(null);
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event);
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setSelectedEvent(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
+    setSelectedTask(null);
+    setSelectedDate(null);
+    setSelectedHour(null);
   };
   
   const getItemsForTimeSlot = (day: Date, hour: number) => {
@@ -160,31 +186,16 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
             {weekDays.map((day) => {
               const { events: slotEvents, tasks: slotTasks } = getItemsForTimeSlot(day, timeSlot.hour);
               const cellKey = `${day.toISOString()}-${timeSlot.hour}`;
-              const isExpanded = expandedCell === cellKey;
               
               return (
                 <div
                   key={cellKey}
-                  className={`${isExpanded ? 'min-h-[200px]' : 'min-h-[50px]'} border-r border-b border-gray-300 last:border-r-0 p-1 space-y-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 relative group ${isExpanded ? 'bg-blue-50 dark:bg-blue-900/20 shadow-lg z-10' : ''}`}
+                  className="min-h-[50px] border-r border-b border-gray-300 last:border-r-0 p-1 space-y-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 relative group"
                   onClick={() => handleCellClick(day, timeSlot.hour)}
-                  title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to ${isExpanded ? 'collapse' : 'expand'} details`}
+                  title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to view details`}
                 >
-                  {/* Expanded cell header */}
-                  {isExpanded && (
-                    <div className="mb-2 p-2 bg-white dark:bg-gray-800 rounded border">
-                      <h3 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
-                        {format(day, 'EEEE, MMMM d')} at {timeSlot.label}
-                      </h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {slotEvents.length + slotTasks.length === 0 
-                          ? 'No events or tasks scheduled' 
-                          : `${slotEvents.length} events, ${slotTasks.length} tasks`}
-                      </p>
-                    </div>
-                  )}
-
                   {/* Add icon for empty cells */}
-                  {!isExpanded && slotEvents.length === 0 && slotTasks.length === 0 && (
+                  {slotEvents.length === 0 && slotTasks.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
                       <div className="text-gray-400 text-xs">+</div>
                     </div>
@@ -194,45 +205,24 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                   {slotEvents.map((event) => (
                     <div
                       key={event.id}
-                      className={`p-1 rounded text-xs border cursor-pointer hover:opacity-80 relative z-10 ${getEventColorClass(event.title)}`}
-                      title={event.title}
+                      className={`p-1 rounded text-xs border cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200 relative z-10 ${getEventColorClass(event.title)}`}
+                      title={`Click to view event: ${event.title}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log('Clicked event:', event);
+                        handleEventClick(event);
                       }}
                     >
-                      <div className="font-medium leading-tight">{event.title}</div>
-                      {isExpanded ? (
-                        <div className="space-y-1 mt-1">
-                          <div className="text-xs opacity-80">
-                            Time: {event.start_time ? (() => {
-                              const date = new Date(event.start_time);
-                              if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-                                const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                                return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                              }
-                              return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                            })() : 'No time'}
-                          </div>
-                          {event.event_type && (
-                            <div className="text-xs opacity-70">Type: {event.event_type}</div>
-                          )}
-                          {event.source_provider && (
-                            <div className="text-xs opacity-70">Source: {event.source_provider}</div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-xs opacity-80">
-                          {event.start_time ? (() => {
-                            const date = new Date(event.start_time);
-                            if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-                              const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                              return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                            }
-                            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                          })() : 'No time'}
-                        </div>
-                      )}
+                      <div className="font-medium leading-tight truncate">{event.title}</div>
+                      <div className="text-xs opacity-80 truncate">
+                        {event.start_time ? (() => {
+                          const date = new Date(event.start_time);
+                          if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
+                            const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                            return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                          }
+                          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                        })() : 'No time'}
+                      </div>
                     </div>
                   ))}
                   
@@ -240,34 +230,17 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                   {slotTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="p-1 rounded text-xs bg-yellow-200 border border-yellow-300 text-yellow-800 cursor-pointer hover:opacity-80 relative z-10"
-                      title={task.title}
+                      className="p-1 rounded text-xs bg-yellow-200 border border-yellow-300 text-yellow-800 cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200 relative z-10"
+                      title={`Click to view task: ${task.title}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log('Clicked task:', task);
+                        handleTaskClick(task);
                       }}
                     >
-                      <div className="font-medium leading-tight">{task.title}</div>
-                      {isExpanded ? (
-                        <div className="space-y-1 mt-1">
-                          <div className="text-xs opacity-70">
-                            Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
-                          </div>
-                          {task.priority_score !== undefined && (
-                            <div className="text-xs opacity-70">Priority: {task.priority_score}</div>
-                          )}
-                          {task.completion_status && (
-                            <div className="text-xs opacity-70">Status: {task.completion_status}</div>
-                          )}
-                          {task.course_name && (
-                            <div className="text-xs opacity-70">Course: {task.course_name}</div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-xs opacity-70">
-                          Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
-                        </div>
-                      )}
+                      <div className="font-medium leading-tight truncate">{task.title}</div>
+                      <div className="text-xs opacity-70 truncate">
+                        Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -276,6 +249,16 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
           </div>
         ))}
       </div>
+
+      {/* Event/Task Modal */}
+      <EventTaskModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        event={selectedEvent || undefined}
+        task={selectedTask || undefined}
+        selectedDate={selectedDate || undefined}
+        selectedHour={selectedHour || undefined}
+      />
     </div>
   );
 };
