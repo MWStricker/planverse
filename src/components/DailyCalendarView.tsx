@@ -131,6 +131,12 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
   const getItemsForTimeSlot = (hour: number) => {
     const dayEvents = events.filter(event => {
       if (!event.start_time) return false;
+      
+      // Special handling for Canvas 23:59:59+00:00 events - they should appear at 23:59 (11:59 PM)
+      if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
+        return isSameDay(new Date(event.start_time), currentDay) && hour === 23;
+      }
+      
       const eventDate = new Date(event.start_time);
       const eventHour = eventDate.getHours();
       return isSameDay(eventDate, currentDay) && eventHour === hour;
@@ -138,6 +144,12 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
     
     const dayTasks = tasks.filter(task => {
       if (!task.due_date) return false;
+      
+      // Special handling for Canvas 23:59:59+00:00 tasks - they should appear at 23:59 (11:59 PM)
+      if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+        return isSameDay(new Date(task.due_date), currentDay) && hour === 23;
+      }
+      
       const taskDate = new Date(task.due_date);
       const taskHour = taskDate.getHours();
       return isSameDay(taskDate, currentDay) && taskHour === hour;
