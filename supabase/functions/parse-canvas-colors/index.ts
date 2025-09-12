@@ -51,29 +51,22 @@ serve(async (req) => {
     console.log('Extracted course codes from ICS:', courseCodes);
 
     // Now try to get color information from Canvas dashboard
-    console.log('Attempting to fetch Canvas dashboard...');
+    console.log('Attempting to fetch Canvas dashboard for color extraction...');
     let courseColors: Record<string, string> = {};
 
     try {
-      // Try to access Canvas dashboard page (this may require authentication)
-      const dashboardUrl = `${canvasBaseUrl}/`;
-      const dashboardResponse = await fetch(dashboardUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      });
-
-      if (dashboardResponse.ok) {
-        const dashboardHtml = await dashboardResponse.text();
-        courseColors = extractColorsFromDashboard(dashboardHtml, courseCodes);
-        console.log('Extracted colors from dashboard:', courseColors);
-      } else {
-        console.log('Could not access dashboard, using predefined color mapping');
-        courseColors = getColorMappingByCourseType(courseCodes);
-      }
+      // Try multiple approaches to get Canvas colors
+      courseColors = await extractCanvasColors(canvasBaseUrl, courseCodes);
+      console.log('Extracted colors from Canvas:', courseColors);
     } catch (error) {
-      console.log('Dashboard fetch failed, using predefined color mapping:', error.message);
-      courseColors = getColorMappingByCourseType(courseCodes);
+      console.log('Canvas color extraction failed, using intelligent defaults:', error.message);
+      courseColors = getIntelligentColorMapping(courseCodes);
+    }
+
+    // If no colors were extracted, use intelligent defaults
+    if (Object.keys(courseColors).length === 0) {
+      console.log('No colors extracted, using intelligent course mapping');
+      courseColors = getIntelligentColorMapping(courseCodes);
     }
 
     // Initialize Supabase client
@@ -145,85 +138,251 @@ function extractCourseCodesFromICS(icsData: string): string[] {
   return Array.from(courseCodes);
 }
 
-function extractColorsFromDashboard(html: string, courseCodes: string[]): Record<string, string> {
+async function extractCanvasColors(canvasBaseUrl: string, courseCodes: string[]): Promise<Record<string, string>> {
   const courseColors: Record<string, string> = {};
   
-  // Try to extract colors from Canvas dashboard HTML
-  // Look for course cards with color information
-  const courseCardRegex = /<div[^>]*class="[^"]*ic-DashboardCard[^"]*"[^>]*>.*?<\/div>/gs;
-  const matches = html.match(courseCardRegex) || [];
-  
-  for (const match of matches) {
-    // Extract course name and color from the card HTML
-    const courseNameMatch = match.match(/title="([^"]*)/);
-    const colorMatch = match.match(/background-color:\s*([^;]+)/i) || 
-                      match.match(/color:\s*([^;]+)/i) ||
-                      match.match(/style="[^"]*background:\s*([^;]+)/i);
-    
-    if (courseNameMatch && colorMatch) {
-      const courseName = courseNameMatch[1];
-      const color = colorMatch[1].trim();
+  // Try multiple Canvas endpoints and methods
+  const endpoints = [
+    `${canvasBaseUrl}/`,
+    `${canvasBaseUrl}/dashboard`,
+    `${canvasBaseUrl}/courses`,
+    `${canvasBaseUrl}/api/v1/courses?enrollment_state=active&include[]=course_image&include[]=term&per_page=100`
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      console.log(`Trying endpoint: ${endpoint}`);
       
-      // Try to match this course name to our course codes
-      for (const code of courseCodes) {
-        if (courseName.includes(code) || courseName.toLowerCase().includes(code.toLowerCase())) {
-          courseColors[code] = color;
-          break;
+      const response = await fetch(endpoint, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (response.ok) {
+        const content = await response.text();
+        
+        // Try to extract colors from different Canvas UI patterns
+        const extractedColors = await extractColorsFromCanvasContent(content, courseCodes);
+        
+        if (Object.keys(extractedColors).length > 0) {
+          Object.assign(courseColors, extractedColors);
+          console.log(`Successfully extracted ${Object.keys(extractedColors).length} colors from ${endpoint}`);
+        }
+      }
+    } catch (error) {
+      console.log(`Failed to fetch ${endpoint}:`, error.message);
+      continue;
+    }
+  }
+
+  return courseColors;
+}
+
+async function extractColorsFromCanvasContent(content: string, courseCodes: string[]): Promise<Record<string, string>> {
+  const courseColors: Record<string, string> = {};
+  
+  // Different Canvas UI patterns to look for
+  const patterns = [
+    // Dashboard card patterns
+    {
+      regex: /<div[^>]*class="[^"]*ic-DashboardCard[^"]*"[^>]*>.*?<\/div>/gs,
+      titleExtractor: (match: string) => {
+        const titleMatch = match.match(/(?:title|aria-label|data-course-name)="([^"]*)"/i);
+        return titleMatch ? titleMatch[1] : null;
+      },
+      colorExtractor: (match: string) => {
+        const colorMatches = [
+          match.match(/background-color:\s*([^;]+)/i),
+          match.match(/border-color:\s*([^;]+)/i),
+          match.match(/--course-color:\s*([^;]+)/i),
+          match.match(/data-color="([^"]*)"/i)
+        ];
+        return colorMatches.find(match => match)?.[1]?.trim();
+      }
+    },
+    // Course list patterns
+    {
+      regex: /<tr[^>]*class="[^"]*course[^"]*"[^>]*>.*?<\/tr>/gs,
+      titleExtractor: (match: string) => {
+        const titleMatch = match.match(/<a[^>]*>([^<]*)</);
+        return titleMatch ? titleMatch[1] : null;
+      },
+      colorExtractor: (match: string) => {
+        const colorMatch = match.match(/background:\s*([^;]+)/i) || match.match(/color:\s*([^;]+)/i);
+        return colorMatch?.[1]?.trim();
+      }
+    },
+    // Modern Canvas patterns
+    {
+      regex: /<div[^>]*data-testid="course-card"[^>]*>.*?<\/div>/gs,
+      titleExtractor: (match: string) => {
+        const titleMatch = match.match(/<h[1-6][^>]*>([^<]*)</);
+        return titleMatch ? titleMatch[1] : null;
+      },
+      colorExtractor: (match: string) => {
+        const styleMatch = match.match(/style="[^"]*background[^"]*([^"]*)/i);
+        return styleMatch?.[1]?.trim();
+      }
+    }
+  ];
+
+  for (const pattern of patterns) {
+    const matches = content.match(pattern.regex) || [];
+    
+    for (const match of matches) {
+      const courseName = pattern.titleExtractor(match);
+      const color = pattern.colorExtractor(match);
+      
+      if (courseName && color) {
+        // Try to match this course name to our course codes
+        for (const code of courseCodes) {
+          if (courseName.includes(code) || 
+              courseName.toLowerCase().includes(code.toLowerCase()) ||
+              code.toLowerCase().includes(courseName.toLowerCase().replace(/[^a-z]/g, ''))) {
+            
+            // Clean and normalize the color
+            const normalizedColor = normalizeColor(color);
+            if (normalizedColor) {
+              courseColors[code] = normalizedColor;
+              console.log(`Matched course ${code} to color ${normalizedColor} from "${courseName}"`);
+              break;
+            }
+          }
         }
       }
     }
   }
-  
-  // If we couldn't extract from HTML, fall back to predefined mapping
-  if (Object.keys(courseColors).length === 0) {
-    return getColorMappingByCourseType(courseCodes);
-  }
-  
+
   return courseColors;
 }
 
-function getColorMappingByCourseType(courseCodes: string[]): Record<string, string> {
+function normalizeColor(color: string): string | null {
+  if (!color) return null;
+  
+  // Remove extra whitespace and quotes
+  color = color.trim().replace(/['"]/g, '');
+  
+  // If it's already a hex color, return it
+  if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+    return color;
+  }
+  
+  // Convert RGB to hex
+  const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
+    const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
+    const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+  }
+  
+  // Convert common color names to hex
+  const colorNames: Record<string, string> = {
+    'red': '#E74C3C',
+    'blue': '#3498DB',
+    'green': '#27AE60',
+    'orange': '#F39C12',
+    'purple': '#9B59B6',
+    'yellow': '#F1C40F',
+    'pink': '#E91E63',
+    'brown': '#8B4513',
+    'gray': '#6C757D',
+    'grey': '#6C757D',
+    'black': '#2C3E50',
+    'white': '#FFFFFF'
+  };
+  
+  const lowerColor = color.toLowerCase();
+  if (colorNames[lowerColor]) {
+    return colorNames[lowerColor];
+  }
+  
+  return null;
+}
+
+function getIntelligentColorMapping(courseCodes: string[]): Record<string, string> {
   const courseColors: Record<string, string> = {};
   
-  // Based on your specific course color requirements
-  const colorMappings: Record<string, string> = {
-    // Your specific courses
-    'HES': '#E74C3C',        // Red for Health courses
-    'LIFE': '#27AE60',       // Green for Life/Biology courses  
-    'LIFE-L': '#27AE60',     // Green for Life/Biology lab
-    'MATH': '#8B4513',       // Brown for Math courses
-    'MU': '#27AE60',         // Green for Music courses
-    'PSY': '#E74C3C',        // Red for Psychology courses
+  // Intelligent color mapping based on common course patterns
+  const intelligentMappings: Record<string, string> = {
+    // Health & Medicine
+    'HES': '#E74C3C', 'HLTH': '#E74C3C', 'NURS': '#E74C3C', 'MED': '#E74C3C',
     
-    // General patterns for other courses
-    'BIO': '#27AE60',        // Green for Biology
-    'CHEM': '#3498DB',       // Blue for Chemistry
-    'PHYS': '#9B59B6',       // Purple for Physics
-    'ENG': '#F39C12',        // Orange for English
-    'HIST': '#E67E22',       // Dark Orange for History
-    'ECON': '#1ABC9C',       // Turquoise for Economics
-    'PHIL': '#34495E',       // Dark Blue for Philosophy
-    'ART': '#E91E63',        // Pink for Art
-    'CS': '#2C3E50',         // Dark gray for Computer Science
-    'STAT': '#95A5A6',       // Gray for Statistics
+    // Life Sciences & Biology
+    'LIFE': '#27AE60', 'BIO': '#27AE60', 'BIOL': '#27AE60', 'LIFE-L': '#27AE60',
+    'ANAT': '#27AE60', 'PHYSIOL': '#27AE60', 'MICRO': '#27AE60', 'ECOLOGY': '#27AE60',
+    
+    // Mathematics
+    'MATH': '#8B4513', 'CALC': '#8B4513', 'ALGEBRA': '#8B4513', 'STAT': '#8B4513',
+    'TRIG': '#8B4513', 'GEOMETRY': '#8B4513',
+    
+    // Music & Arts
+    'MU': '#27AE60', 'MUSIC': '#27AE60', 'ART': '#E91E63', 'ARTS': '#E91E63',
+    'FINE': '#E91E63', 'THEATER': '#E91E63', 'DRAMA': '#E91E63',
+    
+    // Psychology & Social Sciences
+    'PSY': '#E74C3C', 'PSYC': '#E74C3C', 'SOC': '#9B59B6', 'ANTH': '#9B59B6',
+    'PHIL': '#9B59B6', 'HIST': '#F39C12',
+    
+    // Physical Sciences
+    'CHEM': '#3498DB', 'PHYS': '#3498DB', 'PHYSICS': '#3498DB', 'CHEMISTRY': '#3498DB',
+    
+    // Engineering & Technology
+    'CS': '#2C3E50', 'CSE': '#2C3E50', 'COMP': '#2C3E50', 'IT': '#2C3E50',
+    'ENG': '#34495E', 'ENGR': '#34495E', 'MECH': '#34495E', 'ELEC': '#34495E',
+    
+    // Business & Economics
+    'BUS': '#1ABC9C', 'ECON': '#1ABC9C', 'FIN': '#1ABC9C', 'ACCT': '#1ABC9C',
+    'MGMT': '#1ABC9C', 'MARK': '#1ABC9C',
+    
+    // Language & Literature
+    'ENG': '#F39C12', 'ENGL': '#F39C12', 'LIT': '#F39C12', 'SPAN': '#E67E22',
+    'FREN': '#E67E22', 'GERM': '#E67E22', 'LANG': '#E67E22',
+    
+    // Education
+    'ED': '#95A5A6', 'EDUC': '#95A5A6', 'TEACH': '#95A5A6',
+    
+    // General/Liberal Arts
+    'GEN': '#7F8C8D', 'LIBERAL': '#7F8C8D', 'CORE': '#7F8C8D'
   };
   
   for (const code of courseCodes) {
     // Direct match first
-    if (colorMappings[code]) {
-      courseColors[code] = colorMappings[code];
+    if (intelligentMappings[code]) {
+      courseColors[code] = intelligentMappings[code];
       continue;
     }
     
     // Pattern matching for course prefixes
     const prefix = code.split('-')[0];
-    if (colorMappings[prefix]) {
-      courseColors[code] = colorMappings[prefix];
+    if (intelligentMappings[prefix]) {
+      courseColors[code] = intelligentMappings[prefix];
       continue;
     }
     
-    // Default color if no match
-    courseColors[code] = '#6C757D'; // Default gray
+    // Partial matching for common patterns
+    let matched = false;
+    for (const [pattern, color] of Object.entries(intelligentMappings)) {
+      if (code.includes(pattern) || pattern.includes(code.split('-')[0])) {
+        courseColors[code] = color;
+        matched = true;
+        break;
+      }
+    }
+    
+    // Generate consistent color if no match found
+    if (!matched) {
+      const colors = ['#E74C3C', '#3498DB', '#27AE60', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22', '#E91E63'];
+      let hash = 0;
+      for (let i = 0; i < code.length; i++) {
+        hash = ((hash << 5) - hash + code.charCodeAt(i)) & 0xffffffff;
+      }
+      courseColors[code] = colors[Math.abs(hash) % colors.length];
+    }
   }
   
   return courseColors;
