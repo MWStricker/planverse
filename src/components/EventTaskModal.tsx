@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, BookOpen, AlertCircle, Edit3, Save, X } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Event {
   id: string;
@@ -50,15 +52,73 @@ export const EventTaskModal = ({
   const [editedNotes, setEditedNotes] = useState("");
   const [editedPriority, setEditedPriority] = useState(task?.priority_score?.toString() || "5");
   const [editedStatus, setEditedStatus] = useState(task?.completion_status || "pending");
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleSave = () => {
-    // Here you would typically save to your backend
-    toast({
-      title: "Changes saved",
-      description: `Successfully updated ${event ? "event" : "task"}: ${editedTitle}`,
-    });
-    setIsEditing(false);
+  const isCreatingNew = !event && !task;
+
+  const handleSave = async () => {
+    if (!editedTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a title",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      if (isCreatingNew) {
+        // Create new task
+        const dueDate = selectedDate 
+          ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), selectedHour || 12, 0)
+          : new Date();
+
+        const { error } = await supabase
+          .from('tasks')
+          .insert({
+            user_id: user?.id,
+            title: editedTitle,
+            description: editedNotes,
+            due_date: dueDate.toISOString(),
+            priority_score: parseInt(editedPriority),
+            completion_status: editedStatus,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Task Created",
+          description: `Successfully created task: ${editedTitle}`,
+        });
+        
+        // Trigger a refresh of the calendar data
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+      } else {
+        // Update existing item
+        toast({
+          title: "Changes saved",
+          description: `Successfully updated ${event ? "event" : "task"}: ${editedTitle}`,
+        });
+      }
+      
+      setIsEditing(false);
+      onClose();
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = () => {
@@ -71,6 +131,7 @@ export const EventTaskModal = ({
   };
 
   const getModalTitle = () => {
+    if (isCreatingNew) return "Create New Task";
     if (event) return isEditing ? "Edit Event" : "Event Details";
     if (task) return isEditing ? "Edit Task" : "Task Details";
     return "Create New Item";
@@ -190,7 +251,15 @@ export const EventTaskModal = ({
                 
                 <div>
                   <Label className="text-xs text-muted-foreground">Priority</Label>
-                  {isEditing ? (
+            {isCreatingNew ? (
+              <CustomInput
+                id="title"
+                value={editedTitle}
+                onChange={setEditedTitle}
+                placeholder="Enter task title..."
+                className="text-lg font-medium"
+              />
+            ) : isEditing ? (
                     <Select value={editedPriority} onValueChange={setEditedPriority}>
                       <SelectTrigger className="w-full mt-1">
                         <SelectValue />
@@ -295,7 +364,23 @@ export const EventTaskModal = ({
             </div>
             
             <div className="flex gap-2">
-              {isEditing ? (
+              {isCreatingNew ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={isSaving || !editedTitle.trim()}
+                  >
+                    {isSaving ? "Creating..." : "Create Task"}
+                  </Button>
+                </>
+              ) : isEditing ? (
                 <>
                   <Button
                     variant="outline"
