@@ -424,6 +424,9 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${connections.length} active Canvas connections to sync`);
 
+    // Track sync start time
+    const syncStartTime = Date.now();
+
     // Sync each connection
     const results = [];
     for (const connection of connections) {
@@ -437,8 +440,26 @@ Deno.serve(async (req) => {
 
     const successCount = results.filter(r => r.success).length;
     const totalEventsProcessed = results.reduce((sum, r) => sum + (r.events_processed || 0), 0);
+    const syncDuration = Date.now() - syncStartTime;
 
-    console.log(`Sync complete: ${successCount}/${connections.length} connections synced successfully, ${totalEventsProcessed} total events processed`);
+    // Log sync statistics
+    try {
+      await supabaseClient
+        .from('sync_stats')
+        .insert({
+          sync_type: 'auto_canvas_sync',
+          connections_processed: connections.length,
+          events_processed: totalEventsProcessed,
+          success_count: successCount,
+          error_count: connections.length - successCount,
+          sync_duration_ms: syncDuration,
+          details: { results }
+        });
+    } catch (statsError) {
+      console.error('Error logging sync stats:', statsError);
+    }
+
+    console.log(`Sync complete: ${successCount}/${connections.length} connections synced successfully, ${totalEventsProcessed} total events processed in ${syncDuration}ms`);
 
     return new Response(
       JSON.stringify({ 
