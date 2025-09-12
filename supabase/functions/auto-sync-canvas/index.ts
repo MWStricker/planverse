@@ -191,9 +191,9 @@ function parseICSDate(dateStr: string): string {
           }
           console.log(`Applied timezone offset for ${timezone}: ${offset || 'UTC'}`);
         } else {
-          // No timezone specified, assume local time and convert to UTC
-          const localDate = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
-          result = localDate.toISOString();
+          // No timezone specified - for Canvas assignments, assume this is already in the intended local time
+          // Don't convert to UTC, just add the local timezone offset to maintain the intended time
+          result += '-07:00'; // Mountain Time offset for assignments due at 11:59 PM
         }
         
         console.log(`Parsed datetime: ${result} (original: ${dateStr})`);
