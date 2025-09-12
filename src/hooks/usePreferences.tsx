@@ -42,9 +42,41 @@ export const usePreferences = () => {
             const loadedPrefs = { ...defaultPreferences, ...(data.settings_data as unknown as UserPreferences) };
             setPreferences(loadedPrefs);
             applyPreferences(loadedPrefs);
+            // Also sync to localStorage for faster loading
+            localStorage.setItem('userPreferences', JSON.stringify(loadedPrefs));
           } else {
-            // No preferences in database, check localStorage and save to database
-            loadFromLocalStorage();
+            // No preferences in database, check localStorage and migrate to database
+            const stored = localStorage.getItem('userPreferences');
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored);
+                const loadedPrefs = { ...defaultPreferences, ...parsed };
+                setPreferences(loadedPrefs);
+                applyPreferences(loadedPrefs);
+                
+                // Migrate localStorage preferences to database
+                await supabase
+                  .from('user_settings')
+                  .insert({
+                    user_id: user.id,
+                    settings_type: 'preferences',
+                    settings_data: loadedPrefs as any,
+                  });
+              } catch (error) {
+                console.error('Failed to migrate preferences to database:', error);
+              }
+            } else {
+              // No preferences anywhere, use defaults and save to database
+              setPreferences(defaultPreferences);
+              applyPreferences(defaultPreferences);
+              await supabase
+                .from('user_settings')
+                .insert({
+                  user_id: user.id,
+                  settings_type: 'preferences',
+                  settings_data: defaultPreferences as any,
+                });
+            }
           }
         } catch (error) {
           console.error('Failed to load preferences from database:', error);
@@ -66,7 +98,12 @@ export const usePreferences = () => {
           applyPreferences(loadedPrefs);
         } catch (error) {
           console.error('Failed to parse saved preferences:', error);
+          setPreferences(defaultPreferences);
+          applyPreferences(defaultPreferences);
         }
+      } else {
+        setPreferences(defaultPreferences);
+        applyPreferences(defaultPreferences);
       }
     };
 
@@ -158,7 +195,7 @@ export const usePreferences = () => {
           .upsert({
             user_id: user.id,
             settings_type: 'preferences',
-            settings_data: newPrefs,
+            settings_data: newPrefs as any,
           });
 
         if (error) {
