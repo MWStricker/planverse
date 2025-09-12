@@ -1041,6 +1041,11 @@ const Calendar = () => {
       // Force refresh all data to ensure everything is synced
       await fetchData();
       
+      // Emit custom events to notify other components to refresh
+      window.dispatchEvent(new CustomEvent('tasksCleared'));
+      window.dispatchEvent(new CustomEvent('eventsCleared'));
+      window.dispatchEvent(new CustomEvent('dataRefresh'));
+      
     } catch (error) {
       console.error('Error deleting all data:', error);
       toast({

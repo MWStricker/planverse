@@ -576,6 +576,21 @@ export const Tasks = () => {
     fetchTasks();
   }, [user]);
 
+  // Listen for data refresh events from other components
+  useEffect(() => {
+    const handleDataRefresh = () => {
+      fetchTasks();
+    };
+
+    window.addEventListener('dataRefresh', handleDataRefresh);
+    window.addEventListener('tasksCleared', handleDataRefresh);
+
+    return () => {
+      window.removeEventListener('dataRefresh', handleDataRefresh);
+      window.removeEventListener('tasksCleared', handleDataRefresh);
+    };
+  }, [user]);
+
   // Fetch stored course colors
   useEffect(() => {
     if (!user?.id) return;

@@ -334,6 +334,25 @@ export const Dashboard = () => {
     }
   };
 
+  // Listen for data refresh events from other components
+  useEffect(() => {
+    const handleDataRefresh = () => {
+      if (user) {
+        fetchDashboardData();
+      }
+    };
+
+    window.addEventListener('dataRefresh', handleDataRefresh);
+    window.addEventListener('tasksCleared', handleDataRefresh);
+    window.addEventListener('eventsCleared', handleDataRefresh);
+
+    return () => {
+      window.removeEventListener('dataRefresh', handleDataRefresh);
+      window.removeEventListener('tasksCleared', handleDataRefresh);
+      window.removeEventListener('eventsCleared', handleDataRefresh);
+    };
+  }, [user]);
+
   // Fast data fetching and real-time sync
   useEffect(() => {
     if (user) {
