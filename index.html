@@ -23,6 +23,13 @@
   </head>
 
   <body>
+    <!-- Global autofill prevention -->
+    <form style="display:none;" autocomplete="off">
+      <input type="password" autocomplete="new-password" />
+      <input type="text" autocomplete="off" />
+      <input type="email" autocomplete="off" />
+    </form>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
