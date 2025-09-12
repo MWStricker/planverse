@@ -53,38 +53,38 @@ const getEventColorClass = (title: string) => {
   const lowerTitle = title.toLowerCase();
   
   if (lowerTitle.includes("fitness") || lowerTitle.includes("workout")) {
-    return "bg-red-200 border-red-300 text-red-800";
+    return "bg-gradient-to-br from-red-100 to-red-200 border-l-4 border-l-red-400 text-red-700 shadow-sm";
   }
   
   if (lowerTitle.includes("write") || lowerTitle.includes("writing")) {
-    return "bg-yellow-200 border-yellow-300 text-yellow-800";
+    return "bg-gradient-to-br from-amber-50 to-yellow-100 border-l-4 border-l-amber-400 text-amber-700 shadow-sm";
   }
   
   if (lowerTitle.includes("travel") || lowerTitle.includes("validation")) {
-    return "bg-cyan-200 border-cyan-300 text-cyan-800";
+    return "bg-gradient-to-br from-cyan-50 to-cyan-100 border-l-4 border-l-cyan-400 text-cyan-700 shadow-sm";
   }
   
   if (lowerTitle.includes("book") || lowerTitle.includes("ticket")) {
-    return "bg-blue-400 border-blue-500 text-white";
+    return "bg-gradient-to-br from-blue-100 to-blue-200 border-l-4 border-l-blue-500 text-blue-800 shadow-sm";
   }
   
   if (lowerTitle.includes("agency") || lowerTitle.includes("work") || lowerTitle.includes("weekly")) {
-    return "bg-blue-200 border-blue-300 text-blue-800";
+    return "bg-gradient-to-br from-indigo-50 to-indigo-100 border-l-4 border-l-indigo-400 text-indigo-700 shadow-sm";
   }
   
   if (lowerTitle.includes("lunch") || lowerTitle.includes("dinner") || lowerTitle.includes("food")) {
-    return "bg-orange-200 border-orange-300 text-orange-800";
+    return "bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-l-orange-400 text-orange-700 shadow-sm";
   }
   
   if (lowerTitle.includes("learn") || lowerTitle.includes("class") || lowerTitle.includes("lesson")) {
-    return "bg-purple-200 border-purple-300 text-purple-800";
+    return "bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-l-purple-400 text-purple-700 shadow-sm";
   }
   
   if (lowerTitle.includes("done")) {
-    return "bg-gray-200 border-gray-300 text-gray-700";
+    return "bg-gradient-to-br from-gray-50 to-gray-100 border-l-4 border-l-gray-400 text-gray-600 shadow-sm opacity-75";
   }
   
-  return "bg-gray-200 border-gray-300 text-gray-800";
+  return "bg-gradient-to-br from-slate-50 to-slate-100 border-l-4 border-l-slate-400 text-slate-700 shadow-sm";
 };
 
 export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek }: WeeklyCalendarViewProps) => {
@@ -147,73 +147,105 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">
-          Week of {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
-        </h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            {format(weekStart, "MMMM d")} - {format(weekEnd, "d, yyyy")}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">Weekly Schedule</p>
+        </div>
       </div>
 
       {/* Calendar Grid */}
-      <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg">
         {/* Header Row */}
-        <div className="grid grid-cols-8 bg-gray-50">
-          <div className="p-2 text-xs text-gray-600 border-r border-gray-300 bg-gray-100">
-            GMT+08
+        <div className="grid grid-cols-8 bg-gradient-to-r from-muted/30 to-muted/50 backdrop-blur-sm">
+          <div className="p-3 text-xs font-medium text-muted-foreground border-r border-border/40 bg-muted/20">
+            <div className="text-center">Time</div>
           </div>
           {weekDays.map((day) => (
             <div
               key={day.toISOString()}
-              className={`p-2 text-center border-r border-gray-300 last:border-r-0 ${
-                isToday(day) ? "bg-blue-100 text-blue-800 font-semibold" : "bg-gray-50"
+              className={`p-3 text-center border-r border-border/40 last:border-r-0 relative overflow-hidden ${
+                isToday(day) 
+                  ? "bg-gradient-to-br from-primary/10 to-primary/5 text-primary font-semibold" 
+                  : "bg-transparent"
               }`}
             >
-              <div className="text-sm font-medium">
-                {format(day, "EEE")} {format(day, "M/d")}
+              {isToday(day) && (
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+              )}
+              <div className="text-sm font-semibold relative z-10">
+                {format(day, "EEE")}
+              </div>
+              <div className={`text-lg font-bold relative z-10 ${
+                isToday(day) ? "text-primary" : "text-foreground"
+              }`}>
+                {format(day, "d")}
               </div>
             </div>
           ))}
         </div>
 
         {/* Time Slots */}
-        {TIME_SLOTS.map((timeSlot) => (
-          <div key={timeSlot.hour} className="grid grid-cols-8">
+        {TIME_SLOTS.map((timeSlot, index) => (
+          <div key={timeSlot.hour} className="grid grid-cols-8 group/row">
             {/* Time Label */}
-            <div className="p-2 text-xs text-gray-600 border-r border-b border-gray-300 bg-gray-50 text-right font-medium">
-              {timeSlot.label}
+            <div className="p-3 text-xs font-medium text-muted-foreground border-r border-b border-border/30 bg-muted/10 text-center flex items-center justify-center relative">
+              <div className="bg-background/80 px-2 py-1 rounded-md shadow-sm border border-border/50">
+                {timeSlot.label}
+              </div>
+              {index % 4 === 0 && (
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-primary/20"></div>
+              )}
             </div>
             
             {/* Day Cells */}
             {weekDays.map((day) => {
               const { events: slotEvents, tasks: slotTasks } = getItemsForTimeSlot(day, timeSlot.hour);
               const cellKey = `${day.toISOString()}-${timeSlot.hour}`;
+              const isCurrentHour = isToday(day) && getHours(new Date()) === timeSlot.hour;
               
               return (
                 <div
                   key={cellKey}
-                  className="min-h-[50px] border-r border-b border-gray-300 last:border-r-0 p-1 space-y-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 relative group"
+                  className={`min-h-[60px] border-r border-b border-border/30 last:border-r-0 p-2 space-y-1.5 cursor-pointer transition-all duration-300 relative group/cell ${
+                    isCurrentHour 
+                      ? "bg-gradient-to-br from-primary/5 to-primary/10 ring-1 ring-primary/20" 
+                      : "hover:bg-accent/20 hover:shadow-sm"
+                  } ${index % 4 === 0 ? "border-t-border/50" : ""}`}
                   onClick={() => handleCellClick(day, timeSlot.hour)}
-                  title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to view details`}
+                  title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to add event`}
                 >
+                  {/* Current time indicator */}
+                  {isCurrentHour && (
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary shadow-sm shadow-primary/50"></div>
+                  )}
+                  
                   {/* Add icon for empty cells */}
                   {slotEvents.length === 0 && slotTasks.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
-                      <div className="text-gray-400 text-xs">+</div>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-50 transition-all duration-200 pointer-events-none">
+                      <div className="w-6 h-6 rounded-full bg-muted/40 flex items-center justify-center">
+                        <div className="text-muted-foreground text-sm font-medium">+</div>
+                      </div>
                     </div>
                   )}
                   
                   {/* Events */}
-                  {slotEvents.map((event) => (
+                  {slotEvents.map((event, eventIndex) => (
                     <div
                       key={event.id}
-                      className={`p-1 rounded text-xs border cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200 relative z-10 ${getEventColorClass(event.title)}`}
+                      className={`p-2 rounded-lg text-xs cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 ${getEventColorClass(event.title)} animate-fade-in`}
+                      style={{ animationDelay: `${eventIndex * 50}ms` }}
                       title={`Click to view event: ${event.title}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEventClick(event);
                       }}
                     >
-                      <div className="font-medium leading-tight truncate">{event.title}</div>
-                      <div className="text-xs opacity-80 truncate">
+                      <div className="font-semibold leading-tight truncate mb-1">{event.title}</div>
+                      <div className="text-xs opacity-80 truncate flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-current opacity-60"></span>
                         {event.start_time ? (() => {
                           const date = new Date(event.start_time);
                           if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
@@ -221,25 +253,29 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                             return fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                           }
                           return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                        })() : 'No time'}
+                        })() : 'All day'}
                       </div>
                     </div>
                   ))}
                   
                   {/* Tasks */}
-                  {slotTasks.map((task) => (
+                  {slotTasks.map((task, taskIndex) => (
                     <div
                       key={task.id}
-                      className="p-1 rounded text-xs bg-yellow-200 border border-yellow-300 text-yellow-800 cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200 relative z-10"
+                      className="p-2 rounded-lg text-xs bg-gradient-to-br from-amber-50 to-yellow-100 border-l-4 border-l-amber-400 text-amber-700 shadow-sm cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 animate-fade-in"
+                      style={{ animationDelay: `${(slotEvents.length + taskIndex) * 50}ms` }}
                       title={`Click to view task: ${task.title}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleTaskClick(task);
                       }}
                     >
-                      <div className="font-medium leading-tight truncate">{task.title}</div>
+                      <div className="font-semibold leading-tight truncate mb-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        {task.title}
+                      </div>
                       <div className="text-xs opacity-70 truncate">
-                        Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
+                        Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'Today'}
                       </div>
                     </div>
                   ))}
