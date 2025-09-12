@@ -126,7 +126,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
     return day.getMonth() === currentMonth.getMonth();
   };
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   return (
     <div className="w-full">
@@ -147,9 +147,9 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
           {weekDays.map((day) => (
             <div
               key={day}
-              className="p-3 text-center border-r border-border/40 last:border-r-0 bg-muted/20"
+              className="p-4 text-center border-r border-border/40 last:border-r-0 bg-muted/20 relative overflow-hidden"
             >
-              <div className="text-sm font-semibold text-muted-foreground">
+              <div className="text-sm font-semibold text-muted-foreground relative z-10">
                 {day}
               </div>
             </div>
@@ -166,18 +166,25 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-[120px] border-r border-b border-border/30 last:border-r-0 p-2 cursor-pointer transition-all duration-300 relative group/cell ${
+                className={`min-h-[140px] border-r border-b border-border/30 last:border-r-0 p-3 cursor-pointer transition-all duration-300 relative group/cell ${
                   isTodayDay 
                     ? "bg-gradient-to-br from-primary/5 to-primary/10 ring-1 ring-primary/20" 
                     : "hover:bg-accent/20 hover:shadow-sm"
-                } ${!isCurrentMonthDay ? "bg-muted/20 text-muted-foreground" : ""}`}
+                } ${!isCurrentMonthDay ? "bg-muted/20 text-muted-foreground" : ""} ${
+                  Math.floor(index / 7) % 4 === 0 ? "border-t-border/50" : ""
+                }`}
                 onClick={() => handleCellClick(day)}
                 title={`${format(day, 'MMM d, yyyy')} - Click to add event`}
               >
+                {/* Current day indicator */}
+                {isTodayDay && (
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary shadow-sm shadow-primary/50"></div>
+                )}
+                
                 {/* Date Number */}
-                <div className={`text-sm font-semibold mb-2 ${
+                <div className={`text-lg font-bold mb-2 relative z-10 ${
                   isTodayDay 
-                    ? "text-primary bg-primary/10 w-6 h-6 rounded-full flex items-center justify-center" 
+                    ? "text-primary" 
                     : isCurrentMonthDay 
                       ? "text-foreground" 
                       : "text-muted-foreground"
@@ -195,12 +202,12 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                 )}
                 
                 {/* Events and Tasks */}
-                <div className="space-y-1 max-h-[80px] overflow-y-auto">
+                <div className="space-y-1.5 max-h-[90px] overflow-y-auto">
                   {/* Events */}
                   {dayEvents.slice(0, 3).map((event, eventIndex) => (
                     <div
                       key={event.id}
-                      className={`p-1.5 rounded text-xs cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 ${getEventColorClass(event.title)} animate-fade-in`}
+                      className={`p-2 rounded-lg text-xs cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 ${getEventColorClass(event.title)} animate-fade-in`}
                       style={{ animationDelay: `${eventIndex * 50}ms` }}
                       title={`Click to view event: ${event.title}`}
                       onClick={(e) => {
@@ -208,9 +215,10 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                         handleEventClick(event);
                       }}
                     >
-                      <div className="font-semibold leading-tight truncate text-xs">{event.title}</div>
+                      <div className="font-semibold leading-tight truncate mb-1">{event.title}</div>
                       {event.start_time && (
-                        <div className="text-xs opacity-80 truncate">
+                        <div className="text-xs opacity-80 truncate flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-current opacity-60"></span>
                           {(() => {
                             const date = new Date(event.start_time);
                             if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
@@ -228,7 +236,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                   {dayTasks.slice(0, 3 - dayEvents.slice(0, 3).length).map((task, taskIndex) => (
                     <div
                       key={task.id}
-                      className="p-1.5 rounded text-xs bg-gradient-to-br from-amber-50 to-yellow-100 border-l-2 border-l-amber-400 text-amber-700 shadow-sm cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 animate-fade-in"
+                      className="p-2 rounded-lg text-xs bg-gradient-to-br from-amber-50 to-yellow-100 border-l-4 border-l-amber-400 text-amber-700 shadow-sm cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 animate-fade-in"
                       style={{ animationDelay: `${(dayEvents.slice(0, 3).length + taskIndex) * 50}ms` }}
                       title={`Click to view task: ${task.title}`}
                       onClick={(e) => {
@@ -236,13 +244,13 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                         handleTaskClick(task);
                       }}
                     >
-                      <div className="font-semibold leading-tight truncate text-xs flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-amber-500"></span>
+                      <div className="font-semibold leading-tight truncate mb-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                         {task.title}
                       </div>
                       {task.due_date && (
                         <div className="text-xs opacity-70 truncate">
-                          {new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          Due: {new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                         </div>
                       )}
                     </div>
@@ -250,7 +258,8 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                   
                   {/* Show more indicator */}
                   {(dayEvents.length + dayTasks.length) > 3 && (
-                    <div className="text-xs text-muted-foreground pl-1">
+                    <div className="text-xs text-muted-foreground pl-1 flex items-center gap-1 mt-1">
+                      <span className="w-1 h-1 rounded-full bg-current opacity-40"></span>
                       +{(dayEvents.length + dayTasks.length) - 3} more
                     </div>
                   )}
