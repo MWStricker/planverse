@@ -1297,34 +1297,36 @@ export const Dashboard = () => {
                     return format(date, 'EEEE, MMM d');
                    };
 
-                   // Filter out completed items
-                   const filteredGroups = Object.fromEntries(
+                   // Don't filter out completed items, but sort them within each day
+                   const sortedGroups = Object.fromEntries(
                      Object.entries(groupedItems).map(([dateKey, group]: [string, any]) => [
                        dateKey,
                        {
                          ...group,
-                         items: group.items.filter((item: any) => {
-                           if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
-                             const originalEvent = userEvents.find(e => e.id === item.id);
-                             return !originalEvent?.is_completed;
-                           } else {
-                             return item.completion_status !== 'completed';
+                         items: group.items.sort((a: any, b: any) => {
+                           // First check completion status
+                           const aCompleted = a.source_provider === 'canvas' && a.event_type === 'assignment' 
+                             ? userEvents.find(e => e.id === a.id)?.is_completed 
+                             : a.completion_status === 'completed';
+                           const bCompleted = b.source_provider === 'canvas' && b.event_type === 'assignment' 
+                             ? userEvents.find(e => e.id === b.id)?.is_completed 
+                             : b.completion_status === 'completed';
+                           
+                           // Sort incomplete items first, then completed items
+                           if (aCompleted !== bCompleted) {
+                             return aCompleted ? 1 : -1;
                            }
+                           
+                           // Within same completion status, sort by priority
+                           return (b.priority_score || 2) - (a.priority_score || 2);
                          })
                        }
                      ])
                    );
 
-                   // Remove empty date groups
-                   const nonEmptyGroups = Object.fromEntries(
-                     Object.entries(filteredGroups).filter(([_, group]: [string, any]) => 
-                       group.items.length > 0
-                     )
-                   );
-
                    return (
                      <div className="space-y-6">
-                       {Object.values(nonEmptyGroups).map((group: any, groupIndex: number) => (
+                       {Object.values(sortedGroups).map((group: any, groupIndex: number) => (
                         <div key={groupIndex} className="space-y-3">
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-sm text-foreground">
@@ -1343,7 +1345,9 @@ export const Dashboard = () => {
                              return (
                              <div 
                                key={task.id} 
-                               className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border"
+                               className={`flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border ${
+                                 isCompleted ? 'opacity-60' : ''
+                               }`}
                              >
                                <Checkbox
                                  checked={isCompleted}
@@ -1369,10 +1373,10 @@ export const Dashboard = () => {
                                    }`} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-medium text-foreground">
-                                      {task.title}
-                                    </h3>
+                                   <div className="flex items-center gap-2 mb-1">
+                                     <h3 className={`font-medium text-foreground ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                                       {task.title}
+                                     </h3>
                                     {task.source_provider === 'canvas' && (
                                       <Badge variant="secondary" className="text-xs bg-transparent border-0">
                                         Canvas
@@ -1388,9 +1392,9 @@ export const Dashboard = () => {
                                         {task.course_name}
                                       </Badge>
                                     )}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground mb-1">
-                                    {task.description ? (
+                                   </div>
+                                   <div className={`text-sm mb-1 ${isCompleted ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                                     {task.description ? (
                                       <div>
                                         {task.description.length > 60 ? (
                                           <>
@@ -1430,9 +1434,9 @@ export const Dashboard = () => {
                                     ) : (
                                       <span>No description available</span>
                                     )}
-                                  </div>
-                                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1">
+                                   </div>
+                                   <div className={`flex items-center gap-4 text-xs ${isCompleted ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                                     <div className="flex items-center gap-1">
                                       <Clock className="h-3 w-3" />
                                       <span className="font-medium">
                                         {task.due_date ? format(new Date(task.due_date), "h:mm a") : "No time set"}
