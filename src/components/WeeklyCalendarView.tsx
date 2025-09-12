@@ -41,7 +41,9 @@ const TIME_SLOTS = [
   { label: "6pm", hour: 18 },
   { label: "7pm", hour: 19 },
   { label: "8pm", hour: 20 },
-  { label: "9pm", hour: 21 }
+  { label: "9pm", hour: 21 },
+  { label: "10pm", hour: 22 },
+  { label: "11pm", hour: 23 }
 ];
 
 const getEventColorClass = (title: string) => {
@@ -178,7 +180,12 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                     >
                       <div className="font-medium leading-tight">{event.title}</div>
                       <div className="text-xs opacity-80">
-                        {format(new Date(event.start_time), "h:mm a")}
+                        {event.start_time ? (() => {
+                          const date = new Date(event.start_time);
+                          console.log('Event start_time raw:', event.start_time);
+                          console.log('Event start_time parsed:', date);
+                          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                        })() : 'No time'}
                       </div>
                     </div>
                   ))}
@@ -192,7 +199,13 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                     >
                       <div className="font-medium leading-tight">{task.title}</div>
                       <div className="text-xs opacity-70">
-                        Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
+                        Due: {task.due_date ? (() => {
+                          const date = new Date(task.due_date);
+                          console.log('Task due_date raw:', task.due_date);
+                          console.log('Task due_date parsed:', date);
+                          console.log('Task due_date time:', date.toLocaleTimeString());
+                          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                        })() : 'No time'}
                       </div>
                     </div>
                   ))}
