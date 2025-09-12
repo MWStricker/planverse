@@ -242,13 +242,13 @@ export const WeeklyCalendarView = ({ events, tasks, storedColors }: WeeklyCalend
                           height: `${height - 2}px`,
                           top: '2px'
                         }}
-                        title={`${event.title} - ${format(parseISO(event.start_time), "h:mm a")}${event.end_time ? ` to ${format(parseISO(event.end_time), "h:mm a")}` : ""}`}
+                        title={event.title}
                       >
-                        <div className="font-medium text-xs leading-tight">
+                        <div className="font-medium text-xs leading-tight break-words">
                           {event.title}
                         </div>
                         {event.start_time && (
-                          <div className="text-xs opacity-80 mt-0.5">
+                          <div className="text-xs opacity-80 mt-0.5 break-words">
                             {format(parseISO(event.start_time), "h:mm a")}
                             {event.end_time && event.start_time !== event.end_time && (
                               <span> - {format(parseISO(event.end_time), "h:mm a")}</span>
@@ -274,9 +274,9 @@ export const WeeklyCalendarView = ({ events, tasks, storedColors }: WeeklyCalend
                       }}
                       title={task.title}
                     >
-                      <div className="font-medium truncate text-xs">{task.title}</div>
+                      <div className="font-medium text-xs break-words">{task.title}</div>
                       {task.due_date && (
-                        <div className="text-xs opacity-70">
+                        <div className="text-xs opacity-70 break-words">
                           Due: {format(parseISO(task.due_date), "h:mm a")}
                         </div>
                       )}
