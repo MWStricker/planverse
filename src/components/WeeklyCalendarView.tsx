@@ -90,6 +90,17 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const handleCellClick = (day: Date, hour: number) => {
+    const clickedDateTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0);
+    console.log('Clicked time slot:', {
+      date: clickedDateTime.toLocaleDateString(),
+      time: clickedDateTime.toLocaleTimeString(),
+      day: day,
+      hour: hour
+    });
+    // Future: Could open a dialog to create events/tasks for this time slot
+  };
   
   const getItemsForTimeSlot = (day: Date, hour: number) => {
     const dayEvents = events.filter(event => {
@@ -154,14 +165,27 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
               return (
                 <div
                   key={`${day.toISOString()}-${timeSlot.hour}`}
-                  className="min-h-[50px] border-r border-b border-gray-300 last:border-r-0 p-1 space-y-1"
+                  className="min-h-[50px] border-r border-b border-gray-300 last:border-r-0 p-1 space-y-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative group"
+                  onClick={() => handleCellClick(day, timeSlot.hour)}
+                  title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to add event/task`}
                 >
+                  {/* Add icon for empty cells */}
+                  {slotEvents.length === 0 && slotTasks.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
+                      <div className="text-gray-400 text-xs">+</div>
+                    </div>
+                  )}
+                  
                   {/* Events */}
                   {slotEvents.map((event) => (
                     <div
                       key={event.id}
-                      className={`p-1 rounded text-xs border cursor-pointer hover:opacity-80 ${getEventColorClass(event.title)}`}
+                      className={`p-1 rounded text-xs border cursor-pointer hover:opacity-80 relative z-10 ${getEventColorClass(event.title)}`}
                       title={event.title}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Clicked event:', event);
+                      }}
                     >
                       <div className="font-medium leading-tight">{event.title}</div>
                       <div className="text-xs opacity-80">
@@ -186,8 +210,12 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                   {slotTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="p-1 rounded text-xs bg-yellow-200 border border-yellow-300 text-yellow-800 cursor-pointer hover:opacity-80"
+                      className="p-1 rounded text-xs bg-yellow-200 border border-yellow-300 text-yellow-800 cursor-pointer hover:opacity-80 relative z-10"
                       title={task.title}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Clicked task:', task);
+                      }}
                     >
                       <div className="font-medium leading-tight">{task.title}</div>
                       <div className="text-xs opacity-70">
