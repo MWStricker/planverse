@@ -192,7 +192,7 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
                     >
                       <div className="font-medium leading-tight">{task.title}</div>
                       <div className="text-xs opacity-70">
-                        Due: {format(new Date(task.due_date!), "h:mm a")}
+                        Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'No time'}
                       </div>
                     </div>
                   ))}
