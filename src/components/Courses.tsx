@@ -214,7 +214,25 @@ export const Courses = () => {
       return `bg-[${color}] text-white border-[${color}]`;
     }
     
-    // Fallback to Colorado State University Canvas colors if no stored color
+    // Subject-based color mapping as fallback
+    const subjectColors: Record<string, string> = {
+      'HES': '#E74C3C',    // Health - Red
+      'PSY': '#E74C3C',    // Psychology - Red  
+      'LIFE': '#27AE60',   // Life Sciences - Green
+      'LIFE-L': '#27AE60', // Life Sciences Lab - Green
+      'MU': '#27AE60',     // Music - Green
+      'MATH': '#8B4513',   // Mathematics - Brown
+    };
+    
+    if (courseCode) {
+      const baseCode = courseCode.split('-')[0];
+      if (subjectColors[courseCode] || subjectColors[baseCode]) {
+        const color = subjectColors[courseCode] || subjectColors[baseCode];
+        return `bg-[${color}] text-white border-[${color}]`;
+      }
+    }
+    
+    // Final fallback to CSU green colors
     const colors = [
       'bg-[#1E7040] text-white border-[#1E7040]', // CSU primary green
       'bg-[#2E8050] text-white border-[#2E8050]', // CSU light green
@@ -222,12 +240,6 @@ export const Courses = () => {
       'bg-[#3E9060] text-white border-[#3E9060]', // CSU bright green
       'bg-[#1E5030] text-white border-[#1E5030]', // CSU forest green
       'bg-[#2E6040] text-white border-[#2E6040]', // CSU medium green
-      'bg-[#4EA070] text-white border-[#4EA070]', // CSU sage green
-      'bg-[#1A6B3A] text-white border-[#1A6B3A]', // CSU evergreen
-      'bg-[#5EB080] text-white border-[#5EB080]', // CSU mint green
-      'bg-[#0F4F2F] text-white border-[#0F4F2F]', // CSU deep green
-      'bg-[#6EC090] text-white border-[#6EC090]', // CSU light mint
-      'bg-[#154A35] text-white border-[#154A35]'  // CSU pine green
     ];
     
     let hash = 0;
