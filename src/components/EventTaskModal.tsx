@@ -173,22 +173,16 @@ export const EventTaskModal = ({
               {event ? "Event" : "Task"} Title
             </Label>
             {isCreatingNew || isEditing ? (
-              <Input
-                type="search"
-                id="title"
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
-                className="text-lg font-medium"
-                autoComplete="chrome-off"
-                data-lpignore="true"
-                data-form-type="search"
-                name={`search-${Math.random().toString(36)}`}
-                onFocus={(e) => {
-                  e.target.setAttribute('autocomplete', 'chrome-off');
-                  e.target.setAttribute('readonly', 'true');
-                  setTimeout(() => e.target.removeAttribute('readonly'), 100);
+              <div
+                contentEditable
+                suppressContentEditableWarning
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-lg font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
+                data-placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
+                onInput={(e) => setEditedTitle(e.currentTarget.textContent || "")}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.preventDefault();
                 }}
+                dangerouslySetInnerHTML={{ __html: editedTitle }}
               />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
@@ -335,21 +329,13 @@ export const EventTaskModal = ({
           <div className="space-y-2">
             <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
             {isCreatingNew || isEditing ? (
-              <Textarea
-                id="notes"
-                value={editedNotes}
-                onChange={(e) => setEditedNotes(e.target.value)}
-                placeholder="Add notes or description..."
-                rows={4}
-                autoComplete="chrome-off"
-                data-lpignore="true"
-                data-form-type="search"
-                name={`search-notes-${Math.random().toString(36)}`}
-                onFocus={(e) => {
-                  e.target.setAttribute('autocomplete', 'chrome-off');
-                  e.target.setAttribute('readonly', 'true');
-                  setTimeout(() => e.target.removeAttribute('readonly'), 100);
-                }}
+              <div
+                contentEditable
+                suppressContentEditableWarning
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 whitespace-pre-wrap empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
+                data-placeholder="Add notes or description..."
+                onInput={(e) => setEditedNotes(e.currentTarget.textContent || "")}
+                dangerouslySetInnerHTML={{ __html: editedNotes }}
               />
             ) : (
               <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
