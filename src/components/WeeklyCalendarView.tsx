@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, getHours } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface Event {
   id: string;
@@ -87,19 +88,23 @@ const getEventColorClass = (title: string) => {
 };
 
 export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek }: WeeklyCalendarViewProps) => {
+  const { toast } = useToast();
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const handleCellClick = (day: Date, hour: number) => {
     const clickedDateTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0);
+    toast({
+      title: "Time Slot Clicked",
+      description: `${format(day, 'EEE, MMM d')} at ${hour > 12 ? hour - 12 : hour === 0 ? 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`,
+    });
     console.log('Clicked time slot:', {
       date: clickedDateTime.toLocaleDateString(),
       time: clickedDateTime.toLocaleTimeString(),
       day: day,
       hour: hour
     });
-    // Future: Could open a dialog to create events/tasks for this time slot
   };
   
   const getItemsForTimeSlot = (day: Date, hour: number) => {
@@ -184,6 +189,10 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                       title={event.title}
                       onClick={(e) => {
                         e.stopPropagation();
+                        toast({
+                          title: "Event Clicked",
+                          description: event.title,
+                        });
                         console.log('Clicked event:', event);
                       }}
                     >
@@ -214,6 +223,10 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                       title={task.title}
                       onClick={(e) => {
                         e.stopPropagation();
+                        toast({
+                          title: "Task Clicked",
+                          description: task.title,
+                        });
                         console.log('Clicked task:', task);
                       }}
                     >
