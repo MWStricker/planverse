@@ -2,6 +2,7 @@ import { Calendar, Clock, BookOpen, Target, Upload, Plus, CheckCircle, AlertCirc
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,6 +82,74 @@ export const Dashboard = () => {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  
+  const handleItemToggle = async (item: any, isCompleted: boolean) => {
+    try {
+      if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
+        // Handle Canvas assignments (events)
+        const { error } = await supabase
+          .from('events')
+          .update({ is_completed: isCompleted })
+          .eq('id', item.id)
+          .eq('user_id', user?.id);
+
+        if (error) {
+          console.error('Error updating event completion:', error);
+          toast({
+            title: "Error",
+            description: "Failed to update assignment status",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Update local events state
+        setUserEvents(prevEvents => 
+          prevEvents.map(event => 
+            event.id === item.id ? { ...event, is_completed: isCompleted } : event
+          )
+        );
+      } else {
+        // Handle manual tasks
+        const { error } = await supabase
+          .from('tasks')
+          .update({ 
+            completion_status: isCompleted ? 'completed' : 'pending',
+            completed_at: isCompleted ? new Date().toISOString() : null
+          })
+          .eq('id', item.id)
+          .eq('user_id', user?.id);
+
+        if (error) {
+          console.error('Error updating task completion:', error);
+          toast({
+            title: "Error",
+            description: "Failed to update task status",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Update local tasks state
+        setUserTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === item.id ? { 
+              ...task, 
+              completion_status: isCompleted ? 'completed' : 'pending',
+              completed_at: isCompleted ? new Date().toISOString() : null
+            } : task
+          )
+        );
+      }
+
+      toast({
+        title: isCompleted ? "Item completed" : "Item uncompleted",
+        description: "Status updated successfully",
+      });
+    } catch (error) {
+      console.error('Error toggling item completion:', error);
+    }
+  };
   
   const toggleDescription = (taskId: string) => {
     const newExpanded = new Set(expandedDescriptions);
@@ -194,19 +263,27 @@ export const Dashboard = () => {
     event_type: 'assignment'
   }));
 
-  // Get today's Canvas assignments from events
+  // Get today's Canvas assignments from events (only non-completed ones)
   const todaysCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
     const eventDate = new Date(assignment.due_date);
     const today = new Date();
-    return (
+    const isToday = (
       eventDate.getDate() === today.getDate() &&
       eventDate.getMonth() === today.getMonth() &&
       eventDate.getFullYear() === today.getFullYear()
     );
+    // Filter out completed assignments
+    const originalEvent = userEvents.find(e => e.id === assignment.id);
+    return isToday && !originalEvent?.is_completed;
   });
 
-  // Combine tasks and Canvas assignments for today
-  const allTodaysItems = [...todaysTasks, ...todaysCanvasAssignments].sort((a, b) => {
+  // Get today's tasks (only non-completed ones)
+  const todaysActiveTasks = todaysTasks.filter(task => 
+    task.completion_status !== 'completed'
+  );
+
+  // Combine active tasks and Canvas assignments for today
+  const allTodaysItems = [...todaysActiveTasks, ...todaysCanvasAssignments].sort((a, b) => {
     // First sort by priority, then by due time
     if ((b.priority_score || 2) !== (a.priority_score || 2)) {
       return (b.priority_score || 2) - (a.priority_score || 2);
@@ -1218,11 +1295,36 @@ export const Dashboard = () => {
                     if (dateStr === todayStr) return 'Today';
                     if (dateStr === tomorrowStr) return 'Tomorrow';
                     return format(date, 'EEEE, MMM d');
-                  };
+                   };
 
-                  return (
-                    <div className="space-y-6">
-                      {Object.values(groupedItems).map((group: any, groupIndex: number) => (
+                   // Filter out completed items
+                   const filteredGroups = Object.fromEntries(
+                     Object.entries(groupedItems).map(([dateKey, group]: [string, any]) => [
+                       dateKey,
+                       {
+                         ...group,
+                         items: group.items.filter((item: any) => {
+                           if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
+                             const originalEvent = userEvents.find(e => e.id === item.id);
+                             return !originalEvent?.is_completed;
+                           } else {
+                             return item.completion_status !== 'completed';
+                           }
+                         })
+                       }
+                     ])
+                   );
+
+                   // Remove empty date groups
+                   const nonEmptyGroups = Object.fromEntries(
+                     Object.entries(filteredGroups).filter(([_, group]: [string, any]) => 
+                       group.items.length > 0
+                     )
+                   );
+
+                   return (
+                     <div className="space-y-6">
+                       {Object.values(nonEmptyGroups).map((group: any, groupIndex: number) => (
                         <div key={groupIndex} className="space-y-3">
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-sm text-foreground">
@@ -1233,24 +1335,38 @@ export const Dashboard = () => {
                               {format(group.date, 'MMM d, yyyy')}
                             </span>
                           </div>
-                          {group.items.map((task: any, index: number) => (
-                            <div 
-                              key={task.id} 
-                              className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border cursor-pointer hover:bg-muted/50"
-                              onClick={() => {
-                                setSelectedTask(task);
-                                setIsTaskDetailOpen(true);
-                              }}
-                            >
-                              <div className="flex items-center gap-3 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
-                                  <div className={`w-2 h-2 rounded-full ${
-                                    task.priority_score === 4 ? 'bg-destructive' :
-                                    task.priority_score === 3 ? 'bg-primary' :
-                                    task.priority_score === 1 ? 'bg-muted-foreground' :
-                                    'bg-secondary'
-                                  }`} />
+                           {group.items.map((task: any, index: number) => {
+                             const isCompleted = task.source_provider === 'canvas' && task.event_type === 'assignment' 
+                               ? userEvents.find(e => e.id === task.id)?.is_completed 
+                               : task.completion_status === 'completed';
+                             
+                             return (
+                             <div 
+                               key={task.id} 
+                               className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border"
+                             >
+                               <Checkbox
+                                 checked={isCompleted}
+                                 onCheckedChange={(checked) => {
+                                   handleItemToggle(task, !!checked);
+                                 }}
+                                 className="flex-shrink-0"
+                               />
+                               <div 
+                                 className="flex items-center gap-3 flex-1 cursor-pointer"
+                                 onClick={() => {
+                                   setSelectedTask(task);
+                                   setIsTaskDetailOpen(true);
+                                 }}
+                               >
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                                   <div className={`w-2 h-2 rounded-full ${
+                                     task.priority_score === 4 ? 'bg-destructive' :
+                                     task.priority_score === 3 ? 'bg-primary' :
+                                     task.priority_score === 1 ? 'bg-muted-foreground' :
+                                     'bg-secondary'
+                                   }`} />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
@@ -1337,7 +1453,8 @@ export const Dashboard = () => {
                                 </Badge>
                               </div>
                             </div>
-                          ))}
+                            );
+                           })}
                         </div>
                       ))}
                     </div>
