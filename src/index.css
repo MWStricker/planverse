@@ -206,7 +206,7 @@
 /* Custom scrollbar styles for calendar day cells */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.5) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -219,15 +219,20 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.5);
   border-radius: 3px;
   transition: background-color 0.2s ease;
 }
 
-.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.5);
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.7);
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.6);
+/* Ensure scrollbar is always visible when content overflows */
+.custom-scrollbar::-webkit-scrollbar {
+  display: block;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  visibility: visible;
 }
