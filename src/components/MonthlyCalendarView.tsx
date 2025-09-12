@@ -223,9 +223,9 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
 
                 {/* Events and Tasks */}
                 {isCurrentMonth && (
-                  <div className="space-y-1 max-h-[100px] overflow-y-auto">
+                  <div className="space-y-1 max-h-[100px] overflow-y-auto custom-scrollbar pr-1">{/* Events and Tasks with visible scrollbar */}
                     {/* Events */}
-                    {dayEvents.slice(0, 3).map((event, eventIndex) => (
+                    {dayEvents.map((event, eventIndex) => (
                       <div
                         key={event.id}
                         className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-200 text-xs ${getEventColorClass(event.title)} animate-fade-in`}
@@ -253,7 +253,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                     ))}
                     
                     {/* Tasks */}
-                    {dayTasks.slice(0, 3).map((task, taskIndex) => (
+                    {dayTasks.map((task, taskIndex) => (
                       <div
                         key={task.id}
                         className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-200 text-xs ${getTaskColorClass(task)} animate-fade-in`}
@@ -282,13 +282,6 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                         </div>
                       </div>
                     ))}
-                    
-                    {/* Show overflow indicator */}
-                    {(dayEvents.length + dayTasks.length) > 3 && (
-                      <div className="text-xs text-muted-foreground p-1 text-center bg-muted/20 rounded-md">
-                        +{(dayEvents.length + dayTasks.length) - 3} more
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
