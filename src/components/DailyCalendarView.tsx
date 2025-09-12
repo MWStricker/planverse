@@ -20,6 +20,7 @@ interface Task {
   priority_score?: number;
   completion_status?: string;
   course_name?: string;
+  source_provider?: string;
 }
 
 interface DailyCalendarViewProps {
@@ -201,7 +202,16 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                 onClick={() => handleEventClick(event)}
               >
                 <div className="font-semibold text-sm mb-1">{event.title}</div>
-                <div className="text-xs opacity-80">All day event</div>
+                <div className="text-xs opacity-80">
+                  {event.start_time ? (() => {
+                    const date = new Date(event.start_time);
+                    if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
+                      const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                      return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    }
+                    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                  })() : 'All day event'}
+                </div>
               </div>
             ))}
             {allDayTasks.map((task) => (
@@ -217,8 +227,20 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                   }
                   {task.title}
                 </div>
-                <div className="text-xs opacity-80">
-                  {task.course_name && <span>Course: {task.course_name}</span>}
+                <div className="text-xs opacity-80 space-y-1">
+                  <div>
+                    Due: {task.due_date ? (() => {
+                      const date = new Date(task.due_date);
+                      if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+                        const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                        return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                      }
+                      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    })() : 'Today'}
+                  </div>
+                  {task.course_name && (
+                    <div>Course: {task.course_name}</div>
+                  )}
                 </div>
               </div>
             ))}
@@ -321,7 +343,14 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                       </div>
                       <div className="text-xs opacity-80 space-y-1">
                         <div>
-                          Due: {task.due_date ? new Date(task.due_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Today'}
+                          Due: {task.due_date ? (() => {
+                            const date = new Date(task.due_date);
+                            if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+                              const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                              return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                            }
+                            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                          })() : 'Today'}
                         </div>
                         {task.course_name && (
                           <div>Course: {task.course_name}</div>
