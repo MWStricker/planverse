@@ -27,12 +27,39 @@ const extractCourseCode = (title: string, isCanvas: boolean = false) => {
   return null;
 };
 
-// Generate unique colors for each course
-const getCourseColor = (title: string, isCanvas: boolean) => {
+// Generate colors using stored course colors or fallback
+const getCourseColor = (title: string, isCanvas: boolean, courseCode?: string, storedColors?: Record<string, string>) => {
   if (!isCanvas) return 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
   
-  const courseCode = extractCourseCode(title, isCanvas);
-  if (!courseCode) return 'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200';
+  const extractedCourseCode = courseCode || extractCourseCode(title, isCanvas);
+  if (!extractedCourseCode) return 'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200';
+  
+  // First, try to use stored Canvas color
+  if (storedColors && storedColors[extractedCourseCode]) {
+    const color = storedColors[extractedCourseCode];
+    return `bg-[${color}]/20 border-[${color}]/30 text-[${color}] dark:bg-[${color}]/10 dark:border-[${color}]/40 dark:text-[${color}]`;
+  }
+  
+  // Fallback color mapping based on course type
+  const colorMappings: Record<string, string> = {
+    'HES': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+    'LIFE': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+    'LIFE-L': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+    'MATH': 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200',
+    'MU': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+    'PSY': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+  };
+  
+  // Direct match first
+  if (colorMappings[extractedCourseCode]) {
+    return colorMappings[extractedCourseCode];
+  }
+  
+  // Pattern matching for course prefixes
+  const prefix = extractedCourseCode.split('-')[0];
+  if (colorMappings[prefix]) {
+    return colorMappings[prefix];
+  }
   
   // Generate a hash from the course code for consistent color assignment
   const hashCode = (str: string) => {
@@ -45,9 +72,7 @@ const getCourseColor = (title: string, isCanvas: boolean) => {
     return Math.abs(hash);
   };
   
-  const hash = hashCode(courseCode);
-  
-  // Define a comprehensive set of distinct colors
+  const hash = hashCode(extractedCourseCode);
   const courseColors = [
     'bg-red-100 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200',
     'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200',
@@ -102,19 +127,19 @@ const getCourseIcon = (title: string, isCanvas: boolean) => {
 };
 
 // Get course color for tasks - try to match with Canvas events 
-const getTaskCourseColor = (task: Task) => {
+const getTaskCourseColor = (task: Task, storedColors?: Record<string, string>) => {
   // If task has a course_name, try to match it with Canvas course codes
   if (task.course_name) {
     // Create a pseudo Canvas title to generate the same color as events
     const pseudoTitle = `[2025FA-${task.course_name}]`;
-    return getCourseColor(pseudoTitle, true);
+    return getCourseColor(pseudoTitle, true, task.course_name, storedColors);
   }
   
   // Check if task title contains course info
   const courseFromTitle = extractCourseCode(task.title, true);
   if (courseFromTitle) {
     const pseudoTitle = `[2025FA-${courseFromTitle}]`;
-    return getCourseColor(pseudoTitle, true);
+    return getCourseColor(pseudoTitle, true, courseFromTitle, storedColors);
   }
   
   // Default color for tasks without course info
@@ -196,6 +221,7 @@ const Calendar = () => {
   const [isAddingFeed, setIsAddingFeed] = useState(false);
   const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
+  const [storedColors, setStoredColors] = useState<Record<string, string>>({});
   const [weather, setWeather] = useState<{ current?: WeatherData; forecast: { [key: string]: WeatherData } }>(() => {
     // Load cached weather data from localStorage on component mount
     try {
@@ -307,6 +333,28 @@ const Calendar = () => {
       fetchWeatherData().catch((error) => console.error('Weather refetch failed:', error));
     }
   }, [user, userLocation]);
+
+  // Fetch stored course colors
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchStoredColors = async () => {
+      const { data: colors } = await supabase
+        .from('course_colors')
+        .select('course_code, canvas_color')
+        .eq('user_id', user.id);
+
+      if (colors) {
+        const colorMap: Record<string, string> = {};
+        colors.forEach(item => {
+          colorMap[item.course_code] = item.canvas_color;
+        });
+        setStoredColors(colorMap);
+      }
+    };
+
+    fetchStoredColors();
+  }, [user?.id]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -1039,7 +1087,7 @@ const Calendar = () => {
           if (!courses.has(courseCode)) {
             courses.set(courseCode, {
               code: courseCode,
-              color: getCourseColor(event.title, true),
+              color: getCourseColor(event.title, true, courseCode, storedColors),
               icon: getCourseIcon(event.title, true),
               events: [],
               tasks: []
@@ -1059,7 +1107,7 @@ const Calendar = () => {
             const pseudoTitle = `[2025FA-${courseCode}]`;
             courses.set(courseCode, {
               code: courseCode,
-              color: getCourseColor(pseudoTitle, true),
+              color: getCourseColor(pseudoTitle, true, courseCode, storedColors),
               icon: getCourseIcon(pseudoTitle, true),
               events: [],
               tasks: []
@@ -1251,7 +1299,7 @@ const Calendar = () => {
                   <div className="flex-1 overflow-y-auto space-y-0.5 min-h-0">
                      {/* Tasks with course-based colors matching events */}
                      {dayTasks.map(task => {
-                       const taskCourseColor = getTaskCourseColor(task);
+                        const taskCourseColor = getTaskCourseColor(task, storedColors);
                        
                        return (
                          <Popover key={task.id}>
@@ -1310,7 +1358,7 @@ const Calendar = () => {
                      {/* Events with color coding */}
                      {dayEvents.map(event => {
                        const isCanvas = event.source_provider === 'canvas';
-                       const courseColor = getCourseColor(event.title, isCanvas);
+                        const courseColor = getCourseColor(event.title, isCanvas, extractCourseCode(event.title, isCanvas), storedColors);
                        const CourseIcon = getCourseIcon(event.title, isCanvas);
                        
                        return (
@@ -1749,7 +1797,7 @@ const Calendar = () => {
                     </h3>
                     <div className="space-y-3">
                       {getTasksForDay(selectedDay).map(task => {
-                        const taskCourseColor = getTaskCourseColor(task);
+                        const taskCourseColor = getTaskCourseColor(task, storedColors);
                         
                         return (
                           <div key={task.id} className={`p-4 border rounded-lg transition-all duration-200 ${taskCourseColor}`}>
@@ -1826,7 +1874,7 @@ const Calendar = () => {
                     <div className="space-y-3">
                       {getEventsForDay(selectedDay).map(event => {
                         const isCanvas = event.source_provider === 'canvas';
-                        const courseColor = getCourseColor(event.title, isCanvas);
+                        const courseColor = getCourseColor(event.title, isCanvas, extractCourseCode(event.title, isCanvas), storedColors);
                         const CourseIcon = getCourseIcon(event.title, isCanvas);
                         
                         return (

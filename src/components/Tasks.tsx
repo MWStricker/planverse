@@ -79,6 +79,7 @@ export const Tasks = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [storedColors, setStoredColors] = useState<Record<string, string>>({});
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -493,9 +494,109 @@ export const Tasks = () => {
     }
   };
 
+  // Helper function to get task course color
+  const getTaskCourseColor = (task: Task) => {
+    // Extract course code from course_name or title
+    const courseCode = task.course_name || extractCourseCode(task.title);
+    
+    // First, try to use stored Canvas color
+    if (courseCode && storedColors[courseCode]) {
+      const color = storedColors[courseCode];
+      return `border-l-4 border-l-[${color}] bg-[${color}]/5`;
+    }
+    
+    // Fallback color mapping based on course type
+    const colorMappings: Record<string, string> = {
+      'HES': 'border-l-red-500 bg-red-50 dark:bg-red-900/10',
+      'LIFE': 'border-l-green-500 bg-green-50 dark:bg-green-900/10',
+      'LIFE-L': 'border-l-green-500 bg-green-50 dark:bg-green-900/10',
+      'MATH': 'border-l-amber-600 bg-amber-50 dark:bg-amber-900/10',
+      'MU': 'border-l-green-500 bg-green-50 dark:bg-green-900/10',
+      'PSY': 'border-l-red-500 bg-red-50 dark:bg-red-900/10',
+    };
+    
+    if (courseCode) {
+      // Direct match first
+      if (colorMappings[courseCode]) {
+        return colorMappings[courseCode];
+      }
+      
+      // Pattern matching for course prefixes
+      const prefix = courseCode.split('-')[0];
+      if (colorMappings[prefix]) {
+        return colorMappings[prefix];
+      }
+    }
+    
+    // Default color for tasks without course info
+    return 'border-l-4 border-l-border bg-muted/20';
+  };
+
+  // Extract course code from title or course name
+  const extractCourseCode = (title: string): string | null => {
+    if (!title) return null;
+    
+    // Enhanced patterns for Canvas course extraction
+    const patterns = [
+      // [2025FA-PSY-100-007] or [2025FA-LIFE-102-003] format
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)\]/i,
+      // [PSY-100-007-2025FA] format
+      /\[([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)-(\d{4}[A-Z]{2})\]/i,
+      // Simple course codes like PSY-100, MATH-118, LIFE-102, etc.
+      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?)\b/i,
+      // Lab courses like LIFE-102-L16
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}-?L\d*)\]/i
+    ];
+    
+    for (const pattern of patterns) {
+      const match = title.match(pattern);
+      if (match) {
+        // Return the course code, cleaning up any extra formatting
+        let courseCode = match[2] || match[1];
+        // Remove semester info and normalize format
+        courseCode = courseCode.replace(/\d{4}[A-Z]{2}/, '').replace(/^-|-$/, '');
+        
+        // Handle lab courses - keep the L designation but remove section numbers
+        if (courseCode.includes('-L')) {
+          courseCode = courseCode.replace(/-L\d+$/, '-L');
+        }
+        // If it's a regular course with section number, keep just the base course
+        else if (courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
+          courseCode = courseCode.replace(/-\d{3}$/, '');
+        }
+        
+        return courseCode.toUpperCase();
+      }
+    }
+    
+    return null;
+  };
+
   useEffect(() => {
     fetchTasks();
   }, [user]);
+
+  // Fetch stored course colors
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchStoredColors = async () => {
+      const { data: colors } = await supabase
+        .from('course_colors')
+        .select('course_code, canvas_color')
+        .eq('user_id', user.id);
+
+      if (colors) {
+        const colorMap: Record<string, string> = {};
+        colors.forEach(item => {
+          colorMap[item.course_code] = item.canvas_color;
+        });
+        setStoredColors(colorMap);
+      }
+    };
+
+    fetchStoredColors();
+  }, [user?.id]);
 
   // Combine and sort tasks by priority and due date
   const allItems = [
@@ -1210,13 +1311,15 @@ export const Tasks = () => {
             </CardContent>
           </Card>
         ) : (
-          sortedItems.map((item) => (
-            <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${
-              item.completion_status === 'completed' ? 'opacity-60' : ''
-            } ${
-              completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
-            }`}>
-              <CardContent className="p-4">
+          sortedItems.map((item) => {
+            const taskCourseColor = item.type === 'task' ? getTaskCourseColor(item as Task) : '';
+            return (
+              <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${
+                item.completion_status === 'completed' ? 'opacity-60' : ''
+              } ${
+                completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
+              } ${taskCourseColor}`}>
+                <CardContent className="p-4">
                 <div className="flex items-center gap-4">
                   <Button
                     variant="ghost"
@@ -1299,9 +1402,10 @@ export const Tasks = () => {
                     </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>
