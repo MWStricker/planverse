@@ -97,6 +97,9 @@ export const EventTaskModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
+          <input type="password" autoComplete="new-password" style={{display:'none', position:'absolute', left:'-9999px'}} />
+          <input type="text" autoComplete="off" style={{display:'none', position:'absolute', left:'-9999px'}} />
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {event && <Calendar className="h-5 w-5 text-primary" />}
@@ -117,9 +120,13 @@ export const EventTaskModal = ({
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
                 className="text-lg font-medium"
-                autoComplete="off"
+                autoComplete="new-password"
                 data-form-type="other"
-                name="event-task-title"
+                name="event-task-title-unique"
+                spellCheck={false}
+                data-1p-ignore="true"
+                data-lpignore="true"
+                data-bwignore="true"
               />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
@@ -272,6 +279,13 @@ export const EventTaskModal = ({
                 onChange={(e) => setEditedNotes(e.target.value)}
                 placeholder="Add notes or description..."
                 rows={4}
+                autoComplete="new-password"
+                data-form-type="other"
+                name="event-task-notes-unique"
+                spellCheck={false}
+                data-1p-ignore="true"
+                data-lpignore="true"
+                data-bwignore="true"
               />
             ) : (
               <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
@@ -326,7 +340,8 @@ export const EventTaskModal = ({
               )}
             </div>
           </div>
-        </div>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
