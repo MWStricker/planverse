@@ -59,25 +59,16 @@ const Auth = () => {
   };
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log('User already authenticated, redirecting to dashboard...');
-        navigate("/");
-      }
-    };
-    
-    // Also listen for auth state changes
+    // Only listen for auth state changes, don't auto-redirect on page load
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state change in Auth page:', event, session?.user?.email);
-      if (session && event === 'SIGNED_IN') {
-        console.log('User signed in, redirecting to dashboard...');
+      
+      // Only redirect on successful sign-in events, not on page load or other events
+      if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        console.log('User signed in via auth event, redirecting to dashboard...');
         navigate("/");
       }
     });
-    
-    checkUser();
     
     return () => subscription.unsubscribe();
   }, [navigate]);
