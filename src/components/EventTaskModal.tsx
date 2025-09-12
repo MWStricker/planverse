@@ -76,11 +76,21 @@ export const EventTaskModal = ({
     return "Create New Item";
   };
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string, sourceProvider?: string) => {
     const date = new Date(dateString);
+    
+    // Handle Canvas provider special case (same logic as WeeklyCalendarView)
+    let displayTime;
+    if (sourceProvider === 'canvas' && dateString.includes('23:59:59+00')) {
+      const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+      displayTime = fixedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } else {
+      displayTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    
     return {
       date: format(date, "EEEE, MMMM d, yyyy"),
-      time: format(date, "h:mm a")
+      time: displayTime
     };
   };
 
@@ -129,8 +139,8 @@ export const EventTaskModal = ({
                   <div className="text-sm">
                     {event.start_time && (
                       <>
-                        <div>{formatDateTime(event.start_time).date}</div>
-                        <div className="text-muted-foreground">{formatDateTime(event.start_time).time}</div>
+                        <div>{formatDateTime(event.start_time, event.source_provider).date}</div>
+                        <div className="text-muted-foreground">{formatDateTime(event.start_time, event.source_provider).time}</div>
                       </>
                     )}
                   </div>
