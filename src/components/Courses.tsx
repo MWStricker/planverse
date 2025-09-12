@@ -52,7 +52,11 @@ export const Courses = () => {
   const { toast } = useToast();
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Start dragging after 8px of movement
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -284,9 +288,18 @@ export const Courses = () => {
       const oldIndex = courses.findIndex(course => course.code === active.id);
       const newIndex = courses.findIndex(course => course.code === over?.id);
 
-      const newCourses = arrayMove(courses, oldIndex, newIndex);
-      setCourses(newCourses);
-      setCourseOrder(newCourses.map(course => course.code));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newCourses = arrayMove(courses, oldIndex, newIndex);
+        setCourses(newCourses);
+        setCourseOrder(newCourses.map(course => course.code));
+        
+        // Add a subtle success feedback
+        toast({
+          title: "Course reordered",
+          description: "Don't forget to save your changes!",
+          duration: 2000,
+        });
+      }
     }
   };
 
@@ -556,11 +569,13 @@ export const Courses = () => {
       </div>
 
       {isReorderMode && courses.length > 0 && (
-        <div className="mb-4 p-4 bg-muted/50 rounded-lg border-2 border-dashed border-primary/30">
-          <p className="text-sm text-muted-foreground text-center">
-            <GripVertical className="h-4 w-4 inline mr-1" />
-            Drag and drop courses to reorder them, then click "Save Order" to persist your changes.
-          </p>
+        <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border-2 border-dashed border-primary/30 animate-fade-in">
+          <div className="flex items-center justify-center gap-2">
+            <GripVertical className="h-4 w-4 text-primary animate-pulse" />
+            <p className="text-sm text-foreground font-medium">
+              Click and drag any course card to reorder them
+            </p>
+          </div>
         </div>
       )}
 
@@ -612,12 +627,16 @@ const SortableCourseCard = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: course.code });
+    isOver,
+  } = useSortable({ 
+    id: course.code,
+    disabled: !isReorderMode 
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: isDragging ? 'none' : (transition || 'transform 200ms cubic-bezier(0.2, 0, 0, 1)'),
+    zIndex: isDragging ? 50 : 1,
   };
 
   const CourseIcon = course.icon;
@@ -679,23 +698,24 @@ const SortableCourseCard = ({
     <Card 
       ref={setNodeRef} 
       style={style} 
-      className={`${course.color} border-2 transition-all duration-300 ease-in-out ${
-        isDragging ? 'ring-2 ring-primary shadow-lg' : ''
-      } ${isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`${course.color} border-2 transition-all duration-200 ease-out ${
+        isDragging ? 'shadow-2xl ring-4 ring-primary/20 scale-105 rotate-1' : 
+        isOver ? 'ring-2 ring-primary/40' : ''
+      } ${
+        isReorderMode ? 'cursor-grab active:cursor-grabbing hover:shadow-lg' : ''
+      }`}
+      {...(isReorderMode ? { ...attributes, ...listeners } : {})}
     >
-      <Collapsible open={!isCollapsed} onOpenChange={onToggle}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className={`cursor-pointer hover:bg-background/10 transition-colors duration-200 select-none ${
-            isReorderMode ? 'pointer-events-none' : ''
+      <Collapsible open={!isCollapsed} onOpenChange={isReorderMode ? undefined : onToggle}>
+        <CollapsibleTrigger asChild disabled={isReorderMode}>
+          <CardHeader className={`transition-colors duration-200 ${
+            isReorderMode ? 'cursor-grab active:cursor-grabbing select-none pointer-events-none' : 
+            'cursor-pointer hover:bg-background/10 select-none'
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {isReorderMode && (
-                  <div 
-                    {...attributes}
-                    {...listeners}
-                    className="cursor-grab active:cursor-grabbing p-1 hover:bg-background/20 rounded pointer-events-auto"
-                  >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
                     <GripVertical className="h-5 w-5" />
                   </div>
                 )}
@@ -708,17 +728,22 @@ const SortableCourseCard = ({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {activeAssignments.length > 0 && (
+                {!isReorderMode && activeAssignments.length > 0 && (
                   <Badge variant="outline" className="bg-background/50">
                     {activeAssignments.length} upcoming
                   </Badge>
                 )}
                 {!isReorderMode && (
                   isCollapsed ? (
-                    <ChevronRight className="h-4 w-4 transition-transform duration-300 ease-in-out" />
+                    <ChevronRight className="h-4 w-4 transition-transform duration-200" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 ease-in-out" />
+                    <ChevronDown className="h-4 w-4 transition-transform duration-200" />
                   )
+                )}
+                {isReorderMode && (
+                  <div className="text-xs text-muted-foreground font-medium px-2 py-1 bg-background/30 rounded">
+                    Drag to reorder
+                  </div>
                 )}
               </div>
             </div>
