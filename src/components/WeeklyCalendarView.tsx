@@ -25,6 +25,8 @@ interface WeeklyCalendarViewProps {
   events: Event[];
   tasks: Task[];
   storedColors?: Record<string, string>;
+  currentWeek: Date;
+  setCurrentWeek: (date: Date) => void;
 }
 
 const TIME_SLOTS = [
@@ -84,16 +86,10 @@ const getEventColorClass = (title: string) => {
   return "bg-gray-200 border-gray-300 text-gray-800";
 };
 
-export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) => {
-  const [currentWeek, setCurrentWeek] = useState(new Date());
-  
+export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek }: WeeklyCalendarViewProps) => {
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
-  
-  const goToPrevWeek = () => setCurrentWeek(subWeeks(currentWeek, 1));
-  const goToNextWeek = () => setCurrentWeek(addWeeks(currentWeek, 1));
-  const goToToday = () => setCurrentWeek(new Date());
   
   const getItemsForTimeSlot = (day: Date, hour: number) => {
     const dayEvents = events.filter(event => {
@@ -120,14 +116,6 @@ export const WeeklyCalendarView = ({ events, tasks }: WeeklyCalendarViewProps) =
         <h2 className="text-xl font-semibold">
           Week of {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
         </h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={goToToday}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={goToNextWeek}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
 
       {/* Calendar Grid */}

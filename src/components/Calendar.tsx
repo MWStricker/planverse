@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getPriorityColor, getPriorityLabel } from "@/lib/priority-utils";
@@ -1169,6 +1169,20 @@ const Calendar = () => {
     );
   };
 
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => 
+      direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1)
+    );
+  };
+
+  const navigate = (direction: 'prev' | 'next') => {
+    if (viewMode === 'week') {
+      navigateWeek(direction);
+    } else {
+      navigateMonth(direction);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1248,13 +1262,13 @@ const Calendar = () => {
             <Thermometer className="h-4 w-4" />
             Refresh Weather
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('prev')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
             Today
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('next')}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -1267,6 +1281,8 @@ const Calendar = () => {
           events={events}
           tasks={tasks}
           storedColors={storedColors}
+          currentWeek={currentDate}
+          setCurrentWeek={setCurrentDate}
         />
       ) : (
         <>
