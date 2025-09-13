@@ -408,7 +408,6 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   const tabs = [
     { id: 'accounts', label: 'Account Linking', icon: Link },
     { id: 'preferences', label: 'System Preferences', icon: Palette },
-    { id: 'course-icons', label: 'Course Icons', icon: GraduationCap },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'privacy', label: 'Privacy & Security', icon: Shield },
