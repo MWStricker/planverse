@@ -1296,8 +1296,8 @@ export const Dashboard = () => {
                   <div className="flex items-center justify-center py-8 text-center">
                     <div>
                       <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No tasks due today</p>
-                      <p className="text-xs text-muted-foreground">Tasks will appear here when due today</p>
+                      <p className="text-sm text-muted-foreground">There are no tasks to complete!</p>
+                      <p className="text-xs text-muted-foreground">Enjoy your free time</p>
                     </div>
                   </div>
                 )}
