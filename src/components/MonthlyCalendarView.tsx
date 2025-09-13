@@ -158,7 +158,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant={isSameMonth(currentMonth, new Date()) ? "default" : "outline"} size="sm" onClick={handleToday}>
-            {format(currentMonth, "MMMM yyyy")}
+            Current Month
           </Button>
           <Button variant="outline" size="sm" onClick={handleNextMonth}>
             <ChevronRight className="h-4 w-4" />
