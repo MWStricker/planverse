@@ -26,13 +26,18 @@ const Index = () => {
   // Initialize user preferences on app load
   usePreferences();
 
-  // Auto-collapse sidebar when on calendar page
+  // Auto-collapse sidebar when on calendar page with smooth transitions
   useEffect(() => {
-    if (currentPage === 'calendar') {
-      setIsCollapsed(true);
-    } else {
-      setIsCollapsed(false);
-    }
+    // Add a small delay to ensure smooth transitions
+    const timeoutId = setTimeout(() => {
+      if (currentPage === 'calendar') {
+        setIsCollapsed(true);
+      } else {
+        setIsCollapsed(false);
+      }
+    }, 50); // Small delay for smoother transition
+
+    return () => clearTimeout(timeoutId);
   }, [currentPage]);
 
   // Tab reordering functionality
@@ -108,9 +113,13 @@ const Index = () => {
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
         <div 
-          className={`flex-shrink-0 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+          className={`flex-shrink-0 transition-all duration-800 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
+          style={{ 
+            transform: 'translateZ(0)', // Force GPU acceleration
+            backfaceVisibility: 'hidden' // Prevent flickering
+          }}
         >
           <Navigation 
             currentPage={currentPage} 
