@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
@@ -702,19 +702,11 @@ export const Courses = ({}: CoursesProps = {}) => {
         <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border-2 border-dashed border-primary/30 animate-fade-in">
           <div className="text-center">
             <p className="text-sm text-foreground font-medium mb-3">
-              Click on any course icon to change it
+              Click on any course name to change its icon using the text input
             </p>
-            <div className="grid grid-cols-10 gap-2 max-w-2xl mx-auto">
-              {courseIcons.map((icon) => (
-                <div
-                  key={icon.id}
-                  className="p-2 hover:bg-accent rounded-lg cursor-pointer transition-colors text-center"
-                  title={icon.name}
-                >
-                  <icon.icon className="h-5 w-5 mx-auto" />
-                </div>
-              ))}
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Available icons: calculator, book, flask, microscope, palette, music, globe, briefcase, cpu, atom, dna, chart, code, heart, and more...
+            </p>
           </div>
         </div>
       )}
@@ -768,6 +760,29 @@ const SortableCourseCard = ({
   onIconChange: (courseCode: string, iconId: string) => void;
 }) => {
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [iconTextInput, setIconTextInput] = useState("");
+  const [isEditingIcon, setIsEditingIcon] = useState(false);
+
+  const handleIconTextSubmit = (value: string) => {
+    // Find icon by name (case insensitive)
+    const matchingIcon = courseIcons.find(icon => 
+      icon.name.toLowerCase().includes(value.toLowerCase()) ||
+      icon.id.toLowerCase() === value.toLowerCase()
+    );
+    
+    if (matchingIcon) {
+      onIconChange(course.code, matchingIcon.id);
+      setIconTextInput("");
+      setIsEditingIcon(false);
+    }
+  };
+
+  const startIconEdit = () => {
+    if (isEditIconsMode) {
+      setIsEditingIcon(true);
+      setIconTextInput("");
+    }
+  };
   const {
     attributes,
     listeners,
@@ -863,50 +878,61 @@ const SortableCourseCard = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {isEditIconsMode ? (
-                  <Popover open={showIconPicker} onOpenChange={setShowIconPicker}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-accent"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowIconPicker(true);
-                        }}
-                      >
-                        <CourseIcon className="h-6 w-6" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-4" align="start">
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-sm">Choose an icon for {course.code}</h4>
-                        <div className="grid grid-cols-8 gap-2">
-                          {courseIcons.map((icon) => (
-                        <Button
-                          key={icon.id}
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-accent"
-                          onClick={() => {
-                            onIconChange(course.code, icon.id);
-                            setShowIconPicker(false);
+                  <div className="flex items-center gap-2">
+                    <CourseIcon className="h-6 w-6" />
+                    {isEditingIcon ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={iconTextInput}
+                          onChange={(e) => setIconTextInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleIconTextSubmit(iconTextInput);
+                            } else if (e.key === 'Escape') {
+                              setIsEditingIcon(false);
+                              setIconTextInput("");
+                            }
                           }}
-                          title={icon.name}
+                          placeholder="Type icon name..."
+                          className="w-32 h-6 text-xs"
+                          autoFocus
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleIconTextSubmit(iconTextInput)}
                         >
-                          <icon.icon className="h-4 w-4" />
+                          <Save className="h-3 w-3" />
                         </Button>
-                          ))}
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={() => {
+                            setIsEditingIcon(false);
+                            setIconTextInput("");
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
-                    </PopoverContent>
-                  </Popover>
+                    ) : null}
+                  </div>
                 ) : (
                   <CourseIcon className="h-6 w-6" />
                 )}
-                <div>
+                <div 
+                  className={isEditIconsMode ? "cursor-pointer" : ""}
+                  onClick={isEditIconsMode ? (e) => {
+                    e.stopPropagation();
+                    startIconEdit();
+                  } : undefined}
+                >
                   <CardTitle className="text-xl">{course.code}</CardTitle>
                   <p className="text-sm opacity-80">
                     {activeAssignments.length} active • {completedAssignments.length} completed
+                    {isEditIconsMode && !isEditingIcon && <span className="ml-2 text-xs text-muted-foreground">(click to edit icon)</span>}
                   </p>
                 </div>
               </div>
