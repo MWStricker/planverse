@@ -203,6 +203,12 @@ export const EventTaskModal = ({
 
         if (error) throw error;
 
+        console.log('Task deletion successful, task details:', {
+          id: task.id,
+          title: task.title,
+          user_id: user.id
+        });
+
         toast({
           title: "Task Deleted",
           description: `Successfully deleted task: ${task.title}`,
@@ -210,12 +216,16 @@ export const EventTaskModal = ({
 
         // Dispatch specific task deleted event with task ID
         console.log('Dispatching taskDeleted event with taskId:', task.id);
-        window.dispatchEvent(new CustomEvent('taskDeleted', { 
+        const deleteEvent = new CustomEvent('taskDeleted', { 
           detail: { taskId: task.id } 
-        }));
+        });
+        window.dispatchEvent(deleteEvent);
+        console.log('taskDeleted event dispatched');
         
         // Also dispatch general refresh as backup
+        console.log('Dispatching dataRefresh event as backup');
         window.dispatchEvent(new CustomEvent('dataRefresh'));
+        console.log('dataRefresh event dispatched');
         
         onClose();
       } else if (event) {

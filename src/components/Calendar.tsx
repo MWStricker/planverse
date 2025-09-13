@@ -374,14 +374,47 @@ const Calendar = () => {
       }
     };
 
+    // Test event listener to see if ANY events are being received
+    const testEventListener = (event: any) => {
+      console.log('=== ANY EVENT RECEIVED ===', event.type, event.detail);
+    };
+
+    console.log('Setting up Calendar event listeners for user:', !!user);
+    
+    // Add test listeners for all possible events
+    window.addEventListener('taskDeleted', testEventListener);
+    window.addEventListener('taskCreated', testEventListener);
+    window.addEventListener('dataRefresh', testEventListener);
+
     const handleTaskDeleted = (event: any) => {
-      console.log('Task deleted event received:', event.detail);
+      console.log('=== TASK DELETED EVENT RECEIVED ===');
+      console.log('Event detail:', event.detail);
+      console.log('Current tasks count:', tasks.length);
+      console.log('Task ID to delete:', event.detail?.taskId);
+      
       if (event.detail?.taskId) {
-        setTasks(prev => prev.filter(task => task.id !== event.detail.taskId));
+        const taskIdToDelete = event.detail.taskId;
+        console.log('Filtering out task with ID:', taskIdToDelete);
+        
+        setTasks(prev => {
+          const filteredTasks = prev.filter(task => {
+            console.log(`Comparing task ${task.id} with ${taskIdToDelete}:`, task.id !== taskIdToDelete);
+            return task.id !== taskIdToDelete;
+          });
+          console.log('Tasks before filter:', prev.length);
+          console.log('Tasks after filter:', filteredTasks.length);
+          return filteredTasks;
+        });
+        
+        console.log('Task deletion from state completed');
+      } else {
+        console.log('No taskId found in event detail');
       }
     };
 
     console.log('Setting up Calendar event listeners for user:', !!user);
+    
+    // Set up actual event listeners
     window.addEventListener('dataRefresh', handleDataRefresh);
     window.addEventListener('taskCreated', handleTaskCreated);
     window.addEventListener('taskDeleted', handleTaskDeleted);
@@ -395,6 +428,11 @@ const Calendar = () => {
       window.removeEventListener('taskDeleted', handleTaskDeleted);
       window.removeEventListener('tasksCleared', handleDataRefresh);
       window.removeEventListener('eventsCleared', handleDataRefresh);
+      
+      // Remove test listeners
+      window.removeEventListener('taskDeleted', testEventListener);
+      window.removeEventListener('taskCreated', testEventListener);
+      window.removeEventListener('dataRefresh', testEventListener);
     };
   }, [user, currentDate, viewMode]);
 
@@ -1553,6 +1591,26 @@ const Calendar = () => {
           currentMonth={currentDate}
           setCurrentMonth={setCurrentDate}
         />
+      )}
+
+      {/* Debug button for testing task deletion */}
+      {process.env.NODE_ENV === 'development' && tasks.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Button
+            onClick={() => {
+              const firstTask = tasks[0];
+              console.log('Manual test: deleting first task:', firstTask);
+              window.dispatchEvent(new CustomEvent('taskDeleted', { 
+                detail: { taskId: firstTask.id } 
+              }));
+            }}
+            variant="outline"
+            size="sm"
+            className="bg-red-500 text-white"
+          >
+            Test Delete First Task
+          </Button>
+        </div>
       )}
     </div>
   );
