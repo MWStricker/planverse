@@ -275,6 +275,37 @@ export const useConnect = () => {
     }
   };
 
+  // Delete a post
+  const deletePost = async (postId: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id); // Ensure user can only delete their own posts
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully!",
+      });
+
+      await fetchPosts(); // Refresh posts
+      return true;
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   // Fetch public profile
   const fetchPublicProfile = async (userId: string): Promise<PublicProfile | null> => {
     try {
@@ -302,6 +333,7 @@ export const useConnect = () => {
     loading,
     fetchPosts,
     createPost,
+    deletePost,
     toggleLike,
     fetchComments,
     addComment,

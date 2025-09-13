@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Plus, User, School } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useConnect, Post, Comment } from '@/hooks/useConnect';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,13 +15,15 @@ import { formatDistanceToNow } from 'date-fns';
 
 export const Connect = () => {
   const { user } = useAuth();
-  const { posts, loading, createPost, toggleLike, fetchComments, addComment } = useConnect();
+  const { posts, loading, createPost, deletePost, toggleLike, fetchComments, addComment } = useConnect();
   const [newPostContent, setNewPostContent] = useState('');
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   const handleCreatePost = async () => {
     if (!newPostContent.trim()) return;
@@ -51,6 +55,16 @@ export const Connect = () => {
       // Refresh comments
       const updatedComments = await fetchComments(selectedPost.id);
       setComments(updatedComments);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!postToDelete) return;
+    
+    const success = await deletePost(postToDelete);
+    if (success) {
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
     }
   };
 
@@ -177,9 +191,54 @@ export const Connect = () => {
                       {post.comments_count}
                     </Button>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="text-muted-foreground">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                    {user && post.user_id === user.id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-background border border-border shadow-lg z-50">
+                          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem 
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  setPostToDelete(post.id);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Post
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this post? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleDeletePost}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
