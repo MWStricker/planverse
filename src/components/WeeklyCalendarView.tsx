@@ -173,6 +173,15 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
           <p className="text-sm text-muted-foreground mt-1">Weekly Schedule</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePrevWeek}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant={isCurrentWeek() ? "default" : "outline"} size="sm" onClick={handleToday}>
+            This Week
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleNextWeek}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="sm" onClick={() => {/* Add clear all functionality */}}>
             Clear All
           </Button>

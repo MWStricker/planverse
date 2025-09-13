@@ -187,6 +187,15 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
           <p className="text-sm text-muted-foreground mt-1">Daily Planner</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePrevDay}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant={isToday(currentDay) ? "default" : "outline"} size="sm" onClick={handleToday}>
+            Today
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleNextDay}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="sm" onClick={() => {/* Add clear all functionality */}}>
             Clear All
           </Button>
