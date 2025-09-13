@@ -229,16 +229,170 @@ export const CanvasIntegration = () => {
     if (!user) return;
 
     try {
-      // Delete Canvas events and tasks
-      await Promise.all([
-        supabase.from('events').delete().eq('user_id', user.id).eq('source_provider', 'canvas'),
-        supabase.from('tasks').delete().eq('user_id', user.id).eq('source_provider', 'canvas'),
-        supabase.from('calendar_connections').delete().eq('id', connectionId)
-      ]);
+      console.log('Starting comprehensive Canvas data cleanup for user:', user.id);
+      
+      // Step 1: Delete all Canvas events
+      console.log('Deleting Canvas events...');
+      const { error: eventsError } = await supabase
+        .from('events')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('source_provider', 'canvas');
+
+      if (eventsError) {
+        console.error('Error deleting Canvas events:', eventsError);
+      } else {
+        console.log('Successfully deleted Canvas events');
+      }
+
+      // Step 2: Delete all Canvas tasks
+      console.log('Deleting Canvas tasks...');
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('source_provider', 'canvas');
+
+      if (tasksError) {
+        console.error('Error deleting Canvas tasks:', tasksError);
+      } else {
+        console.log('Successfully deleted Canvas tasks');
+      }
+
+      // Step 3: Delete Canvas course colors
+      console.log('Deleting Canvas course colors...');
+      const { error: colorsError } = await supabase
+        .from('course_colors')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (colorsError) {
+        console.error('Error deleting Canvas course colors:', colorsError);
+      } else {
+        console.log('Successfully deleted Canvas course colors');
+      }
+
+      // Step 4: Delete Canvas-related study sessions
+      console.log('Deleting Canvas-related study sessions...');
+      const { data: existingSessions } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (existingSessions && existingSessions.length > 0) {
+        const canvasSessionIds = existingSessions
+          .filter(session => 
+            session.title?.toLowerCase().includes('canvas') ||
+            session.notes?.toLowerCase().includes('canvas') ||
+            session.title?.match(/\[20\d{2}[A-Z]{2}-[A-Z]+-\d+/)
+          )
+          .map(session => session.id);
+
+        if (canvasSessionIds.length > 0) {
+          const { error: sessionsError } = await supabase
+            .from('study_sessions')
+            .delete()
+            .in('id', canvasSessionIds);
+
+          if (sessionsError) {
+            console.error('Error deleting Canvas study sessions:', sessionsError);
+          } else {
+            console.log(`Successfully deleted ${canvasSessionIds.length} Canvas-related study sessions`);
+          }
+        }
+      }
+
+      // Step 5: Delete Canvas OCR uploads (if any contain Canvas data)
+      console.log('Deleting Canvas-related OCR uploads...');
+      const { data: existingUploads } = await supabase
+        .from('ocr_uploads')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (existingUploads && existingUploads.length > 0) {
+        const canvasUploadIds = existingUploads
+          .filter(upload => 
+            upload.extracted_text?.toLowerCase().includes('canvas') ||
+            upload.file_name?.toLowerCase().includes('canvas')
+          )
+          .map(upload => upload.id);
+
+        if (canvasUploadIds.length > 0) {
+          const { error: uploadsError } = await supabase
+            .from('ocr_uploads')
+            .delete()
+            .in('id', canvasUploadIds);
+
+          if (uploadsError) {
+            console.error('Error deleting Canvas OCR uploads:', uploadsError);
+          } else {
+            console.log(`Successfully deleted ${canvasUploadIds.length} Canvas-related OCR uploads`);
+          }
+        }
+      }
+
+      // Step 6: Delete the Canvas calendar connection
+      console.log('Deleting Canvas calendar connection...');
+      const { error: connectionError } = await supabase
+        .from('calendar_connections')
+        .delete()
+        .eq('id', connectionId);
+
+      if (connectionError) {
+        console.error('Error deleting Canvas connection:', connectionError);
+        throw connectionError;
+      } else {
+        console.log('Successfully deleted Canvas calendar connection');
+      }
+
+      // Step 7: Clear any Canvas-related user settings
+      console.log('Clearing Canvas-related user settings...');
+      const { data: userSettings } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (userSettings && userSettings.length > 0) {
+        for (const setting of userSettings) {
+          if (setting.settings_data && typeof setting.settings_data === 'object') {
+            const settingsData = setting.settings_data as any;
+            let updated = false;
+
+            // Remove any Canvas-related settings
+            if (settingsData.canvas_preferences) {
+              delete settingsData.canvas_preferences;
+              updated = true;
+            }
+            if (settingsData.canvas_sync_enabled) {
+              delete settingsData.canvas_sync_enabled;
+              updated = true;
+            }
+            if (settingsData.canvas_last_sync) {
+              delete settingsData.canvas_last_sync;
+              updated = true;
+            }
+
+            if (updated) {
+              const { error: settingsError } = await supabase
+                .from('user_settings')
+                .update({ settings_data: settingsData })
+                .eq('id', setting.id);
+
+              if (settingsError) {
+                console.error('Error updating user settings:', settingsError);
+              } else {
+                console.log('Successfully cleared Canvas-related user settings');
+              }
+            }
+          }
+        }
+      }
+
+      console.log('Canvas data cleanup completed successfully');
 
       toast({
-        title: "Canvas Feed Removed",
-        description: "Your Canvas calendar feed and all associated events have been removed.",
+        title: "Canvas Integration Completely Removed",
+        description: "All Canvas data has been removed from your calendar, dashboard, tasks, and courses. Your account is now Canvas-free.",
       });
 
       fetchCalendarConnections();
@@ -247,7 +401,7 @@ export const CanvasIntegration = () => {
       console.error('Error removing Canvas feed:', error);
       toast({
         title: "Error",
-        description: "Failed to remove Canvas feed. Please try again.",
+        description: "Failed to completely remove Canvas integration. Please try again.",
         variant: "destructive",
       });
     }
