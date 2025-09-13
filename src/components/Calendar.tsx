@@ -336,17 +336,37 @@ const Calendar = () => {
   // Listen for data refresh events from other components (like task creation)
   useEffect(() => {
     const handleDataRefresh = () => {
-      console.log('Calendar received dataRefresh event');
+      console.log('Calendar received dataRefresh event, user:', !!user);
       if (user) {
-        console.log('Calling loadDataForCurrentPeriod()');
+        console.log('Clearing cache and fetching fresh data');
         // Clear cache to force fresh data fetch
         setDataCache(new Map());
-        console.log('Cache cleared, fetching fresh data');
-        loadDataForCurrentPeriod();
+        
+        // Force refresh by bypassing all caching
+        const forceRefresh = async () => {
+          console.log('Force refresh started');
+          setLoading(true);
+          try {
+            const data = await fetchDataForPeriod(currentDate, viewMode);
+            console.log('Fresh data fetched:', { 
+              tasksCount: data.tasks.length, 
+              eventsCount: data.events.length 
+            });
+            setTasks(data.tasks);
+            setEvents(data.events);
+            setStudySessions(data.sessions);
+          } catch (error) {
+            console.error('Force refresh failed:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+        
+        forceRefresh();
       }
     };
 
-    console.log('Setting up Calendar event listeners');
+    console.log('Setting up Calendar event listeners for user:', !!user);
     window.addEventListener('dataRefresh', handleDataRefresh);
     window.addEventListener('tasksCleared', handleDataRefresh);
     window.addEventListener('eventsCleared', handleDataRefresh);
@@ -357,7 +377,84 @@ const Calendar = () => {
       window.removeEventListener('tasksCleared', handleDataRefresh);
       window.removeEventListener('eventsCleared', handleDataRefresh);
     };
-  }, [user]);
+  }, [user, currentDate, viewMode]);
+
+  // Set up real-time subscriptions for tasks and events
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time subscriptions for user:', user.id);
+
+    const tasksChannel = supabase
+      .channel('tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Real-time task change:', payload);
+          // Clear cache and refresh
+          setDataCache(new Map());
+          const forceRefresh = async () => {
+            setLoading(true);
+            try {
+              const data = await fetchDataForPeriod(currentDate, viewMode);
+              setTasks(data.tasks);
+              setEvents(data.events);
+              setStudySessions(data.sessions);
+            } catch (error) {
+              console.error('Real-time refresh failed:', error);
+            } finally {
+              setLoading(false);
+            }
+          };
+          forceRefresh();
+        }
+      )
+      .subscribe();
+
+    const eventsChannel = supabase
+      .channel('events-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'events',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Real-time event change:', payload);
+          // Clear cache and refresh
+          setDataCache(new Map());
+          const forceRefresh = async () => {
+            setLoading(true);
+            try {
+              const data = await fetchDataForPeriod(currentDate, viewMode);
+              setTasks(data.tasks);
+              setEvents(data.events);
+              setStudySessions(data.sessions);
+            } catch (error) {
+              console.error('Real-time refresh failed:', error);
+            } finally {
+              setLoading(false);
+            }
+          };
+          forceRefresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscriptions');
+      supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(eventsChannel);
+    };
+  }, [user, currentDate, viewMode]);
 
   // Ensure weather loads once geolocation resolves (even after initial render)
   useEffect(() => {

@@ -124,18 +124,26 @@ export const EventTaskModal = ({
           description: `Successfully created task: ${editedTitle}`,
         });
         
-        // Trigger a refresh of the calendar data
+        // Trigger multiple refresh events with delays to ensure they're received
+        console.log('Dispatching dataRefresh events after task creation');
         window.dispatchEvent(new CustomEvent('dataRefresh'));
+        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 100);
+        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 300);
+        
+        // Wait longer before closing modal to ensure refresh completes
+        setTimeout(() => {
+          setIsEditing(false);
+          onClose();
+        }, 500);
       } else {
         // Update existing item
         toast({
           title: "Changes saved",
           description: `Successfully updated ${event ? "event" : "task"}: ${editedTitle}`,
         });
+        setIsEditing(false);
+        onClose();
       }
-      
-      setIsEditing(false);
-      onClose();
     } catch (error) {
       console.error('Error saving:', error);
       toast({
@@ -183,13 +191,16 @@ export const EventTaskModal = ({
           description: `Successfully deleted task: ${task.title}`,
         });
 
-        // Trigger calendar refresh BEFORE closing modal
+        // Trigger multiple refresh events to ensure they're received
+        console.log('Dispatching dataRefresh events after task deletion');
         window.dispatchEvent(new CustomEvent('dataRefresh'));
+        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 100);
+        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 300);
         
-        // Small delay to ensure the refresh event is processed
+        // Wait longer before closing modal to ensure refresh completes
         setTimeout(() => {
           onClose();
-        }, 100);
+        }, 500);
       } else if (event) {
         console.log('Deleting event with ID:', event.id);
         // Delete event from database  
@@ -208,13 +219,16 @@ export const EventTaskModal = ({
           description: `Successfully deleted event: ${event.title}`,
         });
 
-        // Trigger calendar refresh BEFORE closing modal
+        // Trigger multiple refresh events to ensure they're received
+        console.log('Dispatching dataRefresh events after event deletion');
         window.dispatchEvent(new CustomEvent('dataRefresh'));
+        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 100);
+        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 300);
         
-        // Small delay to ensure the refresh event is processed
+        // Wait longer before closing modal to ensure refresh completes
         setTimeout(() => {
           onClose();
-        }, 100);
+        }, 500);
       } else {
         onClose();
       }
