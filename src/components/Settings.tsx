@@ -18,7 +18,6 @@ import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { universities, getUniversityById, getPublicUniversities, searchPublicUniversities } from "@/data/universities";
 import { collegeMajors } from "@/data/collegeMajors";
 import { supabase } from "@/integrations/supabase/client";
-import { CanvasColorSync } from "@/components/CanvasColorSync";
 
 interface AccountIntegration {
   id: string;
@@ -319,7 +318,6 @@ export const Settings = () => {
 
   const tabs = [
     { id: 'accounts', label: 'Account Linking', icon: Link },
-    { id: 'canvas-colors', label: 'Canvas Colors', icon: Palette },
     { id: 'preferences', label: 'System Preferences', icon: Palette },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'profile', label: 'Profile', icon: User },
@@ -998,24 +996,11 @@ export const Settings = () => {
     </div>
   );
 
-  const renderCanvasColors = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Canvas Colors</h2>
-        <p className="text-muted-foreground">
-          Sync your Canvas course colors to match your schedule exactly
-        </p>
-      </div>
-      <CanvasColorSync />
-    </div>
-  );
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'accounts':
         return renderAccountLinking();
-      case 'canvas-colors':
-        return renderCanvasColors();
       case 'preferences':
         return renderSystemPreferences();
       case 'notifications':
