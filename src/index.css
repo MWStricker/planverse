@@ -238,8 +238,26 @@ div, span, button, a {
   * {
     @apply border-border;
     font-size: var(--base-font-size, 1rem);
+    font-weight: var(--font-weight-normal, 400);
     outline: none !important;
     scroll-behavior: smooth;
+  }
+  
+  /* Apply custom font weights when bold text is enabled */
+  .font-normal {
+    font-weight: var(--font-weight-normal, 400);
+  }
+  
+  .font-medium {
+    font-weight: var(--font-weight-medium, 500);
+  }
+  
+  .font-semibold {
+    font-weight: var(--font-weight-semibold, 600);
+  }
+  
+  .font-bold {
+    font-weight: var(--font-weight-bold, 700);
   }
   
   /* GPU acceleration for better performance */
