@@ -148,13 +148,62 @@ export const EventTaskModal = ({
     }
   };
 
-  const handleDelete = () => {
-    // Here you would typically delete from your backend
-    toast({
-      title: "Deleted",
-      description: `Successfully deleted ${event ? "event" : "task"}: ${event?.title || task?.title}`,
-    });
-    onClose();
+  const handleDelete = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to delete items",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (task) {
+        // Delete task from database
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('id', task.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Task Deleted",
+          description: `Successfully deleted task: ${task.title}`,
+        });
+
+        // Trigger calendar refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+      } else if (event) {
+        // Delete event from database  
+        const { error } = await supabase
+          .from('events')
+          .delete()
+          .eq('id', event.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Event Deleted",
+          description: `Successfully deleted event: ${event.title}`,
+        });
+
+        // Trigger calendar refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getModalTitle = () => {
