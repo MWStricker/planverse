@@ -144,6 +144,24 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
     return { events: dayEvents, tasks: dayTasks };
   };
 
+  const handlePrevWeek = () => {
+    setCurrentWeek(subWeeks(currentWeek, 1));
+  };
+
+  const handleNextWeek = () => {
+    setCurrentWeek(addWeeks(currentWeek, 1));
+  };
+
+  const handleToday = () => {
+    setCurrentWeek(new Date());
+  };
+
+  const isCurrentWeek = () => {
+    const today = new Date();
+    const todayWeekStart = startOfWeek(today, { weekStartsOn: 0 });
+    return isSameDay(weekStart, todayWeekStart);
+  };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -153,6 +171,17 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
             {format(weekStart, "MMMM d")} - {format(weekEnd, "d, yyyy")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">Weekly Schedule</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePrevWeek}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant={isCurrentWeek() ? "default" : "outline"} size="sm" onClick={handleToday}>
+            This Week
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleNextWeek}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
