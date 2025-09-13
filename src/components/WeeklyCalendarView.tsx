@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, getHours } from "date-fns";
 import { EventTaskModal } from "./EventTaskModal";
+import { CanvasIntegration } from "./CanvasIntegration";
 
 interface Event {
   id: string;
@@ -327,6 +328,11 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
         selectedDate={selectedDate || undefined}
         selectedHour={selectedHour || undefined}
       />
+
+      {/* Canvas Integration Section */}
+      <div className="mt-8">
+        <CanvasIntegration />
+      </div>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock, BookOpen, CheckCircle, Calendar as CalendarIcon } from "lucide-react";
 import { format, addDays, subDays, isToday, getHours, startOfDay, isSameDay } from "date-fns";
 import { EventTaskModal } from "./EventTaskModal";
+import { CanvasIntegration } from "./CanvasIntegration";
 
 interface Event {
   id: string;
@@ -395,6 +396,11 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
         selectedDate={selectedDate || undefined}
         selectedHour={selectedHour || undefined}
       />
+
+      {/* Canvas Integration Section */}
+      <div className="mt-8">
+        <CanvasIntegration />
+      </div>
     </div>
   );
 };

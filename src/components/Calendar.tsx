@@ -16,6 +16,7 @@ import { getPriorityColor, getPriorityLabel } from "@/lib/priority-utils";
 import { WeeklyCalendarView } from "@/components/WeeklyCalendarView";
 import { DailyCalendarView } from "@/components/DailyCalendarView";
 import { MonthlyCalendarView } from "@/components/MonthlyCalendarView";
+import { CanvasIntegration } from "./CanvasIntegration";
 
 // Extract course code consistently from titles or course names
 const extractCourseCode = (title: string, isCanvas: boolean = false) => {
@@ -1585,6 +1586,18 @@ const Calendar = () => {
         />
       )}
 
+      {/* Canvas Integration Section */}
+      <div className="mt-8">
+        <CanvasIntegration />
+      </div>
+
+      {/* Debug button for testing task deletion */}
+      {process.env.NODE_ENV === 'development' && tasks.length > 0 && (
+      {/* Canvas Integration Section */}
+      <div className="mt-8">
+        <CanvasIntegration />
+      </div>
+
       {/* Debug button for testing task deletion */}
       {process.env.NODE_ENV === 'development' && tasks.length > 0 && (
         <div className="fixed bottom-4 right-4 z-50">
@@ -1604,6 +1617,11 @@ const Calendar = () => {
           </Button>
         </div>
       )}
+
+      {/* Canvas Integration Section */}
+      <div className="mt-8">
+        <CanvasIntegration />
+      </div>
     </div>
   );
 };
