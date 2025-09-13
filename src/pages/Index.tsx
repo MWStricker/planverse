@@ -108,12 +108,11 @@ const Index = () => {
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
         <div 
-          className={`flex-shrink-0 transition-[width] duration-400 ease-out ${
+          className={`flex-shrink-0 transition-[width] duration-300 ease-out will-change-[width] ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
           style={{ 
             contain: 'layout',
-            willChange: 'width',
           }}
         >
           <Navigation 

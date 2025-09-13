@@ -50,14 +50,14 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-14 text-base transition-all duration-300 ease-out focus:outline-none focus-visible:outline-none ${
+      className={`w-full h-14 text-base transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
         isCollapsed ? 'justify-center px-2' : 'justify-start'
       } ${
         isDragging ? 'shadow-lg' : ''
       } ${
         isActive 
           ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-l-primary-foreground/20' 
-          : 'text-foreground hover:bg-muted/30 hover:text-foreground hover:scale-[1.01]'
+          : 'text-foreground hover:bg-muted/30 hover:scale-[1.01]'
       } ${
         isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
@@ -72,16 +72,16 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 transition-all duration-300 ease-out ${
+      <Icon className={`h-5 w-5 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] ${
         isCollapsed ? '' : 'mr-3'
       } ${
         isActive 
           ? 'text-primary-foreground scale-110' 
-          : 'group-hover:scale-105'
+          : ''
       }`} />
       
       {!isCollapsed && (
-        <div className="flex items-center transition-opacity duration-200 ease-out opacity-100">
+        <div className="flex items-center transition-opacity duration-150 ease-out opacity-100">
           <span className={`font-medium ${
             isActive ? 'tracking-wide' : ''
           }`}>
@@ -105,7 +105,7 @@ export const SortableTabItem = ({
       
       {/* Glow effect for active items */}
       {isActive && !isReorderMode && (
-        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-all duration-300 ease-out"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-opacity duration-200 ease-out"></div>
       )}
     </Button>
   );
