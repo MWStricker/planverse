@@ -202,6 +202,13 @@ export const Dashboard = () => {
   }).length;
   
   const completionRate = userTasks.length > 0 ? Math.round((completedTasks / userTasks.length) * 100) : 0;
+  
+  console.log('Dashboard variables:', { 
+    completedTasks, 
+    totalTasksToday, 
+    userTasksLength: userTasks.length,
+    completionRate 
+  });
 
   // Task form
   const form = useForm<z.infer<typeof taskFormSchema>>({
