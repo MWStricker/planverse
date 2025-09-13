@@ -1592,12 +1592,6 @@ const Calendar = () => {
       </div>
 
       {/* Debug button for testing task deletion */}
-      {/* Canvas Integration Section */}
-      <div className="mt-8">
-        <CanvasIntegration />
-      </div>
-
-      {/* Debug button for testing task deletion */}
       {process.env.NODE_ENV === 'development' && tasks.length > 0 && (
         <div className="fixed bottom-4 right-4 z-50">
           <Button
