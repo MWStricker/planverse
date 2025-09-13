@@ -108,7 +108,7 @@ const Index = () => {
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
         <div 
-          className={`flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          className={`flex-shrink-0 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
         >
