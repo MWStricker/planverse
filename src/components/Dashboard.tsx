@@ -190,8 +190,18 @@ export const Dashboard = () => {
     const completedDate = new Date(task.completed_at);
     return completedDate >= today && completedDate <= endOfToday;
   }).length;
-  const totalTasks = userTasks.length;
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // Get total tasks due today (including both completed and pending)
+  const totalTasksToday = userTasks.filter(task => {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    return (
+      dueDate.getDate() === today.getDate() &&
+      dueDate.getMonth() === today.getMonth() &&
+      dueDate.getFullYear() === today.getFullYear()
+    );
+  }).length;
+  
+  const completionRate = userTasks.length > 0 ? Math.round((completedTasks / userTasks.length) * 100) : 0;
 
   // Task form
   const form = useForm<z.infer<typeof taskFormSchema>>({
@@ -1174,7 +1184,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  <p className="text-2xl font-bold text-foreground">{totalTasks > 0 ? `${completedTasks}/${totalTasks}` : "N/A"}</p>
+                  <p className="text-2xl font-bold text-foreground">{totalTasksToday > 0 ? `${completedTasks}/${totalTasksToday}` : "N/A"}</p>
                 </div>
               </div>
             </CardContent>
@@ -1205,7 +1215,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Weekly Progress</p>
-                  <p className="text-2xl font-bold text-foreground">{totalTasks > 0 ? `${completionRate}%` : "N/A"}</p>
+                  <p className="text-2xl font-bold text-foreground">{userTasks.length > 0 ? `${completionRate}%` : "N/A"}</p>
                 </div>
               </div>
             </CardContent>
