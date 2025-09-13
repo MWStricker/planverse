@@ -151,8 +151,8 @@ export const Courses = () => {
     fetchCourseIcons();
   }, [user?.id]);
 
-  // Main data fetching function
-  const fetchCoursesData = async () => {
+  // Main data fetching function - now accepts optional saved order
+  const fetchCoursesData = async (savedOrder?: string[]) => {
     if (!user?.id) return;
     
     setLoading(true);
@@ -239,15 +239,16 @@ export const Courses = () => {
       });
 
       // Apply saved course order if available
-      console.log('Processing courses with saved order:', courseOrder);
+      const orderToUse = savedOrder || courseOrder;
+      console.log('Processing courses with saved order:', orderToUse);
       console.log('Found courses:', processedCourses.map(c => c.code));
       
       let orderedCourses = processedCourses;
-      if (courseOrder.length > 0) {
+      if (orderToUse && orderToUse.length > 0) {
         console.log('Applying saved course order');
         orderedCourses = processedCourses.sort((a, b) => {
-          const aIndex = courseOrder.indexOf(a.code);
-          const bIndex = courseOrder.indexOf(b.code);
+          const aIndex = orderToUse.indexOf(a.code);
+          const bIndex = orderToUse.indexOf(b.code);
           
           // If both courses are in the saved order, use that order
           if (aIndex !== -1 && bIndex !== -1) {
@@ -267,9 +268,12 @@ export const Courses = () => {
       console.log('Final ordered courses:', orderedCourses.map(c => c.code));
       setCourses(orderedCourses);
       
-      // Update course order state if not set or if courses changed
+      // Update course order state if not set or if we have a saved order
       const currentCourseList = orderedCourses.map(course => course.code);
-      if (courseOrder.length === 0) {
+      if (savedOrder) {
+        console.log('Setting course order from saved data');
+        setCourseOrder(savedOrder);
+      } else if (courseOrder.length === 0) {
         console.log('Setting initial course order');
         setCourseOrder(currentCourseList);
       }
@@ -297,18 +301,20 @@ export const Courses = () => {
         .eq('settings_type', 'course_order')
         .maybeSingle();
 
+      let savedOrder: string[] | undefined;
+
       if (error) {
         console.error('Error loading course order:', error);
       } else if (data?.settings_data && typeof data.settings_data === 'object' && 'order' in data.settings_data) {
-        const savedOrder = (data.settings_data as { order: string[] }).order;
+        savedOrder = (data.settings_data as { order: string[] }).order;
         console.log('Found saved course order:', savedOrder);
         setCourseOrder(savedOrder);
       } else {
         console.log('No saved course order found');
       }
       
-      // Now fetch courses data
-      await fetchCoursesData();
+      // Now fetch courses data with the saved order
+      await fetchCoursesData(savedOrder);
     };
 
     loadCourseOrderAndData();
