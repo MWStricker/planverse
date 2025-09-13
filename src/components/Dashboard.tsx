@@ -494,7 +494,7 @@ export const Dashboard = () => {
       user_id: user.id,
       title: values.title,
       description: values.description || null,
-      course_name: values.course_name || null,
+      course_name: values.course_name === "none" ? null : values.course_name || null,
       due_date: dueDateTime.toISOString(),
       priority_score: priorityMap[values.priority],
       completion_status: 'pending',
@@ -931,7 +931,7 @@ export const Dashboard = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="bg-background border border-border shadow-lg z-50">
-                              <SelectItem value="">
+                              <SelectItem value="none">
                                 <span className="text-muted-foreground">No course</span>
                               </SelectItem>
                               {availableCourses.map((course) => (
