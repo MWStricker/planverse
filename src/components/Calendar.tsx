@@ -335,8 +335,8 @@ const Calendar = () => {
 
   // Listen for data refresh events from other components (like task creation)
   useEffect(() => {
-    const handleDataRefresh = () => {
-      console.log('Calendar received dataRefresh event, user:', !!user);
+    const handleDataRefresh = (event: any) => {
+      console.log('Calendar received dataRefresh event, user:', !!user, 'event detail:', event.detail);
       if (user) {
         console.log('Clearing cache and fetching fresh data');
         // Clear cache to force fresh data fetch
@@ -366,14 +366,33 @@ const Calendar = () => {
       }
     };
 
+    // Also handle specific task events for immediate updates
+    const handleTaskCreated = (event: any) => {
+      console.log('Task created event received:', event.detail);
+      if (event.detail?.task) {
+        setTasks(prev => [...prev, event.detail.task]);
+      }
+    };
+
+    const handleTaskDeleted = (event: any) => {
+      console.log('Task deleted event received:', event.detail);
+      if (event.detail?.taskId) {
+        setTasks(prev => prev.filter(task => task.id !== event.detail.taskId));
+      }
+    };
+
     console.log('Setting up Calendar event listeners for user:', !!user);
     window.addEventListener('dataRefresh', handleDataRefresh);
+    window.addEventListener('taskCreated', handleTaskCreated);
+    window.addEventListener('taskDeleted', handleTaskDeleted);
     window.addEventListener('tasksCleared', handleDataRefresh);
     window.addEventListener('eventsCleared', handleDataRefresh);
 
     return () => {
       console.log('Cleaning up Calendar event listeners');
       window.removeEventListener('dataRefresh', handleDataRefresh);
+      window.removeEventListener('taskCreated', handleTaskCreated);
+      window.removeEventListener('taskDeleted', handleTaskDeleted);
       window.removeEventListener('tasksCleared', handleDataRefresh);
       window.removeEventListener('eventsCleared', handleDataRefresh);
     };

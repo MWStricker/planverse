@@ -124,23 +124,40 @@ export const EventTaskModal = ({
           description: `Successfully created task: ${editedTitle}`,
         });
         
-        // Trigger multiple refresh events with delays to ensure they're received
-        console.log('Dispatching dataRefresh events after task creation');
-        window.dispatchEvent(new CustomEvent('dataRefresh'));
-        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 100);
-        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 300);
+        // Dispatch specific task created event with the new task data
+        const newTask = {
+          id: data[0].id,
+          title: editedTitle,
+          due_date: dueDate.toISOString(),
+          priority_score: parseInt(editedPriority),
+          completion_status: editedStatus,
+          course_name: null,
+          description: editedNotes,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
         
-        // Wait longer before closing modal to ensure refresh completes
-        setTimeout(() => {
-          setIsEditing(false);
-          onClose();
-        }, 500);
+        console.log('Dispatching taskCreated event with task:', newTask);
+        window.dispatchEvent(new CustomEvent('taskCreated', { 
+          detail: { task: newTask } 
+        }));
+        
+        // Also dispatch general refresh as backup
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        
+        setIsEditing(false);
+        onClose();
       } else {
         // Update existing item
         toast({
           title: "Changes saved",
           description: `Successfully updated ${event ? "event" : "task"}: ${editedTitle}`,
         });
+        
+        // Dispatch general refresh for updates
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        
         setIsEditing(false);
         onClose();
       }
@@ -191,16 +208,16 @@ export const EventTaskModal = ({
           description: `Successfully deleted task: ${task.title}`,
         });
 
-        // Trigger multiple refresh events to ensure they're received
-        console.log('Dispatching dataRefresh events after task deletion');
-        window.dispatchEvent(new CustomEvent('dataRefresh'));
-        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 100);
-        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 300);
+        // Dispatch specific task deleted event with task ID
+        console.log('Dispatching taskDeleted event with taskId:', task.id);
+        window.dispatchEvent(new CustomEvent('taskDeleted', { 
+          detail: { taskId: task.id } 
+        }));
         
-        // Wait longer before closing modal to ensure refresh completes
-        setTimeout(() => {
-          onClose();
-        }, 500);
+        // Also dispatch general refresh as backup
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        
+        onClose();
       } else if (event) {
         console.log('Deleting event with ID:', event.id);
         // Delete event from database  
@@ -219,16 +236,11 @@ export const EventTaskModal = ({
           description: `Successfully deleted event: ${event.title}`,
         });
 
-        // Trigger multiple refresh events to ensure they're received
+        // Dispatch general refresh for events
         console.log('Dispatching dataRefresh events after event deletion');
         window.dispatchEvent(new CustomEvent('dataRefresh'));
-        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 100);
-        setTimeout(() => window.dispatchEvent(new CustomEvent('dataRefresh')), 300);
         
-        // Wait longer before closing modal to ensure refresh completes
-        setTimeout(() => {
-          onClose();
-        }, 500);
+        onClose();
       } else {
         onClose();
       }
