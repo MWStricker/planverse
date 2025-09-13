@@ -50,18 +50,21 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-14 text-base transition-all duration-300 ease-out ${
+      className={`w-full h-14 text-base transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
         isCollapsed ? 'justify-center px-2' : 'justify-start'
       } ${
         isDragging ? 'shadow-lg' : ''
       } ${
         isActive 
           ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-l-primary-foreground/20' 
-          : 'text-foreground hover:bg-muted/30 hover:text-foreground hover:scale-[1.01]'
+          : 'text-foreground hover:bg-muted/30 hover:text-foreground hover:scale-[1.01] focus:bg-muted/30'
       } ${
         isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
-      onClick={isReorderMode ? undefined : onClick}
+      onClick={isReorderMode ? undefined : (e) => {
+        e.currentTarget.blur(); // Remove focus after click
+        onClick();
+      }}
       {...(isReorderMode ? { ...attributes, ...listeners } : {})}
     >
       {/* Shimmer effect for active items */}
