@@ -5,6 +5,24 @@
 /* CourseConnect Design System - Academic productivity focused */
 
 @layer base {
+  /* Smooth scrolling optimizations for 60fps */
+  * {
+    scroll-behavior: smooth;
+  }
+  
+  /* GPU acceleration for better performance */
+  .smooth-scroll {
+    will-change: scroll-position;
+    transform: translateZ(0);
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Optimized scrolling containers */
+  .will-change-scroll {
+    will-change: scroll-position, transform;
+    backface-visibility: hidden;
+  }
   :root {
     /* Academic Blues - Primary palette */
     --primary: 213 94% 68%;  /* Bright academic blue */
@@ -69,7 +87,11 @@
     --shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
     
     /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Smooth scrolling for 60fps performance */
+  scroll-behavior: smooth;
+}
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --radius: 0.75rem;

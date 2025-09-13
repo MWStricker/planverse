@@ -177,7 +177,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
   });
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto smooth-scroll">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col">
@@ -263,7 +263,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
       )}
 
       {/* Hourly Schedule */}
-      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg smooth-scroll will-change-scroll" style={{ scrollBehavior: 'smooth', transform: 'translateZ(0)' }}>
         {TIME_SLOTS.map((timeSlot, index) => {
           const { events: slotEvents, tasks: slotTasks } = getItemsForTimeSlot(timeSlot.hour);
           const isCurrentHour = isToday(currentDay) && getHours(new Date()) === timeSlot.hour;
@@ -289,9 +289,10 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
               
               {/* Content Area */}
               <div 
-                className={`flex-1 min-h-[80px] p-3 cursor-pointer transition-all duration-200 relative ${
+                className={`flex-1 min-h-[80px] p-3 cursor-pointer transition-all duration-200 relative will-change-transform ${
                   !hasItems ? "hover:bg-accent/20 hover:shadow-sm" : ""
                 }`}
+                style={{ transform: 'translateZ(0)' }}
                 onClick={() => !hasItems && handleCellClick(timeSlot.hour)}
               >
                 {/* Current time indicator */}
