@@ -1065,21 +1065,27 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-6 gap-2">
-                    {courseIcons.map((icon) => {
-                      const IconComponent = icon.icon;
-                      return (
-                        <Button
-                          key={icon.id}
-                          variant={currentIconId === icon.id ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => updateCourseIcon(course.code, icon.id)}
-                          className="h-12 w-12 p-0"
-                        >
-                          <IconComponent className="h-5 w-5" />
-                        </Button>
-                      );
-                    })}
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Choose an icon that best represents this course:
+                    </p>
+                    <div className="grid grid-cols-10 gap-2">
+                      {courseIcons.map((icon) => {
+                        const IconComponent = icon.icon;
+                        return (
+                          <Button
+                            key={icon.id}
+                            variant={currentIconId === icon.id ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => updateCourseIcon(course.code, icon.id)}
+                            className="h-10 w-10 p-0"
+                            title={icon.name}
+                          >
+                            <IconComponent className="h-4 w-4" />
+                          </Button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -3,67 +3,77 @@ import {
   Code, Beaker, Drama, Camera, PenTool, Trophy, Target, Zap,
   Brain, Atom, Stethoscope, Dumbbell, Mic, Brush, Map,
   Laptop, TestTube, Theater, Aperture, Edit3, Award, Crosshair, 
-  Lightbulb, Cpu, Gamepad2, LucideIcon
+  Lightbulb, Cpu, Gamepad2, LucideIcon, GraduationCap, School,
+  Users, ChefHat, Hammer, Wrench, Plane, Car, Building,
+  TreePine, Leaf, Recycle, Sun, Star, Moon, LucideIcon as IconType
 } from "lucide-react";
 
 export interface CourseIcon {
   id: string;
   name: string;
-  icon: LucideIcon;
+  icon: IconType;
   category: string;
 }
 
 export const courseIcons: CourseIcon[] = [
-  // Academic/General
+  // Core Academic
   { id: 'book-open', name: 'Book', icon: BookOpen, category: 'Academic' },
+  { id: 'graduation-cap', name: 'Graduation', icon: GraduationCap, category: 'Academic' },
+  { id: 'school', name: 'School', icon: School, category: 'Academic' },
   { id: 'brain', name: 'Brain', icon: Brain, category: 'Academic' },
-  { id: 'lightbulb', name: 'Lightbulb', icon: Lightbulb, category: 'Academic' },
-  { id: 'award', name: 'Award', icon: Award, category: 'Academic' },
-  { id: 'trophy', name: 'Trophy', icon: Trophy, category: 'Academic' },
+  { id: 'lightbulb', name: 'Ideas', icon: Lightbulb, category: 'Academic' },
 
-  // Mathematics/Engineering
+  // Mathematics & Sciences
   { id: 'calculator', name: 'Calculator', icon: Calculator, category: 'Mathematics' },
-  { id: 'cpu', name: 'CPU', icon: Cpu, category: 'Mathematics' },
-  { id: 'zap', name: 'Electric', icon: Zap, category: 'Mathematics' },
-  { id: 'target', name: 'Target', icon: Target, category: 'Mathematics' },
-  { id: 'crosshair', name: 'Crosshair', icon: Crosshair, category: 'Mathematics' },
-
-  // Science/Lab
   { id: 'microscope', name: 'Microscope', icon: Microscope, category: 'Science' },
-  { id: 'beaker', name: 'Beaker', icon: Beaker, category: 'Science' },
-  { id: 'test-tube', name: 'Test Tube', icon: TestTube, category: 'Science' },
-  { id: 'atom', name: 'Atom', icon: Atom, category: 'Science' },
+  { id: 'beaker', name: 'Chemistry', icon: Beaker, category: 'Science' },
+  { id: 'test-tube', name: 'Lab', icon: TestTube, category: 'Science' },
+  { id: 'atom', name: 'Physics', icon: Atom, category: 'Science' },
 
-  // Health/Medical
-  { id: 'heart', name: 'Heart', icon: Heart, category: 'Health' },
-  { id: 'stethoscope', name: 'Stethoscope', icon: Stethoscope, category: 'Health' },
+  // Health & Wellness
+  { id: 'heart', name: 'Health', icon: Heart, category: 'Health' },
+  { id: 'stethoscope', name: 'Medicine', icon: Stethoscope, category: 'Health' },
   { id: 'dumbbell', name: 'Fitness', icon: Dumbbell, category: 'Health' },
 
-  // Arts/Creative
+  // Arts & Creative
   { id: 'music', name: 'Music', icon: Music, category: 'Arts' },
-  { id: 'palette', name: 'Palette', icon: Palette, category: 'Arts' },
-  { id: 'brush', name: 'Brush', icon: Brush, category: 'Arts' },
-  { id: 'drama', name: 'Drama', icon: Drama, category: 'Arts' },
-  { id: 'theatre', name: 'Theater', icon: Theater, category: 'Arts' },
-  { id: 'microphone', name: 'Microphone', icon: Mic, category: 'Arts' },
-  { id: 'camera', name: 'Camera', icon: Camera, category: 'Arts' },
-  { id: 'aperture', name: 'Aperture', icon: Aperture, category: 'Arts' },
+  { id: 'palette', name: 'Art', icon: Palette, category: 'Arts' },
+  { id: 'brush', name: 'Painting', icon: Brush, category: 'Arts' },
+  { id: 'theater', name: 'Theater', icon: Theater, category: 'Arts' },
+  { id: 'camera', name: 'Photography', icon: Camera, category: 'Arts' },
+  { id: 'mic', name: 'Audio', icon: Mic, category: 'Arts' },
 
-  // Technology/Computer Science
-  { id: 'laptop', name: 'Laptop', icon: Laptop, category: 'Technology' },
-  { id: 'code', name: 'Code', icon: Code, category: 'Technology' },
+  // Technology & Engineering
+  { id: 'laptop', name: 'Computer', icon: Laptop, category: 'Technology' },
+  { id: 'code', name: 'Programming', icon: Code, category: 'Technology' },
+  { id: 'cpu', name: 'Engineering', icon: Cpu, category: 'Technology' },
+  { id: 'zap', name: 'Electronics', icon: Zap, category: 'Technology' },
+
+  // Social Sciences & Humanities
+  { id: 'globe', name: 'Geography', icon: Globe, category: 'Social Studies' },
+  { id: 'map', name: 'History', icon: Map, category: 'Social Studies' },
+  { id: 'users', name: 'Sociology', icon: Users, category: 'Social Studies' },
+
+  // Language & Communication
+  { id: 'pen-tool', name: 'Writing', icon: PenTool, category: 'Language' },
+  { id: 'edit', name: 'Literature', icon: Edit3, category: 'Language' },
+
+  // Achievement & Goals
+  { id: 'trophy', name: 'Achievement', icon: Trophy, category: 'Goals' },
+  { id: 'award', name: 'Excellence', icon: Award, category: 'Goals' },
+  { id: 'target', name: 'Goals', icon: Target, category: 'Goals' },
+  
+  // Additional Academic
+  { id: 'star', name: 'Star', icon: Star, category: 'Academic' },
   { id: 'gamepad', name: 'Gaming', icon: Gamepad2, category: 'Technology' },
-
-  // Geography/Social Studies
-  { id: 'globe', name: 'Globe', icon: Globe, category: 'Geography' },
-  { id: 'map', name: 'Map', icon: Map, category: 'Geography' },
-
-  // Writing/Literature
-  { id: 'pen-tool', name: 'Pen', icon: PenTool, category: 'Writing' },
-  { id: 'edit', name: 'Edit', icon: Edit3, category: 'Writing' },
+  
+  // Business & Economics 
+  { id: 'building', name: 'Business', icon: Building, category: 'Business' },
+  { id: 'aperture', name: 'Focus', icon: Aperture, category: 'Academic' },
+  { id: 'crosshair', name: 'Precision', icon: Crosshair, category: 'Academic' },
 ];
 
-export const getCourseIconById = (id: string): LucideIcon => {
+export const getCourseIconById = (id: string): IconType => {
   const iconData = courseIcons.find(icon => icon.id === id);
   return iconData?.icon || BookOpen;
 };
