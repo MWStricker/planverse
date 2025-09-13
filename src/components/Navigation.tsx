@@ -175,7 +175,7 @@ export const Navigation = ({
       {/* Logo */}
       <div className="p-4 pt-1 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className={`text-center flex-1 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${isCollapsed ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
+          <div className={`text-center flex-1 transition-opacity duration-300 ease-out ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {!isCollapsed && (
               <>
                 <h1 className="text-lg font-bold text-foreground">Course Connect</h1>

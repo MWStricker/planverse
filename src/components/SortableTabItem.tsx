@@ -50,7 +50,7 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-14 text-base transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+      className={`w-full h-14 text-base transition-all duration-300 ease-out ${
         isCollapsed ? 'justify-center px-2' : 'justify-start'
       } ${
         isDragging ? 'shadow-lg' : ''
@@ -69,7 +69,7 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+      <Icon className={`h-5 w-5 transition-all duration-300 ease-out ${
         isCollapsed ? '' : 'mr-3'
       } ${
         isActive 
@@ -78,8 +78,8 @@ export const SortableTabItem = ({
       }`} />
       
       {!isCollapsed && (
-        <>
-          <span className={`font-medium transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+        <div className="flex items-center transition-opacity duration-200 ease-out opacity-100">
+          <span className={`font-medium ${
             isActive ? 'tracking-wide' : ''
           }`}>
             {item.label}
@@ -92,7 +92,7 @@ export const SortableTabItem = ({
               {notifications}
             </Badge>
           )}
-        </>
+        </div>
       )}
       
       {/* Show notification as a dot when collapsed */}

@@ -108,23 +108,27 @@ const Index = () => {
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
         <div 
-          className={`flex-shrink-0 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-[width] ${
-            isCollapsed ? 'w-16' : 'w-64'
-          }`}
-          style={{ 
-            contain: 'layout style paint',
-            transform: 'translateZ(0)',
-          }}
+          className="flex-shrink-0 w-64 relative"
         >
-          <Navigation 
-            currentPage={currentPage} 
-            onPageChange={setCurrentPage}
-            isReorderMode={isReorderMode}
-            onToggleReorder={() => setIsReorderMode(true)}
-            onCancelReorder={cancelReorder}
-            isCollapsed={isCollapsed}
-            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-          />
+          <div
+            className={`absolute inset-0 transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
+              isCollapsed ? 'scale-x-[0.25] origin-left' : 'scale-x-100'
+            }`}
+            style={{ 
+              contain: 'layout style paint',
+              transform: isCollapsed ? 'scaleX(0.25)' : 'scaleX(1)',
+            }}
+          >
+            <Navigation 
+              currentPage={currentPage} 
+              onPageChange={setCurrentPage}
+              isReorderMode={isReorderMode}
+              onToggleReorder={() => setIsReorderMode(true)}
+              onCancelReorder={cancelReorder}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+            />
+          </div>
         </div>
         <div className="flex-1 overflow-auto">
           {renderPage()}
