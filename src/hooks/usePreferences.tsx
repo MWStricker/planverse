@@ -156,9 +156,9 @@ export const usePreferences = () => {
     
     // Apply bold text
     if (prefs.boldText) {
-      root.style.setProperty('--font-weight-normal', '600');
-      root.style.setProperty('--font-weight-medium', '700');
-      root.style.setProperty('--font-weight-semibold', '800');
+      root.style.setProperty('--font-weight-normal', '700');
+      root.style.setProperty('--font-weight-medium', '800');
+      root.style.setProperty('--font-weight-semibold', '900');
       root.style.setProperty('--font-weight-bold', '900');
     } else {
       root.style.removeProperty('--font-weight-normal');
