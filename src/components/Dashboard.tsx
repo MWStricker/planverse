@@ -82,6 +82,7 @@ export const Dashboard = () => {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [isDueThisWeekOpen, setIsDueThisWeekOpen] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<{code: string, color: string}[]>([]);
   
   const handleItemToggle = async (item: any, isCompleted: boolean) => {
@@ -201,27 +202,47 @@ export const Dashboard = () => {
   const freeTimeToday = userEvents.length > 0 ? "4.5 hrs" : "N/A";
   
   // Get assignments due this week from events (Canvas assignments) and tasks
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const endOfWeek = new Date(now);
+  endOfWeek.setDate(endOfWeek.getDate() + 7);
+  endOfWeek.setHours(23, 59, 59, 999);
+
   const eventsThisWeek = userEvents.filter(event => {
     if (!event.start_time && !event.end_time) return false;
+    if (event.event_type === 'assignment' && event.is_completed) return false;
     const eventDate = new Date(event.start_time || event.end_time);
-    const weekFromNow = new Date();
-    weekFromNow.setDate(weekFromNow.getDate() + 7);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return eventDate >= today && eventDate <= weekFromNow;
+    return eventDate >= startOfWeek && eventDate <= endOfWeek;
   });
   
   const tasksThisWeek = userTasks.filter(task => {
-    if (!task.due_date) return false;
+    if (!task.due_date || task.completion_status === 'completed') return false;
     const dueDate = new Date(task.due_date);
-    const weekFromNow = new Date();
-    weekFromNow.setDate(weekFromNow.getDate() + 7);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return dueDate >= today && dueDate <= weekFromNow && task.completion_status !== 'completed';
+    return dueDate >= startOfWeek && dueDate <= endOfWeek;
   });
   
   const dueThisWeek = eventsThisWeek.length + tasksThisWeek.length || "N/A";
+  
+  // Combine all items due this week for the popup
+  const allDueThisWeek = [
+    ...eventsThisWeek.map(event => ({
+      id: event.id,
+      title: event.title,
+      due_date: event.start_time || event.end_time,
+      type: 'event',
+      course_name: event.course_name || 'No Course',
+      source: event.source_provider || 'Manual'
+    })),
+    ...tasksThisWeek.map(task => ({
+      id: task.id,
+      title: task.title,
+      due_date: task.due_date,
+      type: 'task',
+      course_name: task.course_name || 'No Course',
+      source: 'Manual'
+    }))
+  ].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
   // Get today's tasks ordered by priority (optimized for instant updates)
   const todaysTasks = userTasks.filter(task => {
@@ -1149,7 +1170,10 @@ export const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-card to-muted border-0 shadow-md">
+          <Card 
+            className="bg-gradient-to-br from-card to-muted border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setIsDueThisWeekOpen(true)}
+          >
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-warning/10 rounded-lg">
@@ -1752,6 +1776,72 @@ export const Dashboard = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Due This Week Modal */}
+      <Dialog open={isDueThisWeekOpen} onOpenChange={setIsDueThisWeekOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              Due This Week ({allDueThisWeek.length} items)
+            </DialogTitle>
+            <DialogDescription>
+              All assignments and tasks due within the next 7 days
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {allDueThisWeek.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="h-12 w-12 text-success mx-auto mb-3" />
+                <p className="text-lg font-medium">Nothing due this week!</p>
+                <p className="text-muted-foreground">You're all caught up.</p>
+              </div>
+            ) : (
+              allDueThisWeek.map((item) => (
+                <div key={`${item.type}-${item.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium">{item.title}</h4>
+                      <Badge variant={item.type === 'event' ? 'secondary' : 'outline'}>
+                        {item.type === 'event' ? 'Assignment' : 'Task'}
+                      </Badge>
+                      {item.source !== 'Manual' && (
+                        <Badge variant="outline" className="text-xs">
+                          {item.source}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <CalendarIcon className="h-4 w-4" />
+                        {format(new Date(item.due_date), "MMM dd, yyyy 'at' h:mm a")}
+                      </div>
+                      {item.course_name && item.course_name !== 'No Course' && (
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-4 w-4" />
+                          {item.course_name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {new Date(item.due_date) < new Date() && (
+                      <Badge variant="destructive" className="text-xs">
+                        Overdue
+                      </Badge>
+                    )}
+                    {new Date(item.due_date).toDateString() === new Date().toDateString() && (
+                      <Badge variant="secondary" className="text-xs">
+                        Due Today
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
