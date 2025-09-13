@@ -200,26 +200,20 @@ export const EventTaskModal = ({
               {event ? "Event" : "Task"} Title
             </Label>
             {isCreatingNew || isEditing ? (
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-lg font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
-                data-placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
-                onInput={(e) => {
-                  const newValue = e.currentTarget.textContent || "";
-                  console.log('Title input changed:', newValue);
-                  setEditedTitle(newValue);
+              <Input
+                type="text"
+                id="title"
+                value={editedTitle}
+                onChange={(e) => {
+                  console.log('Title input changed:', e.target.value);
+                  setEditedTitle(e.target.value);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') e.preventDefault();
                 }}
-                onBlur={(e) => {
-                  const newValue = e.currentTarget.textContent || "";
-                  setEditedTitle(newValue);
-                }}
-              >
-                {editedTitle}
-              </div>
+                placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
+                className="text-lg font-medium"
+              />
             ) : (
               <h2 className="text-xl font-semibold text-foreground">
                 {event?.title || task?.title}
@@ -365,23 +359,16 @@ export const EventTaskModal = ({
           <div className="space-y-2">
             <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
             {isCreatingNew || isEditing ? (
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 whitespace-pre-wrap empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
-                data-placeholder="Add notes or description..."
-                onInput={(e) => {
-                  const newValue = e.currentTarget.textContent || "";
-                  console.log('Notes input changed:', newValue);
-                  setEditedNotes(newValue);
+              <Textarea
+                id="notes"
+                value={editedNotes}
+                onChange={(e) => {
+                  console.log('Notes input changed:', e.target.value);
+                  setEditedNotes(e.target.value);
                 }}
-                onBlur={(e) => {
-                  const newValue = e.currentTarget.textContent || "";
-                  setEditedNotes(newValue);
-                }}
-              >
-                {editedNotes}
-              </div>
+                placeholder="Add notes or description..."
+                className="min-h-[80px]"
+              />
             ) : (
               <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
                 <p className="text-sm text-muted-foreground">
