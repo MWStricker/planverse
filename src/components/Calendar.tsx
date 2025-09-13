@@ -339,6 +339,9 @@ const Calendar = () => {
       console.log('Calendar received dataRefresh event');
       if (user) {
         console.log('Calling loadDataForCurrentPeriod()');
+        // Clear cache to force fresh data fetch
+        setDataCache(new Map());
+        console.log('Cache cleared, fetching fresh data');
         loadDataForCurrentPeriod();
       }
     };
