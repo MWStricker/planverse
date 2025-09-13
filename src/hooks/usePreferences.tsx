@@ -205,6 +205,8 @@ export const usePreferences = () => {
               user_id: user.id,
               settings_type: 'preferences',
               settings_data: newPrefs as any,
+            }, {
+              onConflict: 'user_id,settings_type'
             });
 
           if (error) {
