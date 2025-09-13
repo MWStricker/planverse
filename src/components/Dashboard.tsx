@@ -82,6 +82,7 @@ export const Dashboard = () => {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [availableCourses, setAvailableCourses] = useState<{code: string, color: string}[]>([]);
   
   const handleItemToggle = async (item: any, isCompleted: boolean) => {
     try {
@@ -324,14 +325,41 @@ export const Dashboard = () => {
     if (!user) return;
     
     try {
-      // Fetch only tasks and events concurrently
-      const [tasksResult, eventsResult] = await Promise.all([
+      // Fetch tasks, events, and available courses concurrently
+      const [tasksResult, eventsResult, coursesResult] = await Promise.all([
         supabase.from('tasks').select('*').eq('user_id', user.id),
-        supabase.from('events').select('*').eq('user_id', user.id)
+        supabase.from('events').select('*').eq('user_id', user.id),
+        supabase.from('course_colors').select('course_code, canvas_color').eq('user_id', user.id)
       ]);
 
       if (tasksResult.data) setUserTasks(tasksResult.data);
       if (eventsResult.data) setUserEvents(eventsResult.data);
+      
+      // Extract unique courses from tasks and course_colors
+      const taskCourses = (tasksResult.data || []).map(task => task.course_name).filter(Boolean);
+      const storedCourses = (coursesResult.data || []).map(course => ({
+        code: course.course_code,
+        color: course.canvas_color || '#3b82f6'
+      }));
+      
+      // Combine and deduplicate courses
+      const allCourseNames = [...new Set(taskCourses)];
+      const coursesWithColors = allCourseNames.map(courseName => {
+        const storedCourse = storedCourses.find(c => c.code === courseName);
+        return {
+          code: courseName,
+          color: storedCourse?.color || '#3b82f6'
+        };
+      });
+      
+      // Add stored courses that might not have tasks/events yet
+      storedCourses.forEach(storedCourse => {
+        if (!coursesWithColors.find(c => c.code === storedCourse.code)) {
+          coursesWithColors.push(storedCourse);
+        }
+      });
+      
+      setAvailableCourses(coursesWithColors);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -896,14 +924,29 @@ export const Dashboard = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Course (Optional)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter course name..." 
-                              autoComplete="off" 
-                              data-form-type="other"
-                              {...field} 
-                            />
-                          </FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a course..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-background border border-border shadow-lg z-50">
+                              <SelectItem value="">
+                                <span className="text-muted-foreground">No course</span>
+                              </SelectItem>
+                              {availableCourses.map((course) => (
+                                <SelectItem key={course.code} value={course.code}>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-3 h-3 rounded-full" 
+                                      style={{ backgroundColor: course.color }}
+                                    />
+                                    {course.code}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
