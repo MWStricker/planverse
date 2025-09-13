@@ -28,16 +28,11 @@ const Index = () => {
 
   // Auto-collapse sidebar when on calendar page with smooth transitions
   useEffect(() => {
-    // Add a small delay to ensure smooth transitions
-    const timeoutId = setTimeout(() => {
-      if (currentPage === 'calendar') {
-        setIsCollapsed(true);
-      } else {
-        setIsCollapsed(false);
-      }
-    }, 50); // Small delay for smoother transition
-
-    return () => clearTimeout(timeoutId);
+    if (currentPage === 'calendar') {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(false);
+    }
   }, [currentPage]);
 
   // Tab reordering functionality
@@ -113,12 +108,12 @@ const Index = () => {
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
         <div 
-          className={`flex-shrink-0 transition-all duration-800 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform ${
+          className={`flex-shrink-0 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-[width] ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
           style={{ 
-            transform: 'translateZ(0)', // Force GPU acceleration
-            backfaceVisibility: 'hidden' // Prevent flickering
+            contain: 'layout style paint',
+            transform: 'translateZ(0)',
           }}
         >
           <Navigation 
