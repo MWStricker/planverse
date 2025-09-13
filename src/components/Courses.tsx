@@ -306,12 +306,19 @@ export const Courses = () => {
       const oldIndex = courses.findIndex(course => course.code === active.id);
       const newIndex = courses.findIndex(course => course.code === over?.id);
 
+      console.log('Drag end - moving course from index', oldIndex, 'to index', newIndex);
+      console.log('Current course order before move:', courses.map(c => c.code));
+
       if (oldIndex !== -1 && newIndex !== -1) {
         // Use setTimeout to defer state updates and prevent flash
         setTimeout(() => {
           const newCourses = arrayMove(courses, oldIndex, newIndex);
+          const newOrder = newCourses.map(course => course.code);
+          
+          console.log('New course order after move:', newOrder);
+          
           setCourses(newCourses);
-          setCourseOrder(newCourses.map(course => course.code));
+          setCourseOrder(newOrder);
           
           // Add a subtle success feedback
           toast({
@@ -326,6 +333,8 @@ export const Courses = () => {
 
   const saveCourseOrder = async () => {
     if (!user?.id) return;
+
+    console.log('Saving course order:', courseOrder);
 
     try {
       const { error } = await supabase
@@ -348,6 +357,7 @@ export const Courses = () => {
         return;
       }
 
+      console.log('Course order saved successfully');
       setIsReorderMode(false);
       toast({
         title: "Success",
@@ -355,6 +365,11 @@ export const Courses = () => {
       });
     } catch (error) {
       console.error('Error saving course order:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to save course order",
+        variant: "destructive",
+      });
     }
   };
 
