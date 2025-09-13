@@ -1523,15 +1523,7 @@ const Calendar = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="outline" size="sm" onClick={() => navigate('prev')}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-            Today
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('next')}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          {/* Clear All button only */}
         </div>
       </div>
 

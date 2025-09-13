@@ -154,14 +154,8 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
           <p className="text-sm text-muted-foreground mt-1">Monthly Overview</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrevMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant={isSameMonth(currentMonth, new Date()) ? "default" : "outline"} size="sm" onClick={handleToday}>
-            Current Month
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleNextMonth}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => {/* Add clear all functionality */}}>
+            Clear All
           </Button>
         </div>
       </div>
