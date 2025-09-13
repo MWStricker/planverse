@@ -50,7 +50,7 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-14 text-base transition-all duration-300 ${
+      className={`w-full h-14 text-base transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
         isCollapsed ? 'justify-center px-2' : 'justify-start'
       } ${
         isDragging ? 'shadow-lg' : ''
@@ -69,7 +69,7 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 transition-all duration-300 ease-out ${
+      <Icon className={`h-5 w-5 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
         isCollapsed ? '' : 'mr-3'
       } ${
         isActive 
@@ -79,7 +79,7 @@ export const SortableTabItem = ({
       
       {!isCollapsed && (
         <>
-          <span className={`font-medium transition-all duration-300 ease-out ${
+          <span className={`font-medium transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
             isActive ? 'tracking-wide' : ''
           }`}>
             {item.label}

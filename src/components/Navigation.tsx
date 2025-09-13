@@ -165,7 +165,7 @@ export const Navigation = ({
         variant="ghost"
         size="sm"
         onClick={onToggleCollapse}
-        className={`absolute -right-3 top-4 z-10 h-6 w-6 p-0 bg-card border border-border rounded-full hover:bg-muted/30 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        className={`absolute -right-3 top-4 z-10 h-6 w-6 p-0 bg-card border border-border rounded-full hover:bg-muted/30 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
           isCollapsed ? 'rotate-180' : ''
         }`}
       >
@@ -175,7 +175,7 @@ export const Navigation = ({
       {/* Logo */}
       <div className="p-4 pt-1 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className={`text-center flex-1 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isCollapsed ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
+          <div className={`text-center flex-1 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${isCollapsed ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
             {!isCollapsed && (
               <>
                 <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
@@ -186,7 +186,7 @@ export const Navigation = ({
           
           {/* Small Reorder Button */}
           {!isCollapsed && (
-            <div className="flex flex-col gap-1 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]">
+            <div className="flex flex-col gap-1 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
               {!isReorderMode ? (
                 <Button
                   variant="ghost"
@@ -251,7 +251,7 @@ export const Navigation = ({
 
       {/* User Section */}
       <div className="p-4 border-t border-border">
-        <div className={`flex items-center gap-3 mb-3 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isCollapsed ? 'justify-center' : ''}`}>
+        <div className={`flex items-center gap-3 mb-3 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${isCollapsed ? 'justify-center' : ''}`}>
           <Avatar className="h-10 w-10">
             <AvatarImage src={profile?.avatar_url} />
             <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white">
@@ -260,7 +260,7 @@ export const Navigation = ({
             </AvatarFallback>
           </Avatar>
           {!isCollapsed && (
-            <div className="flex-1 min-w-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]">
+            <div className="flex-1 min-w-0 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
                 <p className="text-sm font-medium text-foreground truncate">
                   {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
                 </p>
@@ -279,7 +279,7 @@ export const Navigation = ({
           )}
         </div>
         
-        <div className={`flex gap-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isCollapsed ? 'flex-col items-center' : ''}`}>
+        <div className={`flex gap-2 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${isCollapsed ? 'flex-col items-center' : ''}`}>
           <Button 
             variant="ghost" 
             size="sm" 
@@ -304,7 +304,7 @@ export const Navigation = ({
         
         {/* Digital Clock */}
         {!isCollapsed && (
-          <div className="mt-3 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]">
+          <div className="mt-3 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
             <AnalogClock />
           </div>
         )}
