@@ -228,25 +228,25 @@ export const Dashboard = () => {
   // Calculate free time and due items from real data
   const freeTimeToday = userEvents.length > 0 ? "4.5 hrs" : "N/A";
   
-  // Get assignments due this week from events (Canvas assignments) and tasks
+  // Get assignments due from now until end of current week
   const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setHours(0, 0, 0, 0);
-  const endOfWeek = new Date(now);
-  endOfWeek.setDate(endOfWeek.getDate() + 7);
-  endOfWeek.setHours(23, 59, 59, 999);
+  const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay; // Days until next Sunday
+  const endOfCurrentWeek = new Date(now);
+  endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
+  endOfCurrentWeek.setHours(23, 59, 59, 999);
 
   const eventsThisWeek = userEvents.filter(event => {
     if (!event.start_time && !event.end_time) return false;
     if (event.event_type === 'assignment' && event.is_completed) return false;
     const eventDate = new Date(event.start_time || event.end_time);
-    return eventDate >= startOfWeek && eventDate <= endOfWeek;
+    return eventDate >= now && eventDate <= endOfCurrentWeek;
   });
   
   const tasksThisWeek = userTasks.filter(task => {
     if (!task.due_date || task.completion_status === 'completed') return false;
     const dueDate = new Date(task.due_date);
-    return dueDate >= startOfWeek && dueDate <= endOfWeek;
+    return dueDate >= now && dueDate <= endOfCurrentWeek;
   });
   
   const dueThisWeek = eventsThisWeek.length + tasksThisWeek.length || "N/A";
@@ -1815,7 +1815,7 @@ export const Dashboard = () => {
               Due This Week ({allDueThisWeek.length} items)
             </DialogTitle>
             <DialogDescription>
-              All assignments and tasks due within the next 7 days
+              All assignments and tasks due by the end of this week
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
