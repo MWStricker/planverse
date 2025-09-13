@@ -222,10 +222,7 @@ export const EventTaskModal = ({
         window.dispatchEvent(deleteEvent);
         console.log('taskDeleted event dispatched');
         
-        // Also dispatch general refresh as backup
-        console.log('Dispatching dataRefresh event as backup');
-        window.dispatchEvent(new CustomEvent('dataRefresh'));
-        console.log('dataRefresh event dispatched');
+        // Don't dispatch dataRefresh for deletions - let the direct state update handle it
         
         onClose();
       } else if (event) {
