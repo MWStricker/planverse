@@ -20,7 +20,6 @@ export const usePreferences = () => {
 
   // Load preferences from database or localStorage
   useEffect(() => {
-    console.log('Loading preferences for user:', user?.id);
     const loadPreferences = async () => {
       if (user) {
         // Load from database for authenticated users
@@ -40,14 +39,12 @@ export const usePreferences = () => {
           }
 
           if (data?.settings_data) {
-            console.log('Loaded preferences from database:', data.settings_data);
             const loadedPrefs = { ...defaultPreferences, ...(data.settings_data as unknown as UserPreferences) };
             setPreferences(loadedPrefs);
             applyPreferences(loadedPrefs);
             // Also sync to localStorage for faster loading
             localStorage.setItem('userPreferences', JSON.stringify(loadedPrefs));
           } else {
-            console.log('No preferences found in database, checking localStorage');
             // No preferences in database, check localStorage and migrate to database
             const stored = localStorage.getItem('userPreferences');
             if (stored) {
@@ -183,9 +180,7 @@ export const usePreferences = () => {
     key: K,
     value: UserPreferences[K]
   ) => {
-    console.log('Updating preference:', key, 'to:', value);
     const newPrefs = { ...preferences, [key]: value };
-    console.log('New preferences object:', newPrefs);
     setPreferences(newPrefs);
     applyPreferences(newPrefs);
 
