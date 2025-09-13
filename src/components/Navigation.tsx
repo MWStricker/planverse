@@ -165,7 +165,7 @@ export const Navigation = ({
         variant="ghost"
         size="sm"
         onClick={onToggleCollapse}
-        className={`absolute -right-3 top-4 z-10 h-6 w-6 p-0 bg-card border border-border rounded-full hover:bg-muted/30 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+        className={`absolute -right-3 top-4 z-10 h-6 w-6 p-0 bg-card border border-border rounded-full hover:bg-muted/30 transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] ${
           isCollapsed ? 'rotate-180' : ''
         }`}
       >
@@ -175,7 +175,7 @@ export const Navigation = ({
       {/* Logo */}
       <div className="p-4 pt-1 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className={`text-center flex-1 transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${isCollapsed ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
+          <div className={`text-center flex-1 transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] ${isCollapsed ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
             {!isCollapsed && (
               <>
                 <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
