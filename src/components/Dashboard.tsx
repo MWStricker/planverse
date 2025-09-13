@@ -179,7 +179,17 @@ export const Dashboard = () => {
     return description.slice(0, maxLength) + "...";
   };
   
-  const completedTasks = userTasks.filter(task => task.completion_status === 'completed').length;
+  // Get today's date for filtering tasks completed today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  
+  const completedTasks = userTasks.filter(task => {
+    if (task.completion_status !== 'completed' || !task.completed_at) return false;
+    const completedDate = new Date(task.completed_at);
+    return completedDate >= today && completedDate <= endOfToday;
+  }).length;
   const totalTasks = userTasks.length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
