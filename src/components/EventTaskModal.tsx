@@ -149,7 +149,13 @@ export const EventTaskModal = ({
   };
 
   const handleDelete = async () => {
+    console.log('handleDelete called');
+    console.log('user:', user);
+    console.log('task:', task);
+    console.log('event:', event);
+
     if (!user?.id) {
+      console.log('No user ID found');
       toast({
         title: "Error",
         description: "You must be logged in to delete items",
@@ -160,12 +166,15 @@ export const EventTaskModal = ({
 
     try {
       if (task) {
+        console.log('Deleting task with ID:', task.id);
         // Delete task from database
         const { error } = await supabase
           .from('tasks')
           .delete()
           .eq('id', task.id)
           .eq('user_id', user.id);
+
+        console.log('Delete task result:', { error });
 
         if (error) throw error;
 
@@ -177,12 +186,15 @@ export const EventTaskModal = ({
         // Trigger calendar refresh
         window.dispatchEvent(new CustomEvent('dataRefresh'));
       } else if (event) {
+        console.log('Deleting event with ID:', event.id);
         // Delete event from database  
         const { error } = await supabase
           .from('events')
           .delete()
           .eq('id', event.id)
           .eq('user_id', user.id);
+
+        console.log('Delete event result:', { error });
 
         if (error) throw error;
 
@@ -430,10 +442,13 @@ export const EventTaskModal = ({
           {/* Action Buttons */}
           <div className="flex justify-between pt-4 border-t">
             <div>
-              {!isEditing && (
+              {!isEditing && !isCreatingNew && (task || event) && (
                 <Button
                   variant="destructive"
-                  onClick={handleDelete}
+                  onClick={() => {
+                    console.log('Delete button clicked');
+                    handleDelete();
+                  }}
                   size="sm"
                 >
                   Delete
