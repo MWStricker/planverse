@@ -4,6 +4,83 @@
 
 /* CourseConnect Design System - Academic productivity focused */
 
+/* Global Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+  /* Webkit smooth scrolling for Safari/Chrome */
+  -webkit-overflow-scrolling: touch;
+  /* Enhanced momentum scrolling */
+  scroll-padding-top: 2rem;
+}
+
+body {
+  /* Smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent scroll chaining */
+  overscroll-behavior: contain;
+  /* Smooth scroll with proper easing */
+  scroll-behavior: smooth;
+}
+
+/* Smooth scrolling for all scrollable elements */
+* {
+  /* Hardware acceleration for smoother performance */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* Better font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Smooth scrolling inheritance */
+  scroll-behavior: inherit;
+}
+
+/* Enhanced smooth scrolling for scroll containers */
+.scroll-smooth {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch;
+  /* Momentum scrolling */
+  overscroll-behavior: contain;
+  /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: scroll-position;
+}
+
+/* Smooth transitions for interactive elements */
+button, a, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth hover effects */
+.hover-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Optimized scrollbar styling for smooth experience */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Firefox scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
 @layer base {
   :root {
     /* Academic Blues - Primary palette */
