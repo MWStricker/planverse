@@ -88,10 +88,7 @@ const Index = () => {
       case 'tasks':
         return <Tasks />;
       case 'courses':
-        return <Courses onNavigateToSettings={() => {
-          setSettingsTab('course-icons');
-          setCurrentPage('settings');
-        }} />;
+        return <Courses />;
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">
