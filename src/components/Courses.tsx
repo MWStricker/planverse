@@ -698,26 +698,6 @@ export const Courses = ({}: CoursesProps = {}) => {
         </div>
       )}
 
-      {isEditIconsMode && courses.length > 0 && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border-2 border-dashed border-primary/30 animate-fade-in">
-          <div className="text-center">
-            <p className="text-sm text-foreground font-medium mb-3">
-              Click on any course icon to change it
-            </p>
-            <div className="grid grid-cols-10 gap-2 max-w-2xl mx-auto">
-              {courseIcons.map((icon) => (
-                <div
-                  key={icon.id}
-                  className="p-2 hover:bg-accent rounded-lg cursor-pointer transition-colors text-center"
-                  title={icon.name}
-                >
-                  <icon.icon className="h-5 w-5 mx-auto" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <DndContext
         sensors={sensors}
