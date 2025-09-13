@@ -113,27 +113,7 @@ export const Courses = () => {
     }
   };
 
-  // Load saved course order
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const loadCourseOrder = async () => {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('settings_data')
-        .eq('user_id', user.id)
-        .eq('settings_type', 'course_order')
-        .single();
-
-      if (data?.settings_data && typeof data.settings_data === 'object' && 'order' in data.settings_data) {
-        setCourseOrder((data.settings_data as { order: string[] }).order);
-      }
-    };
-
-    loadCourseOrder();
-  }, [user?.id]);
-
-  // Fetch stored course colors
+  // Fetch stored course colors and icons
   useEffect(() => {
     if (!user?.id) return;
 
@@ -259,8 +239,12 @@ export const Courses = () => {
       });
 
       // Apply saved course order if available
+      console.log('Processing courses with saved order:', courseOrder);
+      console.log('Found courses:', processedCourses.map(c => c.code));
+      
       let orderedCourses = processedCourses;
       if (courseOrder.length > 0) {
+        console.log('Applying saved course order');
         orderedCourses = processedCourses.sort((a, b) => {
           const aIndex = courseOrder.indexOf(a.code);
           const bIndex = courseOrder.indexOf(b.code);
@@ -276,14 +260,18 @@ export const Courses = () => {
           return a.code.localeCompare(b.code);
         });
       } else {
+        console.log('No saved order, sorting alphabetically');
         orderedCourses = processedCourses.sort((a, b) => a.code.localeCompare(b.code));
       }
 
+      console.log('Final ordered courses:', orderedCourses.map(c => c.code));
       setCourses(orderedCourses);
       
-      // Update course order state if not set
+      // Update course order state if not set or if courses changed
+      const currentCourseList = orderedCourses.map(course => course.code);
       if (courseOrder.length === 0) {
-        setCourseOrder(orderedCourses.map(course => course.code));
+        console.log('Setting initial course order');
+        setCourseOrder(currentCourseList);
       }
       
       // Initialize all courses as collapsed
@@ -295,8 +283,35 @@ export const Courses = () => {
     }
   };
 
+  // Load course order first, then fetch courses data
   useEffect(() => {
-    fetchCoursesData();
+    if (!user?.id) return;
+    
+    const loadCourseOrderAndData = async () => {
+      console.log('Loading saved course order for user:', user.id);
+      
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('settings_data')
+        .eq('user_id', user.id)
+        .eq('settings_type', 'course_order')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading course order:', error);
+      } else if (data?.settings_data && typeof data.settings_data === 'object' && 'order' in data.settings_data) {
+        const savedOrder = (data.settings_data as { order: string[] }).order;
+        console.log('Found saved course order:', savedOrder);
+        setCourseOrder(savedOrder);
+      } else {
+        console.log('No saved course order found');
+      }
+      
+      // Now fetch courses data
+      await fetchCoursesData();
+    };
+
+    loadCourseOrderAndData();
   }, [user?.id]);
 
   const handleDragEnd = (event: DragEndEvent) => {
