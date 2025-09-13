@@ -184,26 +184,43 @@ export const usePreferences = () => {
     setPreferences(newPrefs);
     applyPreferences(newPrefs);
 
-    // Save to localStorage immediately
+    // Save to localStorage immediately for instant persistence
     localStorage.setItem('userPreferences', JSON.stringify(newPrefs));
 
-    // Save to database for authenticated users
+    // Save to database for authenticated users with retry logic
     if (user) {
-      try {
-        const { error } = await supabase
-          .from('user_settings')
-          .upsert({
-            user_id: user.id,
-            settings_type: 'preferences',
-            settings_data: newPrefs as any,
-          });
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      const saveToDatabase = async (): Promise<void> => {
+        try {
+          const { error } = await supabase
+            .from('user_settings')
+            .upsert({
+              user_id: user.id,
+              settings_type: 'preferences',
+              settings_data: newPrefs as any,
+            });
 
-        if (error) {
-          console.error('Error saving preferences to database:', error);
+          if (error) {
+            throw error;
+          }
+        } catch (error) {
+          console.error(`Error saving preferences to database (attempt ${retryCount + 1}):`, error);
+          
+          if (retryCount < maxRetries) {
+            retryCount++;
+            // Exponential backoff: wait 1s, then 2s, then 4s
+            const delay = Math.pow(2, retryCount - 1) * 1000;
+            setTimeout(() => saveToDatabase(), delay);
+          } else {
+            console.error('Failed to save preferences after maximum retries');
+            // Preferences are still saved in localStorage, so functionality continues
+          }
         }
-      } catch (error) {
-        console.error('Failed to save preferences:', error);
-      }
+      };
+
+      await saveToDatabase();
     }
   };
 

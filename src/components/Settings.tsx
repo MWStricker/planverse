@@ -640,11 +640,11 @@ export const Settings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Alert className="border-accent/20 bg-accent/5">
-            <Zap className="h-4 w-4" />
-            <AlertDescription className="text-foreground">
-              <strong>Performance Tip:</strong> Preferences are saved automatically and applied instantly. 
-              Changes sync across all your devices when signed in.
+          <Alert className="border-green-500/20 bg-green-50 dark:bg-green-900/10">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800 dark:text-green-400">
+              <strong>Auto-Save Enabled:</strong> All your preference changes are automatically saved to your account. 
+              They'll be restored whenever you sign in, on any device.
             </AlertDescription>
           </Alert>
           
