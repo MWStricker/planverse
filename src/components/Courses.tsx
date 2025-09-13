@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X, Palette } from "lucide-react";
-import { getCourseIconById } from "@/data/courseIcons";
+import { getCourseIconById, courseIcons } from "@/data/courseIcons";
 
-interface CoursesProps {
-  onNavigateToSettings?: () => void;
-}
+interface CoursesProps {}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
@@ -46,7 +45,7 @@ interface Course {
   upcomingAssignments: number;
 }
 
-export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
+export const Courses = ({}: CoursesProps = {}) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
@@ -54,6 +53,7 @@ export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
   const [courseIcons_State, setCourseIcons_State] = useState<Record<string, string>>({});
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [courseOrder, setCourseOrder] = useState<string[]>([]);
+  const [isEditIconsMode, setIsEditIconsMode] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -114,6 +114,52 @@ export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
       });
     } catch (error) {
       console.error('Error toggling event completion:', error);
+    }
+  };
+
+  const handleCourseIconChange = async (courseCode: string, iconId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const newIcons = { ...courseIcons_State, [courseCode]: iconId };
+      
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          settings_type: 'course_icons',
+          settings_data: newIcons
+        }, {
+          onConflict: 'user_id,settings_type'
+        });
+
+      if (error) {
+        console.error('Error saving course icon:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save course icon",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setCourseIcons_State(newIcons);
+      
+      // Update courses with new icon
+      setCourses(prevCourses => 
+        prevCourses.map(course => 
+          course.code === courseCode 
+            ? { ...course, icon: getCourseIconById(iconId) }
+            : course
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `Icon updated for ${courseCode}`,
+      });
+    } catch (error) {
+      console.error('Error updating course icon:', error);
     }
   };
 
@@ -602,11 +648,11 @@ export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onNavigateToSettings?.()}
+                onClick={() => setIsEditIconsMode(!isEditIconsMode)}
                 className="flex items-center gap-2"
               >
                 <Palette className="h-4 w-4" />
-                Edit Icons
+                {isEditIconsMode ? 'Done Editing' : 'Edit Icons'}
               </Button>
               <Button
                 variant="outline"
@@ -652,6 +698,27 @@ export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
         </div>
       )}
 
+      {isEditIconsMode && courses.length > 0 && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border-2 border-dashed border-primary/30 animate-fade-in">
+          <div className="text-center">
+            <p className="text-sm text-foreground font-medium mb-3">
+              Click on any course icon to change it
+            </p>
+            <div className="grid grid-cols-10 gap-2 max-w-2xl mx-auto">
+              {courseIcons.map((icon) => (
+                <div
+                  key={icon.id}
+                  className="p-2 hover:bg-accent rounded-lg cursor-pointer transition-colors text-center"
+                  title={icon.name}
+                >
+                  <icon.icon className="h-5 w-5 mx-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -668,9 +735,11 @@ export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
                 key={course.code}
                 course={course}
                 isReorderMode={isReorderMode}
+                isEditIconsMode={isEditIconsMode}
                 isCollapsed={collapsedCourses.has(course.code)}
                 onToggle={() => toggleCourse(course.code)}
                 onEventToggle={handleEventToggle}
+                onIconChange={handleCourseIconChange}
               />
             ))}
           </div>
@@ -684,16 +753,21 @@ export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
 const SortableCourseCard = ({ 
   course, 
   isReorderMode, 
+  isEditIconsMode,
   isCollapsed, 
   onToggle, 
-  onEventToggle 
+  onEventToggle,
+  onIconChange
 }: {
   course: Course;
   isReorderMode: boolean;
+  isEditIconsMode: boolean;
   isCollapsed: boolean;
   onToggle: () => void;
   onEventToggle: (eventId: string, isCompleted: boolean) => void;
+  onIconChange: (courseCode: string, iconId: string) => void;
 }) => {
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const {
     attributes,
     listeners,
@@ -788,7 +862,47 @@ const SortableCourseCard = ({
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <CourseIcon className="h-6 w-6" />
+                {isEditIconsMode ? (
+                  <Popover open={showIconPicker} onOpenChange={setShowIconPicker}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-accent"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowIconPicker(true);
+                        }}
+                      >
+                        <CourseIcon className="h-6 w-6" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-4" align="start">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">Choose an icon for {course.code}</h4>
+                        <div className="grid grid-cols-8 gap-2">
+                          {courseIcons.map((icon) => (
+                        <Button
+                          key={icon.id}
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-accent"
+                          onClick={() => {
+                            onIconChange(course.code, icon.id);
+                            setShowIconPicker(false);
+                          }}
+                          title={icon.name}
+                        >
+                          <icon.icon className="h-4 w-4" />
+                        </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <CourseIcon className="h-6 w-6" />
+                )}
                 <div>
                   <CardTitle className="text-xl">{course.code}</CardTitle>
                   <p className="text-sm opacity-80">
