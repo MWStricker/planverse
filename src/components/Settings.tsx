@@ -1181,7 +1181,24 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
             </CardHeader>
             <CardContent className="p-0">
               <nav className="space-y-1">
-                {/* Navigation buttons removed */}
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <Button
+                      key={tab.id}
+                      variant={activeTab === tab.id ? "default" : "ghost"}
+                      className={`w-full justify-start ${
+                        activeTab === tab.id 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'hover:bg-muted'
+                      }`}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      <Icon className="h-4 w-4 mr-3" />
+                      {tab.label}
+                    </Button>
+                  );
+                })}
               </nav>
             </CardContent>
           </Card>
