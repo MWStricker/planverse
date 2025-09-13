@@ -126,10 +126,8 @@ const Index = () => {
             onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
         </div>
-        <div className="flex-1 overflow-auto scroll-smooth hover-smooth">
-          <div className="scroll-smooth">
-            {renderPage()}
-          </div>
+        <div className="flex-1 overflow-auto scroll-performance">
+          {renderPage()}
         </div>
       </div>
     </ProfileEditingProvider>
