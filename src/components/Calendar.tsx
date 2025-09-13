@@ -336,16 +336,20 @@ const Calendar = () => {
   // Listen for data refresh events from other components (like task creation)
   useEffect(() => {
     const handleDataRefresh = () => {
+      console.log('Calendar received dataRefresh event');
       if (user) {
+        console.log('Calling loadDataForCurrentPeriod()');
         loadDataForCurrentPeriod();
       }
     };
 
+    console.log('Setting up Calendar event listeners');
     window.addEventListener('dataRefresh', handleDataRefresh);
     window.addEventListener('tasksCleared', handleDataRefresh);
     window.addEventListener('eventsCleared', handleDataRefresh);
 
     return () => {
+      console.log('Cleaning up Calendar event listeners');
       window.removeEventListener('dataRefresh', handleDataRefresh);
       window.removeEventListener('tasksCleared', handleDataRefresh);
       window.removeEventListener('eventsCleared', handleDataRefresh);
