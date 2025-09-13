@@ -113,13 +113,12 @@ const Index = () => {
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
         <div 
-          className={`flex-shrink-0 transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
+          className={`flex-shrink-0 transition-all duration-800 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
           style={{ 
             transform: 'translateZ(0)', // Force GPU acceleration
-            backfaceVisibility: 'hidden', // Prevent flickering
-            transformStyle: 'preserve-3d' // Better 3D rendering
+            backfaceVisibility: 'hidden' // Prevent flickering
           }}
         >
           <Navigation 
