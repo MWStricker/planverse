@@ -333,6 +333,24 @@ const Calendar = () => {
     }
   }, [user, currentDate, showAllTasks]);
 
+  // Listen for data refresh events from other components (like task creation)
+  useEffect(() => {
+    const handleDataRefresh = () => {
+      if (user) {
+        loadDataForCurrentPeriod();
+      }
+    };
+
+    window.addEventListener('dataRefresh', handleDataRefresh);
+    window.addEventListener('tasksCleared', handleDataRefresh);
+    window.addEventListener('eventsCleared', handleDataRefresh);
+
+    return () => {
+      window.removeEventListener('dataRefresh', handleDataRefresh);
+      window.removeEventListener('tasksCleared', handleDataRefresh);
+      window.removeEventListener('eventsCleared', handleDataRefresh);
+    };
+  }, [user]);
 
   // Ensure weather loads once geolocation resolves (even after initial render)
   useEffect(() => {
