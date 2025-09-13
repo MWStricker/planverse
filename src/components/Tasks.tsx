@@ -53,7 +53,7 @@ const taskFormSchema = z.object({
     invalid_type_error: "Please select a valid date",
   }),
   due_time: z.string().min(1, "Time is required"),
-  priority: z.enum(["none", "low", "medium", "high", "critical"], {
+  priority: z.enum(["none", "low", "medium", "high"], {
     required_error: "Priority is required",
   }),
   is_recurring: z.boolean().default(false),
@@ -62,8 +62,7 @@ const taskFormSchema = z.object({
 });
 
 const PRIORITY_KEYWORDS = {
-  critical: ['exam', 'test', 'quiz', 'midterm', 'final'],
-  high: ['assignment', 'project', 'presentation', 'paper', 'essay'],
+  high: ['exam', 'test', 'quiz', 'midterm', 'final', 'assignment', 'project', 'presentation', 'paper', 'essay'],
   medium: ['homework', 'reading', 'discussion', 'lab'],
   low: ['optional', 'extra credit', 'review']
 };
@@ -248,12 +247,11 @@ export const Tasks = () => {
     setEditingTask(task);
     
     // Convert priority score back to string
-    const priorityMap: { [key: number]: "none" | "low" | "medium" | "high" | "critical" } = {
+    const priorityMap: { [key: number]: "none" | "low" | "medium" | "high" } = {
       0: "none",
       1: "low",
       2: "medium", 
-      3: "high",
-      4: "critical"
+      3: "high"
     };
 
     // Parse due date and time
@@ -296,12 +294,7 @@ export const Tasks = () => {
   const calculatePriority = (title: string, description: string = '', dueDate?: string): number => {
     const text = `${title} ${description}`.toLowerCase();
     
-    // Check for critical keywords (exams, tests)
-    if (PRIORITY_KEYWORDS.critical.some(keyword => text.includes(keyword))) {
-      return 4; // Critical
-    }
-    
-    // Check for high priority keywords
+    // Check for high priority keywords (formerly critical keywords now become high)
     if (PRIORITY_KEYWORDS.high.some(keyword => text.includes(keyword))) {
       return 3; // High
     }
@@ -905,12 +898,6 @@ export const Tasks = () => {
                               High Priority
                             </div>
                           </SelectItem>
-                          <SelectItem value="critical">
-                            <div className="flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
-                              Critical Priority
-                            </div>
-                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -1131,12 +1118,6 @@ export const Tasks = () => {
                               High Priority
                             </div>
                           </SelectItem>
-                          <SelectItem value="critical">
-                            <div className="flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
-                              Critical Priority
-                            </div>
-                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -1305,17 +1286,6 @@ export const Tasks = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              <div>
-                <p className="text-sm text-muted-foreground">Critical</p>
-                <p className="text-xl font-bold">{sortedItems.filter(item => item.priority === 4 && item.completion_status === 'pending').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">

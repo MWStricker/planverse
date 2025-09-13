@@ -75,9 +75,9 @@ const getTaskColorClass = (task: Task) => {
   }
   
   const priority = task.priority_score || 0;
-  if (priority > 7) {
+  if (priority >= 3) {
     return "bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-l-red-400 text-red-700 shadow-sm";
-  } else if (priority > 4) {
+  } else if (priority >= 2) {
     return "bg-gradient-to-r from-amber-50 to-amber-100 border-l-4 border-l-amber-400 text-amber-700 shadow-sm";
   }
   

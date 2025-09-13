@@ -56,7 +56,7 @@ const taskFormSchema = z.object({
     invalid_type_error: "Please select a valid date",
   }),
   due_time: z.string().min(1, "Time is required"),
-  priority: z.enum(["low", "medium", "high", "critical"], {
+  priority: z.enum(["low", "medium", "high"], {
     required_error: "Priority is required",
   }),
   is_recurring: z.boolean().default(false),
@@ -1008,12 +1008,6 @@ export const Dashboard = () => {
                                   High Priority
                                 </div>
                               </SelectItem>
-                              <SelectItem value="critical">
-                                <div className="flex items-center gap-2">
-                                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                                  Critical Priority
-                                </div>
-                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -1162,8 +1156,8 @@ export const Dashboard = () => {
                     {allTodaysItems.map((task) => (
                       <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                         <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                          task.priority_score === 4 ? 'bg-destructive' :
-                          task.priority_score === 3 ? 'bg-primary' :
+                          task.priority_score === 3 ? 'bg-destructive' :
+                          task.priority_score === 2 ? 'bg-primary' :
                           task.priority_score === 1 ? 'bg-muted-foreground' :
                           'bg-secondary'
                         }`} />
@@ -1410,10 +1404,10 @@ export const Dashboard = () => {
                                  <div className="flex items-center gap-2">
                                    <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
                                    <div className={`w-2 h-2 rounded-full ${
-                                     task.priority_score === 4 ? 'bg-destructive' :
-                                     task.priority_score === 3 ? 'bg-primary' :
-                                     task.priority_score === 1 ? 'bg-muted-foreground' :
-                                     'bg-secondary'
+                                      task.priority_score === 3 ? 'bg-destructive' :
+                                      task.priority_score === 2 ? 'bg-primary' :
+                                      task.priority_score === 1 ? 'bg-muted-foreground' :
+                                      'bg-secondary'
                                    }`} />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -1601,8 +1595,8 @@ export const Dashboard = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${
-                selectedTask?.priority_score === 4 ? 'bg-destructive' :
-                selectedTask?.priority_score === 3 ? 'bg-primary' :
+                selectedTask?.priority_score === 3 ? 'bg-destructive' :
+                selectedTask?.priority_score === 2 ? 'bg-primary' :
                 selectedTask?.priority_score === 1 ? 'bg-muted-foreground' :
                 'bg-secondary'
               }`} />

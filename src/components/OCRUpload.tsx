@@ -571,9 +571,9 @@ export const OCRUpload = () => {
                       <Badge 
                         variant="secondary" 
                         className={`text-xs ${
-                          task.priority === 4 ? 'bg-red-100 text-red-800' :
-                          task.priority === 3 ? 'bg-orange-100 text-orange-800' :
-                          task.priority === 2 ? 'bg-yellow-100 text-yellow-800' :
+                          task.priority === 3 ? 'bg-red-100 text-red-800' :
+                          task.priority === 2 ? 'bg-orange-100 text-orange-800' :
+                          task.priority === 1 ? 'bg-yellow-100 text-yellow-800' :
                           'bg-green-100 text-green-800'
                         }`}
                       >

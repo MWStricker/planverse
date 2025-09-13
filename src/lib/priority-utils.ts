@@ -12,17 +12,7 @@ export interface PriorityConfig {
 }
 
 export const PRIORITY_CONFIG: Record<number, PriorityConfig> = {
-  4: { // Critical
-    label: 'Critical',
-    color: 'bg-destructive',
-    bgColor: 'bg-destructive/10',
-    borderColor: 'border-destructive/20',
-    textColor: 'text-destructive',
-    icon: AlertTriangle,
-    badgeVariant: 'destructive',
-    emoji: '🚨'
-  },
-  3: { // High
+  3: { // High (was previously level 3, now becomes the highest)
     label: 'High',
     color: 'bg-orange-500',
     bgColor: 'bg-orange-100',
