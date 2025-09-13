@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X } from "lucide-react";
+import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X, Palette } from "lucide-react";
 import { getCourseIconById } from "@/data/courseIcons";
+
+interface CoursesProps {
+  onNavigateToSettings?: () => void;
+}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -42,7 +46,7 @@ interface Course {
   upcomingAssignments: number;
 }
 
-export const Courses = () => {
+export const Courses = ({ onNavigateToSettings }: CoursesProps = {}) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
@@ -595,6 +599,15 @@ export const Courses = () => {
               <Badge variant="outline" className="bg-background">
                 {courses.reduce((sum, course) => sum + course.totalAssignments, 0)} Total Assignments
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onNavigateToSettings?.()}
+                className="flex items-center gap-2"
+              >
+                <Palette className="h-4 w-4" />
+                Edit Icons
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

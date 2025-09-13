@@ -20,6 +20,7 @@ import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   
@@ -79,7 +80,7 @@ const Index = () => {
       case 'integrations':
         return <IntegrationSetup />;
       case 'settings':
-        return <Settings />;
+        return <Settings defaultTab={settingsTab} />;
       case 'calendar':
         return <Calendar />;
       case 'connect':
@@ -87,7 +88,10 @@ const Index = () => {
       case 'tasks':
         return <Tasks />;
       case 'courses':
-        return <Courses />;
+        return <Courses onNavigateToSettings={() => {
+          setSettingsTab('course-icons');
+          setCurrentPage('settings');
+        }} />;
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">

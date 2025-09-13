@@ -80,8 +80,8 @@ const accountIntegrations: AccountIntegration[] = [
   },
 ];
 
-export const Settings = () => {
-  const [activeTab, setActiveTab] = useState('accounts');
+export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = {}) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [notifications, setNotifications] = useState({
     assignments: true,
     deadlines: true,
