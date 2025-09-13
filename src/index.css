@@ -4,71 +4,92 @@
 
 /* CourseConnect Design System - Academic productivity focused */
 
-/* Global 60fps Scrolling Performance */
+/* NUCLEAR 60fps Scrolling Performance */
 html {
-  /* Force hardware acceleration */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000;
-  /* Optimize scrolling */
-  scroll-behavior: smooth;
-  overflow-x: hidden;
-}
-
-body {
-  /* GPU acceleration for main scroll container */
+  /* Aggressive GPU acceleration */
   transform: translate3d(0, 0, 0);
-  will-change: scroll-position;
-  /* Prevent layout shifts */
-  contain: layout style paint;
-  /* Optimize rendering */
+  backface-visibility: hidden;
+  perspective: 1000px;
+  /* Remove expensive operations */
+  scroll-behavior: auto; /* Disable smooth scrolling which can cause jank */
+  overflow-x: hidden;
+  /* Optimize rendering pipeline */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
+  /* Force hardware layer */
+  will-change: scroll-position;
 }
 
-/* Optimize all scrollable containers */
-* {
-  /* Force compositing layer for better performance */
-  -webkit-transform: translateZ(0);
-  -moz-transform: translateZ(0);
-  -ms-transform: translateZ(0);
-  -o-transform: translateZ(0);
-  transform: translateZ(0);
+body {
+  /* Maximum GPU acceleration */
+  transform: translate3d(0, 0, 0);
+  will-change: scroll-position, transform;
+  /* Force compositing layer */
+  contain: strict;
   /* Optimize paint performance */
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  /* Remove unnecessary repaints */
-  -webkit-perspective: 1000;
-  perspective: 1000;
+  isolation: isolate;
+  /* Remove expensive operations */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeSpeed;
+  /* Prevent layout thrashing */
+  overflow-anchor: none;
 }
 
-/* High performance scroll containers */
+/* Completely disable smooth scrolling animations globally */
+*, *::before, *::after {
+  /* Remove all transitions during scroll */
+  scroll-behavior: auto !important;
+  /* Force hardware layers */
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  /* Optimize paint containment */
+  contain: layout style paint;
+  /* Remove expensive operations */
+  -webkit-overflow-scrolling: auto;
+}
+
+/* Nuclear performance scroll containers */
 .scroll-performance {
-  /* Force GPU layer */
+  /* Maximum GPU acceleration */
   will-change: transform, scroll-position;
   transform: translate3d(0, 0, 0);
-  /* Optimize compositing */
-  contain: layout style paint;
-  /* Prevent reflow/repaint */
+  /* Force compositing layer */
+  contain: strict;
+  /* Prevent all layout recalculation */
   isolation: isolate;
+  /* Disable scroll anchoring which can cause jank */
+  overflow-anchor: none;
+  /* Force hardware scrolling */
+  -webkit-overflow-scrolling: auto;
+  /* Remove smooth scrolling completely */
+  scroll-behavior: auto !important;
 }
 
-/* Remove expensive operations during scroll */
-img, video, canvas {
+/* Aggressive performance optimization for media */
+img, video, canvas, svg {
   /* Force own compositing layer */
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
   will-change: transform;
-  /* Optimize image rendering */
+  /* Optimize rendering */
   image-rendering: optimizeSpeed;
+  /* Force hardware acceleration */
+  backface-visibility: hidden;
+  /* Prevent layout shifts */
+  contain: layout size style;
 }
 
-/* Optimize complex layouts */
-[class*="grid"], [class*="flex"] {
-  /* Prevent layout recalculation */
-  contain: layout;
+/* Nuclear layout optimization */
+[class*="grid"], [class*="flex"], div, section, main, aside, nav, header, footer {
+  /* Prevent any layout recalculation */
+  contain: layout style;
   /* Force compositing */
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
+  /* Optimize paint performance */
+  isolation: isolate;
+  /* Remove smooth scrolling */
+  scroll-behavior: auto !important;
 }
 
 @layer base {
@@ -327,18 +348,27 @@ div, span, button, a {
     font-weight: var(--font-weight-bold, 700);
   }
   
-  /* GPU acceleration for better performance */
-  .smooth-scroll {
-    will-change: scroll-position;
-    transform: translateZ(0);
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+  /* Maximum scroll performance */
+  .smooth-scroll, .scroll-smooth {
+    will-change: scroll-position, transform;
+    transform: translate3d(0, 0, 0);
+    /* Remove smooth scrolling - it causes jank */
+    scroll-behavior: auto !important;
+    /* Force hardware scrolling */
+    -webkit-overflow-scrolling: auto;
+    /* Prevent scroll anchoring */
+    overflow-anchor: none;
+    /* Optimize compositing */
+    contain: strict;
   }
   
-  /* Optimized scrolling containers */
+  /* Nuclear scrolling optimization */
   .will-change-scroll {
     will-change: scroll-position, transform;
     backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    contain: strict;
+    scroll-behavior: auto !important;
   }
 
   body {
