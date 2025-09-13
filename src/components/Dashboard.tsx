@@ -1191,7 +1191,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  <p className="text-2xl font-bold text-foreground">{totalTasksToday > 0 ? `${completedTasks}/${totalTasksToday}` : "N/A"}</p>
+                  <p className="text-2xl font-bold text-foreground">{totalTasksToday > 0 ? `${completedTasks}/${totalTasksToday}` : "No Tasks Today!"}</p>
                 </div>
               </div>
             </CardContent>
