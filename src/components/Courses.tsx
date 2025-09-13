@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X } from "lucide-react";
+import { getCourseIconById } from "@/data/courseIcons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -46,6 +47,7 @@ export const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
   const [storedColors, setStoredColors] = useState<Record<string, string>>({});
+  const [courseIcons_State, setCourseIcons_State] = useState<Record<string, string>>({});
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [courseOrder, setCourseOrder] = useState<string[]>([]);
   const { user } = useAuth();
@@ -151,6 +153,22 @@ export const Courses = () => {
     };
 
     fetchStoredColors();
+
+    // Load course icons
+    const fetchCourseIcons = async () => {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('settings_data')
+        .eq('user_id', user.id)
+        .eq('settings_type', 'course_icons')
+        .maybeSingle();
+
+      if (data?.settings_data) {
+        setCourseIcons_State(data.settings_data as Record<string, string>);
+      }
+    };
+
+    fetchCourseIcons();
   }, [user?.id]);
 
   // Main data fetching function
@@ -453,8 +471,12 @@ export const Courses = () => {
   };
 
   const getCourseIcon = (courseCode: string) => {
-    const code = courseCode.toLowerCase();
+    const customIconId = courseIcons_State[courseCode];
+    if (customIconId) {
+      return getCourseIconById(customIconId);
+    }
     
+    const code = courseCode.toLowerCase();
     if (code.includes('math') || code.includes('calc') || code.includes('algebra')) return GraduationCap;
     if (code.includes('psy') || code.includes('psychology')) return BookOpen;
     if (code.includes('life') || code.includes('bio') || code.includes('science')) return FileText;

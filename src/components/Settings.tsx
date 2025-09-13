@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { useProfileEditing } from "@/hooks/useProfileEditing";
 import { universities, getUniversityById, getPublicUniversities, searchPublicUniversities } from "@/data/universities";
 import { collegeMajors } from "@/data/collegeMajors";
 import { supabase } from "@/integrations/supabase/client";
+import { courseIcons, getCourseIconCategories } from "@/data/courseIcons";
 
 interface AccountIntegration {
   id: string;
@@ -108,6 +109,8 @@ export const Settings = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [majorError, setMajorError] = useState('');
   const [schoolSearchQuery, setSchoolSearchQuery] = useState('');
+  const [courseIcons_State, setCourseIcons_State] = useState<Record<string, string>>({});
+  const [courses, setCourses] = useState<Array<{code: string, icon?: string}>>([]);
   
   // Get all public universities sorted alphabetically by name
   const getAllPublicUniversities = () => {
@@ -171,6 +174,92 @@ export const Settings = () => {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  // Load course icons and courses
+  useEffect(() => {
+    const loadCourseData = async () => {
+      if (!user) return;
+
+      try {
+        // Load saved course icons
+        const { data: iconData } = await supabase
+          .from('user_settings')
+          .select('settings_data')
+          .eq('user_id', user.id)
+          .eq('settings_type', 'course_icons')
+          .maybeSingle();
+
+        if (iconData?.settings_data) {
+          setCourseIcons_State(iconData.settings_data as Record<string, string>);
+        }
+
+        // Load courses from events
+        const { data: events } = await supabase
+          .from('events')
+          .select('title')
+          .eq('user_id', user.id)
+          .eq('source_provider', 'canvas');
+
+        const uniqueCourses = new Set<string>();
+        events?.forEach(event => {
+          const courseCode = extractCourseCodeFromTitle(event.title);
+          if (courseCode) {
+            uniqueCourses.add(courseCode);
+          }
+        });
+
+        setCourses(Array.from(uniqueCourses).map(code => ({ code })));
+      } catch (error) {
+        console.error('Error loading course data:', error);
+      }
+    };
+
+    loadCourseData();
+  }, [user]);
+
+  // Helper function to extract course code
+  const extractCourseCodeFromTitle = (title: string) => {
+    const patterns = [
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)\]/i,
+      /\[([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)-(\d{4}[A-Z]{2})\]/i,
+      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?)\b/i,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = title.match(pattern);
+      if (match) {
+        let courseCode = match[2] || match[1];
+        courseCode = courseCode.replace(/\d{4}[A-Z]{2}/, '').replace(/^-|-$/, '');
+        return courseCode.toUpperCase();
+      }
+    }
+    return null;
+  };
+
+  // Update course icon
+  const updateCourseIcon = async (courseCode: string, iconId: string) => {
+    const newIcons = { ...courseIcons_State, [courseCode]: iconId };
+    setCourseIcons_State(newIcons);
+
+    if (user) {
+      try {
+        await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            settings_type: 'course_icons',
+            settings_data: newIcons,
+          });
+
+        toast({
+          title: "Icon updated",
+          description: `Course icon for ${courseCode} has been saved.`,
+        });
+      } catch (error) {
+        console.error('Error saving course icon:', error);
+      }
+    }
+  };
 
   // Auto-save notification changes
   const updateNotificationSetting = async (key: keyof typeof notifications, value: boolean) => {
@@ -319,6 +408,7 @@ export const Settings = () => {
   const tabs = [
     { id: 'accounts', label: 'Account Linking', icon: Link },
     { id: 'preferences', label: 'System Preferences', icon: Palette },
+    { id: 'course-icons', label: 'Course Icons', icon: GraduationCap },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'privacy', label: 'Privacy & Security', icon: Shield },
@@ -953,6 +1043,59 @@ export const Settings = () => {
     </div>
   );
 
+  const renderCourseIcons = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Course Icons</h2>
+        <p className="text-muted-foreground">Customize icons for your courses</p>
+      </div>
+
+      {courses.length > 0 ? (
+        <div className="space-y-4">
+          {courses.map((course) => {
+            const currentIconId = courseIcons_State[course.code] || 'book-open';
+            const categories = getCourseIconCategories();
+            
+            return (
+              <Card key={course.code}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" />
+                    {course.code}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-6 gap-2">
+                    {courseIcons.map((icon) => {
+                      const IconComponent = icon.icon;
+                      return (
+                        <Button
+                          key={icon.id}
+                          variant={currentIconId === icon.id ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => updateCourseIcon(course.code, icon.id)}
+                          className="h-12 w-12 p-0"
+                        >
+                          <IconComponent className="h-5 w-5" />
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-muted-foreground">No courses found. Connect Canvas to customize course icons.</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+
   const renderSignOut = () => (
     <div className="space-y-6">
       <Card>
@@ -1003,6 +1146,8 @@ export const Settings = () => {
         return renderAccountLinking();
       case 'preferences':
         return renderSystemPreferences();
+      case 'course-icons':
+        return renderCourseIcons();
       case 'notifications':
         return renderNotifications();
       case 'profile':
