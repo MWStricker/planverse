@@ -163,7 +163,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
           <Button variant="outline" size="sm" onClick={handleNextMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => {/* Add clear all functionality */}}>
+          <Button variant="outline" size="default" className="px-6" onClick={() => {/* Add clear all functionality */}}>
             Clear All
           </Button>
         </div>

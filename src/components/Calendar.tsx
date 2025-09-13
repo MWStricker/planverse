@@ -1497,8 +1497,8 @@ const Calendar = () => {
             <AlertDialogTrigger asChild>
               <Button
                 variant="destructive" 
-                size="sm" 
-                className="flex items-center gap-2"
+                size="default" 
+                className="flex items-center gap-2 px-6"
               >
                 <Trash2 className="h-4 w-4" />
                 Clear All

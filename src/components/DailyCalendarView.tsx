@@ -196,7 +196,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
           <Button variant="outline" size="sm" onClick={handleNextDay}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => {/* Add clear all functionality */}}>
+          <Button variant="outline" size="default" className="px-6" onClick={() => {/* Add clear all functionality */}}>
             Clear All
           </Button>
         </div>
