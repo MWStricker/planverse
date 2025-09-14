@@ -318,7 +318,11 @@ export const Dashboard = () => {
   const tasksThisWeek = userTasks.filter(task => {
     if (!task.due_date || task.completion_status === 'completed') return false;
     const dueDate = new Date(task.due_date);
-    return dueDate >= now && dueDate <= endOfCurrentWeek;
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    // Filter out tasks that are more than a week overdue
+    return dueDate >= oneWeekAgo && dueDate >= now && dueDate <= endOfCurrentWeek;
   });
   
   const dueThisWeek = eventsThisWeek.length + tasksThisWeek.length || "N/A";
@@ -407,7 +411,11 @@ export const Dashboard = () => {
     weekFromNow.setDate(weekFromNow.getDate() + 7);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return eventDate >= today && eventDate <= weekFromNow;
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    // Filter out assignments that are more than a week overdue
+    return eventDate >= oneWeekAgo && eventDate >= today && eventDate <= weekFromNow;
   }).map(event => {
     const eventDate = new Date(event.start_time || event.end_time);
     const today = new Date();
@@ -1527,16 +1535,41 @@ export const Dashboard = () => {
                     </div>
                   </div>
                 ))
-              ) : [...tasksThisWeek, ...weeklyCanvasAssignments].sort((a, b) => {
-                // Sort by due date, then by priority
-                if (a.due_date && b.due_date) {
-                  const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-                  if (dateComparison !== 0) return dateComparison;
-                }
-                return (b.priority_score || 2) - (a.priority_score || 2);
-              }).length > 0 ? (
+              ) : (() => {
+                // Filter out tasks more than a week overdue before checking length
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                
+                const filteredTasks = tasksThisWeek.filter(task => {
+                  if (!task.due_date) return true;
+                  const dueDate = new Date(task.due_date);
+                  return dueDate >= oneWeekAgo;
+                });
+                
+                const filteredCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
+                  const dueDate = new Date(assignment.due_date);
+                  return dueDate >= oneWeekAgo;
+                });
+                
+                return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
+              })() ? (
                 (() => {
-                  const sortedItems = [...tasksThisWeek, ...weeklyCanvasAssignments].sort((a, b) => {
+                  // Filter out tasks more than a week overdue
+                  const oneWeekAgo = new Date();
+                  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                  
+                  const filteredTasks = tasksThisWeek.filter(task => {
+                    if (!task.due_date) return true; // Keep tasks without due dates
+                    const dueDate = new Date(task.due_date);
+                    return dueDate >= oneWeekAgo;
+                  });
+                  
+                  const filteredCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
+                    const dueDate = new Date(assignment.due_date);
+                    return dueDate >= oneWeekAgo;
+                  });
+                  
+                  const sortedItems = [...filteredTasks, ...filteredCanvasAssignments].sort((a, b) => {
                     if (a.due_date && b.due_date) {
                       const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
                       if (dateComparison !== 0) return dateComparison;
