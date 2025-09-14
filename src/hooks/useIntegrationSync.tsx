@@ -141,7 +141,7 @@ export const useIntegrationSync = () => {
     fetchConnections();
   }, [user]);
 
-  // Auto-sync every 30 minutes if there are active connections
+  // Auto-sync every 2 hours if there are active connections (reduced frequency)
   useEffect(() => {
     if (connections.length === 0) return;
 
@@ -149,7 +149,7 @@ export const useIntegrationSync = () => {
       if (syncStatus === 'idle') {
         syncAllConnections();
       }
-    }, 30 * 60 * 1000); // 30 minutes
+    }, 2 * 60 * 60 * 1000); // 2 hours instead of 30 minutes
 
     return () => clearInterval(interval);
   }, [connections, syncStatus]);
