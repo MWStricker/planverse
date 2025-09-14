@@ -203,10 +203,12 @@ export const Courses = ({}: CoursesProps = {}) => {
         setStoredColors(colorMap);
       }
 
-      // Process course icons
+      // Process course icons - get the actual data, not set state yet
+      let loadedIcons: Record<string, string> = {};
       if (iconsResult.data?.settings_data) {
         console.log('Loading saved course icons:', iconsResult.data.settings_data);
-        setCourseIcons_State(iconsResult.data.settings_data as Record<string, string>);
+        loadedIcons = iconsResult.data.settings_data as Record<string, string>;
+        setCourseIcons_State(loadedIcons);
       } else {
         console.log('No saved course icons found');
       }
@@ -221,19 +223,38 @@ export const Courses = ({}: CoursesProps = {}) => {
         console.log('No saved course order found');
       }
 
-      // Now fetch courses data with all settings loaded
-      console.log('All settings loaded, now fetching courses with icons state:', iconsResult.data?.settings_data);
-      await fetchCoursesData(savedOrder);
+      // Now fetch courses data with the loaded icons passed directly
+      console.log('All settings loaded, now fetching courses with loaded icons:', loadedIcons);
+      await fetchCoursesDataWithIcons(savedOrder, loadedIcons);
     };
 
     loadAllSettingsAndData();
   }, [user?.id]);
 
-  // Main data fetching function - now accepts optional saved order
-  const fetchCoursesData = async (savedOrder?: string[]) => {
+  // Modified function to accept icons directly instead of relying on state
+  const fetchCoursesDataWithIcons = async (savedOrder?: string[], loadedIcons: Record<string, string> = {}) => {
     if (!user?.id) return;
     
     setLoading(true);
+    
+    // Local function to get course icon using loaded icons instead of state
+    const getCourseIconWithLoadedIcons = (courseCode: string) => {
+      const customIconId = loadedIcons[courseCode];
+      console.log('getCourseIconWithLoadedIcons called:', { courseCode, customIconId, loadedIcons });
+      if (customIconId) {
+        console.log('Using custom icon:', customIconId);
+        return getCourseIconById(customIconId);
+      }
+      
+      const code = courseCode.toLowerCase();
+      if (code.includes('math') || code.includes('calc') || code.includes('algebra')) return GraduationCap;
+      if (code.includes('psy') || code.includes('psychology')) return BookOpen;
+      if (code.includes('life') || code.includes('bio') || code.includes('science')) return FileText;
+      if (code.includes('hes') || code.includes('health')) return AlertCircle;
+      if (code.includes('mu') || code.includes('music')) return BookOpen;
+      
+      return BookOpen;
+    };
     
     try {
       const [eventsResult, tasksResult] = await Promise.all([
@@ -270,7 +291,7 @@ export const Courses = ({}: CoursesProps = {}) => {
           coursesMap.set(courseCode, {
             code: courseCode,
             color: getCourseColor(event.title, true, courseCode),
-            icon: getCourseIcon(courseCode),
+            icon: getCourseIconWithLoadedIcons(courseCode),
             events: [],
             tasks: []
           });
@@ -288,7 +309,7 @@ export const Courses = ({}: CoursesProps = {}) => {
           coursesMap.set(courseCode, {
             code: courseCode,
             color: getCourseColor(pseudoTitle, true, courseCode),
-            icon: getCourseIcon(courseCode),
+            icon: getCourseIconWithLoadedIcons(courseCode),
             events: [],
             tasks: []
           });
@@ -444,7 +465,7 @@ export const Courses = ({}: CoursesProps = {}) => {
     setIsReorderMode(false);
     // Reset to original order by refetching
     if (user?.id) {
-      fetchCoursesData();
+      fetchCoursesDataWithIcons();
     }
   };
 
