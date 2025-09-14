@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Clock, BookOpen, CheckCircle, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, BookOpen, CheckCircle, Calendar as CalendarIcon, Navigation } from "lucide-react";
 import { format, addDays, subDays, isToday, getHours, startOfDay, isSameDay } from "date-fns";
 import { EventTaskModal } from "./EventTaskModal";
 
@@ -95,10 +95,36 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-scroll to current hour when component loads or when switching to today
+  useEffect(() => {
+    if (isToday(currentDay) && scrollContainerRef.current) {
+      const currentHour = getHours(new Date());
+      const hourElement = scrollContainerRef.current.querySelector(`[data-hour="${currentHour}"]`);
+      if (hourElement) {
+        hourElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [currentDay]);
+
+  const scrollToCurrentHour = () => {
+    if (scrollContainerRef.current && isToday(currentDay)) {
+      const currentHour = getHours(new Date());
+      const hourElement = scrollContainerRef.current.querySelector(`[data-hour="${currentHour}"]`);
+      if (hourElement) {
+        hourElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
   
   const handlePrevDay = () => setCurrentDay(subDays(currentDay, 1));
   const handleNextDay = () => setCurrentDay(addDays(currentDay, 1));
-  const handleToday = () => setCurrentDay(new Date());
+  const handleToday = () => {
+    setCurrentDay(new Date());
+    // Auto-scroll to current hour when clicking Today
+    setTimeout(() => scrollToCurrentHour(), 100);
+  };
 
   const handleCellClick = (hour: number) => {
     setSelectedDate(currentDay);
@@ -196,6 +222,12 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
           <Button variant="outline" size="sm" onClick={handleNextDay}>
             <ChevronRight className="h-4 w-4" />
           </Button>
+          {isToday(currentDay) && (
+            <Button variant="outline" size="sm" onClick={scrollToCurrentHour} className="flex items-center gap-2">
+              <Navigation className="h-4 w-4" />
+              Jump to Now
+            </Button>
+          )}
           <Button variant="outline" size="default" className="px-6" onClick={() => {/* Add clear all functionality */}}>
             Clear All
           </Button>
@@ -266,7 +298,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
       )}
 
       {/* Hourly Schedule */}
-      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg smooth-scroll will-change-scroll" style={{ scrollBehavior: 'smooth', transform: 'translateZ(0)' }}>
+      <div ref={scrollContainerRef} className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg smooth-scroll will-change-scroll max-h-[600px] overflow-y-auto" style={{ scrollBehavior: 'smooth', transform: 'translateZ(0)' }}>
         {TIME_SLOTS.map((timeSlot, index) => {
           const { events: slotEvents, tasks: slotTasks } = getItemsForTimeSlot(timeSlot.hour);
           const isCurrentHour = isToday(currentDay) && getHours(new Date()) === timeSlot.hour;
@@ -275,6 +307,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
           return (
             <div 
               key={timeSlot.hour} 
+              data-hour={timeSlot.hour}
               className={`flex border-b border-border/30 last:border-b-0 group/hour ${
                 isCurrentHour ? "bg-gradient-to-r from-primary/5 to-primary/10 ring-1 ring-primary/20" : ""
               }`}
