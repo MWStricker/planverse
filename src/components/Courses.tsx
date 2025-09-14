@@ -855,7 +855,9 @@ const SortableCourseCard = ({
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 hover:bg-accent"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
                             onIconChange(course.code, icon.id);
                             setShowIconPicker(false);
                           }}
