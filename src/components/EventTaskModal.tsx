@@ -348,7 +348,7 @@ export const EventTaskModal = ({
                 
                 <div>
                   <Label className="text-xs text-muted-foreground">Type</Label>
-                  <Badge variant="secondary" className="mt-1 ml-2">
+                  <Badge variant="secondary" className="mt-1">
                     {event.event_type}
                   </Badge>
                 </div>
