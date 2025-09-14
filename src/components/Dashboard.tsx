@@ -189,8 +189,17 @@ export const Dashboard = () => {
     if (task.completion_status !== 'completed' || !task.completed_at) return false;
     const completedDate = new Date(task.completed_at);
     return completedDate >= today && completedDate <= endOfToday;
+  }).length + userEvents.filter(event => {
+    if (event.event_type !== 'assignment' || !event.is_completed) return false;
+    // For Canvas assignments, count them as completed today if they're due today and marked complete
+    const eventDate = new Date(event.start_time || event.end_time);
+    return (
+      eventDate.getDate() === today.getDate() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getFullYear() === today.getFullYear()
+    );
   }).length;
-  // Get total tasks due today (including both completed and pending)
+  // Get total tasks due today (including both manual tasks and Canvas assignments)
   const totalTasksToday = userTasks.filter(task => {
     if (!task.due_date) return false;
     const dueDate = new Date(task.due_date);
@@ -198,6 +207,14 @@ export const Dashboard = () => {
       dueDate.getDate() === today.getDate() &&
       dueDate.getMonth() === today.getMonth() &&
       dueDate.getFullYear() === today.getFullYear()
+    );
+  }).length + userEvents.filter(event => {
+    if (event.event_type !== 'assignment') return false;
+    const eventDate = new Date(event.start_time || event.end_time);
+    return (
+      eventDate.getDate() === today.getDate() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getFullYear() === today.getFullYear()
     );
   }).length;
   
