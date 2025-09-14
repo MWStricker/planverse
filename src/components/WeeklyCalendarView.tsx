@@ -182,9 +182,6 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
           <Button variant="outline" size="sm" onClick={handleNextWeek}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="default" className="px-6" onClick={() => {/* Add clear all functionality */}}>
-            Clear All
-          </Button>
         </div>
       </div>
 
