@@ -213,9 +213,6 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
               Jump to Now
             </Button>
           )}
-          <Button variant="outline" size="default" className="px-6" onClick={() => {/* Add clear all functionality */}}>
-            Clear All
-          </Button>
         </div>
       </div>
 
