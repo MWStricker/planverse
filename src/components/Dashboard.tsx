@@ -221,11 +221,11 @@ export const Dashboard = () => {
   
   // Weekly progress calculation - tasks/assignments completed this week
   const startOfWeek = new Date();
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Go to Sunday
+  startOfWeek.setDate(startOfWeek.getDate() - ((startOfWeek.getDay() + 6) % 7)); // Go to Monday
   startOfWeek.setHours(0, 0, 0, 0);
   
   const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(endOfWeek.getDate() + 6); // Go to Saturday
+  endOfWeek.setDate(endOfWeek.getDate() + 6); // Go to Sunday
   endOfWeek.setHours(23, 59, 59, 999);
   
   // Count manual tasks completed this week
