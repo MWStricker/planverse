@@ -218,6 +218,61 @@ export const Dashboard = () => {
     );
   }).length;
   
+  
+  // Weekly progress calculation - tasks/assignments completed this week
+  const startOfWeek = new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Go to Sunday
+  startOfWeek.setHours(0, 0, 0, 0);
+  
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(endOfWeek.getDate() + 6); // Go to Saturday
+  endOfWeek.setHours(23, 59, 59, 999);
+  
+  // Count manual tasks completed this week
+  const tasksCompletedThisWeek = userTasks.filter(task => {
+    if (task.completion_status !== 'completed' || !task.completed_at) return false;
+    const completedDate = new Date(task.completed_at);
+    return completedDate >= startOfWeek && completedDate <= endOfWeek;
+  }).length;
+  
+  // Count Canvas assignments completed this week (assignments that were due this week and marked complete)
+  const canvasAssignmentsCompletedThisWeek = userEvents.filter(event => {
+    if (event.event_type !== 'assignment' || !event.is_completed) return false;
+    const eventDate = new Date(event.start_time || event.end_time);
+    return eventDate >= startOfWeek && eventDate <= endOfWeek;
+  }).length;
+  
+  // Count total tasks that were due this week (both completed and pending)
+  const totalTasksDueThisWeek = userTasks.filter(task => {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    return dueDate >= startOfWeek && dueDate <= endOfWeek;
+  }).length;
+  
+  // Count total Canvas assignments due this week
+  const totalCanvasAssignmentsDueThisWeek = userEvents.filter(event => {
+    if (event.event_type !== 'assignment') return false;
+    const eventDate = new Date(event.start_time || event.end_time);
+    return eventDate >= startOfWeek && eventDate <= endOfWeek;
+  }).length;
+  
+  const totalItemsCompletedThisWeek = tasksCompletedThisWeek + canvasAssignmentsCompletedThisWeek;
+  const totalItemsDueThisWeek = totalTasksDueThisWeek + totalCanvasAssignmentsDueThisWeek;
+  
+  const weeklyCompletionRate = totalItemsDueThisWeek > 0 ? Math.round((totalItemsCompletedThisWeek / totalItemsDueThisWeek) * 100) : 0;
+  
+  console.log('Weekly Progress Variables:', { 
+    tasksCompletedThisWeek,
+    canvasAssignmentsCompletedThisWeek,
+    totalTasksDueThisWeek,
+    totalCanvasAssignmentsDueThisWeek,
+    totalItemsCompletedThisWeek,
+    totalItemsDueThisWeek,
+    weeklyCompletionRate,
+    startOfWeek: startOfWeek.toISOString(),
+    endOfWeek: endOfWeek.toISOString()
+  });
+  
   const completionRate = userTasks.length > 0 ? Math.round((completedTasks / userTasks.length) * 100) : 0;
   
   console.log('Dashboard variables:', { 
@@ -1276,7 +1331,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Weekly Progress</p>
-                  <p className="text-2xl font-bold text-foreground">{userTasks.length > 0 ? `${completionRate}%` : "N/A"}</p>
+                  <p className="text-2xl font-bold text-foreground">{totalItemsDueThisWeek > 0 ? `${weeklyCompletionRate}%` : "No items this week"}</p>
                 </div>
               </div>
             </CardContent>
