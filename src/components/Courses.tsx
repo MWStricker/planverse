@@ -120,8 +120,11 @@ export const Courses = ({}: CoursesProps = {}) => {
   const handleCourseIconChange = async (courseCode: string, iconId: string) => {
     if (!user?.id) return;
 
+    console.log('handleCourseIconChange called:', { courseCode, iconId, userId: user.id });
+
     try {
       const newIcons = { ...courseIcons_State, [courseCode]: iconId };
+      console.log('Saving new icons state:', newIcons);
       
       const { error } = await supabase
         .from('user_settings')
@@ -143,6 +146,7 @@ export const Courses = ({}: CoursesProps = {}) => {
         return;
       }
 
+      console.log('Course icon saved successfully to database');
       setCourseIcons_State(newIcons);
       
       // Update courses with new icon
@@ -201,7 +205,10 @@ export const Courses = ({}: CoursesProps = {}) => {
 
       // Process course icons
       if (iconsResult.data?.settings_data) {
+        console.log('Loading saved course icons:', iconsResult.data.settings_data);
         setCourseIcons_State(iconsResult.data.settings_data as Record<string, string>);
+      } else {
+        console.log('No saved course icons found');
       }
 
       // Process course order
@@ -215,6 +222,7 @@ export const Courses = ({}: CoursesProps = {}) => {
       }
 
       // Now fetch courses data with all settings loaded
+      console.log('All settings loaded, now fetching courses with icons state:', iconsResult.data?.settings_data);
       await fetchCoursesData(savedOrder);
     };
 
@@ -546,7 +554,9 @@ export const Courses = ({}: CoursesProps = {}) => {
 
   const getCourseIcon = (courseCode: string) => {
     const customIconId = courseIcons_State[courseCode];
+    console.log('getCourseIcon called:', { courseCode, customIconId, allIconsState: courseIcons_State });
     if (customIconId) {
+      console.log('Using custom icon:', customIconId);
       return getCourseIconById(customIconId);
     }
     
