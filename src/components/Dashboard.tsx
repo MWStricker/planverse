@@ -343,6 +343,40 @@ export const Dashboard = () => {
     }))
   ].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
+  // Get completed tasks and assignments for today
+  const completedTasksToday = userTasks.filter(task => {
+    if (task.completion_status !== 'completed' || !task.completed_at) return false;
+    const completedDate = new Date(task.completed_at);
+    return completedDate >= today && completedDate <= endOfToday;
+  });
+
+  const completedAssignmentsToday = userEvents.filter(event => {
+    if (event.event_type !== 'assignment' || !event.is_completed) return false;
+    const eventDate = new Date(event.start_time || event.end_time);
+    return (
+      eventDate.getDate() === today.getDate() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getFullYear() === today.getFullYear()
+    );
+  });
+
+  const allCompletedToday = [
+    ...completedTasksToday.map(task => ({
+      id: task.id,
+      title: task.title,
+      completed_at: task.completed_at,
+      type: 'task',
+      course_name: task.course_name || 'No Course'
+    })),
+    ...completedAssignmentsToday.map(event => ({
+      id: event.id,
+      title: event.title,
+      completed_at: new Date().toISOString(), // Use current time for completed assignments
+      type: 'assignment',
+      course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course'
+    }))
+  ].sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime());
+
   // Get today's tasks ordered by priority (optimized for instant updates)
   const todaysTasks = userTasks.filter(task => {
     if (!task.due_date || task.completion_status === 'completed') return false;
@@ -1928,55 +1962,102 @@ export const Dashboard = () => {
               All assignments and tasks due by the end of this week
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            {allDueThisWeek.length === 0 ? (
-              <div className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-success mx-auto mb-3" />
-                <p className="text-lg font-medium">Nothing due this week!</p>
-                <p className="text-muted-foreground">You're all caught up.</p>
-              </div>
-            ) : (
-              allDueThisWeek.map((item) => (
-                <div key={`${item.type}-${item.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-border">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium">{item.title}</h4>
-                      <Badge variant={item.type === 'event' ? 'secondary' : 'outline'}>
-                        {item.type === 'event' ? 'Assignment' : 'Task'}
-                      </Badge>
-                      {item.source !== 'Manual' && (
-                        <Badge variant="outline" className="text-xs">
-                          {item.source}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <CalendarIcon className="h-4 w-4" />
-                        {format(new Date(item.due_date), "MMM dd, yyyy 'at' h:mm a")}
-                      </div>
-                      {item.course_name && item.course_name !== 'No Course' && (
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-4 w-4" />
-                          {item.course_name}
+          
+          <div className="space-y-6">
+            {/* Pending Tasks Section */}
+            <div>
+              <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Pending ({allDueThisWeek.length} items)
+              </h3>
+              <div className="space-y-3">
+                {allDueThisWeek.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-success mx-auto mb-3" />
+                    <p className="text-lg font-medium">Nothing due this week!</p>
+                    <p className="text-muted-foreground">You're all caught up.</p>
+                  </div>
+                ) : (
+                  allDueThisWeek.map((item) => (
+                    <div key={`${item.type}-${item.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium">{item.title}</h4>
+                          <Badge variant={item.type === 'event' ? 'secondary' : 'outline'}>
+                            {item.type === 'event' ? 'Assignment' : 'Task'}
+                          </Badge>
+                          {item.source !== 'Manual' && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.source}
+                            </Badge>
+                          )}
                         </div>
-                      )}
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <CalendarIcon className="h-4 w-4" />
+                            {format(new Date(item.due_date), "MMM dd, yyyy 'at' h:mm a")}
+                          </div>
+                          {item.course_name && item.course_name !== 'No Course' && (
+                            <div className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4" />
+                              {item.course_name}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {new Date(item.due_date) < new Date() && (
+                          <Badge variant="destructive" className="text-xs">
+                            Overdue
+                          </Badge>
+                        )}
+                        {new Date(item.due_date).toDateString() === new Date().toDateString() && (
+                          <Badge variant="secondary" className="text-xs">
+                            Due Today
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {new Date(item.due_date) < new Date() && (
-                      <Badge variant="destructive" className="text-xs">
-                        Overdue
-                      </Badge>
-                    )}
-                    {new Date(item.due_date).toDateString() === new Date().toDateString() && (
-                      <Badge variant="secondary" className="text-xs">
-                        Due Today
-                      </Badge>
-                    )}
-                  </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Completed Tasks Section */}
+            {allCompletedToday.length > 0 && (
+              <div>
+                <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  Completed Today ({allCompletedToday.length} items)
+                </h3>
+                <div className="space-y-3">
+                  {allCompletedToday.map((item) => (
+                    <div key={`completed-${item.type}-${item.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20 opacity-75">
+                      <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium line-through">{item.title}</h4>
+                          <Badge variant={item.type === 'assignment' ? 'secondary' : 'outline'}>
+                            {item.type === 'assignment' ? 'Assignment' : 'Task'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            Completed {format(new Date(item.completed_at), "h:mm a")}
+                          </div>
+                          {item.course_name && item.course_name !== 'No Course' && (
+                            <div className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4" />
+                              {item.course_name}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))
+              </div>
             )}
           </div>
         </DialogContent>
