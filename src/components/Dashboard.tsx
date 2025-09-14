@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { imageFileToBase64Compressed, cn } from "@/lib/utils";
 import { ocrExtractText } from "@/lib/ocr";
 import { format } from "date-fns";
@@ -407,16 +407,25 @@ export const Dashboard = () => {
   });
 
   // Get all assignments due this week from events (Canvas assignments) with dynamic priority
-  const weeklyCanvasAssignments = userEvents.filter(event => {
-    if (event.event_type !== 'assignment' || event.source_provider !== 'canvas') return false;
-    const eventDate = new Date(event.start_time || event.end_time);
-    const today = new Date();
-    const oneWeekAgo = new Date(today);
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
-    // Only show assignments that are not more than a week overdue
-    return eventDate >= oneWeekAgo;
-  }).map(event => {
+  const weeklyCanvasAssignments = useMemo(() => {
+    return userEvents.filter(event => {
+      if (event.event_type !== 'assignment' || event.source_provider !== 'canvas') return false;
+      
+      const eventDate = new Date(event.start_time || event.end_time);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of today
+      
+      const oneWeekAgo = new Date(today);
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      const twoWeeksFromNow = new Date(today);
+      twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+      
+      // Strict filtering: only show assignments from last week to next 2 weeks
+      const isInRange = eventDate >= oneWeekAgo && eventDate <= twoWeeksFromNow;
+      
+      return isInRange;
+    }).map(event => {
     const eventDate = new Date(event.start_time || event.end_time);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -465,6 +474,7 @@ export const Dashboard = () => {
       is_completed: event.is_completed || false
     };
   });
+  }, [userEvents]); // Add dependency for useMemo
 
   // Get today's Canvas assignments from events (only non-completed ones)
   const todaysCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
