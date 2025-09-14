@@ -410,15 +410,19 @@ export const Dashboard = () => {
   const weeklyCanvasAssignments = userEvents.filter(event => {
     if (event.event_type !== 'assignment' || event.source_provider !== 'canvas') return false;
     const eventDate = new Date(event.start_time || event.end_time);
-    const weekFromNow = new Date();
-    weekFromNow.setDate(weekFromNow.getDate() + 7);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const oneWeekAgo = new Date();
+    const oneWeekAgo = new Date(today);
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    // Only show assignments that are either upcoming OR not more than a week overdue
-    return eventDate >= oneWeekAgo && eventDate <= weekFromNow;
+    // Debug: Check specific problematic dates
+    const eventDateStr = eventDate.toDateString();
+    const oneWeekAgoStr = oneWeekAgo.toDateString();
+    const shouldInclude = eventDate >= oneWeekAgo;
+    
+    console.log(`Assignment: "${event.title}" | Due: ${eventDateStr} | Cutoff: ${oneWeekAgoStr} | Include: ${shouldInclude}`);
+    
+    // Only show assignments that are not more than a week overdue
+    return shouldInclude;
   }).map(event => {
     const eventDate = new Date(event.start_time || event.end_time);
     const today = new Date();
