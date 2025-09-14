@@ -163,42 +163,62 @@ export const Courses = ({}: CoursesProps = {}) => {
     }
   };
 
-  // Fetch stored course colors and icons
+  // Load all settings first, then fetch courses data
   useEffect(() => {
     if (!user?.id) return;
 
-    const fetchStoredColors = async () => {
-      const { data: colors } = await supabase
-        .from('course_colors')
-        .select('course_code, canvas_color')
-        .eq('user_id', user.id);
+    const loadAllSettingsAndData = async () => {
+      console.log('Loading all settings for user:', user.id);
+      
+      // Load all settings in parallel
+      const [colorsResult, iconsResult, orderResult] = await Promise.all([
+        supabase
+          .from('course_colors')
+          .select('course_code, canvas_color')
+          .eq('user_id', user.id),
+        supabase
+          .from('user_settings')
+          .select('settings_data')
+          .eq('user_id', user.id)
+          .eq('settings_type', 'course_icons')
+          .maybeSingle(),
+        supabase
+          .from('user_settings')
+          .select('settings_data')
+          .eq('user_id', user.id)
+          .eq('settings_type', 'course_order')
+          .maybeSingle()
+      ]);
 
-      if (colors) {
+      // Process course colors
+      if (colorsResult.data) {
         const colorMap: Record<string, string> = {};
-        colors.forEach(item => {
+        colorsResult.data.forEach(item => {
           colorMap[item.course_code] = item.canvas_color;
         });
         setStoredColors(colorMap);
       }
-    };
 
-    fetchStoredColors();
-
-    // Load course icons
-    const fetchCourseIcons = async () => {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('settings_data')
-        .eq('user_id', user.id)
-        .eq('settings_type', 'course_icons')
-        .maybeSingle();
-
-      if (data?.settings_data) {
-        setCourseIcons_State(data.settings_data as Record<string, string>);
+      // Process course icons
+      if (iconsResult.data?.settings_data) {
+        setCourseIcons_State(iconsResult.data.settings_data as Record<string, string>);
       }
+
+      // Process course order
+      let savedOrder: string[] | undefined;
+      if (orderResult.data?.settings_data && typeof orderResult.data.settings_data === 'object' && 'order' in orderResult.data.settings_data) {
+        savedOrder = (orderResult.data.settings_data as { order: string[] }).order;
+        console.log('Found saved course order:', savedOrder);
+        setCourseOrder(savedOrder);
+      } else {
+        console.log('No saved course order found');
+      }
+
+      // Now fetch courses data with all settings loaded
+      await fetchCoursesData(savedOrder);
     };
 
-    fetchCourseIcons();
+    loadAllSettingsAndData();
   }, [user?.id]);
 
   // Main data fetching function - now accepts optional saved order
@@ -337,38 +357,6 @@ export const Courses = ({}: CoursesProps = {}) => {
     }
   };
 
-  // Load course order first, then fetch courses data
-  useEffect(() => {
-    if (!user?.id) return;
-    
-    const loadCourseOrderAndData = async () => {
-      console.log('Loading saved course order for user:', user.id);
-      
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('settings_data')
-        .eq('user_id', user.id)
-        .eq('settings_type', 'course_order')
-        .maybeSingle();
-
-      let savedOrder: string[] | undefined;
-
-      if (error) {
-        console.error('Error loading course order:', error);
-      } else if (data?.settings_data && typeof data.settings_data === 'object' && 'order' in data.settings_data) {
-        savedOrder = (data.settings_data as { order: string[] }).order;
-        console.log('Found saved course order:', savedOrder);
-        setCourseOrder(savedOrder);
-      } else {
-        console.log('No saved course order found');
-      }
-      
-      // Now fetch courses data with the saved order
-      await fetchCoursesData(savedOrder);
-    };
-
-    loadCourseOrderAndData();
-  }, [user?.id]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
