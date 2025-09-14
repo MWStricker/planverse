@@ -310,7 +310,7 @@ export const Dashboard = () => {
     return 0;
   });
 
-  // Get all assignments due this week from events (Canvas assignments)
+  // Get all assignments due this week from events (Canvas assignments) with dynamic priority
   const weeklyCanvasAssignments = userEvents.filter(event => {
     if (event.event_type !== 'assignment' || event.source_provider !== 'canvas') return false;
     const eventDate = new Date(event.start_time || event.end_time);
@@ -319,18 +319,55 @@ export const Dashboard = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return eventDate >= today && eventDate <= weekFromNow;
-  }).map(event => ({
+  }).map(event => {
+    const eventDate = new Date(event.start_time || event.end_time);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Dynamic priority based on due date
+    let dynamicPriority = 2; // Default medium priority
+    
+    // Check if due today
+    const isDueToday = (
+      eventDate.getDate() === today.getDate() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getFullYear() === today.getFullYear()
+    );
+    
+    // Check if due tomorrow
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isDueTomorrow = (
+      eventDate.getDate() === tomorrow.getDate() &&
+      eventDate.getMonth() === tomorrow.getMonth() &&
+      eventDate.getFullYear() === tomorrow.getFullYear()
+    );
+    
+    if (isDueToday) {
+      dynamicPriority = 4; // Critical priority for today
+      console.log(`Assignment "${event.title}" is due today - setting priority to 4 (Critical)`);
+    } else if (isDueTomorrow) {
+      dynamicPriority = 3; // High priority for tomorrow
+      console.log(`Assignment "${event.title}" is due tomorrow - setting priority to 3 (High)`);
+    } else {
+      // Medium priority for assignments due within the week
+      dynamicPriority = 2;
+    }
+    
     // Convert Canvas events to task-like objects for display
-    id: event.id,
-    title: event.title,
-    due_date: event.start_time || event.end_time,
-    priority_score: 3, // Default to high priority for Canvas assignments
-    completion_status: 'pending',
-    source_provider: 'canvas',
-    course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course',
-    description: event.description || 'Canvas Assignment',
-    event_type: 'assignment'
-  }));
+    return {
+      id: event.id,
+      title: event.title,
+      due_date: event.start_time || event.end_time,
+      priority_score: dynamicPriority,
+      completion_status: 'pending',
+      source_provider: 'canvas',
+      course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course',
+      description: event.description || 'Canvas Assignment',
+      event_type: 'assignment',
+      is_completed: event.is_completed || false
+    };
+  });
 
   // Get today's Canvas assignments from events (only non-completed ones)
   const todaysCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
@@ -1266,12 +1303,13 @@ export const Dashboard = () => {
                   <div className="space-y-2">
                     {allTodaysItems.map((task) => (
                       <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                          task.priority_score === 3 ? 'bg-destructive' :
-                          task.priority_score === 2 ? 'bg-primary' :
-                          task.priority_score === 1 ? 'bg-muted-foreground' :
-                          'bg-secondary'
-                        }`} />
+                         <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                           task.priority_score === 4 ? 'bg-destructive' :  // Critical (due today)
+                           task.priority_score === 3 ? 'bg-warning' :      // High (due tomorrow) 
+                           task.priority_score === 2 ? 'bg-primary' :      // Medium (due this week)
+                           task.priority_score === 1 ? 'bg-muted-foreground' : // Low
+                           'bg-secondary'  // Default
+                         }`} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium text-sm text-foreground">{task.title}</p>
