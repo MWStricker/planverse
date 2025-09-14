@@ -1539,19 +1539,26 @@ export const Dashboard = () => {
                   </div>
                 ))
               ) : (() => {
+                // Debug: log what data we have
+                console.log('Debug - filteredData:', filteredData);
+                console.log('Debug - weeklyCanvasAssignments:', weeklyCanvasAssignments);
+                
                 // Filter out tasks more than a week overdue before checking length
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                 
-                const filteredTasks = filteredData.tasksThisWeek; // Already filtered
-                const filteredCanvasAssignments = weeklyCanvasAssignments; // Already filtered
+                const filteredTasks = filteredData?.tasksThisWeek || []; // Already filtered
+                const filteredCanvasAssignments = weeklyCanvasAssignments || []; // Already filtered
+                
+                console.log('Debug - filteredTasks:', filteredTasks);
+                console.log('Debug - filteredCanvasAssignments:', filteredCanvasAssignments);
                 
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
                 (() => {
                   // weeklyCanvasAssignments is already filtered, no need to filter again
                   // tasksThisWeek is already filtered, no need to filter again
-                  const sortedItems = [...filteredData.tasksThisWeek, ...weeklyCanvasAssignments].sort((a, b) => {
+                  const sortedItems = [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])].sort((a, b) => {
                     if (a.due_date && b.due_date) {
                       const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
                       if (dateComparison !== 0) return dateComparison;
