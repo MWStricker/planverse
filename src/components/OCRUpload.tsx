@@ -1,86 +1,25 @@
 import { useState, useCallback } from "react";
-import { Upload, Camera, FileImage, Check, X, Calendar, Clock, MapPin, BookOpen } from "lucide-react";
+import { Upload, Camera, FileImage, Copy, Sparkles, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { imageFileToBase64Compressed } from "@/lib/utils";
 import { ocrExtractText } from "@/lib/ocr";
-import { fromZonedTime } from "date-fns-tz";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
-interface ParsedEvent {
-  id: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  recurrence?: string;
-  confidence: number;
-}
-
-interface ParsedTask {
-  id: string;
-  title: string;
-  description?: string;
-  dueDate: string;
-  dueTime: string;
-  courseName?: string;
-  priority: number;
-  taskType?: string;
-  confidence: number;
-}
-
-const mockParsedEvents: ParsedEvent[] = [
-  {
-    id: '1',
-    title: 'Data Structures Lecture',
-    date: '2024-09-09',
-    startTime: '09:00',
-    endTime: '10:20',
-    location: 'Engineering 203',
-    recurrence: 'MWF',
-    confidence: 95,
-  },
-  {
-    id: '2',
-    title: 'Office Hours - Prof. Smith',
-    date: '2024-09-10',
-    startTime: '14:00',
-    endTime: '16:00',
-    location: 'CS Building Room 301',
-    confidence: 88,
-  },
-  {
-    id: '3',
-    title: 'Midterm Exam',
-    date: '2024-10-15',
-    startTime: '18:00',
-    endTime: '20:00',
-    location: 'Main Hall 101',
-    confidence: 98,
-  },
-];
 
 export const OCRUpload = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [parsedEvents, setParsedEvents] = useState<ParsedEvent[]>([]);
-  const [parsedTasks, setParsedTasks] = useState<ParsedTask[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [extractedText, setExtractedText] = useState<string>("");
+  const [paraphrasedText, setParaphrasedText] = useState<string>("");
+  const [isParaphrasing, setIsParaphrasing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [calendarTypeHint, setCalendarTypeHint] = useState<'auto' | 'google-calendar' | 'school-schedule' | 'syllabus' | 'event-flyer'>('auto');
 
-  const formatLocalDate = (iso: string) => {
-    const [y, m, d] = iso.split('-').map(Number);
-    if (!y || !m || !d) return iso;
-    const date = new Date(y, m - 1, d);
-    return date.toLocaleDateString();
-  };
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -94,97 +33,26 @@ export const OCRUpload = () => {
 
     setSelectedFile(file);
     setIsProcessing(true);
+    setExtractedText("");
+    setParaphrasedText("");
 
     try {
-      // Preserve PNG uploads without recompression; compress others for speed
-      let base64: string;
-      let mimeType: string;
-      if (file.type === 'image/png') {
-        base64 = await new Promise<string>((resolve, reject) => {
-          const fr = new FileReader();
-          fr.onload = () => {
-            const s = String(fr.result || '');
-            resolve(s.split(',')[1] || '');
-          };
-          fr.onerror = reject;
-          fr.readAsDataURL(file);
-        });
-        mimeType = 'image/png';
-      } else {
-        const res = await imageFileToBase64Compressed(file, 1800, 'image/jpeg', 0.85);
-        base64 = res.base64;
-        mimeType = res.mimeType;
-      }
-
-      try {
-        // Call our AI OCR edge function
-        const { data: response, error } = await supabase.functions.invoke('ai-image-ocr', {
-          body: { imageBase64: base64, mimeType, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, currentDate: new Date().toISOString(), calendarTypeHint }
-        });
-
-        if (error) {
-          console.error('OCR Error:', error);
-          throw new Error('Failed to process image');
-        }
-
-          if (response.success && (
-            (Array.isArray(response.events) && response.events.length > 0) || 
-            (Array.isArray(response.tasks) && response.tasks.length > 0)
-          )) {
-            setParsedEvents(response.events || []);
-            setParsedTasks(response.tasks || []);
-            const totalItems = (response.events?.length || 0) + (response.tasks?.length || 0);
-            toast({
-              title: "Schedule parsed successfully!",
-              description: `Found ${response.events?.length || 0} events and ${response.tasks?.length || 0} tasks in your image.`,
-            });
-          } else {
-            // Fallback: client-side OCR to text then AI structuring
-            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const text = await ocrExtractText(file);
-            const { data: textResponse, error: textError } = await supabase.functions.invoke('ai-image-ocr', {
-              body: { text, imageBase64: base64, mimeType, timeZone: tz, currentDate: new Date().toISOString(), calendarTypeHint }
-            });
-
-            if (textError) {
-              throw new Error('Fallback processing failed');
-            }
-
-            if (textResponse.success && (
-              (Array.isArray(textResponse.events) && textResponse.events.length > 0) ||
-              (Array.isArray(textResponse.tasks) && textResponse.tasks.length > 0)
-            )) {
-              setParsedEvents(textResponse.events || []);
-              setParsedTasks(textResponse.tasks || []);
-              const totalItems = (textResponse.events?.length || 0) + (textResponse.tasks?.length || 0);
-              toast({ 
-                title: 'Schedule parsed (OCR fallback)', 
-                description: `Found ${textResponse.events?.length || 0} events and ${textResponse.tasks?.length || 0} tasks.`, 
-              });
-            } else {
-              const msg = textResponse.error || 'No events or tasks found in image/text';
-              toast({ title: 'No items found', description: msg, variant: 'destructive' });
-              return;
-            }
-          }
-      } catch (error) {
-        console.error('Error processing image:', error);
-        toast({
-          title: "Processing failed",
-          description: "Failed to extract schedule from image. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
-      }
-
-    } catch (error) {
-      console.error('File upload error:', error);
+      // Use client-side OCR to extract text
+      const text = await ocrExtractText(file);
+      setExtractedText(text);
+      
       toast({
-        title: "Upload failed",
-        description: "Failed to upload image. Please try again.",
+        title: "Text extracted successfully!",
+        description: "Your notes have been processed. Choose to copy raw text or paraphrase.",
+      });
+    } catch (error) {
+      console.error('Error processing image:', error);
+      toast({
+        title: "Processing failed",
+        description: "Failed to extract text from image. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setIsProcessing(false);
     }
   }, [toast]);
@@ -216,139 +84,75 @@ export const OCRUpload = () => {
     }
   }, [handleFileUpload]);
 
-  const addToCalendar = async (event: ParsedEvent) => {
-    if (!user) {
+  const handleParaphrase = async () => {
+    if (!extractedText.trim()) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to add events",
+        title: "No text to paraphrase",
+        description: "Please upload an image first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsParaphrasing(true);
+    
+    try {
+      const { data: response, error } = await supabase.functions.invoke('paraphrase-notes', {
+        body: { text: extractedText }
+      });
+
+      if (error) {
+        throw new Error('Failed to paraphrase text');
+      }
+
+      setParaphrasedText(response.paraphrasedText);
+      toast({
+        title: "Notes paraphrased!",
+        description: "Your notes have been paraphrased and organized.",
+      });
+    } catch (error) {
+      console.error('Error paraphrasing text:', error);
+      toast({
+        title: "Paraphrasing failed",
+        description: "Failed to paraphrase your notes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsParaphrasing(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string, type: 'raw' | 'paraphrased') => {
+    if (!text.trim()) {
+      toast({
+        title: "No text to copy",
+        description: `No ${type} text available.`,
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Parse parts and build timezone-aware datetimes
-      const datePart = String(event.date || '').slice(0, 10); // YYYY-MM-DD
-      const startTimePart = String(event.startTime || '00:00').slice(0, 5); // HH:MM
-      const endTimePart = String(event.endTime || '00:00').slice(0, 5); // HH:MM
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const start = fromZonedTime(new Date(`${datePart}T${startTimePart}:00`), tz);
-      const end = fromZonedTime(new Date(`${datePart}T${endTimePart}:00`), tz);
-
-      const startTimeISO = start.toISOString();
-      const endTimeISO = end.toISOString();
-
-      // Add to events table
-      const { error } = await supabase
-        .from('events')
-        .insert({
-          user_id: user.id,
-          title: event.title,
-          start_time: startTimeISO,
-          end_time: endTimeISO,
-          location: event.location,
-          description: `Extracted from image with ${event.confidence}% confidence`,
-          event_type: 'class',
-          source_provider: 'ocr_upload',
-          recurrence_rule: event.recurrence || null
-        });
-
-      if (error) {
-        console.error('Error adding event:', error);
-        toast({
-          title: "Error",
-          description: "Failed to add event to calendar",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      await navigator.clipboard.writeText(text);
       toast({
-        title: "Event added!",
-        description: `${event.title} has been added to your calendar.`,
+        title: "Copied to clipboard!",
+        description: `${type === 'raw' ? 'Raw text' : 'Paraphrased notes'} copied successfully.`,
       });
-      setParsedEvents(prev => prev.filter(e => e.id !== event.id));
     } catch (error) {
-      console.error('Error adding to calendar:', error);
       toast({
-        title: "Error",
-        description: "Failed to add event to calendar",
+        title: "Copy failed",
+        description: "Failed to copy text to clipboard.",
         variant: "destructive",
       });
     }
-  };
-
-  const addTaskToTasks = async (task: ParsedTask) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to add tasks",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const datePart = String(task.dueDate || '').slice(0, 10); // YYYY-MM-DD
-      const timePart = String(task.dueTime || '23:59').slice(0, 5); // HH:MM
-      // Build timezone-aware due datetime
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const start = fromZonedTime(new Date(`${datePart}T${timePart}:00`), tz);
-      const dueDateTime = start.toISOString();
-
-      // Add to tasks table
-      const { error } = await supabase
-        .from('tasks')
-        .insert({
-          user_id: user.id,
-          title: task.title,
-          description: task.description || `Extracted from image with ${task.confidence}% confidence`,
-          course_name: task.courseName || null,
-          due_date: dueDateTime,
-          priority_score: task.priority || 2,
-          completion_status: 'pending',
-          source_provider: 'ocr_upload'
-        });
-
-      if (error) {
-        console.error('Error adding task:', error);
-        toast({
-          title: "Error",
-          description: "Failed to add task",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Task added!",
-        description: `${task.title} has been added to your tasks.`,
-      });
-      setParsedTasks(prev => prev.filter(t => t.id !== task.id));
-    } catch (error) {
-      console.error('Error adding task:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add task",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const rejectEvent = (event: ParsedEvent) => {
-    setParsedEvents(prev => prev.filter(e => e.id !== event.id));
-  };
-
-  const rejectTask = (task: ParsedTask) => {
-    setParsedTasks(prev => prev.filter(t => t.id !== task.id));
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Image Upload</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Note Digitizer</h1>
         <p className="text-muted-foreground">
-          Upload photos of schedules, syllabi, or flyers to automatically extract events
+          Upload photos of handwritten or printed notes to extract and paraphrase text
         </p>
       </div>
 
@@ -371,7 +175,7 @@ export const OCRUpload = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-foreground">Processing your image...</h3>
-                  <p className="text-muted-foreground">Using AI to extract schedule information</p>
+                  <p className="text-muted-foreground">Extracting text from your notes</p>
                 </div>
                 <div className="w-full max-w-xs mx-auto bg-muted rounded-full h-2">
                   <div className="bg-primary h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
@@ -383,39 +187,10 @@ export const OCRUpload = () => {
                   <Upload className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-foreground">Upload a schedule image</h3>
+                  <h3 className="text-lg font-medium text-foreground">Upload your notes</h3>
                   <p className="text-muted-foreground">
                     Drag and drop an image here, or click to browse
                   </p>
-                </div>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Badge variant="outline" className="bg-muted/50">
-                    <FileImage className="h-3 w-3 mr-1" />
-                    Class Schedules
-                  </Badge>
-                  <Badge variant="outline" className="bg-muted/50">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    Syllabi
-                  </Badge>
-                  <Badge variant="outline" className="bg-muted/50">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Event Flyers
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <span className="text-sm text-muted-foreground">Calendar type:</span>
-                  <Select value={calendarTypeHint} onValueChange={(v) => setCalendarTypeHint(v as any)}>
-                    <SelectTrigger className="w-[220px] bg-background border-border z-50">
-                      <SelectValue placeholder="Auto detect" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border-border z-50">
-                      <SelectItem value="auto">Auto detect</SelectItem>
-                      <SelectItem value="google-calendar">Google Calendar</SelectItem>
-                      <SelectItem value="school-schedule">School Schedule</SelectItem>
-                      <SelectItem value="syllabus">Syllabus</SelectItem>
-                      <SelectItem value="event-flyer">Event Flyer</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 <input
                   type="file"
@@ -446,7 +221,7 @@ export const OCRUpload = () => {
             <div className="flex justify-center">
               <img
                 src={URL.createObjectURL(selectedFile)}
-                alt="Uploaded schedule"
+                alt="Uploaded notes"
                 className="max-w-full max-h-96 rounded-lg border shadow-md hover:shadow-lg transition-shadow duration-200"
               />
             </div>
@@ -454,178 +229,85 @@ export const OCRUpload = () => {
         </Card>
       )}
 
-      {/* Parsed Events and Tasks */}
-      {(parsedEvents.length > 0 || parsedTasks.length > 0) && (
+      {/* Text Processing Section */}
+      {extractedText && (
         <div className="space-y-6">
-          {/* Events Section */}
-          {parsedEvents.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Extracted Events
-                  <Badge className="bg-success/10 text-success">
-                    {parsedEvents.length} found
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-          <CardContent className="space-y-4">
-            {parsedEvents.map((event) => (
-              <div
-                key={event.id}
-                className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:shadow-md transition-all"
-              >
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-foreground">{event.title}</h3>
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${
-                        event.confidence >= 95 ? 'bg-success/10 text-success border-success/20' :
-                        event.confidence >= 85 ? 'bg-warning/10 text-warning border-warning/20' :
-                        'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {event.confidence}% confidence
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {formatLocalDate(event.date)}
-                    </div>
-                    {event.startTime && event.endTime && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {event.startTime} - {event.endTime}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {event.location}
-                    </div>
-                    {event.recurrence && (
-                      <Badge variant="secondary" className="text-xs">
-                        {event.recurrence}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => addToCalendar(event)}
-                    className="bg-success hover:bg-success/90 text-success-foreground"
-                  >
-                    <Check className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => rejectEvent(event)}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Reject
-                  </Button>
-                </div>
-              </div>
-            ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Tasks Section */}
-        {parsedTasks.length > 0 && (
+          {/* Action Buttons */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                Extracted Tasks
-                <Badge className="bg-warning/10 text-warning">
-                  {parsedTasks.length} found
-                </Badge>
+                <FileText className="h-5 w-5 text-primary" />
+                Choose Your Action
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {parsedTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:shadow-md transition-all"
+            <CardContent>
+              <div className="flex gap-4">
+                <Button
+                  onClick={() => copyToClipboard(extractedText, 'raw')}
+                  variant="outline"
+                  className="flex-1"
                 >
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-foreground">{task.title}</h3>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          task.confidence >= 95 ? 'bg-success/10 text-success border-success/20' :
-                          task.confidence >= 85 ? 'bg-warning/10 text-warning border-warning/20' :
-                          'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {task.confidence}% confidence
-                      </Badge>
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-xs ${
-                          task.priority === 3 ? 'bg-red-100 text-red-800' :
-                          task.priority === 2 ? 'bg-orange-100 text-orange-800' :
-                          task.priority === 1 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        Priority {task.priority}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                       <div className="flex items-center gap-1">
-                         <Calendar className="h-3 w-3" />
-                         Due: {formatLocalDate(task.dueDate)}{task.dueTime ? ` at ${task.dueTime}` : ''}
-                       </div>
-                      {task.courseName && (
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          {task.courseName}
-                        </div>
-                      )}
-                      {task.taskType && (
-                        <Badge variant="secondary" className="text-xs">
-                          {task.taskType}
-                        </Badge>
-                      )}
-                    </div>
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground">{task.description}</p>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => addTaskToTasks(task)}
-                      className="bg-warning hover:bg-warning/90 text-warning-foreground"
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Add Task
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => rejectTask(task)}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Raw Text
+                </Button>
+                <Button
+                  onClick={handleParaphrase}
+                  disabled={isParaphrasing}
+                  className="flex-1"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {isParaphrasing ? "Paraphrasing..." : "Paraphrase Notes"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        )}
+
+          {/* Raw Text Display */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Extracted Text
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={extractedText}
+                readOnly
+                className="min-h-[200px] resize-none"
+                placeholder="Extracted text will appear here..."
+              />
+            </CardContent>
+          </Card>
+
+          {/* Paraphrased Text Display */}
+          {paraphrasedText && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Paraphrased Notes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={paraphrasedText}
+                  onChange={(e) => setParaphrasedText(e.target.value)}
+                  className="min-h-[200px]"
+                  placeholder="Paraphrased text will appear here..."
+                />
+                <div className="mt-4">
+                  <Button
+                    onClick={() => copyToClipboard(paraphrasedText, 'paraphrased')}
+                    variant="outline"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Paraphrased Text
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
