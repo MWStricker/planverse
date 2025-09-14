@@ -96,17 +96,6 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Auto-scroll to current hour when component loads or when switching to today
-  useEffect(() => {
-    if (isToday(currentDay) && scrollContainerRef.current) {
-      const currentHour = getHours(new Date());
-      const hourElement = scrollContainerRef.current.querySelector(`[data-hour="${currentHour}"]`);
-      if (hourElement) {
-        hourElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  }, [currentDay]);
 
   const scrollToCurrentHour = () => {
     if (scrollContainerRef.current && isToday(currentDay)) {
@@ -120,11 +109,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
   
   const handlePrevDay = () => setCurrentDay(subDays(currentDay, 1));
   const handleNextDay = () => setCurrentDay(addDays(currentDay, 1));
-  const handleToday = () => {
-    setCurrentDay(new Date());
-    // Auto-scroll to current hour when clicking Today
-    setTimeout(() => scrollToCurrentHour(), 100);
-  };
+  const handleToday = () => setCurrentDay(new Date());
 
   const handleCellClick = (hour: number) => {
     setSelectedDate(currentDay);
