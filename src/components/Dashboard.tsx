@@ -312,7 +312,10 @@ export const Dashboard = () => {
     if (!event.start_time && !event.end_time) return false;
     if (event.event_type === 'assignment' && event.is_completed) return false;
     const eventDate = new Date(event.start_time || event.end_time);
-    return eventDate >= now && eventDate <= endOfCurrentWeek;
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    // Filter out events that are more than a week overdue
+    return eventDate >= oneWeekAgo && eventDate <= endOfCurrentWeek;
   });
   
   const tasksThisWeek = userTasks.filter(task => {
@@ -322,7 +325,7 @@ export const Dashboard = () => {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
     // Filter out tasks that are more than a week overdue
-    return dueDate >= oneWeekAgo && dueDate >= now && dueDate <= endOfCurrentWeek;
+    return dueDate >= oneWeekAgo && dueDate <= endOfCurrentWeek;
   });
   
   const dueThisWeek = eventsThisWeek.length + tasksThisWeek.length || "N/A";
@@ -414,8 +417,8 @@ export const Dashboard = () => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    // Filter out assignments that are more than a week overdue
-    return eventDate >= oneWeekAgo && eventDate >= today && eventDate <= weekFromNow;
+    // Only show assignments that are either upcoming OR not more than a week overdue
+    return eventDate >= oneWeekAgo && eventDate <= weekFromNow;
   }).map(event => {
     const eventDate = new Date(event.start_time || event.end_time);
     const today = new Date();
