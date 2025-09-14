@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { filterCanvasAssignments } from "@/lib/assignment-filters";
 
 interface Task {
   id: string;
@@ -314,7 +315,7 @@ export const Dashboard = () => {
     const eventDate = new Date(event.start_time || event.end_time);
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    // Filter out events that are more than a week overdue
+    // Use the same filtering logic - filter out events that are more than a week overdue
     return eventDate >= oneWeekAgo && eventDate <= endOfCurrentWeek;
   });
   
@@ -408,72 +409,58 @@ export const Dashboard = () => {
 
   // Get all assignments due this week from events (Canvas assignments) with dynamic priority
   const weeklyCanvasAssignments = useMemo(() => {
-    return userEvents.filter(event => {
-      if (event.event_type !== 'assignment' || event.source_provider !== 'canvas') return false;
-      
+    // First filter out old assignments using centralized filter
+    const filteredEvents = filterCanvasAssignments(userEvents);
+    
+    return filteredEvents.map(event => {
       const eventDate = new Date(event.start_time || event.end_time);
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to start of today
+      today.setHours(0, 0, 0, 0);
       
-      const oneWeekAgo = new Date(today);
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      // Dynamic priority based on due date
+      let dynamicPriority = 2; // Default medium priority
       
-      const twoWeeksFromNow = new Date(today);
-      twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+      // Check if due today
+      const isDueToday = (
+        eventDate.getDate() === today.getDate() &&
+        eventDate.getMonth() === today.getMonth() &&
+        eventDate.getFullYear() === today.getFullYear()
+      );
       
-      // Strict filtering: only show assignments from last week to next 2 weeks
-      const isInRange = eventDate >= oneWeekAgo && eventDate <= twoWeeksFromNow;
+      // Check if due tomorrow
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const isDueTomorrow = (
+        eventDate.getDate() === tomorrow.getDate() &&
+        eventDate.getMonth() === tomorrow.getMonth() &&
+        eventDate.getFullYear() === tomorrow.getFullYear()
+      );
       
-      return isInRange;
-    }).map(event => {
-    const eventDate = new Date(event.start_time || event.end_time);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Dynamic priority based on due date
-    let dynamicPriority = 2; // Default medium priority
-    
-    // Check if due today
-    const isDueToday = (
-      eventDate.getDate() === today.getDate() &&
-      eventDate.getMonth() === today.getMonth() &&
-      eventDate.getFullYear() === today.getFullYear()
-    );
-    
-    // Check if due tomorrow
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const isDueTomorrow = (
-      eventDate.getDate() === tomorrow.getDate() &&
-      eventDate.getMonth() === tomorrow.getMonth() &&
-      eventDate.getFullYear() === tomorrow.getFullYear()
-    );
-    
-    if (isDueToday) {
-      dynamicPriority = 4; // Critical priority for today
-      console.log(`Assignment "${event.title}" is due today - setting priority to 4 (Critical)`);
-    } else if (isDueTomorrow) {
-      dynamicPriority = 3; // High priority for tomorrow
-      console.log(`Assignment "${event.title}" is due tomorrow - setting priority to 3 (High)`);
-    } else {
-      // Medium priority for assignments due within the week
-      dynamicPriority = 2;
-    }
-    
-    // Convert Canvas events to task-like objects for display
-    return {
-      id: event.id,
-      title: event.title,
-      due_date: event.start_time || event.end_time,
-      priority_score: dynamicPriority,
-      completion_status: 'pending',
-      source_provider: 'canvas',
-      course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course',
-      description: event.description || 'Canvas Assignment',
-      event_type: 'assignment',
-      is_completed: event.is_completed || false
-    };
-  });
+      if (isDueToday) {
+        dynamicPriority = 4; // Critical priority for today
+        console.log(`Assignment "${event.title}" is due today - setting priority to 4 (Critical)`);
+      } else if (isDueTomorrow) {
+        dynamicPriority = 3; // High priority for tomorrow
+        console.log(`Assignment "${event.title}" is due tomorrow - setting priority to 3 (High)`);
+      } else {
+        // Medium priority for assignments due within the week
+        dynamicPriority = 2;
+      }
+      
+      // Convert Canvas events to task-like objects for display
+      return {
+        id: event.id,
+        title: event.title,
+        due_date: event.start_time || event.end_time,
+        priority_score: dynamicPriority,
+        completion_status: 'pending',
+        source_provider: 'canvas',
+        course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course',
+        description: event.description || 'Canvas Assignment',
+        event_type: 'assignment',
+        is_completed: event.is_completed || false
+      };
+    });
   }, [userEvents]); // Add dependency for useMemo
 
   // Get today's Canvas assignments from events (only non-completed ones)
