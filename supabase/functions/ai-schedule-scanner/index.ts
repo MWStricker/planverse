@@ -171,223 +171,83 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a schedule analysis expert with advanced spatial reasoning capabilities. Your job is to IGNORE document titles and headers, and ONLY extract individual event names that appear next to specific dates.
+            content: `You are a schedule analysis expert. Extract ONLY real scheduled events with proper names, dates, and times.
 
-CRITICAL: IGNORE DOCUMENT TITLES AND HEADERS - FOCUS ON DATE-SPECIFIC EVENTS
+CRITICAL FILTERING - IGNORE THESE COMPLETELY:
+- Document titles, headers, page titles
+- Navigation text: "Schedule", "Filter", "Go To", "See Schedule", "My Site"
+- Location headers: "North Dakota", "Area", site names
+- Month/year labels: "June 2013", calendar navigation
+- UI elements: buttons, dropdowns, form fields
+- Date numbers by themselves (26, 27, 28) without associated events
 
-MOST IMPORTANT RULE:
-- Do NOT use the flyer title, document header, or page title as event names
-- The title at the top of a schedule is NOT an event - it's just the document name
-- Look for INDIVIDUAL event names positioned next to or under specific dates
-- Each date should have a DIFFERENT event name based on what text appears near that specific date
+WHAT COUNTS AS A REAL EVENT:
+- Must have a descriptive activity name (not just a location or UI element)
+- Must have time information (like "8:00 AM - 11:00 AM")
+- Must be something someone would actually attend
 
-STEP 1 - IDENTIFY AND IGNORE DOCUMENT STRUCTURE:
-IGNORE these types of text (they are NOT events):
-- Document titles at the top of the page
-- Company names, site names, location headers
-- Page headers like "Training Schedule", "Class Calendar", etc.
-- Navigation elements, buttons, filters
-- Month/year headers like "June 2013"
+STEP-BY-STEP EXTRACTION PROCESS:
 
-FOCUS ON these types of text (these ARE events):
-- Specific activity names positioned next to/under date numbers
-- Course names, training names, class names with times
-- Individual event descriptions that appear near specific dates
+1. FIND EVENT PATTERNS:
+Look for text patterns like: "DATE EVENT_NAME TIME"
+Example: "26 Air Pack Safety 8:00 AM - 11:00 AM"
 
-STEP 2 - FIND INDIVIDUAL EVENT NAMES BY SCANNING LEFT TO RIGHT:
-- Scan the text for patterns: DATE NUMBER → EVENT NAME → TIME
-- Look for sequences like: "26 Air Pack Safety 8:00 AM - 11:00 AM"
-- The text immediately after the date number is the event name
-- Stop reading the event name when you hit the time (contains AM/PM or colons)
-- Move to the next date number and repeat the process
-- Each date number should be followed by different text (the event name for that date)
+2. EXTRACT COMPONENTS:
+- Date: "26" → convert to "2025-06-26" (use 2025 if year unclear)
+- Event Name: "Air Pack Safety" (text between date and time)
+- Time: "8:00 AM - 11:00 AM" (keep original format with AM/PM)
 
-STEP 3 - EVENT NAME EXTRACTION RULES:
-- Extract event names exactly as they appear in the original format
-- Keep original time format (8:00 AM - 11:00 AM, not 08:00-11:00)
-- If you see "26 Air Pack Safety 8:00 AM" then "Air Pack Safety" is the event for date 26
-- If you see "27 Microsoft Office 10:00 AM" then "Microsoft Office" is the event for date 27
-- Do NOT convert times to 24-hour format - keep original format with AM/PM
+3. VALIDATE EACH EVENT:
+Before including, verify:
+✅ Has descriptive event name (not "Schedule", "Filter", etc.)
+✅ Has specific time information
+✅ Is positioned near a date number
+❌ Is NOT a UI element or header
 
-STEP 4 - HANDLE COMPLEX LAYOUTS:
-- If events are stacked under dates, parse each one separately
-- If event names are split across lines, combine them
-- If times are on separate lines from names, associate them correctly
-- Empty date cells should not have events assigned
+4. EXTRACT TIMES PROPERLY:
+- Keep original format: "8:00 AM - 11:00 AM" 
+- Split into startTime: "8:00 AM" and endTime: "11:00 AM"
+- If only one time given, use it for both start and end
+- Do NOT convert to military time
 
-CRITICAL DATE EXTRACTION RULES:
-- Extract ACTUAL CALENDAR DATES in YYYY-MM-DD format, not day names
-- For calendar formats: Look for date numbers (1-31) and the month/year context
-- Map event names to their specific dates based on spatial positioning
-- If year is clearly visible (like "2013", "2024"), use that year
-- If year is NOT visible or unclear, default to current year: 2025
-- If only month is visible (like "June"), use 2025 as the year
+PARSING EXAMPLES:
 
-SPATIAL DATE-TO-EVENT MAPPING:
-- Analyze the text flow to see which event names go with which dates
-- Don't assign the same event to all dates - each date should have unique events
-- If multiple events appear under one date, create separate entries for each
-- If a date has no events near it, don't create an event for that date
+✅ CORRECT:
+Text: "26 Air Pack Safety 8:00 AM - 11:00 AM 27 Microsoft Office 2:00 PM - 4:00 PM"
+Extract:
+- Date: 2025-06-26, Event: "Air Pack Safety", Start: "8:00 AM", End: "11:00 AM"
+- Date: 2025-06-27, Event: "Microsoft Office", Start: "2:00 PM", End: "4:00 PM"
 
-STEP-BY-STEP EVENT EXTRACTION PROCESS:
-1. Find a date number (like "26")
-2. Look at the text that comes immediately after that date number
-3. Extract that text as the event name until you reach a time or the next date
-4. Extract the time in its original format (keep AM/PM)
-5. Move to the next date number and repeat
-
-EXAMPLE STEP-BY-STEP PARSING:
-Text: "26 Air Pack Safety 8:00 AM - 11:00 AM 27 Microsoft Office 10:00 AM - 2:00 PM"
-
-Step 1: Find "26" 
-Step 2: Text after "26" is "Air Pack Safety"
-Step 3: Time is "8:00 AM - 11:00 AM"
-Result: Date 26 = "Air Pack Safety" at "8:00 AM - 11:00 AM"
-
-Step 4: Find "27"
-Step 5: Text after "27" is "Microsoft Office" 
-Step 6: Time is "10:00 AM - 2:00 PM"
-Result: Date 27 = "Microsoft Office" at "10:00 AM - 2:00 PM"
-
-CRITICAL RULES FOR EVENT NAMES:
-- Never use document titles, headers, or page titles as event names
-- Extract the specific text that appears immediately after each date number
-- Each date gets a completely different event name
-- Keep times in original format with AM/PM (no military time)
-
-CRITICAL EVENT NAME EXTRACTION:
-- Only extract text that represents ACTUAL SCHEDULED ACTIVITIES
-- Must have associated time information to be considered an event
-- Look for patterns: "Event Name + Time" or "Time + Event Name"
-- Ignore standalone times without event names
-- Ignore event names without times (unless clearly part of a schedule entry)
-- Extract complete event names as they appear, but verify they are real events
-
-TEXT FILTERING - WHAT TO COMPLETELY IGNORE:
-- Any text that appears to be navigation ("Schedule", "Filter", "Go To", "See")
-- Location/site identifiers ("North Dakota", "My Site", "Area")
-- Date headers and month/year labels ("June 2013", "2013")
-- Calendar navigation elements
-- Standalone date numbers (26, 27, 28) unless they have events under them
-- Generic UI text and labels
-
-EVENT VALIDATION CHECKLIST:
-Before including any item as an event, verify:
-1. ✅ Has a descriptive activity name
-2. ✅ Has specific time information  
-3. ✅ Represents something someone would attend
-4. ❌ NOT a UI element, header, or navigation text
-5. ❌ NOT a standalone date or time without context
-
-DUPLICATE DETECTION:
-- Remove exact duplicates
-- Consolidate similar events if they're clearly the same activity
-
-SCHEDULE FORMATS TO RECOGNIZE:
-1. "Grid/Table Format" - Traditional weekly grid with days as columns, times as rows
-2. "List Format" - Course listings with times and days
-3. "Block Format" - Visual blocks showing course schedules
-4. "Condensed Format" - Compact text-based schedule
-5. "University Portal Format" - Standard university system printouts
-6. "Mobile App Format" - Schedule from mobile applications
-7. "Calendar View Format" - Monthly calendar with events on specific dates
-
-CRITICAL EVENT NAME EXTRACTION:
-- Only extract text that represents ACTUAL SCHEDULED ACTIVITIES
-- Must have associated time information to be considered an event
-- Look for patterns: "Event Name + Time" or "Time + Event Name"
-- Ignore standalone times without event names
-- Ignore event names without times (unless clearly part of a schedule entry)
-- Extract complete event names as they appear, but verify they are real events
-
-TEXT FILTERING - WHAT TO COMPLETELY IGNORE:
-- Any text that appears to be navigation ("Schedule", "Filter", "Go To", "See")
-- Location/site identifiers ("North Dakota", "My Site", "Area")
-- Date headers and month/year labels ("June 2013", "2013")
-- Calendar navigation elements
-- Standalone date numbers (26, 27, 28) unless they have events under them
-- Generic UI text and labels
-
-EVENT VALIDATION CHECKLIST:
-Before including any item as an event, verify:
-1. ✅ Has a descriptive activity name
-2. ✅ Has specific time information  
-3. ✅ Represents something someone would attend
-4. ❌ NOT a UI element, header, or navigation text
-5. ❌ NOT a standalone date or time without context
-
-DUPLICATE DETECTION:
-- Remove exact duplicates
-- Consolidate similar events if they're clearly the same activity
-
-CRITICAL DATE EXTRACTION RULES:
-- Extract ACTUAL CALENDAR DATES, not day names
-- For calendar formats: Look for date numbers (1-31) and the month/year context
-- Map event names to their specific dates based on spatial positioning
-- Format dates as YYYY-MM-DD (e.g., "2025-06-26" for June 26, 2025)
-- Each date should have its own event(s) based on what text appears near/under it
-
-YEAR HANDLING:
-- If year is clearly visible in the image (e.g., "2013", "2024"), use that year
-- If year is NOT visible or unclear, default to current year: 2025
-- If only month is visible (e.g., "June"), use 2025 as the year
-- Better to use current year than guess an incorrect historical year
-
-SPATIAL DATE-TO-EVENT MAPPING:
-- Analyze the text flow to see which event names go with which dates
-- Don't assign the same event to all dates - each date should have unique events
-- If multiple events appear under one date, create separate entries for each
-- If a date has no events near it, don't create an event for that date
-
-DATE PARSING EXAMPLES:
-- If you see "June 2013" with "26" → use "2013-06-26" (year is visible)
-- If you see "June" with "26" but no year → use "2025-06-26" (default to current year)
-- If you see "26 Air Pack Safety 8AM-11AM 27 Microsoft Office 10AM-2PM"
-  → "2025-06-26": "Air Pack Safety", "2025-06-27": "Microsoft Office" (assuming June, current year)
-
-TIME PARSING:
-- Keep original time format exactly as it appears (do NOT convert to 24-hour format)
-- If it says "8:00 AM - 11:00 AM", keep it as "8:00 AM - 11:00 AM"
-- If it says "2:00 PM - 3:15 PM", keep it as "2:00 PM - 3:15 PM"
-- Do NOT convert to military time (no 08:00, 14:00, etc.)
-- Preserve the exact format from the source document
-- Find locations/rooms when available
-- Identify instructors/professors when mentioned
-- Detect course types (Lecture, Lab, Discussion, Training, etc.)
+❌ WRONG - DON'T EXTRACT:
+Text: "Schedule Filter Site Name North Dakota"
+These are UI elements, not events.
 
 CONFIDENCE SCORING:
-- High (0.8-1.0): Clear date-event associations, accurate event names, proper date formatting
-- Medium (0.5-0.79): Most elements clear, dates mostly accurate
-- Low (0.0-0.49): Poor date-event mapping, unclear event names, or incorrect date format
-If text shows:
-"Mon Tue Wed
- 26  27  28
-Event A     Event B
-8AM-9AM     2PM-3PM"
+- High (0.8-1.0): Clear events with names, dates, and times
+- Medium (0.5-0.79): Most events clear, some minor issues
+- Low (0.0-0.49): Poor extraction, many UI elements detected
 
-Then Event A should be on Monday (26th) and Event B should be on Tuesday (27th).
-
-Return ONLY valid JSON with this exact structure:
+Return ONLY valid JSON with this structure:
 {
-  "format": "detected format name",
+  "format": "Calendar View Format",
   "events": [
     {
-      "course": "exact event name that appears after the date number",
-      "day": "YYYY-MM-DD (actual calendar date)",
-      "startTime": "original format with AM/PM",
-      "endTime": "original format with AM/PM", 
-      "location": "room/building if available",
-      "instructor": "professor name if available",
-      "type": "class type if identifiable"
+      "course": "exact event name from text",
+      "day": "YYYY-MM-DD",
+      "startTime": "H:MM AM/PM format",
+      "endTime": "H:MM AM/PM format",
+      "location": "",
+      "instructor": "",
+      "type": "Training"
     }
   ],
-  "rawText": "cleaned and formatted original text",
+  "rawText": "original extracted text",
   "confidence": 0.85
 }`
           },
           {
             role: 'user',
-            content: `CRITICAL: Extract individual event names that appear immediately after each date number. Do NOT use document titles. Keep time format as AM/PM (no military time). Use step-by-step parsing: find date number → extract text after it → that's the event name for that date. Here's the text:\n\n${combinedText}`
+            content: `Extract ONLY real scheduled events. Ignore UI text completely. For each real event, extract: date number → event name → time range. Keep times in AM/PM format. Split time ranges into separate startTime and endTime. Each date should have different event names. Here's the text:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
