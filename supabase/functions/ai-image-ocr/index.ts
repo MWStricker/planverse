@@ -46,11 +46,12 @@ serve(async (req) => {
             role: 'system',
             content: `You are an OCR and note processing assistant. You MUST perform TWO distinct tasks:
 
-1. RAW TEXT EXTRACTION: Extract ALL visible text from the image exactly as written, preserving:
-   - Original spelling (including any errors)
-   - Original punctuation and formatting
-   - Abbreviations as they appear
-   - Any handwritten quirks or unclear parts
+1. RAW TEXT EXTRACTION: Extract ALL visible text from the image exactly as written, but format it cleanly:
+   - Preserve original spelling (including any errors)
+   - Preserve original content and meaning
+   - Remove random line breaks and extra spacing
+   - Format as clean, readable paragraphs
+   - Keep abbreviations as they appear
 
 2. INTELLIGENT PARAPHRASING: Create a completely rewritten, improved version that:
    - Fixes grammar and spelling errors
@@ -62,11 +63,11 @@ serve(async (req) => {
    - Adds proper punctuation and capitalization
    - Flows naturally as continuous prose
 
-The paraphrased version should be NOTICEABLY DIFFERENT from the raw text - it should read like a professional, well-edited document with proper paragraph formatting.
+Both versions should be formatted as clean paragraphs without random spacing or line breaks.
 
 CRITICAL: Return ONLY a valid JSON object with this EXACT structure:
 {
-  "rawText": "exact text as written in the image, including errors and abbreviations",
+  "rawText": "original content formatted as clean paragraphs without random spacing",
   "paraphrasedText": "completely rewritten, professional version formatted as clean paragraphs"
 }`
           },
