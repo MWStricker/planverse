@@ -266,9 +266,14 @@ CRITICAL DATE EXTRACTION RULES:
 - Extract ACTUAL CALENDAR DATES, not day names
 - For calendar formats: Look for date numbers (1-31) and the month/year context
 - Map event names to their specific dates based on spatial positioning
-- If you see "June 2013" with dates "26 27 28 29 30 31", use those actual dates
-- Format dates as YYYY-MM-DD (e.g., "2013-06-26" for June 26, 2013)
+- Format dates as YYYY-MM-DD (e.g., "2025-06-26" for June 26, 2025)
 - Each date should have its own event(s) based on what text appears near/under it
+
+YEAR HANDLING:
+- If year is clearly visible in the image (e.g., "2013", "2024"), use that year
+- If year is NOT visible or unclear, default to current year: 2025
+- If only month is visible (e.g., "June"), use 2025 as the year
+- Better to use current year than guess an incorrect historical year
 
 SPATIAL DATE-TO-EVENT MAPPING:
 - Analyze the text flow to see which event names go with which dates
@@ -277,9 +282,10 @@ SPATIAL DATE-TO-EVENT MAPPING:
 - If a date has no events near it, don't create an event for that date
 
 DATE PARSING EXAMPLES:
+- If you see "June 2013" with "26" → use "2013-06-26" (year is visible)
+- If you see "June" with "26" but no year → use "2025-06-26" (default to current year)
 - If you see "26 Air Pack Safety 8AM-11AM 27 Microsoft Office 10AM-2PM"
-  → "2013-06-26": "Air Pack Safety", "2013-06-27": "Microsoft Office"
-- Each event name should be unique to its date position
+  → "2025-06-26": "Air Pack Safety", "2025-06-27": "Microsoft Office" (assuming June, current year)
 
 TIME PARSING:
 - Extract time ranges (e.g., "8:00 AM - 11:00 AM", "2:00 PM - 3:15 PM")
