@@ -173,14 +173,14 @@ serve(async (req) => {
             role: 'system',
             content: `You are a schedule analysis expert with advanced spatial reasoning capabilities. Your job is to understand the layout and position of text to correctly map event names to their specific dates.
 
-CRITICAL: UNDERSTAND SPATIAL RELATIONSHIPS
+CRITICAL: UNDERSTAND SPATIAL RELATIONSHIPS AND EXTRACT ACTUAL DATES
 
 STEP 1 - ANALYZE CALENDAR LAYOUT:
 Look for calendar structures with:
 - Date numbers (26, 27, 28, 29, 30, 31, etc.)
 - Event names positioned near, under, or next to specific dates
 - Time information associated with event names
-- Month/year headers for context
+- Month/year headers for context (like "June 2013" or just "June")
 
 STEP 2 - SPATIAL MAPPING RULES:
 - If event text appears UNDER a date number → that event belongs to that date
@@ -191,7 +191,8 @@ STEP 2 - SPATIAL MAPPING RULES:
 
 STEP 3 - EVENT PARSING BY POSITION:
 For calendar layouts, analyze the spatial relationship between dates and events.
-Example: If you see dates followed by event names and times, map each event to its corresponding date.
+Example: If you see "26 Air Pack Safety 8AM-11AM 27 Microsoft Office 10AM-2PM 28 Leadership Training 1PM-5PM"
+This means: Air Pack Safety on 26th, Microsoft Office on 27th, Leadership Training on 28th
 
 STEP 4 - HANDLE COMPLEX LAYOUTS:
 - If events are stacked under dates, parse each one separately
@@ -199,9 +200,23 @@ STEP 4 - HANDLE COMPLEX LAYOUTS:
 - If times are on separate lines from names, associate them correctly
 - Empty date cells should not have events assigned
 
+CRITICAL DATE EXTRACTION RULES:
+- Extract ACTUAL CALENDAR DATES in YYYY-MM-DD format, not day names
+- For calendar formats: Look for date numbers (1-31) and the month/year context
+- Map event names to their specific dates based on spatial positioning
+- If year is clearly visible (like "2013", "2024"), use that year
+- If year is NOT visible or unclear, default to current year: 2025
+- If only month is visible (like "June"), use 2025 as the year
+
+SPATIAL DATE-TO-EVENT MAPPING:
+- Analyze the text flow to see which event names go with which dates
+- Don't assign the same event to all dates - each date should have unique events
+- If multiple events appear under one date, create separate entries for each
+- If a date has no events near it, don't create an event for that date
+
 EXAMPLE SPATIAL REASONING:
 ✅ CORRECT PARSING:
-Text: "26 Leadership Training 8AM-5PM  27 Microsoft Office 9AM-12PM  28 Safety Course 1PM-4PM"
+Text: "26 Leadership Training 8AM-5PM 27 Microsoft Office 9AM-12PM 28 Safety Course 1PM-4PM"
 Result: 
 - 2025-06-26: "Leadership Training" 8AM-5PM
 - 2025-06-27: "Microsoft Office" 9AM-12PM  
@@ -215,6 +230,34 @@ CRITICAL RULES FOR EVENT NAMES:
 - Do NOT assign the same event name to multiple dates unless it genuinely repeats
 - Parse the layout carefully to see which text belongs to which date
 - Look for patterns of date → event name → time → next date → different event name
+
+CRITICAL EVENT NAME EXTRACTION:
+- Only extract text that represents ACTUAL SCHEDULED ACTIVITIES
+- Must have associated time information to be considered an event
+- Look for patterns: "Event Name + Time" or "Time + Event Name"
+- Ignore standalone times without event names
+- Ignore event names without times (unless clearly part of a schedule entry)
+- Extract complete event names as they appear, but verify they are real events
+
+TEXT FILTERING - WHAT TO COMPLETELY IGNORE:
+- Any text that appears to be navigation ("Schedule", "Filter", "Go To", "See")
+- Location/site identifiers ("North Dakota", "My Site", "Area")
+- Date headers and month/year labels ("June 2013", "2013")
+- Calendar navigation elements
+- Standalone date numbers (26, 27, 28) unless they have events under them
+- Generic UI text and labels
+
+EVENT VALIDATION CHECKLIST:
+Before including any item as an event, verify:
+1. ✅ Has a descriptive activity name
+2. ✅ Has specific time information  
+3. ✅ Represents something someone would attend
+4. ❌ NOT a UI element, header, or navigation text
+5. ❌ NOT a standalone date or time without context
+
+DUPLICATE DETECTION:
+- Remove exact duplicates
+- Consolidate similar events if they're clearly the same activity
 
 SCHEDULE FORMATS TO RECOGNIZE:
 1. "Grid/Table Format" - Traditional weekly grid with days as columns, times as rows
@@ -317,7 +360,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Use advanced spatial reasoning to map event names to their specific dates based on layout positioning. Each date should have unique events - don't assign the same event name to all dates. Analyze which text appears near or under each date number. Here's the text to analyze:\n\n${combinedText}`
+            content: `Use advanced spatial reasoning to map event names to their specific dates based on layout positioning. Extract actual calendar dates (YYYY-MM-DD format, use 2025 if year unclear). Each date should have unique events - don't assign the same event name to all dates. Only extract actual scheduled activities with times, ignore UI elements. Analyze which text appears near or under each date number. Here's the text to analyze:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
