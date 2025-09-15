@@ -1161,145 +1161,163 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <p className="text-sm text-muted-foreground">Set your wake-up and bedtime for accurate free time calculations</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Wake-up Time</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const currentHour = parseInt(preferences.wakeUpTime.split(':')[0]);
-                        const newHour = currentHour > 0 ? currentHour - 1 : 23;
-                        const minutes = preferences.wakeUpTime.split(':')[1];
-                        updatePreference('wakeUpTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
-                      }}
-                    >
-                      -
-                    </Button>
-                    
-                    <div className="flex-1 text-center text-2xl font-mono bg-muted rounded-lg py-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Wake-up Time */}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h4 className="text-lg font-semibold text-foreground">Wake-up Time</h4>
+                  <p className="text-sm text-muted-foreground">When you start your day</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-6 border border-blue-100 dark:border-blue-800/30">
+                  <div className="text-center mb-4">
+                    <div className="text-4xl font-mono font-bold text-blue-600 dark:text-blue-400 mb-2">
                       {preferences.wakeUpTime}
                     </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const currentHour = parseInt(preferences.wakeUpTime.split(':')[0]);
-                        const newHour = currentHour < 23 ? currentHour + 1 : 0;
-                        const minutes = preferences.wakeUpTime.split(':')[1];
-                        updatePreference('wakeUpTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
-                      }}
-                    >
-                      +
-                    </Button>
+                    <div className="text-xs text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider">
+                      Morning
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const hour = preferences.wakeUpTime.split(':')[0];
-                        const currentMin = parseInt(preferences.wakeUpTime.split(':')[1]);
-                        const newMin = currentMin >= 15 ? currentMin - 15 : currentMin + 45;
-                        updatePreference('wakeUpTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
-                      }}
-                    >
-                      -15m
-                    </Button>
-                    
-                    <div className="flex-1 text-center text-sm text-muted-foreground">
-                      Adjust minutes
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-blue-200 dark:border-blue-700"
+                        onClick={() => {
+                          const currentHour = parseInt(preferences.wakeUpTime.split(':')[0]);
+                          const newHour = currentHour > 0 ? currentHour - 1 : 23;
+                          const minutes = preferences.wakeUpTime.split(':')[1];
+                          updatePreference('wakeUpTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
+                        }}
+                      >
+                        <span className="text-blue-600 dark:text-blue-400">-1 Hour</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-blue-200 dark:border-blue-700"
+                        onClick={() => {
+                          const hour = preferences.wakeUpTime.split(':')[0];
+                          const currentMin = parseInt(preferences.wakeUpTime.split(':')[1]);
+                          const newMin = currentMin >= 15 ? currentMin - 15 : 45;
+                          updatePreference('wakeUpTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
+                        }}
+                      >
+                        <span className="text-blue-600 dark:text-blue-400">-15 Min</span>
+                      </Button>
                     </div>
                     
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const hour = preferences.wakeUpTime.split(':')[0];
-                        const currentMin = parseInt(preferences.wakeUpTime.split(':')[1]);
-                        const newMin = currentMin <= 45 ? currentMin + 15 : currentMin - 45;
-                        updatePreference('wakeUpTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
-                      }}
-                    >
-                      +15m
-                    </Button>
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-blue-200 dark:border-blue-700"
+                        onClick={() => {
+                          const currentHour = parseInt(preferences.wakeUpTime.split(':')[0]);
+                          const newHour = currentHour < 23 ? currentHour + 1 : 0;
+                          const minutes = preferences.wakeUpTime.split(':')[1];
+                          updatePreference('wakeUpTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
+                        }}
+                      >
+                        <span className="text-blue-600 dark:text-blue-400">+1 Hour</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-blue-200 dark:border-blue-700"
+                        onClick={() => {
+                          const hour = preferences.wakeUpTime.split(':')[0];
+                          const currentMin = parseInt(preferences.wakeUpTime.split(':')[1]);
+                          const newMin = currentMin <= 45 ? currentMin + 15 : 0;
+                          updatePreference('wakeUpTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
+                        }}
+                      >
+                        <span className="text-blue-600 dark:text-blue-400">+15 Min</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Use the buttons to adjust your wake-up time</p>
               </div>
-              
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Bedtime</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const currentHour = parseInt(preferences.bedTime.split(':')[0]);
-                        const newHour = currentHour > 0 ? currentHour - 1 : 23;
-                        const minutes = preferences.bedTime.split(':')[1];
-                        updatePreference('bedTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
-                      }}
-                    >
-                      -
-                    </Button>
-                    
-                    <div className="flex-1 text-center text-2xl font-mono bg-muted rounded-lg py-3">
+
+              {/* Bedtime */}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h4 className="text-lg font-semibold text-foreground">Bedtime</h4>
+                  <p className="text-sm text-muted-foreground">When you wind down</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 rounded-xl p-6 border border-purple-100 dark:border-purple-800/30">
+                  <div className="text-center mb-4">
+                    <div className="text-4xl font-mono font-bold text-purple-600 dark:text-purple-400 mb-2">
                       {preferences.bedTime}
                     </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const currentHour = parseInt(preferences.bedTime.split(':')[0]);
-                        const newHour = currentHour < 23 ? currentHour + 1 : 0;
-                        const minutes = preferences.bedTime.split(':')[1];
-                        updatePreference('bedTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
-                      }}
-                    >
-                      +
-                    </Button>
+                    <div className="text-xs text-purple-600/70 dark:text-purple-400/70 uppercase tracking-wider">
+                      Evening
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const hour = preferences.bedTime.split(':')[0];
-                        const currentMin = parseInt(preferences.bedTime.split(':')[1]);
-                        const newMin = currentMin >= 15 ? currentMin - 15 : currentMin + 45;
-                        updatePreference('bedTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
-                      }}
-                    >
-                      -15m
-                    </Button>
-                    
-                    <div className="flex-1 text-center text-sm text-muted-foreground">
-                      Adjust minutes
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-purple-200 dark:border-purple-700"
+                        onClick={() => {
+                          const currentHour = parseInt(preferences.bedTime.split(':')[0]);
+                          const newHour = currentHour > 0 ? currentHour - 1 : 23;
+                          const minutes = preferences.bedTime.split(':')[1];
+                          updatePreference('bedTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
+                        }}
+                      >
+                        <span className="text-purple-600 dark:text-purple-400">-1 Hour</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-purple-200 dark:border-purple-700"
+                        onClick={() => {
+                          const hour = preferences.bedTime.split(':')[0];
+                          const currentMin = parseInt(preferences.bedTime.split(':')[1]);
+                          const newMin = currentMin >= 15 ? currentMin - 15 : 45;
+                          updatePreference('bedTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
+                        }}
+                      >
+                        <span className="text-purple-600 dark:text-purple-400">-15 Min</span>
+                      </Button>
                     </div>
                     
-                    <Button 
-                      variant="outline" 
-                      className="w-20"
-                      onClick={() => {
-                        const hour = preferences.bedTime.split(':')[0];
-                        const currentMin = parseInt(preferences.bedTime.split(':')[1]);
-                        const newMin = currentMin <= 45 ? currentMin + 15 : currentMin - 45;
-                        updatePreference('bedTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
-                      }}
-                    >
-                      +15m
-                    </Button>
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-purple-200 dark:border-purple-700"
+                        onClick={() => {
+                          const currentHour = parseInt(preferences.bedTime.split(':')[0]);
+                          const newHour = currentHour < 23 ? currentHour + 1 : 0;
+                          const minutes = preferences.bedTime.split(':')[1];
+                          updatePreference('bedTime', `${newHour.toString().padStart(2, '0')}:${minutes}`);
+                        }}
+                      >
+                        <span className="text-purple-600 dark:text-purple-400">+1 Hour</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full hover-scale bg-white/50 hover:bg-white/80 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 border-purple-200 dark:border-purple-700"
+                        onClick={() => {
+                          const hour = preferences.bedTime.split(':')[0];
+                          const currentMin = parseInt(preferences.bedTime.split(':')[1]);
+                          const newMin = currentMin <= 45 ? currentMin + 15 : 0;
+                          updatePreference('bedTime', `${hour}:${newMin.toString().padStart(2, '0')}`);
+                        }}
+                      >
+                        <span className="text-purple-600 dark:text-purple-400">+15 Min</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Use the buttons to adjust your bedtime</p>
               </div>
             </div>
           </div>
