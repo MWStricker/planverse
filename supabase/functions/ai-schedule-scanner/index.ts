@@ -54,7 +54,7 @@ serve(async (req) => {
 
     console.log('Processing schedule image with Google Cloud Vision...');
 
-    // Call Google Cloud Vision API for text detection
+    // Call Google Cloud Vision API for comprehensive text detection
     const visionResponse = await fetch(
       `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`,
       {
@@ -68,9 +68,16 @@ serve(async (req) => {
               content: imageData.split(',')[1] // Remove data:image/... prefix
             },
             features: [
-              { type: 'TEXT_DETECTION', maxResults: 1 },
-              { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }
-            ]
+              { type: 'TEXT_DETECTION', maxResults: 10 },
+              { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 10 },
+              { type: 'OBJECT_LOCALIZATION', maxResults: 50 }
+            ],
+            imageContext: {
+              languageHints: ['en'],
+              textDetectionParams: {
+                enableTextDetectionConfidenceScore: true
+              }
+            }
           }]
         })
       }
@@ -104,7 +111,14 @@ serve(async (req) => {
     const detectedText = visionData.responses[0].fullTextAnnotation?.text || 
                         visionData.responses[0].textAnnotations?.[0]?.description || '';
 
-    if (!detectedText.trim()) {
+    // Also get individual text annotations for better parsing
+    const textAnnotations = visionData.responses[0].textAnnotations || [];
+    const allDetectedTexts = textAnnotations.map(annotation => annotation.description).join(' ');
+    
+    // Combine both for comprehensive text extraction
+    const combinedText = `${detectedText}\n\nAdditional detected text elements:\n${allDetectedTexts}`;
+
+    if (!detectedText.trim() && !allDetectedTexts.trim()) {
       return new Response(
         JSON.stringify({ error: 'No readable text found in the schedule image' }),
         { 
@@ -114,7 +128,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Extracted text length:', detectedText.length);
+    console.log('Combined extracted text length:', combinedText.length);
 
     // Use OpenAI to analyze and structure the schedule data
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -141,7 +155,7 @@ serve(async (req) => {
             role: 'system',
             content: `You are a schedule analysis expert. Analyze the extracted text from a class schedule image and structure it into a standardized format.
 
-TASK: Extract schedule information and identify the format type with CORRECT day associations.
+TASK: Extract schedule information with PRECISE event names and correct day associations.
 
 SCHEDULE FORMATS TO RECOGNIZE:
 1. "Grid/Table Format" - Traditional weekly grid with days as columns, times as rows
@@ -151,6 +165,13 @@ SCHEDULE FORMATS TO RECOGNIZE:
 5. "University Portal Format" - Standard university system printouts
 6. "Mobile App Format" - Schedule from mobile applications
 7. "Calendar View Format" - Monthly calendar with events on specific dates
+
+CRITICAL EVENT NAME EXTRACTION:
+- Extract COMPLETE and ACCURATE event/course names (e.g., "Advanced Programming", "Organic Chemistry Lab")
+- Look for multi-word course titles that may be split across lines
+- Pay attention to course codes with descriptions (e.g., "CS 101: Introduction to Programming")
+- Capture training names, workshop titles, meeting names accurately
+- Don't truncate or abbreviate event names unless they appear that way in the source
 
 CRITICAL DAY EXTRACTION RULES:
 - For calendar formats: Look for date numbers (1-31) and match events to those specific dates
@@ -208,7 +229,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Analyze this schedule text and extract structured schedule information with CORRECT day assignments. Pay special attention to calendar layouts and date-to-day mappings:\n\n${detectedText}`
+            content: `Analyze this schedule text and extract structured schedule information with ACCURATE event names and CORRECT day assignments. The text may contain multiple detection passes - use all available information to get complete event names:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
