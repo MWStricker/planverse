@@ -1190,53 +1190,45 @@ const Calendar = () => {
     if (!user) return;
     
     try {
-      // Delete all tasks for the user
-      const { error: tasksError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('user_id', user.id);
+      // Delete all user data in parallel for better performance
+      const deletePromises = [
+        // Core data
+        supabase.from('tasks').delete().eq('user_id', user.id),
+        supabase.from('events').delete().eq('user_id', user.id),
+        supabase.from('study_sessions').delete().eq('user_id', user.id),
+        // Course and color data
+        supabase.from('course_colors').delete().eq('user_id', user.id),
+        // OCR uploads
+        supabase.from('ocr_uploads').delete().eq('user_id', user.id),
+        // Calendar connections
+        supabase.from('calendar_connections').delete().eq('user_id', user.id),
+        // User settings (optional - keeps profile but clears app settings)
+        supabase.from('user_settings').delete().eq('user_id', user.id)
+      ];
 
-      if (tasksError) {
-        throw tasksError;
+      const results = await Promise.all(deletePromises);
+      
+      // Check for any errors
+      const hasErrors = results.some(result => result.error);
+      if (hasErrors) {
+        const errors = results.filter(result => result.error).map(result => result.error);
+        throw new Error(`Delete errors: ${errors.map(e => e?.message).join(', ')}`);
       }
 
-      // Delete all events for the user
-      const { error: eventsError } = await supabase
-        .from('events')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (eventsError) {
-        throw eventsError;
-      }
-
-      // Delete all study sessions for the user
-      const { error: sessionsError } = await supabase
-        .from('study_sessions')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (sessionsError) {
-        throw sessionsError;
-      }
-
-      // Immediately update local state for instant UI sync
+      // Immediately clear all local state
       setTasks([]);
       setEvents([]);
       setStudySessions([]);
 
       toast({
         title: "Success",
-        description: "All tasks, events, and study sessions have been deleted",
+        description: "All data has been permanently deleted",
       });
 
-      // Use setTimeout to ensure state updates complete before notifying other components
+      // Force a complete page refresh to ensure all components are reset
       setTimeout(() => {
-        // Emit custom events to notify other components to refresh
-        window.dispatchEvent(new CustomEvent('tasksCleared'));
-        window.dispatchEvent(new CustomEvent('eventsCleared'));
-        window.dispatchEvent(new CustomEvent('dataRefresh'));
-      }, 100);
+        window.location.reload();
+      }, 500);
       
     } catch (error) {
       console.error('Error deleting all data:', error);
