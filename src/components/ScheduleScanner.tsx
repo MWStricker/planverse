@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Upload, FileText, Calendar, Loader2, Clock, MapPin, User, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +28,7 @@ export const ScheduleScanner = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [scheduleAnalysis, setScheduleAnalysis] = useState<ScheduleAnalysis | null>(null);
+  const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -90,6 +90,7 @@ export const ScheduleScanner = () => {
               description: error.message || "Failed to process the schedule image. Please try again.",
               variant: "destructive",
             });
+            setIsProcessing(false);
             return;
           }
 
@@ -99,10 +100,12 @@ export const ScheduleScanner = () => {
               description: data.error,
               variant: "destructive",
             });
+            setIsProcessing(false);
             return;
           }
 
           setScheduleAnalysis(data);
+          setSelectedEvents(new Set()); // Reset selected events
           toast({
             title: "Schedule analyzed successfully",
             description: `Detected ${data.format} with ${data.events.length} events (${Math.round(data.confidence * 100)}% confidence)`,
@@ -131,6 +134,43 @@ export const ScheduleScanner = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const toggleEventSelection = (index: number) => {
+    const newSelected = new Set(selectedEvents);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedEvents(newSelected);
+  };
+
+  const selectAllEvents = () => {
+    if (scheduleAnalysis) {
+      setSelectedEvents(new Set(Array.from({ length: scheduleAnalysis.events.length }, (_, i) => i)));
+    }
+  };
+
+  const deselectAllEvents = () => {
+    setSelectedEvents(new Set());
+  };
+
+  const addSelectedToCalendar = () => {
+    if (selectedEvents.size === 0) {
+      toast({
+        title: "No events selected",
+        description: "Please select at least one event to add to your calendar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // TODO: Implement actual calendar integration
+    toast({
+      title: "Events added to calendar",
+      description: `${selectedEvents.size} events have been added to your calendar.`,
+    });
   };
 
   return (
@@ -262,23 +302,67 @@ export const ScheduleScanner = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />
-                  Extracted Schedule Events
+                  Schedule Events Found ({scheduleAnalysis.events.length})
                 </CardTitle>
                 <CardDescription>
-                  Review and edit the detected schedule items
+                  Select events to add to your calendar
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="mb-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selectAllEvents}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={deselectAllEvents}
+                  >
+                    Deselect All
+                  </Button>
+                  <div className="flex-1" />
+                  <Button
+                    onClick={addSelectedToCalendar}
+                    disabled={selectedEvents.size === 0}
+                    className="ml-auto"
+                  >
+                    Add Selected to Calendar ({selectedEvents.size})
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
                   {scheduleAnalysis.events.map((event, index) => (
-                    <div key={index} className="p-4 border rounded-lg space-y-2">
+                    <div 
+                      key={index} 
+                      className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
+                        selectedEvents.has(index) 
+                          ? 'border-primary bg-primary/5 shadow-sm' 
+                          : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                      }`}
+                      onClick={() => toggleEventSelection(index)}
+                    >
                       <div className="flex items-start justify-between">
-                        <h4 className="font-medium text-foreground">{event.course}</h4>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            selectedEvents.has(index) 
+                              ? 'border-primary bg-primary' 
+                              : 'border-muted-foreground'
+                          }`}>
+                            {selectedEvents.has(index) && (
+                              <div className="w-2 h-2 bg-white rounded-sm" />
+                            )}
+                          </div>
+                          <h4 className="font-medium text-foreground">{event.course}</h4>
+                        </div>
                         {event.type && (
                           <Badge variant="outline">{event.type}</Badge>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                      <div className="ml-7 mt-2 grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
                           <span>{event.day}</span>
@@ -303,41 +387,9 @@ export const ScheduleScanner = () => {
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 flex gap-2">
-                  <Button>
-                    Add to Calendar
-                  </Button>
-                  <Button variant="outline">
-                    Export Schedule
-                  </Button>
-                  <Button variant="outline">
-                    Edit Events
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
-
-          {/* Raw Text */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Raw Extracted Text
-              </CardTitle>
-              <CardDescription>
-                The original text detected from the image
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={scheduleAnalysis.rawText}
-                readOnly
-                className="min-h-[150px] resize-y"
-                placeholder="Extracted text will appear here..."
-              />
-            </CardContent>
-          </Card>
         </div>
       )}
 

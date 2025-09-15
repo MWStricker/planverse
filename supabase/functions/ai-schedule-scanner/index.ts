@@ -213,9 +213,18 @@ Return ONLY valid JSON with this exact structure:
 
     let scheduleAnalysis: ScheduleAnalysis;
     try {
-      scheduleAnalysis = JSON.parse(analysisContent);
+      // Handle cases where OpenAI wraps JSON in markdown code blocks
+      let jsonContent = analysisContent.trim();
+      if (jsonContent.startsWith('```json')) {
+        jsonContent = jsonContent.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      } else if (jsonContent.startsWith('```')) {
+        jsonContent = jsonContent.replace(/^```\n?/, '').replace(/\n?```$/, '');
+      }
+      
+      scheduleAnalysis = JSON.parse(jsonContent);
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
+      console.error('Raw response:', analysisContent);
       // Fallback response
       scheduleAnalysis = {
         format: "Unknown Format",
