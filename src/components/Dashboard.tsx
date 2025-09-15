@@ -331,8 +331,11 @@ export const Dashboard = () => {
       const endOfToday = new Date(today);
       endOfToday.setHours(23, 59, 59, 999);
 
-      // Define working hours (8 AM to 10 PM = 14 hours)
-      const totalAvailableHours = 14;
+      // Start with 24 hours, subtract essential activities
+      const totalHoursInDay = 24;
+      const sleepHours = 8; // Average sleep time
+      const essentialActivities = 3; // Meals, personal care, commuting, etc.
+      const availableHours = totalHoursInDay - sleepHours - essentialActivities; // 13 hours
 
       // Get events and tasks scheduled for today
       const eventsToday = userEvents.filter(event => {
@@ -371,7 +374,7 @@ export const Dashboard = () => {
         totalScheduledHours += estimatedHours;
       });
 
-      const freeHours = Math.max(0, totalAvailableHours - totalScheduledHours);
+      const freeHours = Math.max(0, availableHours - totalScheduledHours);
       return freeHours.toFixed(1) + " hrs";
     };
 
