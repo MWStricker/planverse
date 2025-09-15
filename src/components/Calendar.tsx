@@ -354,7 +354,7 @@ const Calendar = () => {
           setLoading(true);
           try {
             // Force refresh current period
-            const data = await fetchDataForPeriod(currentDate, viewMode);
+            const data = await fetchDataForPeriod(currentDate, viewMode, true); // Force refresh
             console.log('Fresh data fetched:', { 
               tasksCount: data.tasks.length, 
               eventsCount: data.events.length 
@@ -369,8 +369,8 @@ const Calendar = () => {
             
             // Force fresh cache for adjacent periods
             await Promise.all([
-              fetchDataForPeriod(prevDate, viewMode),
-              fetchDataForPeriod(nextDate, viewMode)
+              fetchDataForPeriod(prevDate, viewMode, true), // Force refresh
+              fetchDataForPeriod(nextDate, viewMode, true)  // Force refresh
             ]);
             
             console.log('All periods refreshed successfully');
@@ -574,12 +574,12 @@ const Calendar = () => {
     }
   };
 
-  const fetchDataForPeriod = async (date: Date, mode: 'month' | 'week' | 'day') => {
+  const fetchDataForPeriod = async (date: Date, mode: 'month' | 'week' | 'day', forceRefresh = false) => {
     const cacheKey = getCacheKey(date, mode);
     
-    // Check cache first (valid for 5 minutes)
+    // Check cache first (valid for 5 minutes) - but skip if force refresh
     const cached = dataCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+    if (!forceRefresh && cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
       return cached;
     }
 

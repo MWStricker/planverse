@@ -424,7 +424,14 @@ export const CanvasIntegration = () => {
         window.dispatchEvent(new CustomEvent('eventsCleared'));
         window.dispatchEvent(new CustomEvent('tasksCleared'));
         window.dispatchEvent(new CustomEvent('canvasDataCleared'));
-      }, 100);
+        
+        // Double refresh to ensure complete removal
+        setTimeout(() => {
+          console.log('Sending second Canvas removal refresh wave...');
+          window.dispatchEvent(new CustomEvent('dataRefresh'));
+          window.dispatchEvent(new CustomEvent('eventsCleared'));
+        }, 1000);
+      }, 1000);
     } catch (error) {
       console.error('Error removing Canvas feed:', error);
       toast({
