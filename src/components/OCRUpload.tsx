@@ -244,8 +244,8 @@ export const OCRUpload = () => {
             </CardContent>
           </Card>
 
-          {/* Paraphrased Text Display */}
-          {paraphrasedText && (
+          {/* Paraphrased Text Display - Always show when any text is extracted */}
+          {extractedText && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
