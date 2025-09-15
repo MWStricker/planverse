@@ -1165,13 +1165,16 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <div className="space-y-3">
                 <Label htmlFor="wakeup-time" className="text-base font-medium">Wake-up Time</Label>
                 <div className="relative">
-                  <Input
+                  <input
                     id="wakeup-time"
                     type="time"
                     value={preferences.wakeUpTime}
-                    onChange={(e) => updatePreference('wakeUpTime', e.target.value)}
-                    className="text-center text-lg h-12 border-2 hover:border-primary focus:border-primary transition-colors bg-background"
-                    style={{ colorScheme: 'light dark' }}
+                    onChange={(e) => {
+                      console.log('Wake up time changed:', e.target.value);
+                      updatePreference('wakeUpTime', e.target.value);
+                    }}
+                    onClick={() => console.log('Wake up time clicked')}
+                    className="w-full text-center text-lg h-12 border-2 rounded-md border-input hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors bg-background px-3 py-2"
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">Click the field above to set your wake-up time</p>
@@ -1180,13 +1183,16 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <div className="space-y-3">
                 <Label htmlFor="bed-time" className="text-base font-medium">Bedtime</Label>
                 <div className="relative">
-                  <Input
+                  <input
                     id="bed-time"
                     type="time"
                     value={preferences.bedTime}
-                    onChange={(e) => updatePreference('bedTime', e.target.value)}
-                    className="text-center text-lg h-12 border-2 hover:border-primary focus:border-primary transition-colors bg-background"
-                    style={{ colorScheme: 'light dark' }}
+                    onChange={(e) => {
+                      console.log('Bed time changed:', e.target.value);
+                      updatePreference('bedTime', e.target.value);
+                    }}
+                    onClick={() => console.log('Bed time clicked')}
+                    className="w-full text-center text-lg h-12 border-2 rounded-md border-input hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors bg-background px-3 py-2"
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">Click the field above to set your bedtime</p>
