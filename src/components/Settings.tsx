@@ -1170,14 +1170,11 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     type="time"
                     value={preferences.wakeUpTime}
                     onChange={(e) => updatePreference('wakeUpTime', e.target.value)}
-                    className="text-center text-lg h-12 border-2 hover:border-primary focus:border-primary transition-colors cursor-pointer"
-                    placeholder="Select time"
+                    className="text-center text-lg h-12 border-2 hover:border-primary focus:border-primary transition-colors bg-background"
+                    style={{ colorScheme: 'light dark' }}
                   />
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Click to set when you typically wake up</p>
+                <p className="text-sm text-muted-foreground">Click the field above to set your wake-up time</p>
               </div>
               
               <div className="space-y-3">
@@ -1188,14 +1185,11 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     type="time"
                     value={preferences.bedTime}
                     onChange={(e) => updatePreference('bedTime', e.target.value)}
-                    className="text-center text-lg h-12 border-2 hover:border-primary focus:border-primary transition-colors cursor-pointer"
-                    placeholder="Select time"
+                    className="text-center text-lg h-12 border-2 hover:border-primary focus:border-primary transition-colors bg-background"
+                    style={{ colorScheme: 'light dark' }}
                   />
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Click to set when you typically go to bed</p>
+                <p className="text-sm text-muted-foreground">Click the field above to set your bedtime</p>
               </div>
             </div>
           </div>
