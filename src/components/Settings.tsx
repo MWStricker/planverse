@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -408,6 +408,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   const tabs = [
     { id: 'accounts', label: 'Account Linking', icon: Link },
     { id: 'preferences', label: 'System Preferences', icon: Palette },
+    { id: 'sleep', label: 'Sleep Schedule', icon: Clock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'privacy', label: 'Privacy & Security', icon: Shield },
@@ -716,57 +717,6 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                 <SelectItem value="large">Large - Larger text for better readability</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Sleep Schedule */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Sleep Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-3">
-            <div>
-              <h4 className="font-medium text-foreground">Daily Schedule</h4>
-              <p className="text-sm text-muted-foreground">Set your wake-up and bedtime for accurate free time calculations on your dashboard</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="wakeup-time">Wake-up Time</Label>
-                <Input
-                  id="wakeup-time"
-                  type="time"
-                  value={preferences.wakeUpTime}
-                  onChange={(e) => updatePreference('wakeUpTime', e.target.value)}
-                  className="text-center"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bed-time">Bedtime</Label>
-                <Input
-                  id="bed-time"
-                  type="time"
-                  value={preferences.bedTime}
-                  onChange={(e) => updatePreference('bedTime', e.target.value)}
-                  className="text-center"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <Separator />
-          
-          <div className="text-sm text-muted-foreground">
-            <h5 className="font-medium text-foreground mb-2">How this affects your dashboard:</h5>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>Free time calculation is based on your actual awake hours</li>
-              <li>Accounts for 3 hours of daily essentials (meals, personal care, commuting)</li>
-              <li>Shows realistic available time after scheduled tasks and events</li>
-            </ul>
           </div>
         </CardContent>
       </Card>
@@ -1195,13 +1145,133 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
     </div>
   );
 
-
+  const renderSleepSchedule = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Sleep Schedule
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-lg font-medium text-foreground">Daily Schedule</h4>
+              <p className="text-sm text-muted-foreground">Set your wake-up and bedtime for accurate free time calculations</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="wakeup-time" className="text-base font-medium">Wake-up Time</Label>
+                <div className="relative">
+                  <Input
+                    id="wakeup-time"
+                    type="time"
+                    value={preferences.wakeUpTime}
+                    onChange={(e) => updatePreference('wakeUpTime', e.target.value)}
+                    className="text-center text-lg h-12"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">When you typically wake up</p>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="bed-time" className="text-base font-medium">Bedtime</Label>
+                <div className="relative">
+                  <Input
+                    id="bed-time"
+                    type="time"
+                    value={preferences.bedTime}
+                    onChange={(e) => updatePreference('bedTime', e.target.value)}
+                    className="text-center text-lg h-12"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">When you typically go to bed</p>
+              </div>
+            </div>
+          </div>
+          
+          <Separator />
+          
+          <div className="bg-muted/30 p-4 rounded-lg">
+            <h5 className="font-medium text-foreground mb-2 flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              How this improves your dashboard
+            </h5>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Free time calculation based on your actual awake hours</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Accounts for 3 hours of daily essentials (meals, personal care, commuting)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Shows realistic available time after scheduled tasks and events</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Helps with better time management and planning</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div className="bg-background border rounded-lg p-4">
+              <div className="text-2xl font-bold text-primary">
+                {(() => {
+                  const [wakeHour, wakeMin] = preferences.wakeUpTime.split(':').map(Number);
+                  const [bedHour, bedMin] = preferences.bedTime.split(':').map(Number);
+                  let awakeHours = 0;
+                  if (bedHour > wakeHour) {
+                    awakeHours = (bedHour - wakeHour) + (bedMin - wakeMin) / 60;
+                  } else {
+                    awakeHours = (24 - wakeHour + bedHour) + (bedMin - wakeMin) / 60;
+                  }
+                  return awakeHours.toFixed(1);
+                })()}h
+              </div>
+              <div className="text-sm text-muted-foreground">Total Awake Hours</div>
+            </div>
+            
+            <div className="bg-background border rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">3h</div>
+              <div className="text-sm text-muted-foreground">Daily Essentials</div>
+            </div>
+            
+            <div className="bg-background border rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {(() => {
+                  const [wakeHour, wakeMin] = preferences.wakeUpTime.split(':').map(Number);
+                  const [bedHour, bedMin] = preferences.bedTime.split(':').map(Number);
+                  let awakeHours = 0;
+                  if (bedHour > wakeHour) {
+                    awakeHours = (bedHour - wakeHour) + (bedMin - wakeMin) / 60;
+                  } else {
+                    awakeHours = (24 - wakeHour + bedHour) + (bedMin - wakeMin) / 60;
+                  }
+                  const available = Math.max(0, awakeHours - 3);
+                  return available.toFixed(1);
+                })()}h
+              </div>
+              <div className="text-sm text-muted-foreground">Available Hours</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
   const renderTabContent = () => {
     switch (activeTab) {
       case 'accounts':
         return renderAccountLinking();
       case 'preferences':
         return renderSystemPreferences();
+      case 'sleep':
+        return renderSleepSchedule();
       case 'course-icons':
         return renderCourseIcons();
       case 'notifications':
