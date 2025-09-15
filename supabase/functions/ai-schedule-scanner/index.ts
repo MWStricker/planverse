@@ -246,40 +246,39 @@ DUPLICATE DETECTION:
 - Remove exact duplicates
 - Consolidate similar events if they're clearly the same activity
 
-CRITICAL DAY EXTRACTION RULES:
-- For calendar formats: Look for date numbers (1-31) and match events to those specific dates
-- Convert date numbers to day names: Use context clues like "Mon Tue Wed Thu Fri Sat Sun" headers
-- For weekly formats: Look for day abbreviations (Mon, Tue, Wed, Thu, Fri, Sat, Sun) or full names
-- If events are under a specific date or day column, assign them to that day
-- DO NOT default all events to Monday - carefully analyze spatial relationships
-- If text shows "27 28 29 30 31" with events below specific numbers, map those to correct days
+CRITICAL DATE EXTRACTION RULES:
+- Extract ACTUAL CALENDAR DATES, not day names
+- For calendar formats: Look for date numbers (1-31) and the month/year context
+- If you see "June 2013" with dates "26 27 28 29 30 31", use those actual dates
+- Format dates as YYYY-MM-DD (e.g., "2013-06-26" for June 26, 2013)
+- If month/year is visible, combine with date numbers to create full dates
+- If only date numbers are visible, use the pattern "DD" and note the visible month/year
+- DO NOT convert to day names (Monday, Tuesday, etc.) - use actual calendar dates
+- If events are under specific date numbers, assign them to those exact dates
 
-WHAT TO IGNORE:
-- Navigation buttons ("Go To", "See Schedule")
-- Date headers and calendar navigation
-- Site names and filter options
-- Page numbers or timestamps
-- Any text that's clearly not an event/course name
+DATE PARSING EXAMPLES:
+- If you see "26" under "June 2013" → use "2013-06-26" 
+- If you see "27" in the same calendar → use "2013-06-27"
+- If you see events under "28" → assign to "2013-06-28"
+- If no year is visible but month is clear → use format "2023-06-26" (current context)
 
-TIME AND DATE PARSING:
+SPATIAL ANALYSIS FOR CALENDAR FORMATS:
+- Map events to the specific date numbers they appear under
+- Look for date numbers like "26 27 28 29 30 31" and match events to those dates
+- Use month/year headers to determine the full date context
+- If events appear under specific date cells, assign them to those exact calendar dates
+
+TIME PARSING:
 - Extract time ranges (e.g., "8:00 AM - 11:00 AM", "2:00 PM - 3:15 PM")
 - Convert all times to 24-hour format (8:00 AM = 08:00, 3:00 PM = 15:00)
 - Find locations/rooms when available
 - Identify instructors/professors when mentioned
 - Detect course types (Lecture, Lab, Discussion, Training, etc.)
 
-SPATIAL ANALYSIS FOR CALENDAR FORMATS:
-- If you see date numbers like "26 27 28 29 30 31" followed by events, map events to their respective dates
-- Look for patterns like events listed under specific date columns
-- Use day headers (Sun Mon Tue Wed Thu Fri Sat) to determine which dates correspond to which days
-- Calculate day of week based on calendar layout if possible
-
 CONFIDENCE SCORING:
-- High (0.8-1.0): Clear day-event associations, accurate event names, no duplicates
-- Medium (0.5-0.79): Most elements clear, minimal duplicates or ambiguity resolved
-- Low (0.0-0.49): Poor day-event mapping, unclear event names, or multiple duplicates
-
-EXAMPLE ANALYSIS:
+- High (0.8-1.0): Clear date-event associations, accurate event names, proper date formatting
+- Medium (0.5-0.79): Most elements clear, dates mostly accurate
+- Low (0.0-0.49): Poor date-event mapping, unclear event names, or incorrect date format
 If text shows:
 "Mon Tue Wed
  26  27  28
@@ -294,7 +293,7 @@ Return ONLY valid JSON with this exact structure:
   "events": [
     {
       "course": "course code and name",
-      "day": "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday",
+      "day": "YYYY-MM-DD (actual calendar date)",
       "startTime": "HH:MM",
       "endTime": "HH:MM", 
       "location": "room/building if available",
@@ -308,7 +307,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Use advanced reasoning to distinguish between actual scheduled events and UI/navigation text. Only extract items that are clearly scheduled activities with associated times. Here's the text to analyze:\n\n${combinedText}`
+            content: `Use advanced reasoning to extract actual calendar dates (not day names) and distinguish between real events and UI text. Format dates as YYYY-MM-DD. Here's the text to analyze:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
