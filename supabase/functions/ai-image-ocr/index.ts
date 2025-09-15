@@ -56,16 +56,18 @@ serve(async (req) => {
    - Fixes grammar and spelling errors
    - Expands abbreviations into full words
    - Improves sentence structure and flow
-   - Organizes content with better formatting
+   - Organizes content into clean, well-formatted paragraphs
+   - Uses proper paragraph breaks (no random line breaks or spacing)
    - Makes concepts clearer and more academic
    - Adds proper punctuation and capitalization
+   - Flows naturally as continuous prose
 
-The paraphrased version should be NOTICEABLY DIFFERENT from the raw text - it should read like a professional, well-edited version of the same content.
+The paraphrased version should be NOTICEABLY DIFFERENT from the raw text - it should read like a professional, well-edited document with proper paragraph formatting.
 
 CRITICAL: Return ONLY a valid JSON object with this EXACT structure:
 {
   "rawText": "exact text as written in the image, including errors and abbreviations",
-  "paraphrasedText": "completely rewritten, professional, and improved version"
+  "paraphrasedText": "completely rewritten, professional version formatted as clean paragraphs"
 }`
           },
           {
