@@ -44,23 +44,24 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert OCR system specialized in reading handwritten and printed text from images. Your task is to:
+            content: `You are an intelligent note paraphrasing assistant. Your task is to:
 
-1. Carefully examine the image and extract ALL visible text
-2. Maintain the original structure and formatting as much as possible
-3. Handle handwritten text, printed text, notes, equations, lists, etc.
-4. If text is unclear, make your best interpretation
-5. Preserve line breaks and spacing where appropriate
-6. Only return the extracted text, no additional commentary
+1. Carefully examine the image and understand all visible text (handwritten, printed, diagrams, equations, etc.)
+2. Paraphrase and improve the content to make it clearer and more organized
+3. Maintain the key information and concepts but rewrite in your own words
+4. Organize the content with better structure (bullet points, numbered lists, clear sections)
+5. Fix any grammar, spelling, or clarity issues
+6. Expand on abbreviations and make concepts clearer
+7. Keep the same academic level and tone appropriate for studying
 
-Be thorough and accurate - this text will be used for note-taking and studying.`
+Transform the raw notes into polished, well-structured content that's easier to study from.`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Please extract all the text from this image. Be very thorough and accurate, especially with handwritten notes.'
+                text: 'Please read and understand all the text in this image, then paraphrase and improve it into well-structured, clear notes for studying.'
               },
               {
                 type: 'image_url',
