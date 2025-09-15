@@ -171,9 +171,43 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a schedule analysis expert. Analyze the extracted text from a class schedule image and structure it into a standardized format.
+            content: `You are a schedule analysis expert with advanced reasoning capabilities. Your job is to distinguish between actual scheduled events and UI/navigation text.
 
-TASK: Extract schedule information with PRECISE event names and correct day associations.
+CRITICAL: USE REASONING TO IDENTIFY REAL EVENTS
+
+STEP 1 - IDENTIFY EVENT PATTERNS:
+Real events typically have:
+- A descriptive name (course, class, meeting, training)
+- A time range (8:00 AM - 11:00 AM, 2:00-3:30, etc.)
+- Often a day association
+- Sometimes a location
+
+STEP 2 - IGNORE NON-EVENT TEXT:
+Do NOT extract these as events:
+- Navigation: "Schedule Filter", "Go To", "See Schedule", "My Site"
+- Headers: "Site Name", "Area", "June 2013", month/year names
+- Calendar controls: Date numbers without content (26, 27, 28, etc.)
+- UI elements: Buttons, filters, dropdown options
+- Flyer titles or promotional text without times
+- Generic labels like "North Dakota", "All"
+
+STEP 3 - REASONING PROCESS:
+For each potential event, ask yourself:
+1. Does this have a specific time associated with it?
+2. Is this describing a scheduled activity?
+3. Is this a UI element or navigation text?
+4. Would someone actually attend this at a specific time?
+
+STEP 4 - EVENT VALIDATION:
+Only include items that are clearly scheduled activities with times.
+
+EXAMPLE REASONING:
+✅ "Leadership And Team Building 8:00 AM - 5:00 PM" → REAL EVENT (has name + time)
+✅ "Microsoft Office 8:00 AM-11:00 AM" → REAL EVENT (training with time)
+❌ "Schedule Filter" → UI ELEMENT (no time, navigation)
+❌ "North Dakota" → LOCATION LABEL (not a scheduled event)
+❌ "June 2013" → DATE HEADER (not an event)
+❌ "26 27 28" → CALENDAR DATES (not events themselves)
 
 SCHEDULE FORMATS TO RECOGNIZE:
 1. "Grid/Table Format" - Traditional weekly grid with days as columns, times as rows
@@ -185,17 +219,32 @@ SCHEDULE FORMATS TO RECOGNIZE:
 7. "Calendar View Format" - Monthly calendar with events on specific dates
 
 CRITICAL EVENT NAME EXTRACTION:
-- Extract COMPLETE and ACCURATE event/course names exactly as they appear
-- Look for multi-word course titles that may be split across lines
-- Pay attention to course codes with descriptions (e.g., "CS 101: Introduction to Programming")
-- Capture training names, workshop titles, meeting names accurately
-- Don't truncate or abbreviate event names unless they appear that way in the source
-- IGNORE navigation elements, headers, dates, and UI text (like "Schedule Filter", "Site Name", "Go To", etc.)
+- Only extract text that represents ACTUAL SCHEDULED ACTIVITIES
+- Must have associated time information to be considered an event
+- Look for patterns: "Event Name + Time" or "Time + Event Name"
+- Ignore standalone times without event names
+- Ignore event names without times (unless clearly part of a schedule entry)
+- Extract complete event names as they appear, but verify they are real events
+
+TEXT FILTERING - WHAT TO COMPLETELY IGNORE:
+- Any text that appears to be navigation ("Schedule", "Filter", "Go To", "See")
+- Location/site identifiers ("North Dakota", "My Site", "Area")
+- Date headers and month/year labels ("June 2013", "2013")
+- Calendar navigation elements
+- Standalone date numbers (26, 27, 28) unless they have events under them
+- Generic UI text and labels
+
+EVENT VALIDATION CHECKLIST:
+Before including any item as an event, verify:
+1. ✅ Has a descriptive activity name
+2. ✅ Has specific time information  
+3. ✅ Represents something someone would attend
+4. ❌ NOT a UI element, header, or navigation text
+5. ❌ NOT a standalone date or time without context
 
 DUPLICATE DETECTION:
-- Remove duplicate events - if the same course appears multiple times, only include it once
-- Check for slight variations of the same event name and consolidate them
-- Verify each event is actually a scheduled item, not a UI element or header
+- Remove exact duplicates
+- Consolidate similar events if they're clearly the same activity
 
 CRITICAL DAY EXTRACTION RULES:
 - For calendar formats: Look for date numbers (1-31) and match events to those specific dates
@@ -259,7 +308,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Analyze this schedule text and extract structured schedule information with EXACT event names and CORRECT day assignments. Remove duplicates and ignore UI elements. Focus only on actual scheduled events:\n\n${combinedText}`
+            content: `Use advanced reasoning to distinguish between actual scheduled events and UI/navigation text. Only extract items that are clearly scheduled activities with associated times. Here's the text to analyze:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
