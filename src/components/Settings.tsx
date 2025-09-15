@@ -1442,12 +1442,21 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     const dueDate = new Date(task.due_date);
                     const threeDaysFromNow = new Date(today);
                     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-                    // Include tasks due within the next 3 days
-                    return dueDate >= today && dueDate <= threeDaysFromNow;
+                    // Include tasks due within the next 3 days OR overdue tasks
+                    return dueDate <= threeDaysFromNow;
+                  });
+
+                  // Include overdue Canvas assignments
+                  const overdueAssignments = userEvents.filter(event => {
+                    if (event.event_type !== 'assignment' || event.is_completed) return false;
+                    if (!event.start_time) return false;
+                    const dueDate = new Date(event.start_time);
+                    return dueDate < today; // Overdue assignments
                   });
 
                   const eventsToday = userEvents.filter(event => {
                     if (!event.start_time || !event.end_time) return false;
+                    if (event.event_type === 'assignment') return false; // Handle assignments separately
                     const eventStart = new Date(event.start_time);
                     const eventEnd = new Date(event.end_time);
                     return (eventStart >= today && eventStart <= endOfToday) || 
@@ -1478,6 +1487,11 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     // Distribute hours across work days, with more time closer to due date
                     const dailyHours = estimatedHours / workDays;
                     totalScheduledHours += dailyHours;
+                  });
+
+                  // Add overdue assignment workload (prioritize these - assume 1.5 hours each for today)
+                  overdueAssignments.forEach(assignment => {
+                    totalScheduledHours += 1.5; // Urgent work needed today
                   });
 
                   return totalScheduledHours.toFixed(1);

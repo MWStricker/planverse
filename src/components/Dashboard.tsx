@@ -386,13 +386,21 @@ export const Dashboard = () => {
         }
       });
 
-      // Add distributed task time (spread work across days leading up to due date)
+      // Add distributed task time and overdue assignments
       const upcomingTasks = userTasks.filter(task => {
         if (!task.due_date || task.completion_status === 'completed') return false;
         const dueDate = new Date(task.due_date);
         const threeDaysFromNow = new Date(today);
         threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-        return dueDate >= today && dueDate <= threeDaysFromNow;
+        return dueDate <= threeDaysFromNow; // Include overdue and upcoming
+      });
+
+      // Include overdue Canvas assignments
+      const overdueAssignments = userEvents.filter(event => {
+        if (event.event_type !== 'assignment' || event.is_completed) return false;
+        if (!event.start_time) return false;
+        const dueDate = new Date(event.start_time);
+        return dueDate < today; // Overdue assignments
       });
 
       upcomingTasks.forEach(task => {
@@ -404,6 +412,11 @@ export const Dashboard = () => {
         // Distribute hours across work days
         const dailyHours = estimatedHours / workDays;
         totalScheduledHours += dailyHours;
+      });
+
+      // Add overdue assignment workload (prioritize these)
+      overdueAssignments.forEach(assignment => {
+        totalScheduledHours += 1.5; // Urgent work needed today
       });
 
       const freeHours = Math.max(0, availableHours - totalScheduledHours);
