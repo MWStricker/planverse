@@ -328,6 +328,11 @@ export const Dashboard = () => {
   const filteredData = useMemo(() => {
     // Calculate actual free time based on scheduled events/tasks today
     const calculateFreeTimeToday = () => {
+      // Return default if preferences not loaded yet
+      if (!preferences) {
+        return "Loading...";
+      }
+
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const endOfToday = new Date(today);
@@ -420,7 +425,7 @@ export const Dashboard = () => {
     const dueThisWeek = eventsThisWeek.length + tasksThisWeek.length || "N/A";
     
     return { freeTimeToday, eventsThisWeek, tasksThisWeek, dueThisWeek };
-  }, [userEvents, userTasks]);
+  }, [userEvents, userTasks, preferences]);
   
   // Combine all items due this week for the popup
   const allDueThisWeek = useMemo(() => [
