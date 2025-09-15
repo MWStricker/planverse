@@ -1230,13 +1230,13 @@ const Calendar = () => {
         description: "All tasks, events, and study sessions have been deleted",
       });
 
-      // Force refresh all data to ensure everything is synced
-      await fetchData();
-      
-      // Emit custom events to notify other components to refresh
-      window.dispatchEvent(new CustomEvent('tasksCleared'));
-      window.dispatchEvent(new CustomEvent('eventsCleared'));
-      window.dispatchEvent(new CustomEvent('dataRefresh'));
+      // Use setTimeout to ensure state updates complete before notifying other components
+      setTimeout(() => {
+        // Emit custom events to notify other components to refresh
+        window.dispatchEvent(new CustomEvent('tasksCleared'));
+        window.dispatchEvent(new CustomEvent('eventsCleared'));
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+      }, 100);
       
     } catch (error) {
       console.error('Error deleting all data:', error);
