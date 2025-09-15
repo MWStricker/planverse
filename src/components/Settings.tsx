@@ -1436,11 +1436,14 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   const endOfToday = new Date(today);
                   endOfToday.setHours(23, 59, 59, 999);
 
-                  // Calculate scheduled assignment time for today
-                  const tasksToday = userTasks.filter(task => {
+                  // Calculate distributed assignment time for today
+                  const upcomingTasks = userTasks.filter(task => {
                     if (!task.due_date || task.completion_status === 'completed') return false;
                     const dueDate = new Date(task.due_date);
-                    return dueDate >= today && dueDate <= endOfToday;
+                    const threeDaysFromNow = new Date(today);
+                    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+                    // Include tasks due within the next 3 days
+                    return dueDate >= today && dueDate <= threeDaysFromNow;
                   });
 
                   const eventsToday = userEvents.filter(event => {
@@ -1465,16 +1468,22 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     }
                   });
 
-                  // Add estimated task time
-                  tasksToday.forEach(task => {
-                    const estimatedHours = task.estimated_hours || 1;
-                    totalScheduledHours += estimatedHours;
+                  // Distribute task time across available days
+                  upcomingTasks.forEach(task => {
+                    const estimatedHours = task.estimated_hours || 2; // Default to 2 hours for assignments
+                    const dueDate = new Date(task.due_date);
+                    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    const workDays = Math.max(1, daysUntilDue); // At least 1 day
+                    
+                    // Distribute hours across work days, with more time closer to due date
+                    const dailyHours = estimatedHours / workDays;
+                    totalScheduledHours += dailyHours;
                   });
 
                   return totalScheduledHours.toFixed(1);
                 })()}h
               </div>
-              <div className="text-sm text-muted-foreground">Today's Assignments</div>
+              <div className="text-sm text-muted-foreground">Today's Work Load</div>
             </div>
             
             <div className="bg-background border rounded-lg p-4">
@@ -1489,16 +1498,18 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     awakeHours = (24 - wakeHour + bedHour) + (bedMin - wakeMin) / 60;
                   }
 
-                  // Calculate assignment time for today
+                  // Calculate distributed assignment time for today
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const endOfToday = new Date(today);
                   endOfToday.setHours(23, 59, 59, 999);
 
-                  const tasksToday = userTasks.filter(task => {
+                  const upcomingTasks = userTasks.filter(task => {
                     if (!task.due_date || task.completion_status === 'completed') return false;
                     const dueDate = new Date(task.due_date);
-                    return dueDate >= today && dueDate <= endOfToday;
+                    const threeDaysFromNow = new Date(today);
+                    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+                    return dueDate >= today && dueDate <= threeDaysFromNow;
                   });
 
                   const eventsToday = userEvents.filter(event => {
@@ -1522,9 +1533,15 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     }
                   });
 
-                  tasksToday.forEach(task => {
-                    const estimatedHours = task.estimated_hours || 1;
-                    totalScheduledHours += estimatedHours;
+                  // Distribute task time across available days
+                  upcomingTasks.forEach(task => {
+                    const estimatedHours = task.estimated_hours || 2;
+                    const dueDate = new Date(task.due_date);
+                    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    const workDays = Math.max(1, daysUntilDue);
+                    
+                    const dailyHours = estimatedHours / workDays;
+                    totalScheduledHours += dailyHours;
                   });
 
                   const available = Math.max(0, awakeHours - 6 - totalScheduledHours);

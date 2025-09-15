@@ -386,10 +386,24 @@ export const Dashboard = () => {
         }
       });
 
-      // Add estimated task time (use estimated_hours or default to 1 hour per task)
-      tasksToday.forEach(task => {
-        const estimatedHours = task.estimated_hours || 1;
-        totalScheduledHours += estimatedHours;
+      // Add distributed task time (spread work across days leading up to due date)
+      const upcomingTasks = userTasks.filter(task => {
+        if (!task.due_date || task.completion_status === 'completed') return false;
+        const dueDate = new Date(task.due_date);
+        const threeDaysFromNow = new Date(today);
+        threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+        return dueDate >= today && dueDate <= threeDaysFromNow;
+      });
+
+      upcomingTasks.forEach(task => {
+        const estimatedHours = task.estimated_hours || 2; // Default to 2 hours for assignments
+        const dueDate = new Date(task.due_date);
+        const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const workDays = Math.max(1, daysUntilDue); // At least 1 day
+        
+        // Distribute hours across work days
+        const dailyHours = estimatedHours / workDays;
+        totalScheduledHours += dailyHours;
       });
 
       const freeHours = Math.max(0, availableHours - totalScheduledHours);
