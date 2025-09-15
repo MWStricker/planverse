@@ -324,7 +324,58 @@ export const Dashboard = () => {
 
   // Memoized filtered data for performance
   const filteredData = useMemo(() => {
-    const freeTimeToday = userEvents.length > 0 ? "4.5 hrs" : "N/A";
+    // Calculate actual free time based on scheduled events/tasks today
+    const calculateFreeTimeToday = () => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfToday = new Date(today);
+      endOfToday.setHours(23, 59, 59, 999);
+
+      // Define working hours (8 AM to 10 PM = 14 hours)
+      const totalAvailableHours = 14;
+
+      // Get events and tasks scheduled for today
+      const eventsToday = userEvents.filter(event => {
+        if (!event.start_time || !event.end_time) return false;
+        const eventStart = new Date(event.start_time);
+        const eventEnd = new Date(event.end_time);
+        return (eventStart >= today && eventStart <= endOfToday) || 
+               (eventEnd >= today && eventEnd <= endOfToday);
+      });
+
+      const tasksToday = userTasks.filter(task => {
+        if (!task.due_date || task.completion_status === 'completed') return false;
+        const dueDate = new Date(task.due_date);
+        return dueDate >= today && dueDate <= endOfToday;
+      });
+
+      // Calculate total scheduled time
+      let totalScheduledHours = 0;
+
+      // Add event durations
+      eventsToday.forEach(event => {
+        if (event.start_time && event.end_time) {
+          const start = new Date(event.start_time);
+          const end = new Date(event.end_time);
+          const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // in hours
+          totalScheduledHours += duration;
+        } else {
+          // Default to 1 hour for events without specific duration
+          totalScheduledHours += 1;
+        }
+      });
+
+      // Add estimated task time (use estimated_hours or default to 1 hour per task)
+      tasksToday.forEach(task => {
+        const estimatedHours = task.estimated_hours || 1;
+        totalScheduledHours += estimatedHours;
+      });
+
+      const freeHours = Math.max(0, totalAvailableHours - totalScheduledHours);
+      return freeHours.toFixed(1) + " hrs";
+    };
+
+    const freeTimeToday = calculateFreeTimeToday();
     
     const now = new Date();
     const currentDay = now.getDay();
