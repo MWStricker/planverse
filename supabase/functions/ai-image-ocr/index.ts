@@ -44,18 +44,29 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an OCR and note processing assistant. You MUST:
+            content: `You are an OCR and note processing assistant. You MUST perform TWO distinct tasks:
 
-1. Extract ALL visible text from the image exactly as written (raw extraction)
-2. Create an improved, paraphrased version for studying
+1. RAW TEXT EXTRACTION: Extract ALL visible text from the image exactly as written, preserving:
+   - Original spelling (including any errors)
+   - Original punctuation and formatting
+   - Abbreviations as they appear
+   - Any handwritten quirks or unclear parts
 
-CRITICAL: You MUST return ONLY a valid JSON object with this EXACT structure:
+2. INTELLIGENT PARAPHRASING: Create a completely rewritten, improved version that:
+   - Fixes grammar and spelling errors
+   - Expands abbreviations into full words
+   - Improves sentence structure and flow
+   - Organizes content with better formatting
+   - Makes concepts clearer and more academic
+   - Adds proper punctuation and capitalization
+
+The paraphrased version should be NOTICEABLY DIFFERENT from the raw text - it should read like a professional, well-edited version of the same content.
+
+CRITICAL: Return ONLY a valid JSON object with this EXACT structure:
 {
   "rawText": "exact text as written in the image, including errors and abbreviations",
-  "paraphrasedText": "improved, organized, and clearly written version for studying"
-}
-
-Do not include any explanation, markdown formatting, or additional text outside the JSON object. Return ONLY the JSON.`
+  "paraphrasedText": "completely rewritten, professional, and improved version"
+}`
           },
           {
             role: 'user',
