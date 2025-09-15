@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -717,15 +717,24 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               </SelectContent>
             </Select>
           </div>
-          
-          <Separator />
-          
+        </CardContent>
+      </Card>
+
+      {/* Sleep Schedule */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Sleep Schedule
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
           <div className="space-y-3">
             <div>
-              <h4 className="font-medium text-foreground">Sleep Schedule</h4>
-              <p className="text-sm text-muted-foreground">Set your wake-up and bedtime for accurate free time calculations</p>
+              <h4 className="font-medium text-foreground">Daily Schedule</h4>
+              <p className="text-sm text-muted-foreground">Set your wake-up and bedtime for accurate free time calculations on your dashboard</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="wakeup-time">Wake-up Time</Label>
                 <Input
@@ -733,6 +742,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   type="time"
                   value={preferences.wakeUpTime}
                   onChange={(e) => updatePreference('wakeUpTime', e.target.value)}
+                  className="text-center"
                 />
               </div>
               <div className="space-y-2">
@@ -742,9 +752,21 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   type="time"
                   value={preferences.bedTime}
                   onChange={(e) => updatePreference('bedTime', e.target.value)}
+                  className="text-center"
                 />
               </div>
             </div>
+          </div>
+          
+          <Separator />
+          
+          <div className="text-sm text-muted-foreground">
+            <h5 className="font-medium text-foreground mb-2">How this affects your dashboard:</h5>
+            <ul className="space-y-1 list-disc list-inside">
+              <li>Free time calculation is based on your actual awake hours</li>
+              <li>Accounts for 3 hours of daily essentials (meals, personal care, commuting)</li>
+              <li>Shows realistic available time after scheduled tasks and events</li>
+            </ul>
           </div>
         </CardContent>
       </Card>
