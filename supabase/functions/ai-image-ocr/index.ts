@@ -91,8 +91,20 @@ Do not include any explanation, markdown formatting, or additional text outside 
     console.log('Raw AI response:', responseContent);
     
     try {
-      // Try to parse as JSON first
-      const parsedResponse = JSON.parse(responseContent);
+      // Clean the response by removing markdown code blocks if present
+      let cleanedResponse = responseContent;
+      
+      // Remove ```json and ``` markers if present
+      if (cleanedResponse.includes('```json')) {
+        cleanedResponse = cleanedResponse.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim();
+      } else if (cleanedResponse.includes('```')) {
+        cleanedResponse = cleanedResponse.replace(/```\s*/g, '').trim();
+      }
+      
+      console.log('Cleaned response for parsing:', cleanedResponse);
+      
+      // Try to parse as JSON
+      const parsedResponse = JSON.parse(cleanedResponse);
       console.log('Parsed JSON response:', parsedResponse);
       
       if (parsedResponse.rawText && parsedResponse.paraphrasedText) {
@@ -104,7 +116,8 @@ Do not include any explanation, markdown formatting, or additional text outside 
         });
       }
     } catch (parseError) {
-      console.warn('Failed to parse JSON response, treating as paraphrased text only');
+      console.warn('Failed to parse JSON response:', parseError);
+      console.warn('Raw response was:', responseContent);
     }
 
     // Fallback: if we can't parse JSON, return the response as paraphrased text
