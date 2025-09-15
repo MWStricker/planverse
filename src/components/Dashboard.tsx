@@ -210,12 +210,16 @@ export const Dashboard = () => {
     
     const completedEventsToday = userEvents.filter(event => {
       if (event.event_type !== 'assignment' || !event.is_completed) return false;
+      
+      // For Canvas assignments, check if they're due today (not when they were completed)
       const eventDate = new Date(event.start_time || event.end_time);
-      return (
+      const isToday = (
         eventDate.getDate() === today.getDate() &&
         eventDate.getMonth() === today.getMonth() &&
         eventDate.getFullYear() === today.getFullYear()
       );
+      
+      return isToday;
     }).length;
     
     const completedTasks = completedTasksToday + completedEventsToday;
@@ -371,12 +375,16 @@ export const Dashboard = () => {
 
     const completedAssignmentsToday = userEvents.filter(event => {
       if (event.event_type !== 'assignment' || !event.is_completed) return false;
+      
+      // For Canvas assignments, check if they're due today (not when they were completed)
       const eventDate = new Date(event.start_time || event.end_time);
-      return (
+      const isToday = (
         eventDate.getDate() === today.getDate() &&
         eventDate.getMonth() === today.getMonth() &&
         eventDate.getFullYear() === today.getFullYear()
       );
+      
+      return isToday;
     });
     
     return { completedTasksToday, completedAssignmentsToday };
@@ -595,6 +603,9 @@ export const Dashboard = () => {
     window.addEventListener('tasksCleared', handleDataRefresh);
     window.addEventListener('eventsCleared', handleDataRefresh);
     window.addEventListener('taskCompleted', handleDataRefresh);
+    
+    // Force an immediate refresh to recalculate with the fixed logic
+    handleDataRefresh();
 
     return () => {
       window.removeEventListener('dataRefresh', handleDataRefresh);
