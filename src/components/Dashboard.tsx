@@ -352,7 +352,7 @@ export const Dashboard = () => {
         awakeHours = (24 - wakeHour + bedHour) + (bedMin - wakeMin) / 60;
       }
       
-      const essentialActivities = 3; // Meals, personal care, commuting, etc.
+      const essentialActivities = 6; // Meals, personal care, commuting, hygiene, etc.
       const availableHours = Math.max(0, awakeHours - essentialActivities);
 
       // Get events and tasks scheduled for today

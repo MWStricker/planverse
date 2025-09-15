@@ -1358,7 +1358,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Accounts for 3 hours of daily essentials (meals, personal care, commuting)</span>
+                <span>Accounts for 6 hours of daily essentials (meals, personal care, commuting, hygiene, etc.)</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -1390,7 +1390,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
             </div>
             
             <div className="bg-background border rounded-lg p-4">
-              <div className="text-2xl font-bold text-green-600">3h</div>
+              <div className="text-2xl font-bold text-green-600">6h</div>
               <div className="text-sm text-muted-foreground">Daily Essentials</div>
             </div>
             
@@ -1405,7 +1405,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   } else {
                     awakeHours = (24 - wakeHour + bedHour) + (bedMin - wakeMin) / 60;
                   }
-                  const available = Math.max(0, awakeHours - 3);
+                  const available = Math.max(0, awakeHours - 6);
                   return available.toFixed(1);
                 })()}h
               </div>
