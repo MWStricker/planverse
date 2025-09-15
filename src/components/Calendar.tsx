@@ -1225,9 +1225,11 @@ const Calendar = () => {
         description: "All data has been permanently deleted",
       });
 
-      // Force a complete page refresh to ensure all components are reset
+      // Wait a moment for database to process, then dispatch refresh events
       setTimeout(() => {
-        window.location.reload();
+        window.dispatchEvent(new CustomEvent('tasksCleared'));
+        window.dispatchEvent(new CustomEvent('eventsCleared'));
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
       }, 500);
       
     } catch (error) {

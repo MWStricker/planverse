@@ -183,6 +183,8 @@ export const CanvasIntegration = () => {
         
         // Trigger Canvas feed sync immediately
         setIsSyncing(true);
+        console.log('Starting Canvas sync process...');
+        
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-canvas-feed', {
             body: { connection_id: data.id }
@@ -196,7 +198,7 @@ export const CanvasIntegration = () => {
               variant: "destructive",
             });
           } else {
-            console.log('Sync result:', syncData);
+            console.log('Canvas sync completed successfully:', syncData);
             
             toast({
               title: "Canvas Sync Complete",
@@ -204,20 +206,24 @@ export const CanvasIntegration = () => {
             });
             
             // Wait a moment for database to process, then dispatch refresh events
+            console.log('Dispatching refresh events...');
             setTimeout(() => {
+              console.log('Sending dataRefresh, eventsCleared, tasksCleared events');
               window.dispatchEvent(new CustomEvent('dataRefresh'));
               window.dispatchEvent(new CustomEvent('eventsCleared'));
               window.dispatchEvent(new CustomEvent('tasksCleared'));
+              console.log('Refresh events dispatched');
             }, 500);
           }
         } catch (syncError) {
-          console.error('Sync error:', syncError);
+          console.error('Canvas sync failed with exception:', syncError);
           toast({
             title: "Sync Warning", 
             description: "Calendar feed added but sync failed. Try clicking sync manually.",
             variant: "destructive",
           });
         } finally {
+          console.log('Canvas sync process finished, setting isSyncing to false');
           setIsSyncing(false);
         }
       }
