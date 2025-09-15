@@ -68,14 +68,22 @@ serve(async (req) => {
               content: imageData.split(',')[1] // Remove data:image/... prefix
             },
             features: [
-              { type: 'TEXT_DETECTION', maxResults: 10 },
-              { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 10 },
-              { type: 'OBJECT_LOCALIZATION', maxResults: 50 }
+              { 
+                type: 'TEXT_DETECTION', 
+                maxResults: 50,
+                model: 'builtin/latest'
+              },
+              { 
+                type: 'DOCUMENT_TEXT_DETECTION', 
+                maxResults: 50,
+                model: 'builtin/latest'
+              }
             ],
             imageContext: {
               languageHints: ['en'],
               textDetectionParams: {
-                enableTextDetectionConfidenceScore: true
+                enableTextDetectionConfidenceScore: true,
+                advancedOcrOptions: ['LEGACY_LAYOUT']
               }
             }
           }]
@@ -96,7 +104,7 @@ serve(async (req) => {
     }
 
     const visionData = await visionResponse.json();
-    console.log('Vision API response received');
+    console.log('Vision API full response:', JSON.stringify(visionData, null, 2));
 
     if (!visionData.responses || !visionData.responses[0]) {
       return new Response(
@@ -113,10 +121,20 @@ serve(async (req) => {
 
     // Also get individual text annotations for better parsing
     const textAnnotations = visionData.responses[0].textAnnotations || [];
+    console.log('Text annotations count:', textAnnotations.length);
+    
+    // Log first few annotations for debugging
+    textAnnotations.slice(0, 10).forEach((annotation, index) => {
+      console.log(`Annotation ${index}:`, annotation.description, 'Confidence:', annotation.score);
+    });
+    
     const allDetectedTexts = textAnnotations.map(annotation => annotation.description).join(' ');
     
     // Combine both for comprehensive text extraction
     const combinedText = `${detectedText}\n\nAdditional detected text elements:\n${allDetectedTexts}`;
+
+    console.log('Main detected text:', detectedText);
+    console.log('All detected texts:', allDetectedTexts);
 
     if (!detectedText.trim() && !allDetectedTexts.trim()) {
       return new Response(
@@ -263,6 +281,8 @@ Return ONLY valid JSON with this exact structure:
 
     const openaiData = await openaiResponse.json();
     const analysisContent = openaiData.choices[0].message.content;
+    
+    console.log('OpenAI analysis response:', analysisContent);
 
     let scheduleAnalysis: ScheduleAnalysis;
     try {
@@ -275,6 +295,7 @@ Return ONLY valid JSON with this exact structure:
       }
       
       scheduleAnalysis = JSON.parse(jsonContent);
+      console.log('Parsed schedule analysis:', scheduleAnalysis);
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
       console.error('Raw response:', analysisContent);
