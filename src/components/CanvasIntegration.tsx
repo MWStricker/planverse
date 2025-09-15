@@ -181,7 +181,8 @@ export const CanvasIntegration = () => {
         // Refresh calendar connections
         fetchCalendarConnections();
         
-        // Trigger Canvas feed sync
+        // Trigger Canvas feed sync immediately
+        setIsSyncing(true);
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-canvas-feed', {
             body: { connection_id: data.id }
@@ -191,26 +192,35 @@ export const CanvasIntegration = () => {
             console.error('Sync error:', syncError);
             toast({
               title: "Sync Warning",
-              description: "Calendar feed added but sync failed. Events may not appear immediately.",
+              description: "Calendar feed added but sync failed. Try clicking sync manually.",
               variant: "destructive",
             });
           } else {
             console.log('Sync result:', syncData);
+            
+            // Wait a moment for database to process, then dispatch multiple refresh events
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('dataRefresh'));
+              window.dispatchEvent(new CustomEvent('eventsCleared'));
+              window.dispatchEvent(new CustomEvent('tasksCleared'));
+              // Force a page refresh for immediate visual feedback
+              window.location.reload();
+            }, 1000);
+            
             toast({
               title: "Canvas Sync Complete",
               description: "Your Canvas assignments and events have been imported successfully!",
             });
-            
-            // Dispatch refresh event to update calendar
-            window.dispatchEvent(new CustomEvent('dataRefresh'));
           }
         } catch (syncError) {
           console.error('Sync error:', syncError);
           toast({
             title: "Sync Warning", 
-            description: "Calendar feed added but sync failed. Events may not appear immediately.",
+            description: "Calendar feed added but sync failed. Try clicking sync manually.",
             variant: "destructive",
           });
+        } finally {
+          setIsSyncing(false);
         }
       }
     } catch (error) {
@@ -424,8 +434,15 @@ export const CanvasIntegration = () => {
         description: "Your Canvas calendar has been synced successfully!",
       });
 
-      // Dispatch refresh event to update calendar
-      window.dispatchEvent(new CustomEvent('dataRefresh'));
+      // Wait for database to process, then refresh the UI
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        window.dispatchEvent(new CustomEvent('eventsCleared'));
+        window.dispatchEvent(new CustomEvent('tasksCleared'));
+        // Refresh the page to ensure all components show the new data
+        window.location.reload();
+      }, 1000);
+      
     } catch (error) {
       console.error('Error syncing Canvas feed:', error);
       toast({
