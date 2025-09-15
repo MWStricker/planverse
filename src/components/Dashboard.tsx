@@ -224,12 +224,24 @@ export const Dashboard = () => {
     
     const completedTasks = completedTasksToday + completedEventsToday;
     
-    console.log('Task metrics calculation:', {
+    console.log('DETAILED Task metrics calculation:', {
       completedTasksToday,
       completedEventsToday,
       totalCompleted: completedTasks,
       totalEvents: userEvents.length,
-      eventsWithCompleted: userEvents.filter(e => e.is_completed).length
+      eventsWithCompleted: userEvents.filter(e => e.is_completed).length,
+      assignmentEvents: userEvents.filter(e => e.event_type === 'assignment').length,
+      completedAssignmentEvents: userEvents.filter(e => e.event_type === 'assignment' && e.is_completed).length,
+      todayDate: today.toISOString(),
+      sampleEvents: userEvents.filter(e => e.event_type === 'assignment').slice(0, 3).map(e => ({
+        id: e.id,
+        title: e.title,
+        event_type: e.event_type,
+        is_completed: e.is_completed,
+        start_time: e.start_time,
+        end_time: e.end_time,
+        eventDate: new Date(e.start_time || e.end_time).toISOString()
+      }))
     });
     
     return { completedTasks, today, endOfToday, startOfWeek, endOfWeek };
