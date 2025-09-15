@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +91,39 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   });
   const { signOut, user } = useAuth();
   const { toast } = useToast();
+
+  // Fetch tasks and events for calculating assignment time
+  const { data: userTasks = [] } = useQuery({
+    queryKey: ['tasks', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: userEvents = [] } = useQuery({
+    queryKey: ['events', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_time', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
   const { preferences, updatePreference } = usePreferences();
   const { profile, loading: profileLoading, uploading, updateProfile, uploadAvatar } = useProfile();
   const { updateLiveProfile } = useProfileEditing();
@@ -1395,6 +1429,55 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
             </div>
             
             <div className="bg-background border rounded-lg p-4">
+              <div className="text-2xl font-bold text-orange-600">
+                {(() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const endOfToday = new Date(today);
+                  endOfToday.setHours(23, 59, 59, 999);
+
+                  // Calculate scheduled assignment time for today
+                  const tasksToday = userTasks.filter(task => {
+                    if (!task.due_date || task.completion_status === 'completed') return false;
+                    const dueDate = new Date(task.due_date);
+                    return dueDate >= today && dueDate <= endOfToday;
+                  });
+
+                  const eventsToday = userEvents.filter(event => {
+                    if (!event.start_time || !event.end_time) return false;
+                    const eventStart = new Date(event.start_time);
+                    const eventEnd = new Date(event.end_time);
+                    return (eventStart >= today && eventStart <= endOfToday) || 
+                           (eventEnd >= today && eventEnd <= endOfToday);
+                  });
+
+                  let totalScheduledHours = 0;
+                  
+                  // Add event durations
+                  eventsToday.forEach(event => {
+                    if (event.start_time && event.end_time) {
+                      const start = new Date(event.start_time);
+                      const end = new Date(event.end_time);
+                      const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                      totalScheduledHours += duration;
+                    } else {
+                      totalScheduledHours += 1;
+                    }
+                  });
+
+                  // Add estimated task time
+                  tasksToday.forEach(task => {
+                    const estimatedHours = task.estimated_hours || 1;
+                    totalScheduledHours += estimatedHours;
+                  });
+
+                  return totalScheduledHours.toFixed(1);
+                })()}h
+              </div>
+              <div className="text-sm text-muted-foreground">Today's Assignments</div>
+            </div>
+            
+            <div className="bg-background border rounded-lg p-4">
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
                   const [wakeHour, wakeMin] = preferences.wakeUpTime.split(':').map(Number);
@@ -1405,11 +1488,50 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   } else {
                     awakeHours = (24 - wakeHour + bedHour) + (bedMin - wakeMin) / 60;
                   }
-                  const available = Math.max(0, awakeHours - 6);
+
+                  // Calculate assignment time for today
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const endOfToday = new Date(today);
+                  endOfToday.setHours(23, 59, 59, 999);
+
+                  const tasksToday = userTasks.filter(task => {
+                    if (!task.due_date || task.completion_status === 'completed') return false;
+                    const dueDate = new Date(task.due_date);
+                    return dueDate >= today && dueDate <= endOfToday;
+                  });
+
+                  const eventsToday = userEvents.filter(event => {
+                    if (!event.start_time || !event.end_time) return false;
+                    const eventStart = new Date(event.start_time);
+                    const eventEnd = new Date(event.end_time);
+                    return (eventStart >= today && eventStart <= endOfToday) || 
+                           (eventEnd >= today && eventEnd <= endOfToday);
+                  });
+
+                  let totalScheduledHours = 0;
+                  
+                  eventsToday.forEach(event => {
+                    if (event.start_time && event.end_time) {
+                      const start = new Date(event.start_time);
+                      const end = new Date(event.end_time);
+                      const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                      totalScheduledHours += duration;
+                    } else {
+                      totalScheduledHours += 1;
+                    }
+                  });
+
+                  tasksToday.forEach(task => {
+                    const estimatedHours = task.estimated_hours || 1;
+                    totalScheduledHours += estimatedHours;
+                  });
+
+                  const available = Math.max(0, awakeHours - 6 - totalScheduledHours);
                   return available.toFixed(1);
                 })()}h
               </div>
-              <div className="text-sm text-muted-foreground">Available Hours</div>
+              <div className="text-sm text-muted-foreground">Free Time Today</div>
             </div>
           </div>
         </CardContent>
