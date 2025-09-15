@@ -167,11 +167,17 @@ SCHEDULE FORMATS TO RECOGNIZE:
 7. "Calendar View Format" - Monthly calendar with events on specific dates
 
 CRITICAL EVENT NAME EXTRACTION:
-- Extract COMPLETE and ACCURATE event/course names (e.g., "Advanced Programming", "Organic Chemistry Lab")
+- Extract COMPLETE and ACCURATE event/course names exactly as they appear
 - Look for multi-word course titles that may be split across lines
 - Pay attention to course codes with descriptions (e.g., "CS 101: Introduction to Programming")
 - Capture training names, workshop titles, meeting names accurately
 - Don't truncate or abbreviate event names unless they appear that way in the source
+- IGNORE navigation elements, headers, dates, and UI text (like "Schedule Filter", "Site Name", "Go To", etc.)
+
+DUPLICATE DETECTION:
+- Remove duplicate events - if the same course appears multiple times, only include it once
+- Check for slight variations of the same event name and consolidate them
+- Verify each event is actually a scheduled item, not a UI element or header
 
 CRITICAL DAY EXTRACTION RULES:
 - For calendar formats: Look for date numbers (1-31) and match events to those specific dates
@@ -181,8 +187,14 @@ CRITICAL DAY EXTRACTION RULES:
 - DO NOT default all events to Monday - carefully analyze spatial relationships
 - If text shows "27 28 29 30 31" with events below specific numbers, map those to correct days
 
+WHAT TO IGNORE:
+- Navigation buttons ("Go To", "See Schedule")
+- Date headers and calendar navigation
+- Site names and filter options
+- Page numbers or timestamps
+- Any text that's clearly not an event/course name
+
 TIME AND DATE PARSING:
-- Extract course codes, names, and numbers (e.g., "CS101", "Math 205", "HIST-1010")
 - Extract time ranges (e.g., "8:00 AM - 11:00 AM", "2:00 PM - 3:15 PM")
 - Convert all times to 24-hour format (8:00 AM = 08:00, 3:00 PM = 15:00)
 - Find locations/rooms when available
@@ -196,9 +208,9 @@ SPATIAL ANALYSIS FOR CALENDAR FORMATS:
 - Calculate day of week based on calendar layout if possible
 
 CONFIDENCE SCORING:
-- High (0.8-1.0): Clear day-event associations, well-structured schedule
-- Medium (0.5-0.79): Most elements clear, some day ambiguity resolved
-- Low (0.0-0.49): Poor day-event mapping or unclear schedule
+- High (0.8-1.0): Clear day-event associations, accurate event names, no duplicates
+- Medium (0.5-0.79): Most elements clear, minimal duplicates or ambiguity resolved
+- Low (0.0-0.49): Poor day-event mapping, unclear event names, or multiple duplicates
 
 EXAMPLE ANALYSIS:
 If text shows:
@@ -229,7 +241,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Analyze this schedule text and extract structured schedule information with ACCURATE event names and CORRECT day assignments. The text may contain multiple detection passes - use all available information to get complete event names:\n\n${combinedText}`
+            content: `Analyze this schedule text and extract structured schedule information with EXACT event names and CORRECT day assignments. Remove duplicates and ignore UI elements. Focus only on actual scheduled events:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
