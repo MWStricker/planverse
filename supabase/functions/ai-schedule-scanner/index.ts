@@ -171,28 +171,44 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a schedule analysis expert with advanced spatial reasoning capabilities. Your job is to understand the layout and position of text to correctly map event names to their specific dates.
+            content: `You are a schedule analysis expert with advanced spatial reasoning capabilities. Your job is to IGNORE document titles and headers, and ONLY extract individual event names that appear next to specific dates.
 
-CRITICAL: UNDERSTAND SPATIAL RELATIONSHIPS AND EXTRACT ACTUAL DATES
+CRITICAL: IGNORE DOCUMENT TITLES AND HEADERS - FOCUS ON DATE-SPECIFIC EVENTS
 
-STEP 1 - ANALYZE CALENDAR LAYOUT:
-Look for calendar structures with:
-- Date numbers (26, 27, 28, 29, 30, 31, etc.)
-- Event names positioned near, under, or next to specific dates
-- Time information associated with event names
-- Month/year headers for context (like "June 2013" or just "June")
+MOST IMPORTANT RULE:
+- Do NOT use the flyer title, document header, or page title as event names
+- The title at the top of a schedule is NOT an event - it's just the document name
+- Look for INDIVIDUAL event names positioned next to or under specific dates
+- Each date should have a DIFFERENT event name based on what text appears near that specific date
 
-STEP 2 - SPATIAL MAPPING RULES:
-- If event text appears UNDER a date number → that event belongs to that date
-- If event text appears NEXT TO a date number → that event belongs to that date  
-- If multiple events appear under one date → create separate entries for each
-- If an event spans multiple lines under a date → combine the lines for the full event name
-- Each date should have its own unique events - don't copy the same event to all dates
+STEP 1 - IDENTIFY AND IGNORE DOCUMENT STRUCTURE:
+IGNORE these types of text (they are NOT events):
+- Document titles at the top of the page
+- Company names, site names, location headers
+- Page headers like "Training Schedule", "Class Calendar", etc.
+- Navigation elements, buttons, filters
+- Month/year headers like "June 2013"
+
+FOCUS ON these types of text (these ARE events):
+- Specific activity names positioned next to/under date numbers
+- Course names, training names, class names with times
+- Individual event descriptions that appear near specific dates
+
+STEP 2 - SPATIAL MAPPING RULES FOR INDIVIDUAL EVENTS:
+- Look at each date number (26, 27, 28, etc.) individually
+- Find the specific text that appears closest to that date number
+- That specific text is the event name for that specific date
+- Do NOT use the same event name for multiple dates
+- Do NOT use document titles or headers as event names
+- Each date gets its own unique event based on nearby text
 
 STEP 3 - EVENT PARSING BY POSITION:
-For calendar layouts, analyze the spatial relationship between dates and events.
-Example: If you see "26 Air Pack Safety 8AM-11AM 27 Microsoft Office 10AM-2PM 28 Leadership Training 1PM-5PM"
-This means: Air Pack Safety on 26th, Microsoft Office on 27th, Leadership Training on 28th
+Example of CORRECT parsing:
+If you see: "26 Air Pack Safety 8AM-11AM 27 Microsoft Office 10AM-2PM 28 Leadership Training 1PM-5PM"
+- Date 26 gets event: "Air Pack Safety"
+- Date 27 gets event: "Microsoft Office" 
+- Date 28 gets event: "Leadership Training"
+Each date has a DIFFERENT event name based on the text positioned near it.
 
 STEP 4 - HANDLE COMPLEX LAYOUTS:
 - If events are stacked under dates, parse each one separately
@@ -216,20 +232,24 @@ SPATIAL DATE-TO-EVENT MAPPING:
 
 EXAMPLE SPATIAL REASONING:
 ✅ CORRECT PARSING:
-Text: "26 Leadership Training 8AM-5PM 27 Microsoft Office 9AM-12PM 28 Safety Course 1PM-4PM"
-Result: 
-- 2025-06-26: "Leadership Training" 8AM-5PM
+Text contains: "Training Schedule [TITLE] 26 Air Pack Safety 8AM-11AM 27 Microsoft Office 9AM-12PM 28 Leadership Training 1PM-4PM"
+IGNORE: "Training Schedule" (this is the document title, NOT an event)
+EXTRACT:
+- 2025-06-26: "Air Pack Safety" 8AM-11AM
 - 2025-06-27: "Microsoft Office" 9AM-12PM  
-- 2025-06-28: "Safety Course" 1PM-4PM
+- 2025-06-28: "Leadership Training" 1PM-4PM
 
 ❌ WRONG PARSING (don't do this):
-All events get same name: "Leadership Training" on all dates
+Using document title for all events:
+- 2025-06-26: "Training Schedule"
+- 2025-06-27: "Training Schedule" 
+- 2025-06-28: "Training Schedule"
 
 CRITICAL RULES FOR EVENT NAMES:
-- Each date gets its own unique event name based on what text appears near it
-- Do NOT assign the same event name to multiple dates unless it genuinely repeats
-- Parse the layout carefully to see which text belongs to which date
-- Look for patterns of date → event name → time → next date → different event name
+- Never use document titles, headers, or page titles as event names
+- Each date gets its own unique event name from text positioned near that date
+- Look for the specific activity name next to each date number
+- Ignore text at the top of the document - focus on date-specific content
 
 CRITICAL EVENT NAME EXTRACTION:
 - Only extract text that represents ACTUAL SCHEDULED ACTIVITIES
@@ -360,7 +380,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Use advanced spatial reasoning to map event names to their specific dates based on layout positioning. Extract actual calendar dates (YYYY-MM-DD format, use 2025 if year unclear). Each date should have unique events - don't assign the same event name to all dates. Only extract actual scheduled activities with times, ignore UI elements. Analyze which text appears near or under each date number. Here's the text to analyze:\n\n${combinedText}`
+            content: `CRITICAL: Ignore document titles and headers completely. Extract individual event names positioned next to specific dates. Do NOT use the flyer title as event names. Each date should have its own unique event name based on text near that specific date. Use spatial reasoning to map text to dates. Extract actual calendar dates (YYYY-MM-DD, use 2025 if year unclear). Here's the text to analyze:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
