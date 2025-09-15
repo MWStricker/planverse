@@ -190,13 +190,8 @@ STEP 2 - SPATIAL MAPPING RULES:
 - Each date should have its own unique events - don't copy the same event to all dates
 
 STEP 3 - EVENT PARSING BY POSITION:
-For calendar layouts like:
-```
-26          27          28
-Event A     Event B     Event C
-8AM-11AM   9AM-12PM    2PM-5PM
-```
-Result: Event A on 26th, Event B on 27th, Event C on 28th
+For calendar layouts, analyze the spatial relationship between dates and events.
+Example: If you see dates followed by event names and times, map each event to its corresponding date.
 
 STEP 4 - HANDLE COMPLEX LAYOUTS:
 - If events are stacked under dates, parse each one separately
@@ -206,18 +201,14 @@ STEP 4 - HANDLE COMPLEX LAYOUTS:
 
 EXAMPLE SPATIAL REASONING:
 ✅ CORRECT PARSING:
-```
 Text: "26 Leadership Training 8AM-5PM  27 Microsoft Office 9AM-12PM  28 Safety Course 1PM-4PM"
 Result: 
-- 2013-06-26: "Leadership Training" 8AM-5PM
-- 2013-06-27: "Microsoft Office" 9AM-12PM  
-- 2013-06-28: "Safety Course" 1PM-4PM
-```
+- 2025-06-26: "Leadership Training" 8AM-5PM
+- 2025-06-27: "Microsoft Office" 9AM-12PM  
+- 2025-06-28: "Safety Course" 1PM-4PM
 
 ❌ WRONG PARSING (don't do this):
-```
 All events get same name: "Leadership Training" on all dates
-```
 
 CRITICAL RULES FOR EVENT NAMES:
 - Each date gets its own unique event name based on what text appears near it
