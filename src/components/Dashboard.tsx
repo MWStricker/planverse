@@ -220,6 +220,14 @@ export const Dashboard = () => {
     
     const completedTasks = completedTasksToday + completedEventsToday;
     
+    console.log('Task metrics calculation:', {
+      completedTasksToday,
+      completedEventsToday,
+      totalCompleted: completedTasks,
+      totalEvents: userEvents.length,
+      eventsWithCompleted: userEvents.filter(e => e.is_completed).length
+    });
+    
     return { completedTasks, today, endOfToday, startOfWeek, endOfWeek };
   }, [userTasks, userEvents, dateCalculations]);
   // Memoized weekly metrics
@@ -534,8 +542,15 @@ export const Dashboard = () => {
         supabase.from('course_colors').select('course_code, canvas_color').eq('user_id', user.id)
       ]);
 
-      if (tasksResult.data) setUserTasks(tasksResult.data);
-      if (eventsResult.data) setUserEvents(eventsResult.data);
+      if (tasksResult.data) {
+        console.log('Dashboard fetched tasks:', tasksResult.data.length);
+        setUserTasks(tasksResult.data);
+      }
+      if (eventsResult.data) {
+        console.log('Dashboard fetched events:', eventsResult.data.length);
+        console.log('Events with is_completed=true:', eventsResult.data.filter(e => e.is_completed).length);
+        setUserEvents(eventsResult.data);
+      }
       
       // Extract unique courses from tasks and course_colors
       const taskCourses = (tasksResult.data || []).map(task => task.course_name).filter(Boolean);
@@ -570,6 +585,7 @@ export const Dashboard = () => {
   // Listen for data refresh events from other components
   useEffect(() => {
     const handleDataRefresh = () => {
+      console.log('Dashboard received dataRefresh event, refreshing data...');
       if (user) {
         fetchDashboardData();
       }
