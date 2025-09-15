@@ -340,7 +340,7 @@ const Calendar = () => {
       console.log('Calendar received dataRefresh event, user:', !!user, 'event detail:', event.detail);
       if (user) {
         console.log('Clearing cache and fetching fresh data');
-        // Clear cache to force fresh data fetch
+        // Clear ALL cache to force fresh data fetch
         setDataCache(new Map());
         
         // Immediately clear local state to remove visual artifacts
@@ -348,11 +348,12 @@ const Calendar = () => {
         setEvents([]);
         setStudySessions([]);
         
-        // Force refresh by bypassing all caching
+        // Force refresh by bypassing all caching - fetch current AND adjacent periods
         const forceRefresh = async () => {
-          console.log('Force refresh started');
+          console.log('Force refresh started for current period and adjacent periods');
           setLoading(true);
           try {
+            // Force refresh current period
             const data = await fetchDataForPeriod(currentDate, viewMode);
             console.log('Fresh data fetched:', { 
               tasksCount: data.tasks.length, 
@@ -361,6 +362,18 @@ const Calendar = () => {
             setTasks(data.tasks);
             setEvents(data.events);
             setStudySessions(data.sessions);
+            
+            // Also clear cache for adjacent periods to ensure they're fresh too
+            const prevDate = viewMode === 'week' ? subWeeks(currentDate, 1) : subMonths(currentDate, 1);
+            const nextDate = viewMode === 'week' ? addWeeks(currentDate, 1) : addMonths(currentDate, 1);
+            
+            // Force fresh cache for adjacent periods
+            await Promise.all([
+              fetchDataForPeriod(prevDate, viewMode),
+              fetchDataForPeriod(nextDate, viewMode)
+            ]);
+            
+            console.log('All periods refreshed successfully');
           } catch (error) {
             console.error('Force refresh failed:', error);
           } finally {

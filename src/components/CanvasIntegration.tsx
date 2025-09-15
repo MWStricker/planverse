@@ -205,7 +205,7 @@ export const CanvasIntegration = () => {
               description: "Your Canvas assignments and events have been imported successfully!",
             });
             
-            // Wait a moment for database to process, then dispatch refresh events
+            // Wait longer for database to fully process, then dispatch refresh events
             console.log('Dispatching refresh events...');
             setTimeout(() => {
               console.log('Sending dataRefresh, eventsCleared, tasksCleared events');
@@ -213,7 +213,13 @@ export const CanvasIntegration = () => {
               window.dispatchEvent(new CustomEvent('eventsCleared'));
               window.dispatchEvent(new CustomEvent('tasksCleared'));
               console.log('Refresh events dispatched');
-            }, 500);
+              
+              // Double refresh to ensure data is loaded
+              setTimeout(() => {
+                console.log('Sending second refresh wave...');
+                window.dispatchEvent(new CustomEvent('dataRefresh'));
+              }, 1000);
+            }, 1500);
           }
         } catch (syncError) {
           console.error('Canvas sync failed with exception:', syncError);
