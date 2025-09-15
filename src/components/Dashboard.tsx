@@ -578,11 +578,13 @@ export const Dashboard = () => {
     window.addEventListener('dataRefresh', handleDataRefresh);
     window.addEventListener('tasksCleared', handleDataRefresh);
     window.addEventListener('eventsCleared', handleDataRefresh);
+    window.addEventListener('taskCompleted', handleDataRefresh);
 
     return () => {
       window.removeEventListener('dataRefresh', handleDataRefresh);
       window.removeEventListener('tasksCleared', handleDataRefresh);
       window.removeEventListener('eventsCleared', handleDataRefresh);
+      window.removeEventListener('taskCompleted', handleDataRefresh);
     };
   }, [user]);
 

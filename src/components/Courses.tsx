@@ -112,6 +112,12 @@ export const Courses = ({}: CoursesProps = {}) => {
         title: isCompleted ? "Assignment completed" : "Assignment uncompleted",
         description: "Status updated successfully",
       });
+      
+      // Notify other components to refresh their data
+      window.dispatchEvent(new CustomEvent('dataRefresh'));
+      window.dispatchEvent(new CustomEvent('taskCompleted', { 
+        detail: { eventId, isCompleted } 
+      }));
     } catch (error) {
       console.error('Error toggling event completion:', error);
     }
