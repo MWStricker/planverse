@@ -1171,8 +1171,19 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                 
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-6 border border-blue-100 dark:border-blue-800/30">
                   <div className="text-center mb-4">
-                    <div className="text-4xl font-mono font-bold text-blue-600 dark:text-blue-400 mb-2">
-                      {preferences.wakeUpTime}
+                    <div className="text-4xl font-mono font-bold text-blue-600 dark:text-blue-400 mb-1">
+                      {(() => {
+                        const [hours, minutes] = preferences.wakeUpTime.split(':').map(Number);
+                        const period = hours >= 12 ? 'PM' : 'AM';
+                        const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                        return `${hours12}:${minutes.toString().padStart(2, '0')}`;
+                      })()}
+                    </div>
+                    <div className="text-lg font-semibold text-blue-600/80 dark:text-blue-400/80 mb-2">
+                      {(() => {
+                        const [hours] = preferences.wakeUpTime.split(':').map(Number);
+                        return hours >= 12 ? 'PM' : 'AM';
+                      })()}
                     </div>
                     <div className="text-xs text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider">
                       Morning
@@ -1250,8 +1261,19 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                 
                 <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 rounded-xl p-6 border border-purple-100 dark:border-purple-800/30">
                   <div className="text-center mb-4">
-                    <div className="text-4xl font-mono font-bold text-purple-600 dark:text-purple-400 mb-2">
-                      {preferences.bedTime}
+                    <div className="text-4xl font-mono font-bold text-purple-600 dark:text-purple-400 mb-1">
+                      {(() => {
+                        const [hours, minutes] = preferences.bedTime.split(':').map(Number);
+                        const period = hours >= 12 ? 'PM' : 'AM';
+                        const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                        return `${hours12}:${minutes.toString().padStart(2, '0')}`;
+                      })()}
+                    </div>
+                    <div className="text-lg font-semibold text-purple-600/80 dark:text-purple-400/80 mb-2">
+                      {(() => {
+                        const [hours] = preferences.bedTime.split(':').map(Number);
+                        return hours >= 12 ? 'PM' : 'AM';
+                      })()}
                     </div>
                     <div className="text-xs text-purple-600/70 dark:text-purple-400/70 uppercase tracking-wider">
                       Evening
