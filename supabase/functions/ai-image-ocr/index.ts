@@ -89,24 +89,29 @@ For the paraphrased text: Organize with better structure, fix grammar/spelling, 
     const data = await response.json();
     const responseContent = data.choices[0].message.content.trim();
 
-    console.log('OCR extraction completed successfully');
+    console.log('Raw AI response:', responseContent);
     
     try {
       // Try to parse as JSON first
       const parsedResponse = JSON.parse(responseContent);
+      console.log('Parsed JSON response:', parsedResponse);
+      
       if (parsedResponse.rawText && parsedResponse.paraphrasedText) {
-        return new Response(JSON.stringify(parsedResponse), {
+        return new Response(JSON.stringify({
+          rawText: parsedResponse.rawText,
+          paraphrasedText: parsedResponse.paraphrasedText
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     } catch (parseError) {
-      // If JSON parsing fails, treat the entire response as raw text
-      console.warn('Failed to parse JSON response, treating as raw text');
+      console.warn('Failed to parse JSON response, treating as paraphrased text only');
     }
 
-    // Fallback: treat response as raw text
+    // Fallback: if we can't parse JSON, return the response as paraphrased text
+    // and indicate that raw text extraction failed
     return new Response(JSON.stringify({ 
-      rawText: responseContent,
+      rawText: "[Raw text extraction failed - AI returned non-JSON response]",
       paraphrasedText: responseContent 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
