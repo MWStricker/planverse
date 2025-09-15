@@ -38,8 +38,8 @@ export const OCRUpload = () => {
     try {
       // Use OCR to extract both raw and paraphrased text
       const result = await ocrExtractText(file);
-      setExtractedText(result.paraphrasedText);
-      setParaphrasedText(result.rawText);
+      setExtractedText(result.rawText);
+      setParaphrasedText(result.paraphrasedText);
       
       toast({
         title: "Text extracted successfully!",
