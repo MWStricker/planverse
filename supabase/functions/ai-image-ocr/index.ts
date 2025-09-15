@@ -44,24 +44,26 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an intelligent note paraphrasing assistant. Your task is to:
+            content: `You are an OCR and note processing assistant. Your task is to:
 
-1. Carefully examine the image and understand all visible text (handwritten, printed, diagrams, equations, etc.)
-2. Paraphrase and improve the content to make it clearer and more organized
-3. Maintain the key information and concepts but rewrite in your own words
-4. Organize the content with better structure (bullet points, numbered lists, clear sections)
-5. Fix any grammar, spelling, or clarity issues
-6. Expand on abbreviations and make concepts clearer
-7. Keep the same academic level and tone appropriate for studying
+1. First, extract ALL visible text from the image exactly as written (raw extraction)
+2. Then, paraphrase and improve the content for better studying
 
-Transform the raw notes into polished, well-structured content that's easier to study from.`
+You must return a JSON response with this exact structure:
+{
+  "rawText": "exact text as written in the image",
+  "paraphrasedText": "improved, organized, and paraphrased version"
+}
+
+For the raw text: Extract everything exactly as written, including any spelling errors, abbreviations, or unclear parts.
+For the paraphrased text: Organize with better structure, fix grammar/spelling, expand abbreviations, and make concepts clearer while maintaining the same academic level.`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Please read and understand all the text in this image, then paraphrase and improve it into well-structured, clear notes for studying.'
+                text: 'Please extract the raw text exactly as written, then provide an improved paraphrased version. Return as JSON with "rawText" and "paraphrasedText" fields.'
               },
               {
                 type: 'image_url',
@@ -85,11 +87,28 @@ Transform the raw notes into polished, well-structured content that's easier to 
     }
 
     const data = await response.json();
-    const extractedText = data.choices[0].message.content;
+    const responseContent = data.choices[0].message.content.trim();
 
     console.log('OCR extraction completed successfully');
+    
+    try {
+      // Try to parse as JSON first
+      const parsedResponse = JSON.parse(responseContent);
+      if (parsedResponse.rawText && parsedResponse.paraphrasedText) {
+        return new Response(JSON.stringify(parsedResponse), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (parseError) {
+      // If JSON parsing fails, treat the entire response as raw text
+      console.warn('Failed to parse JSON response, treating as raw text');
+    }
 
-    return new Response(JSON.stringify({ extractedText }), {
+    // Fallback: treat response as raw text
+    return new Response(JSON.stringify({ 
+      rawText: responseContent,
+      paraphrasedText: responseContent 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

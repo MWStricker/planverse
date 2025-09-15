@@ -16,7 +16,7 @@ async function imageToBase64(file: File): Promise<string> {
 }
 
 // Extract text from image using OpenAI Vision API (much more accurate for handwritten notes)
-export async function ocrExtractText(file: File): Promise<string> {
+export async function ocrExtractText(file: File): Promise<{ rawText: string; paraphrasedText: string }> {
   try {
     // Convert image to base64
     const base64Image = await imageToBase64(file);
@@ -34,7 +34,10 @@ export async function ocrExtractText(file: File): Promise<string> {
       throw new Error('Failed to extract text from image');
     }
 
-    return data?.extractedText || '';
+    return {
+      rawText: data?.rawText || '',
+      paraphrasedText: data?.paraphrasedText || ''
+    };
   } catch (error) {
     console.error('Error in OCR:', error);
     throw error;

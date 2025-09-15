@@ -16,7 +16,6 @@ export const OCRUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
   const [paraphrasedText, setParaphrasedText] = useState<string>("");
-  const [isParaphrasing, setIsParaphrasing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -37,13 +36,14 @@ export const OCRUpload = () => {
     setParaphrasedText("");
 
     try {
-      // Use client-side OCR to extract text
-      const text = await ocrExtractText(file);
-      setExtractedText(text);
+      // Use OCR to extract both raw and paraphrased text
+      const result = await ocrExtractText(file);
+      setExtractedText(result.rawText);
+      setParaphrasedText(result.paraphrasedText);
       
       toast({
         title: "Text extracted successfully!",
-        description: "Your notes have been processed. Choose to copy raw text or paraphrase.",
+        description: "Your notes have been processed and paraphrased automatically.",
       });
     } catch (error) {
       console.error('Error processing image:', error);
@@ -84,43 +84,6 @@ export const OCRUpload = () => {
     }
   }, [handleFileUpload]);
 
-  const handleParaphrase = async () => {
-    if (!extractedText.trim()) {
-      toast({
-        title: "No text to paraphrase",
-        description: "Please upload an image first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsParaphrasing(true);
-    
-    try {
-      const { data: response, error } = await supabase.functions.invoke('paraphrase-notes', {
-        body: { text: extractedText }
-      });
-
-      if (error) {
-        throw new Error('Failed to paraphrase text');
-      }
-
-      setParaphrasedText(response.paraphrasedText);
-      toast({
-        title: "Notes paraphrased!",
-        description: "Your notes have been paraphrased and organized.",
-      });
-    } catch (error) {
-      console.error('Error paraphrasing text:', error);
-      toast({
-        title: "Paraphrasing failed",
-        description: "Failed to paraphrase your notes. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsParaphrasing(false);
-    }
-  };
 
   const copyToClipboard = async (text: string, type: 'raw' | 'paraphrased') => {
     if (!text.trim()) {
@@ -237,7 +200,7 @@ export const OCRUpload = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
-                Choose Your Action
+                Copy Options
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -251,12 +214,13 @@ export const OCRUpload = () => {
                   Copy Raw Text
                 </Button>
                 <Button
-                  onClick={handleParaphrase}
-                  disabled={isParaphrasing}
+                  onClick={() => copyToClipboard(paraphrasedText, 'paraphrased')}
+                  variant="default"
                   className="flex-1"
+                  disabled={!paraphrasedText.trim()}
                 >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {isParaphrasing ? "Paraphrasing..." : "Paraphrase Notes"}
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Paraphrased Text
                 </Button>
               </div>
             </CardContent>
@@ -296,15 +260,6 @@ export const OCRUpload = () => {
                   className="min-h-[200px]"
                   placeholder="Paraphrased text will appear here..."
                 />
-                <div className="mt-4">
-                  <Button
-                    onClick={() => copyToClipboard(paraphrasedText, 'paraphrased')}
-                    variant="outline"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Paraphrased Text
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
