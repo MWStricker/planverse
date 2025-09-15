@@ -141,7 +141,7 @@ serve(async (req) => {
             role: 'system',
             content: `You are a schedule analysis expert. Analyze the extracted text from a class schedule image and structure it into a standardized format.
 
-TASK: Extract schedule information and identify the format type.
+TASK: Extract schedule information and identify the format type with CORRECT day associations.
 
 SCHEDULE FORMATS TO RECOGNIZE:
 1. "Grid/Table Format" - Traditional weekly grid with days as columns, times as rows
@@ -150,23 +150,43 @@ SCHEDULE FORMATS TO RECOGNIZE:
 4. "Condensed Format" - Compact text-based schedule
 5. "University Portal Format" - Standard university system printouts
 6. "Mobile App Format" - Schedule from mobile applications
+7. "Calendar View Format" - Monthly calendar with events on specific dates
 
-EXTRACTION RULES:
+CRITICAL DAY EXTRACTION RULES:
+- For calendar formats: Look for date numbers (1-31) and match events to those specific dates
+- Convert date numbers to day names: Use context clues like "Mon Tue Wed Thu Fri Sat Sun" headers
+- For weekly formats: Look for day abbreviations (Mon, Tue, Wed, Thu, Fri, Sat, Sun) or full names
+- If events are under a specific date or day column, assign them to that day
+- DO NOT default all events to Monday - carefully analyze spatial relationships
+- If text shows "27 28 29 30 31" with events below specific numbers, map those to correct days
+
+TIME AND DATE PARSING:
 - Extract course codes, names, and numbers (e.g., "CS101", "Math 205", "HIST-1010")
-- Identify days of the week (Mon, Tue, Wed, Thu, Fri, Sat, Sun or full names)
-- Extract time ranges (e.g., "9:00-10:30", "2:00 PM - 3:15 PM")
-- Find locations/rooms (e.g., "Room 204", "Building A", "Lab 3")
+- Extract time ranges (e.g., "8:00 AM - 11:00 AM", "2:00 PM - 3:15 PM")
+- Convert all times to 24-hour format (8:00 AM = 08:00, 3:00 PM = 15:00)
+- Find locations/rooms when available
 - Identify instructors/professors when mentioned
-- Detect course types (Lecture, Lab, Discussion, Seminar)
+- Detect course types (Lecture, Lab, Discussion, Training, etc.)
 
-TIME STANDARDIZATION:
-- Convert all times to 24-hour format
-- Handle various time formats (12-hour with AM/PM, 24-hour, etc.)
+SPATIAL ANALYSIS FOR CALENDAR FORMATS:
+- If you see date numbers like "26 27 28 29 30 31" followed by events, map events to their respective dates
+- Look for patterns like events listed under specific date columns
+- Use day headers (Sun Mon Tue Wed Thu Fri Sat) to determine which dates correspond to which days
+- Calculate day of week based on calendar layout if possible
 
 CONFIDENCE SCORING:
-- High (0.8-1.0): Clear, well-structured schedule with all key elements
-- Medium (0.5-0.79): Most elements clear, some ambiguity
-- Low (0.0-0.49): Poorly formatted or unclear schedule
+- High (0.8-1.0): Clear day-event associations, well-structured schedule
+- Medium (0.5-0.79): Most elements clear, some day ambiguity resolved
+- Low (0.0-0.49): Poor day-event mapping or unclear schedule
+
+EXAMPLE ANALYSIS:
+If text shows:
+"Mon Tue Wed
+ 26  27  28
+Event A     Event B
+8AM-9AM     2PM-3PM"
+
+Then Event A should be on Monday (26th) and Event B should be on Tuesday (27th).
 
 Return ONLY valid JSON with this exact structure:
 {
@@ -174,12 +194,12 @@ Return ONLY valid JSON with this exact structure:
   "events": [
     {
       "course": "course code and name",
-      "day": "day of week",
+      "day": "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday",
       "startTime": "HH:MM",
       "endTime": "HH:MM", 
-      "location": "room/building",
-      "instructor": "professor name",
-      "type": "class type"
+      "location": "room/building if available",
+      "instructor": "professor name if available",
+      "type": "class type if identifiable"
     }
   ],
   "rawText": "cleaned and formatted original text",
@@ -188,7 +208,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Analyze this schedule text and extract structured schedule information:\n\n${detectedText}`
+            content: `Analyze this schedule text and extract structured schedule information with CORRECT day assignments. Pay special attention to calendar layouts and date-to-day mappings:\n\n${detectedText}`
           }
         ],
         temperature: 0.1,
