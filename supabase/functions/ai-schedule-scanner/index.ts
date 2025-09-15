@@ -194,21 +194,20 @@ FOCUS ON these types of text (these ARE events):
 - Course names, training names, class names with times
 - Individual event descriptions that appear near specific dates
 
-STEP 2 - SPATIAL MAPPING RULES FOR INDIVIDUAL EVENTS:
-- Look at each date number (26, 27, 28, etc.) individually
-- Find the specific text that appears closest to that date number
-- That specific text is the event name for that specific date
-- Do NOT use the same event name for multiple dates
-- Do NOT use document titles or headers as event names
-- Each date gets its own unique event based on nearby text
+STEP 2 - FIND INDIVIDUAL EVENT NAMES BY SCANNING LEFT TO RIGHT:
+- Scan the text for patterns: DATE NUMBER → EVENT NAME → TIME
+- Look for sequences like: "26 Air Pack Safety 8:00 AM - 11:00 AM"
+- The text immediately after the date number is the event name
+- Stop reading the event name when you hit the time (contains AM/PM or colons)
+- Move to the next date number and repeat the process
+- Each date number should be followed by different text (the event name for that date)
 
-STEP 3 - EVENT PARSING BY POSITION:
-Example of CORRECT parsing:
-If you see: "26 Air Pack Safety 8AM-11AM 27 Microsoft Office 10AM-2PM 28 Leadership Training 1PM-5PM"
-- Date 26 gets event: "Air Pack Safety"
-- Date 27 gets event: "Microsoft Office" 
-- Date 28 gets event: "Leadership Training"
-Each date has a DIFFERENT event name based on the text positioned near it.
+STEP 3 - EVENT NAME EXTRACTION RULES:
+- Extract event names exactly as they appear in the original format
+- Keep original time format (8:00 AM - 11:00 AM, not 08:00-11:00)
+- If you see "26 Air Pack Safety 8:00 AM" then "Air Pack Safety" is the event for date 26
+- If you see "27 Microsoft Office 10:00 AM" then "Microsoft Office" is the event for date 27
+- Do NOT convert times to 24-hour format - keep original format with AM/PM
 
 STEP 4 - HANDLE COMPLEX LAYOUTS:
 - If events are stacked under dates, parse each one separately
@@ -230,26 +229,31 @@ SPATIAL DATE-TO-EVENT MAPPING:
 - If multiple events appear under one date, create separate entries for each
 - If a date has no events near it, don't create an event for that date
 
-EXAMPLE SPATIAL REASONING:
-✅ CORRECT PARSING:
-Text contains: "Training Schedule [TITLE] 26 Air Pack Safety 8AM-11AM 27 Microsoft Office 9AM-12PM 28 Leadership Training 1PM-4PM"
-IGNORE: "Training Schedule" (this is the document title, NOT an event)
-EXTRACT:
-- 2025-06-26: "Air Pack Safety" 8AM-11AM
-- 2025-06-27: "Microsoft Office" 9AM-12PM  
-- 2025-06-28: "Leadership Training" 1PM-4PM
+STEP-BY-STEP EVENT EXTRACTION PROCESS:
+1. Find a date number (like "26")
+2. Look at the text that comes immediately after that date number
+3. Extract that text as the event name until you reach a time or the next date
+4. Extract the time in its original format (keep AM/PM)
+5. Move to the next date number and repeat
 
-❌ WRONG PARSING (don't do this):
-Using document title for all events:
-- 2025-06-26: "Training Schedule"
-- 2025-06-27: "Training Schedule" 
-- 2025-06-28: "Training Schedule"
+EXAMPLE STEP-BY-STEP PARSING:
+Text: "26 Air Pack Safety 8:00 AM - 11:00 AM 27 Microsoft Office 10:00 AM - 2:00 PM"
+
+Step 1: Find "26" 
+Step 2: Text after "26" is "Air Pack Safety"
+Step 3: Time is "8:00 AM - 11:00 AM"
+Result: Date 26 = "Air Pack Safety" at "8:00 AM - 11:00 AM"
+
+Step 4: Find "27"
+Step 5: Text after "27" is "Microsoft Office" 
+Step 6: Time is "10:00 AM - 2:00 PM"
+Result: Date 27 = "Microsoft Office" at "10:00 AM - 2:00 PM"
 
 CRITICAL RULES FOR EVENT NAMES:
 - Never use document titles, headers, or page titles as event names
-- Each date gets its own unique event name from text positioned near that date
-- Look for the specific activity name next to each date number
-- Ignore text at the top of the document - focus on date-specific content
+- Extract the specific text that appears immediately after each date number
+- Each date gets a completely different event name
+- Keep times in original format with AM/PM (no military time)
 
 CRITICAL EVENT NAME EXTRACTION:
 - Only extract text that represents ACTUAL SCHEDULED ACTIVITIES
@@ -342,8 +346,11 @@ DATE PARSING EXAMPLES:
   → "2025-06-26": "Air Pack Safety", "2025-06-27": "Microsoft Office" (assuming June, current year)
 
 TIME PARSING:
-- Extract time ranges (e.g., "8:00 AM - 11:00 AM", "2:00 PM - 3:15 PM")
-- Convert all times to 24-hour format (8:00 AM = 08:00, 3:00 PM = 15:00)
+- Keep original time format exactly as it appears (do NOT convert to 24-hour format)
+- If it says "8:00 AM - 11:00 AM", keep it as "8:00 AM - 11:00 AM"
+- If it says "2:00 PM - 3:15 PM", keep it as "2:00 PM - 3:15 PM"
+- Do NOT convert to military time (no 08:00, 14:00, etc.)
+- Preserve the exact format from the source document
 - Find locations/rooms when available
 - Identify instructors/professors when mentioned
 - Detect course types (Lecture, Lab, Discussion, Training, etc.)
@@ -365,10 +372,10 @@ Return ONLY valid JSON with this exact structure:
   "format": "detected format name",
   "events": [
     {
-      "course": "course code and name",
+      "course": "exact event name that appears after the date number",
       "day": "YYYY-MM-DD (actual calendar date)",
-      "startTime": "HH:MM",
-      "endTime": "HH:MM", 
+      "startTime": "original format with AM/PM",
+      "endTime": "original format with AM/PM", 
       "location": "room/building if available",
       "instructor": "professor name if available",
       "type": "class type if identifiable"
@@ -380,7 +387,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `CRITICAL: Ignore document titles and headers completely. Extract individual event names positioned next to specific dates. Do NOT use the flyer title as event names. Each date should have its own unique event name based on text near that specific date. Use spatial reasoning to map text to dates. Extract actual calendar dates (YYYY-MM-DD, use 2025 if year unclear). Here's the text to analyze:\n\n${combinedText}`
+            content: `CRITICAL: Extract individual event names that appear immediately after each date number. Do NOT use document titles. Keep time format as AM/PM (no military time). Use step-by-step parsing: find date number → extract text after it → that's the event name for that date. Here's the text:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
