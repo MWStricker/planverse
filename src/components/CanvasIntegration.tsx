@@ -198,19 +198,17 @@ export const CanvasIntegration = () => {
           } else {
             console.log('Sync result:', syncData);
             
-            // Wait a moment for database to process, then dispatch multiple refresh events
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('dataRefresh'));
-              window.dispatchEvent(new CustomEvent('eventsCleared'));
-              window.dispatchEvent(new CustomEvent('tasksCleared'));
-              // Force a page refresh for immediate visual feedback
-              window.location.reload();
-            }, 1000);
-            
             toast({
               title: "Canvas Sync Complete",
               description: "Your Canvas assignments and events have been imported successfully!",
             });
+            
+            // Wait a moment for database to process, then dispatch refresh events
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('dataRefresh'));
+              window.dispatchEvent(new CustomEvent('eventsCleared'));
+              window.dispatchEvent(new CustomEvent('tasksCleared'));
+            }, 500);
           }
         } catch (syncError) {
           console.error('Sync error:', syncError);
@@ -439,9 +437,7 @@ export const CanvasIntegration = () => {
         window.dispatchEvent(new CustomEvent('dataRefresh'));
         window.dispatchEvent(new CustomEvent('eventsCleared'));
         window.dispatchEvent(new CustomEvent('tasksCleared'));
-        // Refresh the page to ensure all components show the new data
-        window.location.reload();
-      }, 1000);
+      }, 500);
       
     } catch (error) {
       console.error('Error syncing Canvas feed:', error);
