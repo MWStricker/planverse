@@ -4,6 +4,7 @@ import { Loader2, Calendar as CalendarIcon, Home, Upload, Target, Users, BookOpe
 
 import { Dashboard } from "@/components/Dashboard";
 import { OCRUpload } from "@/components/OCRUpload";
+import { ScheduleScanner } from "@/components/ScheduleScanner";
 import { Navigation } from "@/components/Navigation";
 import { Settings } from "@/components/Settings";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
@@ -11,6 +12,7 @@ import Calendar from "@/components/Calendar";
 import { Connect } from "@/components/Connect";
 import { Tasks } from "@/components/Tasks";
 import { Courses } from "@/components/Courses";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
@@ -21,6 +23,7 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
+  const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   
@@ -76,7 +79,22 @@ const Index = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'upload':
-        return <OCRUpload />;
+        return (
+          <div className="p-6">
+            <Tabs value={uploadTab} onValueChange={setUploadTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="note-digitizer">Note Digitizer</TabsTrigger>
+                <TabsTrigger value="schedule-scanner">Schedule Scanner</TabsTrigger>
+              </TabsList>
+              <TabsContent value="note-digitizer" className="mt-0">
+                <OCRUpload />
+              </TabsContent>
+              <TabsContent value="schedule-scanner" className="mt-0">
+                <ScheduleScanner />
+              </TabsContent>
+            </Tabs>
+          </div>
+        );
       case 'integrations':
         return <IntegrationSetup />;
       case 'settings':
