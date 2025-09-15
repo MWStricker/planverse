@@ -171,43 +171,59 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a schedule analysis expert with advanced reasoning capabilities. Your job is to distinguish between actual scheduled events and UI/navigation text.
+            content: `You are a schedule analysis expert with advanced spatial reasoning capabilities. Your job is to understand the layout and position of text to correctly map event names to their specific dates.
 
-CRITICAL: USE REASONING TO IDENTIFY REAL EVENTS
+CRITICAL: UNDERSTAND SPATIAL RELATIONSHIPS
 
-STEP 1 - IDENTIFY EVENT PATTERNS:
-Real events typically have:
-- A descriptive name (course, class, meeting, training)
-- A time range (8:00 AM - 11:00 AM, 2:00-3:30, etc.)
-- Often a day association
-- Sometimes a location
+STEP 1 - ANALYZE CALENDAR LAYOUT:
+Look for calendar structures with:
+- Date numbers (26, 27, 28, 29, 30, 31, etc.)
+- Event names positioned near, under, or next to specific dates
+- Time information associated with event names
+- Month/year headers for context
 
-STEP 2 - IGNORE NON-EVENT TEXT:
-Do NOT extract these as events:
-- Navigation: "Schedule Filter", "Go To", "See Schedule", "My Site"
-- Headers: "Site Name", "Area", "June 2013", month/year names
-- Calendar controls: Date numbers without content (26, 27, 28, etc.)
-- UI elements: Buttons, filters, dropdown options
-- Flyer titles or promotional text without times
-- Generic labels like "North Dakota", "All"
+STEP 2 - SPATIAL MAPPING RULES:
+- If event text appears UNDER a date number → that event belongs to that date
+- If event text appears NEXT TO a date number → that event belongs to that date  
+- If multiple events appear under one date → create separate entries for each
+- If an event spans multiple lines under a date → combine the lines for the full event name
+- Each date should have its own unique events - don't copy the same event to all dates
 
-STEP 3 - REASONING PROCESS:
-For each potential event, ask yourself:
-1. Does this have a specific time associated with it?
-2. Is this describing a scheduled activity?
-3. Is this a UI element or navigation text?
-4. Would someone actually attend this at a specific time?
+STEP 3 - EVENT PARSING BY POSITION:
+For calendar layouts like:
+```
+26          27          28
+Event A     Event B     Event C
+8AM-11AM   9AM-12PM    2PM-5PM
+```
+Result: Event A on 26th, Event B on 27th, Event C on 28th
 
-STEP 4 - EVENT VALIDATION:
-Only include items that are clearly scheduled activities with times.
+STEP 4 - HANDLE COMPLEX LAYOUTS:
+- If events are stacked under dates, parse each one separately
+- If event names are split across lines, combine them
+- If times are on separate lines from names, associate them correctly
+- Empty date cells should not have events assigned
 
-EXAMPLE REASONING:
-✅ "Leadership And Team Building 8:00 AM - 5:00 PM" → REAL EVENT (has name + time)
-✅ "Microsoft Office 8:00 AM-11:00 AM" → REAL EVENT (training with time)
-❌ "Schedule Filter" → UI ELEMENT (no time, navigation)
-❌ "North Dakota" → LOCATION LABEL (not a scheduled event)
-❌ "June 2013" → DATE HEADER (not an event)
-❌ "26 27 28" → CALENDAR DATES (not events themselves)
+EXAMPLE SPATIAL REASONING:
+✅ CORRECT PARSING:
+```
+Text: "26 Leadership Training 8AM-5PM  27 Microsoft Office 9AM-12PM  28 Safety Course 1PM-4PM"
+Result: 
+- 2013-06-26: "Leadership Training" 8AM-5PM
+- 2013-06-27: "Microsoft Office" 9AM-12PM  
+- 2013-06-28: "Safety Course" 1PM-4PM
+```
+
+❌ WRONG PARSING (don't do this):
+```
+All events get same name: "Leadership Training" on all dates
+```
+
+CRITICAL RULES FOR EVENT NAMES:
+- Each date gets its own unique event name based on what text appears near it
+- Do NOT assign the same event name to multiple dates unless it genuinely repeats
+- Parse the layout carefully to see which text belongs to which date
+- Look for patterns of date → event name → time → next date → different event name
 
 SCHEDULE FORMATS TO RECOGNIZE:
 1. "Grid/Table Format" - Traditional weekly grid with days as columns, times as rows
@@ -249,24 +265,21 @@ DUPLICATE DETECTION:
 CRITICAL DATE EXTRACTION RULES:
 - Extract ACTUAL CALENDAR DATES, not day names
 - For calendar formats: Look for date numbers (1-31) and the month/year context
+- Map event names to their specific dates based on spatial positioning
 - If you see "June 2013" with dates "26 27 28 29 30 31", use those actual dates
 - Format dates as YYYY-MM-DD (e.g., "2013-06-26" for June 26, 2013)
-- If month/year is visible, combine with date numbers to create full dates
-- If only date numbers are visible, use the pattern "DD" and note the visible month/year
-- DO NOT convert to day names (Monday, Tuesday, etc.) - use actual calendar dates
-- If events are under specific date numbers, assign them to those exact dates
+- Each date should have its own event(s) based on what text appears near/under it
+
+SPATIAL DATE-TO-EVENT MAPPING:
+- Analyze the text flow to see which event names go with which dates
+- Don't assign the same event to all dates - each date should have unique events
+- If multiple events appear under one date, create separate entries for each
+- If a date has no events near it, don't create an event for that date
 
 DATE PARSING EXAMPLES:
-- If you see "26" under "June 2013" → use "2013-06-26" 
-- If you see "27" in the same calendar → use "2013-06-27"
-- If you see events under "28" → assign to "2013-06-28"
-- If no year is visible but month is clear → use format "2023-06-26" (current context)
-
-SPATIAL ANALYSIS FOR CALENDAR FORMATS:
-- Map events to the specific date numbers they appear under
-- Look for date numbers like "26 27 28 29 30 31" and match events to those dates
-- Use month/year headers to determine the full date context
-- If events appear under specific date cells, assign them to those exact calendar dates
+- If you see "26 Air Pack Safety 8AM-11AM 27 Microsoft Office 10AM-2PM"
+  → "2013-06-26": "Air Pack Safety", "2013-06-27": "Microsoft Office"
+- Each event name should be unique to its date position
 
 TIME PARSING:
 - Extract time ranges (e.g., "8:00 AM - 11:00 AM", "2:00 PM - 3:15 PM")
@@ -307,7 +320,7 @@ Return ONLY valid JSON with this exact structure:
           },
           {
             role: 'user',
-            content: `Use advanced reasoning to extract actual calendar dates (not day names) and distinguish between real events and UI text. Format dates as YYYY-MM-DD. Here's the text to analyze:\n\n${combinedText}`
+            content: `Use advanced spatial reasoning to map event names to their specific dates based on layout positioning. Each date should have unique events - don't assign the same event name to all dates. Analyze which text appears near or under each date number. Here's the text to analyze:\n\n${combinedText}`
           }
         ],
         temperature: 0.1,
