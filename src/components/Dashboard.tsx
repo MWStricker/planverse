@@ -15,6 +15,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePreferences } from "@/hooks/usePreferences";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { imageFileToBase64Compressed, cn } from "@/lib/utils";
@@ -72,6 +73,7 @@ const todaySchedule: ScheduleEvent[] = [];
 
 export const Dashboard = () => {
   const { user } = useAuth();
+  const { preferences } = usePreferences();
   const { toast } = useToast();
   const [aiSchedule, setAiSchedule] = useState<any>(null);
   const [aiPriorities, setAiPriorities] = useState<any[]>([]);
@@ -331,11 +333,22 @@ export const Dashboard = () => {
       const endOfToday = new Date(today);
       endOfToday.setHours(23, 59, 59, 999);
 
-      // Start with 24 hours, subtract essential activities
-      const totalHoursInDay = 24;
-      const sleepHours = 8; // Average sleep time
+      // Calculate available hours based on user's sleep schedule
+      const [wakeHour, wakeMin] = preferences.wakeUpTime.split(':').map(Number);
+      const [bedHour, bedMin] = preferences.bedTime.split(':').map(Number);
+      
+      // Calculate total awake hours
+      let awakeHours = 0;
+      if (bedHour > wakeHour) {
+        // Same day (e.g., wake at 7, bed at 23)
+        awakeHours = (bedHour - wakeHour) + (bedMin - wakeMin) / 60;
+      } else {
+        // Bed time next day (e.g., wake at 7, bed at 1 AM next day)
+        awakeHours = (24 - wakeHour + bedHour) + (bedMin - wakeMin) / 60;
+      }
+      
       const essentialActivities = 3; // Meals, personal care, commuting, etc.
-      const availableHours = totalHoursInDay - sleepHours - essentialActivities; // 13 hours
+      const availableHours = Math.max(0, awakeHours - essentialActivities);
 
       // Get events and tasks scheduled for today
       const eventsToday = userEvents.filter(event => {

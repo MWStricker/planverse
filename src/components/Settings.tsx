@@ -717,6 +717,35 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               </SelectContent>
             </Select>
           </div>
+          
+          <Separator />
+          
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-medium text-foreground">Sleep Schedule</h4>
+              <p className="text-sm text-muted-foreground">Set your wake-up and bedtime for accurate free time calculations</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wakeup-time">Wake-up Time</Label>
+                <Input
+                  id="wakeup-time"
+                  type="time"
+                  value={preferences.wakeUpTime}
+                  onChange={(e) => updatePreference('wakeUpTime', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bed-time">Bedtime</Label>
+                <Input
+                  id="bed-time"
+                  type="time"
+                  value={preferences.bedTime}
+                  onChange={(e) => updatePreference('bedTime', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

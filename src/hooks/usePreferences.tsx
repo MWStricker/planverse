@@ -6,12 +6,16 @@ export interface UserPreferences {
   theme: 'default' | 'dark' | 'warm' | 'ocean' | 'forest' | 'sunset';
   boldText: boolean;
   textSize: 'small' | 'medium' | 'large';
+  wakeUpTime: string; // Format: "HH:MM" (24-hour)
+  bedTime: string; // Format: "HH:MM" (24-hour)
 }
 
 const defaultPreferences: UserPreferences = {
   theme: 'default',
   boldText: false,
   textSize: 'medium',
+  wakeUpTime: '07:00', // Default: 7 AM
+  bedTime: '23:00', // Default: 11 PM
 };
 
 export const usePreferences = () => {
