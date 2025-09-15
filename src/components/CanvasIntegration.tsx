@@ -410,7 +410,15 @@ export const CanvasIntegration = () => {
       });
 
       fetchCalendarConnections();
-      window.dispatchEvent(new CustomEvent('dataRefresh'));
+      
+      // Dispatch multiple refresh events to ensure all components update
+      setTimeout(() => {
+        console.log('Dispatching Canvas removal refresh events...');
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        window.dispatchEvent(new CustomEvent('eventsCleared'));
+        window.dispatchEvent(new CustomEvent('tasksCleared'));
+        window.dispatchEvent(new CustomEvent('canvasDataCleared'));
+      }, 100);
     } catch (error) {
       console.error('Error removing Canvas feed:', error);
       toast({

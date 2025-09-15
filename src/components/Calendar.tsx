@@ -343,6 +343,11 @@ const Calendar = () => {
         // Clear cache to force fresh data fetch
         setDataCache(new Map());
         
+        // Immediately clear local state to remove visual artifacts
+        setTasks([]);
+        setEvents([]);
+        setStudySessions([]);
+        
         // Force refresh by bypassing all caching
         const forceRefresh = async () => {
           console.log('Force refresh started');
@@ -421,6 +426,7 @@ const Calendar = () => {
     window.addEventListener('taskDeleted', handleTaskDeleted);
     window.addEventListener('tasksCleared', handleDataRefresh);
     window.addEventListener('eventsCleared', handleDataRefresh);
+    window.addEventListener('canvasDataCleared', handleDataRefresh);
 
     return () => {
       console.log('Cleaning up Calendar event listeners');
@@ -429,6 +435,7 @@ const Calendar = () => {
       window.removeEventListener('taskDeleted', handleTaskDeleted);
       window.removeEventListener('tasksCleared', handleDataRefresh);
       window.removeEventListener('eventsCleared', handleDataRefresh);
+      window.removeEventListener('canvasDataCleared', handleDataRefresh);
       
       // Remove test listeners
       window.removeEventListener('taskDeleted', testEventListener);
