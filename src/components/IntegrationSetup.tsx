@@ -454,67 +454,81 @@ export const IntegrationSetup = () => {
            >
              TEST BUTTON (SIMPLE)
            </Button>
-            <Button 
-              onClick={async () => {
-                if (!user) {
-                  toast({
-                    title: "No User",
-                    description: "Please sign in first",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-                
-                try {
-                  console.log('🧪 FORCE Creating calendar connection...');
-                  // Force create a connection entry
-                  const { data, error } = await supabase
-                    .from('calendar_connections')
-                    .upsert({
-                      user_id: user.id,
-                      provider: 'google',
-                      provider_id: user.email,
-                      is_active: true,
-                      scope: 'https://www.googleapis.com/auth/calendar',
-                      sync_settings: { auto_sync: true, last_sync: null },
-                    }, {
-                      onConflict: 'user_id,provider'
-                    })
-                    .select()
-                    .single();
+             <Button 
+               onClick={async () => {
+                 console.log('🚨 CREATE CONNECTION BUTTON CLICKED!');
+                 alert('CREATE CONNECTION BUTTON CLICKED!');
+                 
+                 if (!user) {
+                   console.log('❌ No user found');
+                   alert('No user found!');
+                   toast({
+                     title: "No User",
+                     description: "Please sign in first",
+                     variant: "destructive",
+                   });
+                   return;
+                 }
+                 
+                 console.log('✅ User found:', user.email);
+                 alert('User found: ' + user.email);
+                 
+                 try {
+                   console.log('🧪 FORCE Creating calendar connection...');
+                   alert('About to create connection...');
+                   
+                   // Force create a connection entry
+                   const { data, error } = await supabase
+                     .from('calendar_connections')
+                     .upsert({
+                       user_id: user.id,
+                       provider: 'google',
+                       provider_id: user.email,
+                       is_active: true,
+                       scope: 'https://www.googleapis.com/auth/calendar',
+                       sync_settings: { auto_sync: true, last_sync: null },
+                     }, {
+                       onConflict: 'user_id,provider'
+                     })
+                     .select()
+                     .single();
 
-                  console.log('🧪 Connection result:', { data, error });
+                   console.log('🧪 Connection result:', { data, error });
+                   alert('Connection result: ' + JSON.stringify({ data: !!data, error: !!error }));
 
-                  if (error) {
-                    console.error('Database error:', error);
-                    toast({
-                      title: "Failed",
-                      description: `Database error: ${error.message}`,
-                      variant: "destructive",
-                    });
-                  } else {
-                    console.log('✅ Connection created:', data);
-                    setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-                    await refreshConnections();
-                    toast({
-                      title: "SUCCESS!",
-                      description: "Calendar connection created! Now you can try sync.",
-                    });
-                  }
-                } catch (error) {
-                  console.error('Unexpected error:', error);
-                  toast({
-                    title: "Failed",
-                    description: "Connection creation failed",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              variant="outline"
-              className="border-blue-300 text-blue-800 hover:bg-blue-100"
-            >
-              Create Test Connection
-            </Button>
+                   if (error) {
+                     console.error('Database error:', error);
+                     alert('Database Error: ' + error.message);
+                     toast({
+                       title: "Failed",
+                       description: `Database error: ${error.message}`,
+                       variant: "destructive",
+                     });
+                   } else {
+                     console.log('✅ Connection created:', data);
+                     alert('SUCCESS! Connection created');
+                     setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+                     await refreshConnections();
+                     toast({
+                       title: "SUCCESS!",
+                       description: "Calendar connection created! Now you can try sync.",
+                     });
+                   }
+                 } catch (error) {
+                   console.error('Unexpected error:', error);
+                   alert('Unexpected Error: ' + error.message);
+                   toast({
+                     title: "Failed",
+                     description: "Connection creation failed: " + error.message,
+                     variant: "destructive",
+                   });
+                 }
+               }}
+               variant="outline"
+               className="border-blue-300 text-blue-800 hover:bg-blue-100"
+             >
+               Create Test Connection (DEBUG)
+             </Button>
           </div>
         </CardContent>
       </Card>
