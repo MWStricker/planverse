@@ -71,9 +71,10 @@ serve(async (req) => {
       events = sampleEvents;
       console.log(`Using ${events.length} sample events for testing`);
     } else {
-      // Real Google Calendar API call
-      const calendarResponse = await fetch(
-        'https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=250&singleEvents=true&orderBy=startTime',
+      // Real Google Calendar API call - First get all calendars
+      console.log('📅 Fetching all calendars...');
+      const calendarsResponse = await fetch(
+        'https://www.googleapis.com/calendar/v3/users/me/calendarList',
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -82,15 +83,79 @@ serve(async (req) => {
         }
       );
 
-      if (!calendarResponse.ok) {
-        const errorText = await calendarResponse.text();
-        console.error('Google Calendar API error:', errorText);
-        throw new Error(`Failed to fetch calendar events: ${calendarResponse.status}`);
+      if (!calendarsResponse.ok) {
+        throw new Error(`Failed to fetch calendars: ${calendarsResponse.status}`);
       }
 
-      const calendarData = await calendarResponse.json();
-      events = calendarData.items || [];
-      console.log(`Fetched ${events.length} events from Google Calendar API`);
+      const calendarsData = await calendarsResponse.json();
+      const calendars = calendarsData.items || [];
+      console.log(`Found ${calendars.length} calendars`);
+
+      events = [];
+      
+      // Fetch events from each calendar
+      for (const calendar of calendars) {
+        if (!calendar.accessRole || calendar.accessRole === 'freeBusyReader') {
+          continue; // Skip calendars we can't read events from
+        }
+
+        console.log(`📋 Fetching events from calendar: ${calendar.summary}`);
+        
+        // Get past 6 months and future 12 months of events
+        const timeMin = new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString();
+        const timeMax = new Date(Date.now() + 12 * 30 * 24 * 60 * 60 * 1000).toISOString();
+        
+        let nextPageToken = null;
+        let calendarEvents = [];
+        
+        // Paginate through all events for this calendar
+        do {
+          const params = new URLSearchParams({
+            maxResults: '2500',
+            singleEvents: 'true',
+            orderBy: 'startTime',
+            timeMin: timeMin,
+            timeMax: timeMax,
+          });
+          
+          if (nextPageToken) {
+            params.append('pageToken', nextPageToken);
+          }
+
+          const eventsResponse = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+
+          if (!eventsResponse.ok) {
+            console.error(`Failed to fetch events from calendar ${calendar.summary}: ${eventsResponse.status}`);
+            break;
+          }
+
+          const eventsData = await eventsResponse.json();
+          const pageEvents = eventsData.items || [];
+          calendarEvents = calendarEvents.concat(pageEvents);
+          
+          nextPageToken = eventsData.nextPageToken;
+          console.log(`📝 Fetched ${pageEvents.length} events from ${calendar.summary} (total: ${calendarEvents.length})`);
+          
+        } while (nextPageToken);
+        
+        // Add calendar source to each event
+        calendarEvents.forEach(event => {
+          event.calendarName = calendar.summary;
+          event.calendarId = calendar.id;
+        });
+        
+        events = events.concat(calendarEvents);
+      }
+      
+      console.log(`✅ Total events fetched from all calendars: ${events.length}`);
     }
 
     console.log(`Processing ${events.length} events from Google Calendar`);
@@ -138,7 +203,9 @@ serve(async (req) => {
         const eventData = {
           user_id: user.id,
           title: event.summary || 'Untitled Event',
-          description: event.description || null,
+          description: event.description ? 
+            `${event.description}${event.calendarName ? `\n\nCalendar: ${event.calendarName}` : ''}` : 
+            event.calendarName ? `Calendar: ${event.calendarName}` : null,
           start_time: startTime,
           end_time: endTime,
           is_all_day: isAllDay,
