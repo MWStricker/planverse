@@ -384,6 +384,9 @@ export const IntegrationSetup = () => {
   };
 
   const handleGoogleCalendarSync = async () => {
+    console.log('🔥 Sync Google Calendar button clicked!');
+    console.log('🔥 User present:', !!user);
+    
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -393,6 +396,7 @@ export const IntegrationSetup = () => {
       return;
     }
 
+    console.log('🔥 Starting sync process...');
     setIsConnecting(true);
 
     try {
@@ -738,11 +742,14 @@ export const IntegrationSetup = () => {
                    </Button>
                   ) : (
                      <div className="space-y-2">
-                       <Button 
-                         className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
-                         onClick={handleGoogleCalendarSync}
-                         disabled={isConnecting}
-                       >
+                        <Button 
+                          className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
+                          onClick={() => {
+                            console.log('🔥 Button clicked!');
+                            handleGoogleCalendarSync();
+                          }}
+                          disabled={isConnecting}
+                        >
                          <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
                          {isConnecting ? 'Syncing...' : 'Sync Google Calendar'}
                        </Button>
