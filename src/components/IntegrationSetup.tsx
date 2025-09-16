@@ -741,22 +741,31 @@ export const IntegrationSetup = () => {
                      Requires Backend Setup
                    </Button>
                   ) : (
-                     <div className="space-y-2">
+                      <div className="space-y-2">
                         <Button 
                           className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
-                          onClick={() => {
-                            console.log('🔥 Button clicked!');
-                            handleGoogleCalendarSync();
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔥🔥🔥 BUTTON CLICKED - EVENT TRIGGERED! 🔥🔥🔥');
+                            console.log('🔥 Current user:', !!user);
+                            console.log('🔥 isConnecting:', isConnecting);
+                            try {
+                              handleGoogleCalendarSync();
+                            } catch (error) {
+                              console.error('🔥 Error in handleGoogleCalendarSync:', error);
+                            }
                           }}
                           disabled={isConnecting}
+                          type="button"
                         >
-                         <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
-                         {isConnecting ? 'Syncing...' : 'Sync Google Calendar'}
-                       </Button>
-                       <p className="text-xs text-center text-muted-foreground">
-                         Will sign you in with Google if needed, then sync your calendar
-                       </p>
-                     </div>
+                          <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
+                          {isConnecting ? 'Syncing...' : 'Sync Google Calendar'}
+                        </Button>
+                        <p className="text-xs text-center text-muted-foreground">
+                          Will sign you in with Google if needed, then sync your calendar
+                        </p>
+                      </div>
                    )}
 
                 {integration.lastSync && (
