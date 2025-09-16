@@ -60,6 +60,7 @@ const Index = () => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
+    { id: 'integrations', label: 'Integrations', icon: Users },
     { id: 'connect', label: 'Connect', icon: Users },
     { id: 'courses', label: 'Courses', icon: BookOpen },
     { id: 'tasks', label: 'Tasks', icon: Target },
