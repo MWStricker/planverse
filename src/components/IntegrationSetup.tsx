@@ -436,13 +436,15 @@ export const IntegrationSetup = () => {
                 
                 supabase
                   .from('calendar_connections')
-                  .insert({
+                  .upsert({
                     user_id: user.id,
                     provider: 'google',
                     provider_id: user.email,
                     is_active: true,
                     scope: 'https://www.googleapis.com/auth/calendar',
                     sync_settings: { auto_sync: true, last_sync: null },
+                  }, {
+                    onConflict: 'user_id,provider'
                   })
                   .select()
                   .then(({ data, error }) => {
@@ -450,7 +452,7 @@ export const IntegrationSetup = () => {
                       alert('DATABASE ERROR: ' + error.message);
                       console.error('Database error:', error);
                     } else {
-                      alert('SUCCESS! Connection created: ' + JSON.stringify(data));
+                      alert('SUCCESS! Connection created/updated: ' + JSON.stringify(data));
                       console.log('Success:', data);
                     }
                   });
