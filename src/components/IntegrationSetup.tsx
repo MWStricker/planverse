@@ -162,14 +162,13 @@ export const IntegrationSetup = () => {
     try {
       setIsConnecting(true);
       console.log('🔍 Starting Google Calendar connection...');
-      console.log('🔍 Current user:', user);
-      console.log('🔍 Window location origin:', window.location.origin);
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Force a new OAuth flow by specifying prompt=consent
+      const { data, error } = await supabase.auth.linkIdentity({
         provider: 'google',
         options: {
           scopes: 'https://www.googleapis.com/auth/calendar',
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/#integrations`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -177,24 +176,19 @@ export const IntegrationSetup = () => {
         },
       });
 
-      console.log('🔍 OAuth response data:', data);
-      console.log('🔍 OAuth response error:', error);
-
       if (error) {
         console.error('❌ Google OAuth error:', error);
         toast({
           title: "Connection Failed",
-          description: `${error.message} - Please check that Google OAuth is configured in Supabase.`,
+          description: error.message,
           variant: "destructive",
         });
-      } else {
-        console.log('✅ OAuth request initiated successfully');
       }
     } catch (error) {
       console.error('❌ Unexpected error in handleGoogleCalendarConnect:', error);
       toast({
         title: "Connection Failed",
-        description: "An unexpected error occurred. Please check console for details.",
+        description: "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -292,47 +286,38 @@ export const IntegrationSetup = () => {
             <Button 
               onClick={async () => {
                 try {
-                  console.log('🔍 Manual connection check triggered');
                   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                  console.log('🔍 Current session:', session);
-                  console.log('🔍 Session error:', sessionError);
-                  console.log('🔍 User from auth:', user);
-                  console.log('🔍 Provider token exists:', !!session?.provider_token);
-                  console.log('🔍 App metadata:', session?.user?.app_metadata);
                   
                   if (sessionError) {
                     toast({
                       title: "Session Error",
-                      description: `Error getting session: ${sessionError.message}`,
+                      description: sessionError.message,
                       variant: "destructive",
                     });
                     return;
                   }
                   
                   if (session?.provider_token && user) {
-                    console.log('🔍 Found session with provider token, creating connection...');
                     const success = await createCalendarConnection(session);
                     if (success) {
                       setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
                       await refreshConnections();
                       toast({
                         title: "Connection Created",
-                        description: "Google Calendar connection has been established. You can now sync!",
+                        description: "Google Calendar connection established!",
                       });
                     }
                   } else {
-                    console.log('🔍 No provider token found in session');
                     toast({
                       title: "No Google Token",
-                      description: "No Google Calendar access token found. Please connect with Google first.",
+                      description: "Please use 'Connect Now' button first to authenticate with Google.",
                       variant: "destructive",
                     });
                   }
                 } catch (error) {
-                  console.error('❌ Error in manual connection check:', error);
                   toast({
                     title: "Check Failed",
-                    description: "An error occurred while checking the connection",
+                    description: "Connection check failed",
                     variant: "destructive",
                   });
                 }
@@ -358,14 +343,15 @@ export const IntegrationSetup = () => {
             </div>
             <Button 
               onClick={async () => {
+                if (!user) return;
+                
                 try {
-                  console.log('🧪 Creating test calendar connection...');
-                  const { data, error } = await supabase
+                  const { error } = await supabase
                     .from('calendar_connections')
                     .upsert({
-                      user_id: user?.id,
+                      user_id: user.id,
                       provider: 'google',
-                      provider_id: user?.email || 'test@example.com',
+                      provider_id: user.email || 'test@example.com',
                       is_active: true,
                       scope: 'https://www.googleapis.com/auth/calendar',
                       sync_settings: { auto_sync: true, last_sync: null },
@@ -374,23 +360,25 @@ export const IntegrationSetup = () => {
                     });
 
                   if (error) {
-                    console.error('❌ Error creating test connection:', error);
                     toast({
                       title: "Test Failed",
-                      description: `Error: ${error.message}`,
+                      description: error.message,
                       variant: "destructive",
                     });
                   } else {
-                    console.log('✅ Test connection created:', data);
                     setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
                     await refreshConnections();
                     toast({
                       title: "Test Connection Created",
-                      description: "Test calendar connection created. Note: Sync won't work without real OAuth token.",
+                      description: "Test connection created. Real OAuth token still needed for sync.",
                     });
                   }
                 } catch (error) {
-                  console.error('❌ Test connection error:', error);
+                  toast({
+                    title: "Test Failed",
+                    description: "Failed to create test connection",
+                    variant: "destructive",
+                  });
                 }
               }}
               variant="outline"
