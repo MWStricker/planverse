@@ -137,7 +137,9 @@ export const IntegrationSetup = () => {
   const handleGoogleCalendarConnect = async () => {
     try {
       setIsConnecting(true);
-      console.log('Starting Google Calendar connection...');
+      console.log('🔍 Starting Google Calendar connection...');
+      console.log('🔍 Current user:', user);
+      console.log('🔍 Window location origin:', window.location.origin);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -151,16 +153,21 @@ export const IntegrationSetup = () => {
         },
       });
 
+      console.log('🔍 OAuth response data:', data);
+      console.log('🔍 OAuth response error:', error);
+
       if (error) {
-        console.error('Google OAuth error:', error);
+        console.error('❌ Google OAuth error:', error);
         toast({
           title: "Connection Failed",
           description: `${error.message} - Please check that Google OAuth is configured in Supabase.`,
           variant: "destructive",
         });
+      } else {
+        console.log('✅ OAuth request initiated successfully');
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('❌ Unexpected error in handleGoogleCalendarConnect:', error);
       toast({
         title: "Connection Failed",
         description: "An unexpected error occurred. Please check console for details.",
@@ -193,9 +200,13 @@ export const IntegrationSetup = () => {
   };
 
   const handleConnect = (integrationId: string) => {
+    console.log('🔍 handleConnect called with:', integrationId);
+    
     if (integrationId === 'google-calendar') {
+      console.log('🔍 Calling handleGoogleCalendarConnect...');
       handleGoogleCalendarConnect();
     } else {
+      console.log('🔍 Integration not implemented:', integrationId);
       toast({
         title: "Coming Soon",
         description: `${integrations.find(i => i.id === integrationId)?.name} integration will be available soon.`,
@@ -303,7 +314,11 @@ export const IntegrationSetup = () => {
                  ) : (
                    <Button 
                      className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
-                     onClick={() => handleConnect(integration.id)}
+                     onClick={(e) => {
+                       console.log('🔍 Button clicked for integration:', integration.id);
+                       e.preventDefault();
+                       handleConnect(integration.id);
+                     }}
                      disabled={isConnecting && integration.id === 'google-calendar'}
                    >
                      <Zap className="h-4 w-4 mr-2" />
