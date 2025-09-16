@@ -291,25 +291,48 @@ export const IntegrationSetup = () => {
             </div>
             <Button 
               onClick={async () => {
-                console.log('🔍 Manual connection check triggered');
-                const { data: { session } } = await supabase.auth.getSession();
-                console.log('🔍 Current session:', session);
-                
-                if (session?.provider_token && user) {
-                  console.log('🔍 Found session with provider token, creating connection...');
-                  const success = await createCalendarConnection(session);
-                  if (success) {
-                    setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-                    await refreshConnections();
+                try {
+                  console.log('🔍 Manual connection check triggered');
+                  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                  console.log('🔍 Current session:', session);
+                  console.log('🔍 Session error:', sessionError);
+                  console.log('🔍 User from auth:', user);
+                  console.log('🔍 Provider token exists:', !!session?.provider_token);
+                  console.log('🔍 App metadata:', session?.user?.app_metadata);
+                  
+                  if (sessionError) {
                     toast({
-                      title: "Connection Created",
-                      description: "Google Calendar connection has been established. You can now sync!",
+                      title: "Session Error",
+                      description: `Error getting session: ${sessionError.message}`,
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (session?.provider_token && user) {
+                    console.log('🔍 Found session with provider token, creating connection...');
+                    const success = await createCalendarConnection(session);
+                    if (success) {
+                      setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+                      await refreshConnections();
+                      toast({
+                        title: "Connection Created",
+                        description: "Google Calendar connection has been established. You can now sync!",
+                      });
+                    }
+                  } else {
+                    console.log('🔍 No provider token found in session');
+                    toast({
+                      title: "No Google Token",
+                      description: "No Google Calendar access token found. Please connect with Google first.",
+                      variant: "destructive",
                     });
                   }
-                } else {
+                } catch (error) {
+                  console.error('❌ Error in manual connection check:', error);
                   toast({
-                    title: "No Connection Found",
-                    description: "Please sign in with Google first using the Connect Now button.",
+                    title: "Check Failed",
+                    description: "An error occurred while checking the connection",
                     variant: "destructive",
                   });
                 }
@@ -318,6 +341,62 @@ export const IntegrationSetup = () => {
               className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
             >
               Check Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Force Create Connection for Testing */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-blue-800 mb-1">Test: Force Create Connection</h4>
+              <p className="text-sm text-blue-700">
+                Create a test calendar connection manually (for debugging purposes)
+              </p>
+            </div>
+            <Button 
+              onClick={async () => {
+                try {
+                  console.log('🧪 Creating test calendar connection...');
+                  const { data, error } = await supabase
+                    .from('calendar_connections')
+                    .upsert({
+                      user_id: user?.id,
+                      provider: 'google',
+                      provider_id: user?.email || 'test@example.com',
+                      is_active: true,
+                      scope: 'https://www.googleapis.com/auth/calendar',
+                      sync_settings: { auto_sync: true, last_sync: null },
+                    }, {
+                      onConflict: 'user_id,provider'
+                    });
+
+                  if (error) {
+                    console.error('❌ Error creating test connection:', error);
+                    toast({
+                      title: "Test Failed",
+                      description: `Error: ${error.message}`,
+                      variant: "destructive",
+                    });
+                  } else {
+                    console.log('✅ Test connection created:', data);
+                    setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+                    await refreshConnections();
+                    toast({
+                      title: "Test Connection Created",
+                      description: "Test calendar connection created. Note: Sync won't work without real OAuth token.",
+                    });
+                  }
+                } catch (error) {
+                  console.error('❌ Test connection error:', error);
+                }
+              }}
+              variant="outline"
+              className="border-blue-300 text-blue-800 hover:bg-blue-100"
+            >
+              Create Test Connection
             </Button>
           </div>
         </CardContent>
