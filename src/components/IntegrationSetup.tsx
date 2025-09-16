@@ -162,10 +162,15 @@ export const IntegrationSetup = () => {
 
     try {
       console.log('🔍 Creating connection with session data...');
+      console.log('🔍 Session provider_token:', session?.provider_token);
+      console.log('🔍 Session provider_refresh_token:', session?.provider_refresh_token);
+      
       const connectionData = {
         user_id: user.id,
         provider: 'google',
         provider_id: session?.user?.email || user.email || null,
+        access_token: session?.provider_token || null,
+        refresh_token: session?.provider_refresh_token || null,
         is_active: true,
         scope: 'https://www.googleapis.com/auth/calendar.readonly',
         token_expires_at: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
@@ -178,6 +183,8 @@ export const IntegrationSetup = () => {
 
       console.log('🔍 Connection data:', {
         ...connectionData,
+        access_token: connectionData.access_token ? '***present***' : 'missing',
+        refresh_token: connectionData.refresh_token ? '***present***' : 'missing',
         has_provider_token: !!session?.provider_token
       });
 

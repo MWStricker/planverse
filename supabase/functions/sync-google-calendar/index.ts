@@ -33,13 +33,31 @@ serve(async (req) => {
       throw new Error('Missing connectionId parameter');
     }
 
+    // Get the connection details from database to check for stored tokens
+    const { data: connectionDetails, error: connectionError } = await supabase
+      .from('calendar_connections')
+      .select('access_token, refresh_token, provider_id')
+      .eq('id', connectionId)
+      .single();
+
+    if (connectionError || !connectionDetails) {
+      throw new Error('Calendar connection not found');
+    }
+
+    // Use stored access token if no token provided in request
+    const finalAccessToken = accessToken || connectionDetails.access_token;
+    
+    if (!finalAccessToken) {
+      throw new Error('No access token available. Please reconnect your Google Calendar by clicking "Connect Now" in the integrations section.');
+    }
+
     console.log(`Starting Google Calendar sync for connection: ${connectionId}`);
 
     // Declare events variable with proper scope
     let events = [];
 
     // For testing purposes, if no real access token, create sample Google Calendar events
-    if (!accessToken || accessToken === 'mock_token_for_testing') {
+    if (!finalAccessToken || finalAccessToken === 'mock_token_for_testing') {
       console.log('🧪 Creating sample Google Calendar events for testing...');
       
       const sampleEvents = [
@@ -73,21 +91,17 @@ serve(async (req) => {
     } else {
       // Real Google Calendar API call - First get all calendars
       console.log('📅 Fetching all calendars...');
-      let currentAccessToken = accessToken;
+      let currentAccessToken = finalAccessToken;
       
       // Function to refresh token if needed
       const refreshTokenIfNeeded = async (response: Response) => {
         if (response.status === 401 || response.status === 403) {
           console.log('🔄 Access token expired, attempting to refresh...');
           
-          // Get the connection to check for refresh token
-          const { data: connection } = await supabase
-            .from('calendar_connections')
-            .select('refresh_token, provider_id')
-            .eq('id', connectionId)
-            .single();
+          // Get the refresh token from connectionDetails if not provided by session
+          const refreshToken = connectionDetails?.refresh_token;
           
-          if (connection?.refresh_token) {
+          if (refreshToken) {
             console.log('🔑 Refreshing access token...');
             const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
               method: 'POST',
@@ -97,7 +111,7 @@ serve(async (req) => {
               body: new URLSearchParams({
                 client_id: Deno.env.get('GOOGLE_CLIENT_ID')!,
                 client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET')!,
-                refresh_token: connection.refresh_token,
+                refresh_token: refreshToken,
                 grant_type: 'refresh_token',
               }),
             });
