@@ -101,21 +101,23 @@ serve(async (req) => {
 
         console.log(`📋 Fetching events from calendar: ${calendar.summary}`);
         
-        // Get past 6 months and future 12 months of events
-        const timeMin = new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString();
-        const timeMax = new Date(Date.now() + 12 * 30 * 24 * 60 * 60 * 1000).toISOString();
+        // Get past 12 months and future 24 months of events to ensure we get everything
+        const timeMin = new Date(Date.now() - 12 * 30 * 24 * 60 * 60 * 1000).toISOString();
+        const timeMax = new Date(Date.now() + 24 * 30 * 24 * 60 * 60 * 1000).toISOString();
         
         let nextPageToken = null;
         let calendarEvents = [];
         
-        // Paginate through all events for this calendar
+        // Paginate through ALL events for this calendar
         do {
           const params = new URLSearchParams({
-            maxResults: '2500',
-            singleEvents: 'true',
+            maxResults: '2500', // Maximum allowed per request
+            singleEvents: 'true', // Expand recurring events
             orderBy: 'startTime',
             timeMin: timeMin,
             timeMax: timeMax,
+            showDeleted: 'false', // Don't include deleted events
+            showHiddenInvitations: 'false', // Don't include hidden invitations
           });
           
           if (nextPageToken) {
@@ -163,15 +165,18 @@ serve(async (req) => {
     let syncedEvents = 0;
     let errors = 0;
 
-    // Process each event
+    // Process each event with detailed logging
     for (const event of events) {
       try {
-        // Skip events without proper time information
-        if (!event.start || (!event.start.dateTime && !event.start.date)) {
+        // Skip events without proper time information or if cancelled
+        if (!event.start || (!event.start.dateTime && !event.start.date) || event.status === 'cancelled') {
+          console.log(`⏭️  Skipping event: ${event.summary || 'No title'} - ${event.status || 'no time info'}`);
           continue;
         }
 
-        // Determine start and end times
+        console.log(`🔄 Processing event: ${event.summary || 'Untitled'} from ${event.calendarName || 'Unknown calendar'}`);
+
+        // Determine start and end times with better handling
         let startTime: string;
         let endTime: string;
         let isAllDay = false;
@@ -191,10 +196,10 @@ serve(async (req) => {
             : new Date(new Date(event.start.dateTime).getTime() + 3600000).toISOString(); // Default 1 hour
         }
 
-        // Check if event already exists
+        // Check if event already exists (using both source_event_id and start_time for better matching)
         const { data: existingEvent } = await supabase
           .from('events')
-          .select('id')
+          .select('id, updated_at')
           .eq('user_id', user.id)
           .eq('source_provider', 'google')
           .eq('source_event_id', event.id)
@@ -203,9 +208,13 @@ serve(async (req) => {
         const eventData = {
           user_id: user.id,
           title: event.summary || 'Untitled Event',
-          description: event.description ? 
-            `${event.description}${event.calendarName ? `\n\nCalendar: ${event.calendarName}` : ''}` : 
-            event.calendarName ? `Calendar: ${event.calendarName}` : null,
+          description: [
+            event.description || '',
+            event.calendarName ? `📅 Calendar: ${event.calendarName}` : '',
+            event.location ? `📍 Location: ${event.location}` : '',
+            event.attendees?.length > 0 ? `👥 ${event.attendees.length} attendees` : '',
+            event.htmlLink ? `🔗 View in Google Calendar: ${event.htmlLink}` : ''
+          ].filter(Boolean).join('\n\n'),
           start_time: startTime,
           end_time: endTime,
           is_all_day: isAllDay,
@@ -224,9 +233,10 @@ serve(async (req) => {
             .eq('id', existingEvent.id);
 
           if (updateError) {
-            console.error('Error updating event:', updateError);
+            console.error(`❌ Error updating event ${event.summary}:`, updateError);
             errors++;
           } else {
+            console.log(`✅ Updated event: ${event.summary}`);
             syncedEvents++;
           }
         } else {
@@ -238,14 +248,15 @@ serve(async (req) => {
             .insert(eventData);
 
           if (insertError) {
-            console.error('Error inserting event:', insertError);
+            console.error(`❌ Error inserting event ${event.summary}:`, insertError);
             errors++;
           } else {
+            console.log(`🆕 Created new event: ${event.summary}`);
             syncedEvents++;
           }
         }
       } catch (eventError) {
-        console.error('Error processing event:', eventError);
+        console.error(`❌ Error processing event ${event.summary || 'Unknown'}:`, eventError);
         errors++;
       }
     }
