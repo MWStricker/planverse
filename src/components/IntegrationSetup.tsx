@@ -67,57 +67,68 @@ export const IntegrationSetup = () => {
   const { user } = useAuth();
   const { syncAllConnections, isProviderConnected, refreshConnections } = useIntegrationSync();
 
-  // Check for OAuth callback and create connection
+  // Enhanced OAuth callback detection
   useEffect(() => {
     const handleOAuthCallback = async () => {
       if (!user) return;
       
-      // Check if we're returning from OAuth by looking at URL hash or session
+      // Check URL for OAuth return indicators
       const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
-      const hasOAuthParams = urlParams.has('access_token') || urlParams.has('code');
+      const hasOAuthReturn = urlParams.has('access_token') || urlParams.has('code') || window.location.hash.includes('access_token');
       
-      console.log('🔍 Checking OAuth callback...', { hasOAuthParams, user: !!user });
+      console.log('🔍 OAuth callback check:', { 
+        hasOAuthReturn, 
+        hash: window.location.hash,
+        user: user.email 
+      });
       
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔍 Current session provider_token:', !!session?.provider_token);
-      
-      // If we have a provider token or just returned from OAuth, try to create connection
-      if (session?.provider_token || hasOAuthParams) {
-        console.log('🔍 Found OAuth session/callback, creating connection...');
-        
-        const success = await createCalendarConnection(session);
-        if (success) {
-          console.log('✅ Calendar connection created successfully');
-          setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-          await refreshConnections();
-          
-          toast({
-            title: "Connected Successfully",
-            description: "Google Calendar connected. Attempting to sync events...",
+      if (hasOAuthReturn) {
+        // Wait a moment for Supabase to process the tokens
+        setTimeout(async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('🔍 Post-OAuth session:', {
+            hasSession: !!session,
+            hasProviderToken: !!session?.provider_token,
+            tokenLength: session?.provider_token?.length || 0
           });
           
-          // Automatically trigger sync after connection
-          try {
-            await handleSyncCalendar();
-          } catch (syncError) {
-            console.error('❌ Auto-sync failed:', syncError);
+          if (session?.provider_token) {
+            console.log('✅ Found provider token, creating connection...');
+            const success = await createCalendarConnection(session);
+            if (success) {
+              setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+              await refreshConnections();
+              
+              toast({
+                title: "Connected Successfully!",
+                description: "Google Calendar connected. Starting sync...",
+              });
+              
+              // Auto-trigger real sync
+              setTimeout(() => {
+                handleSyncCalendar();
+              }, 1000);
+            }
+          } else {
+            console.log('⚠️ No provider token found in session');
           }
-        } else {
-          console.error('❌ Failed to create calendar connection');
-        }
+        }, 2000);
       }
     };
 
-    // Add a small delay to ensure user state is loaded
-    const timer = setTimeout(handleOAuthCallback, 1000);
-    return () => clearTimeout(timer);
+    handleOAuthCallback();
   }, [user]);
 
-  // Also listen for auth state changes to catch OAuth callbacks
+  // Auth state change listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔍 Auth state change:', event, {
+        hasSession: !!session,
+        hasProviderToken: !!session?.provider_token
+      });
+      
       if (event === 'SIGNED_IN' && session?.provider_token && user) {
-        console.log('🔍 Auth state changed with provider token');
+        console.log('🔍 Signed in with provider token');
         const success = await createCalendarConnection(session);
         if (success) {
           setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
@@ -150,27 +161,36 @@ export const IntegrationSetup = () => {
     }
 
     try {
-      console.log('🔍 Upserting calendar connection to database...');
+      console.log('🔍 Creating connection with session data...');
       const connectionData = {
         user_id: user.id,
         provider: 'google',
         provider_id: session?.user?.email || user.email || null,
         is_active: true,
-        scope: 'https://www.googleapis.com/auth/calendar',
+        scope: 'https://www.googleapis.com/auth/calendar.readonly',
         token_expires_at: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
-        sync_settings: { auto_sync: true, last_sync: null },
+        sync_settings: { 
+          auto_sync: true, 
+          last_sync: null,
+          has_provider_token: !!session?.provider_token 
+        },
       };
 
-      console.log('🔍 Connection data:', connectionData);
+      console.log('🔍 Connection data:', {
+        ...connectionData,
+        has_provider_token: !!session?.provider_token
+      });
 
       const { data, error } = await supabase
         .from('calendar_connections')
         .upsert(connectionData, {
           onConflict: 'user_id,provider'
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
-        console.error('❌ Error creating calendar connection:', error);
+        console.error('❌ Database error creating connection:', error);
         return false;
       }
 
@@ -187,58 +207,32 @@ export const IntegrationSetup = () => {
       setIsConnecting(true);
       console.log('🔍 Starting Google Calendar connection...');
       
-      // Check current session first
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔍 Current session before OAuth:', {
-        hasSession: !!session,
-        hasProviderToken: !!session?.provider_token,
-        providers: session?.user?.app_metadata?.providers,
-        userEmail: session?.user?.email
-      });
-      
-      // Since user is already logged in with Google, use linkIdentity to add Calendar scope
-      const { data, error } = await supabase.auth.linkIdentity({
+      // Clear any existing session and force fresh OAuth with Calendar scope
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          scopes: 'https://www.googleapis.com/auth/calendar',
+          scopes: 'https://www.googleapis.com/auth/calendar.readonly',
           redirectTo: `${window.location.origin}/#integrations`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent', // Force consent to get new scopes
+            prompt: 'consent', // Force consent to ensure we get fresh tokens
+            include_granted_scopes: 'true',
           },
         },
       });
 
-      console.log('🔍 LinkIdentity response:', { data, error });
-
       if (error) {
-        console.error('❌ Google linkIdentity error:', error);
-        // Fallback to regular OAuth if linkIdentity fails
-        console.log('🔍 Trying fallback OAuth...');
-        const { data: fallbackData, error: fallbackError } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            scopes: 'https://www.googleapis.com/auth/calendar',
-            redirectTo: `${window.location.origin}/#integrations`,
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-          },
+        console.error('❌ Google OAuth error:', error);
+        toast({
+          title: "Connection Failed",
+          description: error.message,
+          variant: "destructive",
         });
-        
-        if (fallbackError) {
-          toast({
-            title: "Connection Failed",
-            description: fallbackError.message,
-            variant: "destructive",
-          });
-        }
       } else {
-        console.log('✅ LinkIdentity initiated successfully');
+        console.log('✅ OAuth initiated, redirecting to Google...');
         toast({
           title: "Redirecting to Google",
-          description: "Adding calendar permissions to your account...",
+          description: "Please grant calendar permissions and you'll be redirected back.",
         });
       }
     } catch (error) {
