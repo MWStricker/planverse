@@ -414,77 +414,46 @@ export const IntegrationSetup = () => {
               Bypass OAuth and manually sync with Google Calendar API key
             </p>
           </div>
-          <Button 
-            onClick={async () => {
-              if (!user) return;
-              
-              try {
-                console.log('🔍 MANUAL SYNC: Starting direct Google Calendar sync...');
-                
-                // Create connection first
-                const { data: connectionData, error: connectionError } = await supabase
-                  .from('calendar_connections')
-                  .upsert({
-                    user_id: user.id,
-                    provider: 'google',
-                    provider_id: user.email,
-                    is_active: true,
-                    scope: 'https://www.googleapis.com/auth/calendar',
-                    sync_settings: { auto_sync: true, last_sync: null },
-                  }, {
-                    onConflict: 'user_id,provider'
-                  })
-                  .select()
-                  .single();
-
-                if (connectionError) {
-                  throw new Error(`Connection error: ${connectionError.message}`);
-                }
-
-                console.log('✅ Connection created:', connectionData);
-                
-                // Now call the sync function with a mock token
-                console.log('🔍 Calling sync function...');
-                const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-google-calendar', {
-                  body: {
-                    connectionId: connectionData.id,
-                    accessToken: 'mock_token_for_testing', // We'll modify the function to handle this
-                  },
-                });
-
-                console.log('🔍 Sync response:', { syncData, syncError });
-
-                if (syncError) {
-                  throw new Error(`Sync error: ${syncError.message}`);
-                }
-
-                if (syncData?.success) {
-                  setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-                  await refreshConnections();
-                  toast({
-                    title: "SYNC SUCCESS!",
-                    description: `Synced ${syncData.syncedEvents} events from Google Calendar`,
-                  });
-                } else {
-                  toast({
-                    title: "Sync Failed",
-                    description: syncData?.error || "Unknown sync error",
-                    variant: "destructive",
-                  });
-                }
-              } catch (error) {
-                console.error('❌ Manual sync error:', error);
-                toast({
-                  title: "Manual Sync Failed",
-                  description: error.message,
-                  variant: "destructive",
-                });
-              }
-            }}
-            className="bg-red-600 text-white hover:bg-red-700"
-          >
-            FORCE SYNC NOW
-          </Button>
+           <Button 
+             onClick={() => {
+               console.log('🚨 BUTTON CLICKED! User:', !!user);
+               console.log('🚨 Button is working!');
+               
+               if (!user) {
+                 alert('No user found!');
+                 return;
+               }
+               
+               alert('Button works! User: ' + user.email);
+               
+               // Simple test - just create a basic event
+               supabase
+                 .from('events')
+                 .insert({
+                   user_id: user.id,
+                   title: 'BUTTON TEST EVENT',
+                   description: 'This proves the button works',
+                   start_time: new Date().toISOString(),
+                   end_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+                   source_provider: 'manual',
+                   source_event_id: 'button_test_' + Date.now(),
+                   event_type: 'event',
+                   is_all_day: false,
+                 })
+                 .then(({ data, error }) => {
+                   if (error) {
+                     console.error('❌ Error:', error);
+                     alert('Error: ' + error.message);
+                   } else {
+                     console.log('✅ Success:', data);
+                     alert('SUCCESS! Event created. Check your calendar.');
+                   }
+                 });
+             }}
+             className="bg-red-600 text-white hover:bg-red-700"
+           >
+             TEST BUTTON (SIMPLE)
+           </Button>
             <Button 
               onClick={async () => {
                 if (!user) {
