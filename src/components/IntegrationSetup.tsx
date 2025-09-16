@@ -151,7 +151,7 @@ export const IntegrationSetup = () => {
     };
 
     updateIntegrationStatus();
-  }, [isProviderConnected]);
+  }, []); // Remove dependency to fix infinite loop
 
   const createCalendarConnection = async (session: any) => {
     console.log('🔍 Creating calendar connection...');
@@ -565,36 +565,89 @@ export const IntegrationSetup = () => {
             </Button>
             
             <Button 
-              onClick={() => {
+              onClick={async () => {
                 console.log('🔥 SYNC BUTTON CLICKED!');
-                alert('SYNC BUTTON CLICKED! - Calling sync edge function...');
                 
                 if (!user) {
                   alert('ERROR: No user found!');
                   return;
                 }
                 
-                // Call the sync edge function
-                supabase.functions.invoke('sync-google-calendar', {
-                  body: {
-                    connectionId: 'test-connection-id', // We'll get the real ID later
-                    accessToken: 'mock_token_for_testing', // This triggers mock data
-                  },
-                })
-                .then(({ data, error }) => {
-                  if (error) {
-                    alert('SYNC ERROR: ' + error.message);
-                    console.error('Sync error:', error);
-                  } else {
-                    alert('SYNC SUCCESS! Result: ' + JSON.stringify(data));
-                    console.log('Sync success:', data);
+                try {
+                  setIsConnecting(true);
+                  
+                  // First, create a test connection if it doesn't exist
+                  const { data: existingConnection } = await supabase
+                    .from('calendar_connections')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('provider', 'google')
+                    .single();
+                  
+                  let connectionId = existingConnection?.id;
+                  
+                  if (!connectionId) {
+                    // Create a test connection
+                    const { data: newConnection, error: connectionError } = await supabase
+                      .from('calendar_connections')
+                      .insert({
+                        user_id: user.id,
+                        provider: 'google',
+                        provider_id: user.email,
+                        is_active: true,
+                        scope: 'https://www.googleapis.com/auth/calendar.readonly',
+                        sync_settings: { auto_sync: true, last_sync: null },
+                      })
+                      .select('id')
+                      .single();
+                    
+                    if (connectionError) {
+                      throw new Error(`Failed to create connection: ${connectionError.message}`);
+                    }
+                    
+                    connectionId = newConnection.id;
+                    console.log('✅ Created new connection:', connectionId);
                   }
-                });
+                  
+                  // Now sync with the connection
+                  console.log('🔄 Calling sync edge function...');
+                  const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-google-calendar', {
+                    body: {
+                      connectionId: connectionId,
+                      accessToken: 'mock_token_for_testing', // This triggers mock data
+                    },
+                  });
+                  
+                  if (syncError) {
+                    throw new Error(`Sync error: ${syncError.message}`);
+                  }
+                  
+                  if (syncData?.success) {
+                    setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+                    toast({
+                      title: "Calendar Synced Successfully!",
+                      description: `Imported ${syncData.syncedEvents} test events to your calendar.`,
+                    });
+                    console.log(`✅ Synced ${syncData.syncedEvents} events!`);
+                  } else {
+                    throw new Error(syncData?.error || 'Unknown sync error');
+                  }
+                } catch (error) {
+                  console.error('❌ Sync error:', error);
+                  toast({
+                    title: "Sync Failed",
+                    description: error.message || "Failed to sync calendar. Please try again.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsConnecting(false);
+                }
               }}
               className="bg-purple-600 text-white hover:bg-purple-700 text-xl p-6"
               size="lg"
+              disabled={isConnecting}
             >
-              🔄 SYNC CALENDAR NOW 🔄
+              {isConnecting ? '⏳ SYNCING...' : '🔄 SYNC CALENDAR NOW 🔄'}
             </Button>
           </div>
         </CardContent>
