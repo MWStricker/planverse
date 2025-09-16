@@ -187,28 +187,59 @@ export const IntegrationSetup = () => {
       setIsConnecting(true);
       console.log('🔍 Starting Google Calendar connection...');
       
-      // Use regular OAuth flow which works better for getting provider tokens
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Check current session first
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Current session before OAuth:', {
+        hasSession: !!session,
+        hasProviderToken: !!session?.provider_token,
+        providers: session?.user?.app_metadata?.providers,
+        userEmail: session?.user?.email
+      });
+      
+      // Since user is already logged in with Google, use linkIdentity to add Calendar scope
+      const { data, error } = await supabase.auth.linkIdentity({
         provider: 'google',
         options: {
           scopes: 'https://www.googleapis.com/auth/calendar',
           redirectTo: `${window.location.origin}/#integrations`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'consent', // Force consent to get new scopes
           },
         },
       });
 
+      console.log('🔍 LinkIdentity response:', { data, error });
+
       if (error) {
-        console.error('❌ Google OAuth error:', error);
-        toast({
-          title: "Connection Failed",
-          description: error.message,
-          variant: "destructive",
+        console.error('❌ Google linkIdentity error:', error);
+        // Fallback to regular OAuth if linkIdentity fails
+        console.log('🔍 Trying fallback OAuth...');
+        const { data: fallbackData, error: fallbackError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            scopes: 'https://www.googleapis.com/auth/calendar',
+            redirectTo: `${window.location.origin}/#integrations`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+          },
         });
+        
+        if (fallbackError) {
+          toast({
+            title: "Connection Failed",
+            description: fallbackError.message,
+            variant: "destructive",
+          });
+        }
       } else {
-        console.log('✅ OAuth initiated, user will be redirected');
+        console.log('✅ LinkIdentity initiated successfully');
+        toast({
+          title: "Redirecting to Google",
+          description: "Adding calendar permissions to your account...",
+        });
       }
     } catch (error) {
       console.error('❌ Unexpected error in handleGoogleCalendarConnect:', error);
@@ -499,31 +530,73 @@ export const IntegrationSetup = () => {
                      Requires Backend Setup
                    </Button>
                  ) : isConnected ? (
-                   <div className="space-y-2">
-                     <Button 
-                       className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white border-0 hover:shadow-lg transition-all"
-                       onClick={handleSyncCalendar}
-                       disabled={isConnecting}
-                     >
-                       <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
-                       {isConnecting ? 'Syncing...' : 'Sync Calendar'}
-                     </Button>
-                     <p className="text-xs text-center text-green-600">✓ Connected and ready to sync</p>
-                   </div>
-                 ) : (
-                   <Button 
-                     className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
-                     onClick={(e) => {
-                       console.log('🔍 Button clicked for integration:', integration.id);
-                       e.preventDefault();
-                       handleConnect(integration.id);
-                     }}
-                     disabled={isConnecting && integration.id === 'google-calendar'}
-                   >
-                     <Zap className="h-4 w-4 mr-2" />
-                     {isConnecting && integration.id === 'google-calendar' ? 'Connecting...' : 'Connect Now'}
-                   </Button>
-                 )}
+                    <div className="space-y-2">
+                      <Button 
+                        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white border-0 hover:shadow-lg transition-all"
+                        onClick={handleSyncCalendar}
+                        disabled={isConnecting}
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
+                        {isConnecting ? 'Syncing...' : 'Sync Calendar'}
+                      </Button>
+                      <p className="text-xs text-center text-green-600">✓ Connected and ready to sync</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Button 
+                        className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
+                        onClick={(e) => {
+                          console.log('🔍 Button clicked for integration:', integration.id);
+                          e.preventDefault();
+                          handleConnect(integration.id);
+                        }}
+                        disabled={isConnecting && integration.id === 'google-calendar'}
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        {isConnecting && integration.id === 'google-calendar' ? 'Connecting...' : 'Connect Now'}
+                      </Button>
+                      
+                      {/* Quick connect button for users already signed in with Google */}
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={async () => {
+                          try {
+                            // Try to create connection with current session
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (session?.user?.app_metadata?.providers?.includes('google')) {
+                              console.log('🔍 User already has Google auth, attempting direct connection...');
+                              const success = await createCalendarConnection(session);
+                              if (success) {
+                                setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+                                await refreshConnections();
+                                toast({
+                                  title: "Quick Connect Success",
+                                  description: "Using your existing Google login for calendar access.",
+                                });
+                              } else {
+                                toast({
+                                  title: "Quick Connect Failed",
+                                  description: "Please use the 'Connect Now' button above for full setup.",
+                                  variant: "destructive",
+                                });
+                              }
+                            } else {
+                              toast({
+                                title: "No Google Auth",
+                                description: "Please use 'Connect Now' to authenticate with Google first.",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Quick connect error:', error);
+                          }
+                        }}
+                      >
+                        Quick Connect (if already signed in with Google)
+                      </Button>
+                    </div>
+                  )}
 
                 {integration.lastSync && (
                   <p className="text-xs text-muted-foreground">
