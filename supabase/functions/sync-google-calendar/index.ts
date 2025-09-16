@@ -35,6 +35,9 @@ serve(async (req) => {
 
     console.log(`Starting Google Calendar sync for connection: ${connectionId}`);
 
+    // Declare events variable with proper scope
+    let events = [];
+
     // For testing purposes, if no real access token, create sample Google Calendar events
     if (!accessToken || accessToken === 'mock_token_for_testing') {
       console.log('🧪 Creating sample Google Calendar events for testing...');
@@ -65,7 +68,7 @@ serve(async (req) => {
         }
       ];
       
-      const events = sampleEvents;
+      events = sampleEvents;
       console.log(`Using ${events.length} sample events for testing`);
     } else {
       // Real Google Calendar API call
@@ -86,11 +89,11 @@ serve(async (req) => {
       }
 
       const calendarData = await calendarResponse.json();
-      var events = calendarData.items || [];
+      events = calendarData.items || [];
       console.log(`Fetched ${events.length} events from Google Calendar API`);
     }
 
-    console.log(`Fetched ${events.length} events from Google Calendar`);
+    console.log(`Processing ${events.length} events from Google Calendar`);
 
     let syncedEvents = 0;
     let errors = 0;
