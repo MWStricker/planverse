@@ -42,18 +42,35 @@ export const useIntegrationSync = () => {
 
   const syncGoogleCalendar = async (connection: IntegrationConnection) => {
     try {
-      // This would typically call an edge function or API endpoint
-      // For now, we'll simulate the sync process
       console.log('Syncing Google Calendar for connection:', connection.id);
       
-      // In a real implementation, this would:
-      // 1. Use the access token to fetch calendar events
-      // 2. Parse events for assignments/exams
-      // 3. Create or update tasks in the database
-      // 4. Update events table with calendar events
+      // Get the current user session to get access token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.provider_token) {
+        console.error('No Google access token available');
+        return false;
+      }
 
-      // Simulated success for demo
-      return true;
+      // Call the sync edge function
+      const { data, error } = await supabase.functions.invoke('sync-google-calendar', {
+        body: {
+          connectionId: connection.id,
+          accessToken: session.provider_token,
+        },
+      });
+
+      if (error) {
+        console.error('Error calling sync function:', error);
+        return false;
+      }
+
+      if (data.success) {
+        console.log(`Successfully synced ${data.syncedEvents} events from Google Calendar`);
+        return true;
+      } else {
+        console.error('Sync failed:', data.error);
+        return false;
+      }
     } catch (error) {
       console.error('Error syncing Google Calendar:', error);
       return false;

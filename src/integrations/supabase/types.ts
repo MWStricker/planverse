@@ -25,8 +25,10 @@ export type Database = {
           provider_id: string | null
           refresh_token: string | null
           refresh_token_enc: string | null
+          scope: string | null
           sync_settings: Json | null
           token_expires_at: string | null
+          token_type: string | null
           updated_at: string
           user_id: string
         }
@@ -40,8 +42,10 @@ export type Database = {
           provider_id?: string | null
           refresh_token?: string | null
           refresh_token_enc?: string | null
+          scope?: string | null
           sync_settings?: Json | null
           token_expires_at?: string | null
+          token_type?: string | null
           updated_at?: string
           user_id: string
         }
@@ -55,8 +59,10 @@ export type Database = {
           provider_id?: string | null
           refresh_token?: string | null
           refresh_token_enc?: string | null
+          scope?: string | null
           sync_settings?: Json | null
           token_expires_at?: string | null
+          token_type?: string | null
           updated_at?: string
           user_id?: string
         }

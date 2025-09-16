@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -465,6 +465,27 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
           authentication. Your credentials are never stored - only secure access tokens.
         </AlertDescription>
       </Alert>
+
+      {/* Quick Access to Full Integration Setup */}
+      <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-foreground mb-2">Google Calendar Integration</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Connect your Google Calendar to automatically sync events and free time blocks
+              </p>
+            </div>
+            <Button 
+              onClick={() => window.location.hash = 'integrations'}
+              className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Setup Integrations
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Academic Accounts */}
       <div>

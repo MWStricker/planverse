@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useIntegrationSync } from "@/hooks/useIntegrationSync";
 
 interface Integration {
   id: string;
@@ -60,7 +62,77 @@ const integrations: Integration[] = [
 export const IntegrationSetup = () => {
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { syncAllConnections, isProviderConnected, refreshConnections } = useIntegrationSync();
+
+  // Check for OAuth callback and create connection
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.provider_token && session.user && user) {
+        const success = await createCalendarConnection(session);
+        if (success) {
+          setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+          toast({
+            title: "Connected Successfully",
+            description: "Google Calendar has been connected. You can now sync your events.",
+          });
+          await refreshConnections();
+        }
+      }
+    };
+
+    if (user) {
+      handleOAuthCallback();
+    }
+  }, [user]);
+
+  // Update integration status based on connections
+  useEffect(() => {
+    const updateIntegrationStatus = () => {
+      const connected = new Set<string>();
+      if (isProviderConnected('google')) {
+        connected.add('google-calendar');
+      }
+      setConnectedIntegrations(connected);
+    };
+
+    updateIntegrationStatus();
+  }, [isProviderConnected]);
+
+  const createCalendarConnection = async (session: any) => {
+    if (!user || !session.provider_token) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('calendar_connections')
+        .upsert({
+          user_id: user.id,
+          provider: 'google',
+          provider_id: session.user?.email || null,
+          is_active: true,
+          scope: 'https://www.googleapis.com/auth/calendar',
+          token_expires_at: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+          sync_settings: { auto_sync: true, last_sync: null },
+        }, {
+          onConflict: 'user_id,provider'
+        });
+
+      if (error) {
+        console.error('Error creating calendar connection:', error);
+        return false;
+      }
+
+      console.log('Calendar connection created/updated:', data);
+      return true;
+    } catch (error) {
+      console.error('Error in createCalendarConnection:', error);
+      return false;
+    }
+  };
 
   const handleGoogleCalendarConnect = async () => {
     try {
@@ -79,8 +151,6 @@ export const IntegrationSetup = () => {
         },
       });
 
-      console.log('OAuth response:', { data, error });
-
       if (error) {
         console.error('Google OAuth error:', error);
         toast({
@@ -88,14 +158,33 @@ export const IntegrationSetup = () => {
           description: `${error.message} - Please check that Google OAuth is configured in Supabase.`,
           variant: "destructive",
         });
-      } else {
-        console.log('OAuth request successful, should redirect to Google...');
       }
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({
         title: "Connection Failed",
         description: "An unexpected error occurred. Please check console for details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleSyncCalendar = async () => {
+    try {
+      setIsConnecting(true);
+      await syncAllConnections();
+      await refreshConnections();
+      toast({
+        title: "Sync Complete",
+        description: "Google Calendar events have been synced successfully.",
+      });
+    } catch (error) {
+      console.error('Error syncing calendar:', error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync calendar events. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -150,29 +239,33 @@ export const IntegrationSetup = () => {
 
       {/* Integration Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {integrations.map((integration) => (
-          <Card 
-            key={integration.id}
-            className={`cursor-pointer transition-all hover:shadow-lg ${
-              selectedIntegration === integration.id ? 'ring-2 ring-primary' : ''
-            } ${integration.requiresBackend ? 'opacity-75' : ''}`}
-            onClick={() => setSelectedIntegration(integration.id)}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{integration.icon}</span>
-                  <div>
-                    <CardTitle className="text-lg">{integration.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{integration.description}</p>
+        {integrations.map((integration) => {
+          const isConnected = connectedIntegrations.has(integration.id);
+          const currentStatus = isConnected ? 'connected' : integration.status;
+          
+          return (
+            <Card 
+              key={integration.id}
+              className={`cursor-pointer transition-all hover:shadow-lg ${
+                selectedIntegration === integration.id ? 'ring-2 ring-primary' : ''
+              } ${integration.requiresBackend ? 'opacity-75' : ''}`}
+              onClick={() => setSelectedIntegration(integration.id)}
+            >
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{integration.icon}</span>
+                    <div>
+                      <CardTitle className="text-lg">{integration.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{integration.description}</p>
+                    </div>
                   </div>
+                  <Badge variant={getStatusColor(currentStatus)} className="flex items-center gap-1">
+                    {getStatusIcon(currentStatus)}
+                    {currentStatus}
+                  </Badge>
                 </div>
-                <Badge variant={getStatusColor(integration.status)} className="flex items-center gap-1">
-                  {getStatusIcon(integration.status)}
-                  {integration.status}
-                </Badge>
-              </div>
-            </CardHeader>
+              </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div>
@@ -186,36 +279,49 @@ export const IntegrationSetup = () => {
                   </div>
                 </div>
                 
-                {integration.requiresBackend ? (
-                  <Button 
-                    className="w-full" 
-                    variant="outline" 
-                    disabled
-                  >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Requires Backend Setup
-                  </Button>
-                ) : (
-                  <Button 
-                    className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
-                    onClick={() => handleConnect(integration.id)}
-                    disabled={isConnecting && integration.id === 'google-calendar'}
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    {isConnecting && integration.id === 'google-calendar' ? 'Connecting...' : 'Connect Now'}
-                  </Button>
-                )}
+                 {integration.requiresBackend ? (
+                   <Button 
+                     className="w-full" 
+                     variant="outline" 
+                     disabled
+                   >
+                     <Lock className="h-4 w-4 mr-2" />
+                     Requires Backend Setup
+                   </Button>
+                 ) : isConnected ? (
+                   <div className="space-y-2">
+                     <Button 
+                       className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white border-0 hover:shadow-lg transition-all"
+                       onClick={handleSyncCalendar}
+                       disabled={isConnecting}
+                     >
+                       <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
+                       {isConnecting ? 'Syncing...' : 'Sync Calendar'}
+                     </Button>
+                     <p className="text-xs text-center text-green-600">✓ Connected and ready to sync</p>
+                   </div>
+                 ) : (
+                   <Button 
+                     className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
+                     onClick={() => handleConnect(integration.id)}
+                     disabled={isConnecting && integration.id === 'google-calendar'}
+                   >
+                     <Zap className="h-4 w-4 mr-2" />
+                     {isConnecting && integration.id === 'google-calendar' ? 'Connecting...' : 'Connect Now'}
+                   </Button>
+                 )}
 
                 {integration.lastSync && (
                   <p className="text-xs text-muted-foreground">
                     Last synced: {integration.lastSync}
                   </p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+               </div>
+             </CardContent>
+           </Card>
+           );
+         })}
+       </div>
 
       {/* Setup Instructions */}
       {selectedIntegration && (
