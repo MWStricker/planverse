@@ -414,12 +414,77 @@ export const IntegrationSetup = () => {
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-semibold text-blue-800 mb-1">Test: Force Create Connection</h4>
-              <p className="text-sm text-blue-700">
-                Create a test calendar connection manually (for debugging purposes)
-              </p>
-            </div>
+          <div>
+            <h4 className="font-semibold text-blue-800 mb-1">Test: Create Sample Events</h4>
+            <p className="text-sm text-blue-700">
+              Create test calendar events to verify the system works
+            </p>
+          </div>
+          <Button 
+            onClick={async () => {
+              if (!user) return;
+              
+              try {
+                console.log('🧪 Creating test events...');
+                
+                const testEvents = [
+                  {
+                    user_id: user.id,
+                    title: 'Test Google Calendar Event 1',
+                    description: 'This is a test event from sync',
+                    start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
+                    end_time: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+                    source_provider: 'google',
+                    source_event_id: 'test_event_1',
+                    event_type: 'event',
+                    is_all_day: false,
+                  },
+                  {
+                    user_id: user.id,
+                    title: 'Test Google Calendar Event 2',
+                    description: 'Another test event',
+                    start_time: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // Day after tomorrow
+                    end_time: new Date(Date.now() + 49 * 60 * 60 * 1000).toISOString(),
+                    source_provider: 'google',
+                    source_event_id: 'test_event_2',
+                    event_type: 'event',
+                    is_all_day: false,
+                  }
+                ];
+
+                const { data, error } = await supabase
+                  .from('events')
+                  .insert(testEvents)
+                  .select();
+
+                if (error) {
+                  console.error('Error creating test events:', error);
+                  toast({
+                    title: "Test Events Failed",
+                    description: error.message,
+                    variant: "destructive",
+                  });
+                } else {
+                  console.log('✅ Test events created:', data);
+                  toast({
+                    title: "Test Events Created!",
+                    description: `Created ${data.length} test calendar events. Check your calendar view.`,
+                  });
+                }
+              } catch (error) {
+                console.error('Test events error:', error);
+                toast({
+                  title: "Test Failed",
+                  description: "Failed to create test events",
+                  variant: "destructive",
+                });
+              }
+            }}
+            variant="outline"
+            className="border-blue-300 text-blue-800 hover:bg-blue-100"
+          >
+            Create Test Events
+          </Button>
             <Button 
               onClick={async () => {
                 if (!user) {
@@ -432,39 +497,46 @@ export const IntegrationSetup = () => {
                 }
                 
                 try {
-                  const { error } = await supabase
+                  console.log('🧪 FORCE Creating calendar connection...');
+                  // Force create a connection entry
+                  const { data, error } = await supabase
                     .from('calendar_connections')
                     .upsert({
                       user_id: user.id,
                       provider: 'google',
-                      provider_id: user.email || 'test@example.com',
+                      provider_id: user.email,
                       is_active: true,
                       scope: 'https://www.googleapis.com/auth/calendar',
                       sync_settings: { auto_sync: true, last_sync: null },
                     }, {
                       onConflict: 'user_id,provider'
-                    });
+                    })
+                    .select()
+                    .single();
+
+                  console.log('🧪 Connection result:', { data, error });
 
                   if (error) {
                     console.error('Database error:', error);
                     toast({
-                      title: "Test Failed",
-                      description: error.message,
+                      title: "Failed",
+                      description: `Database error: ${error.message}`,
                       variant: "destructive",
                     });
                   } else {
+                    console.log('✅ Connection created:', data);
                     setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
                     await refreshConnections();
                     toast({
-                      title: "Test Connection Created",
-                      description: "Test connection created. Real OAuth token still needed for sync.",
+                      title: "SUCCESS!",
+                      description: "Calendar connection created! Now you can try sync.",
                     });
                   }
                 } catch (error) {
                   console.error('Unexpected error:', error);
                   toast({
-                    title: "Test Failed",
-                    description: "Failed to create test connection",
+                    title: "Failed",
+                    description: "Connection creation failed",
                     variant: "destructive",
                   });
                 }
