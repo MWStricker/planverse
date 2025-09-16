@@ -70,43 +70,63 @@ export const IntegrationSetup = () => {
   // Check for OAuth callback and create connection
   useEffect(() => {
     const handleOAuthCallback = async () => {
-      console.log('🔍 Checking OAuth callback...');
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔍 Current session:', session);
+      if (!user) return;
       
-      if (session?.provider_token && session.user && user) {
-        console.log('🔍 Found OAuth session with provider token, creating connection...');
-        console.log('🔍 Provider token exists:', !!session.provider_token);
-        console.log('🔍 User email:', session.user.email);
+      // Check if we're returning from OAuth by looking at URL hash or session
+      const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+      const hasOAuthParams = urlParams.has('access_token') || urlParams.has('code');
+      
+      console.log('🔍 Checking OAuth callback...', { hasOAuthParams, user: !!user });
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Current session provider_token:', !!session?.provider_token);
+      
+      // If we have a provider token or just returned from OAuth, try to create connection
+      if (session?.provider_token || hasOAuthParams) {
+        console.log('🔍 Found OAuth session/callback, creating connection...');
         
         const success = await createCalendarConnection(session);
         if (success) {
           console.log('✅ Calendar connection created successfully');
           setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-          toast({
-            title: "Connected Successfully",
-            description: "Google Calendar has been connected. Syncing events...",
-          });
           await refreshConnections();
           
+          toast({
+            title: "Connected Successfully",
+            description: "Google Calendar connected. Attempting to sync events...",
+          });
+          
           // Automatically trigger sync after connection
-          console.log('🔍 Triggering automatic sync...');
-          await handleSyncCalendar();
+          try {
+            await handleSyncCalendar();
+          } catch (syncError) {
+            console.error('❌ Auto-sync failed:', syncError);
+          }
         } else {
           console.error('❌ Failed to create calendar connection');
         }
-      } else {
-        console.log('🔍 No OAuth session or provider token found');
-        console.log('🔍 Session exists:', !!session);
-        console.log('🔍 Provider token exists:', !!session?.provider_token);
-        console.log('🔍 User exists:', !!user);
       }
     };
 
-    if (user) {
-      console.log('🔍 User loaded, checking OAuth callback...');
-      handleOAuthCallback();
-    }
+    // Add a small delay to ensure user state is loaded
+    const timer = setTimeout(handleOAuthCallback, 1000);
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  // Also listen for auth state changes to catch OAuth callbacks
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.provider_token && user) {
+        console.log('🔍 Auth state changed with provider token');
+        const success = await createCalendarConnection(session);
+        if (success) {
+          setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+          await refreshConnections();
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [user]);
 
   // Update integration status based on connections
@@ -124,24 +144,28 @@ export const IntegrationSetup = () => {
 
   const createCalendarConnection = async (session: any) => {
     console.log('🔍 Creating calendar connection...');
-    if (!user || !session.provider_token) {
-      console.error('❌ Missing user or provider token');
+    if (!user) {
+      console.error('❌ No user available');
       return false;
     }
 
     try {
       console.log('🔍 Upserting calendar connection to database...');
+      const connectionData = {
+        user_id: user.id,
+        provider: 'google',
+        provider_id: session?.user?.email || user.email || null,
+        is_active: true,
+        scope: 'https://www.googleapis.com/auth/calendar',
+        token_expires_at: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+        sync_settings: { auto_sync: true, last_sync: null },
+      };
+
+      console.log('🔍 Connection data:', connectionData);
+
       const { data, error } = await supabase
         .from('calendar_connections')
-        .upsert({
-          user_id: user.id,
-          provider: 'google',
-          provider_id: session.user?.email || null,
-          is_active: true,
-          scope: 'https://www.googleapis.com/auth/calendar',
-          token_expires_at: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
-          sync_settings: { auto_sync: true, last_sync: null },
-        }, {
+        .upsert(connectionData, {
           onConflict: 'user_id,provider'
         });
 
@@ -287,6 +311,15 @@ export const IntegrationSetup = () => {
             </div>
             <Button 
               onClick={async () => {
+                if (!user) {
+                  toast({
+                    title: "No User",
+                    description: "Please sign in first",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
                 try {
                   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
                   
@@ -299,7 +332,13 @@ export const IntegrationSetup = () => {
                     return;
                   }
                   
-                  if (session?.provider_token && user) {
+                  console.log('🔍 Session check:', {
+                    hasSession: !!session,
+                    hasProviderToken: !!session?.provider_token,
+                    providers: session?.user?.app_metadata?.providers
+                  });
+                  
+                  if (session?.provider_token) {
                     const success = await createCalendarConnection(session);
                     if (success) {
                       setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
@@ -307,6 +346,12 @@ export const IntegrationSetup = () => {
                       toast({
                         title: "Connection Created",
                         description: "Google Calendar connection established!",
+                      });
+                    } else {
+                      toast({
+                        title: "Connection Failed",
+                        description: "Failed to create calendar connection",
+                        variant: "destructive",
                       });
                     }
                   } else {
@@ -317,6 +362,7 @@ export const IntegrationSetup = () => {
                     });
                   }
                 } catch (error) {
+                  console.error('❌ Check connection error:', error);
                   toast({
                     title: "Check Failed",
                     description: "Connection check failed",
