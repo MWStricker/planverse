@@ -401,8 +401,12 @@ export const IntegrationSetup = () => {
       
       if (session?.provider_token && session?.user?.app_metadata?.providers?.includes('google')) {
         console.log('🔍 User already authenticated with Google, proceeding to sync...');
+        console.log('🔍 Session provider token present:', !!session.provider_token);
         
-        // Create/update connection with current session
+        toast({
+          title: "Starting Sync",
+          description: "Connecting to your Google Calendar...",
+        });
         const success = await createCalendarConnection(session);
         if (!success) {
           throw new Error('Failed to create calendar connection');
@@ -435,10 +439,15 @@ export const IntegrationSetup = () => {
         if (syncData?.success) {
           setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
           await refreshConnections();
+          
+          console.log('✅ Sync successful:', syncData);
           toast({
             title: "Calendar Synced Successfully!",
-            description: `Imported ${syncData.syncedEvents} events from your Google Calendar.`,
+            description: `Imported ${syncData.syncedEvents || 0} events from your Google Calendar. Check your calendar views to see the events!`,
           });
+          
+          // Refresh the page data to show new events
+          window.location.reload();
         } else {
           throw new Error(syncData?.error || 'Unknown sync error');
         }
