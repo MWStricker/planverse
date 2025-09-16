@@ -471,7 +471,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-semibold text-foreground mb-2">Google Calendar Integration</h4>
+              <h4 className="font-semibold text-foreground mb-2">Calender Integration</h4>
               <p className="text-sm text-muted-foreground mb-3">
                 Connect your Google Calendar to automatically sync events and free time blocks
               </p>
