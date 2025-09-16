@@ -163,8 +163,8 @@ export const IntegrationSetup = () => {
       setIsConnecting(true);
       console.log('🔍 Starting Google Calendar connection...');
       
-      // Force a new OAuth flow by specifying prompt=consent
-      const { data, error } = await supabase.auth.linkIdentity({
+      // Use regular OAuth flow which works better for getting provider tokens
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           scopes: 'https://www.googleapis.com/auth/calendar',
@@ -183,6 +183,8 @@ export const IntegrationSetup = () => {
           description: error.message,
           variant: "destructive",
         });
+      } else {
+        console.log('✅ OAuth initiated, user will be redirected');
       }
     } catch (error) {
       console.error('❌ Unexpected error in handleGoogleCalendarConnect:', error);
@@ -343,7 +345,14 @@ export const IntegrationSetup = () => {
             </div>
             <Button 
               onClick={async () => {
-                if (!user) return;
+                if (!user) {
+                  toast({
+                    title: "No User",
+                    description: "Please sign in first",
+                    variant: "destructive",
+                  });
+                  return;
+                }
                 
                 try {
                   const { error } = await supabase
@@ -360,6 +369,7 @@ export const IntegrationSetup = () => {
                     });
 
                   if (error) {
+                    console.error('Database error:', error);
                     toast({
                       title: "Test Failed",
                       description: error.message,
@@ -374,6 +384,7 @@ export const IntegrationSetup = () => {
                     });
                   }
                 } catch (error) {
+                  console.error('Unexpected error:', error);
                   toast({
                     title: "Test Failed",
                     description: "Failed to create test connection",
