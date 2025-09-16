@@ -73,21 +73,101 @@ serve(async (req) => {
     } else {
       // Real Google Calendar API call - First get all calendars
       console.log('📅 Fetching all calendars...');
+      let currentAccessToken = accessToken;
+      
+      // Function to refresh token if needed
+      const refreshTokenIfNeeded = async (response: Response) => {
+        if (response.status === 401 || response.status === 403) {
+          console.log('🔄 Access token expired, attempting to refresh...');
+          
+          // Get the connection to check for refresh token
+          const { data: connection } = await supabase
+            .from('calendar_connections')
+            .select('refresh_token, provider_id')
+            .eq('id', connectionId)
+            .single();
+          
+          if (connection?.refresh_token) {
+            console.log('🔑 Refreshing access token...');
+            const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({
+                client_id: Deno.env.get('GOOGLE_CLIENT_ID')!,
+                client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET')!,
+                refresh_token: connection.refresh_token,
+                grant_type: 'refresh_token',
+              }),
+            });
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              currentAccessToken = refreshData.access_token;
+              
+              // Update the connection with new token
+              await supabase
+                .from('calendar_connections')
+                .update({
+                  access_token: currentAccessToken,
+                  token_expires_at: new Date(Date.now() + (refreshData.expires_in * 1000)).toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', connectionId);
+              
+              console.log('✅ Access token refreshed successfully');
+              return true;
+            } else {
+              console.error('❌ Failed to refresh token:', refreshResponse.status);
+              return false;
+            }
+          } else {
+            console.error('❌ No refresh token available');
+            return false;
+          }
+        }
+        return true;
+      };
+
+      let calendarsData;
       const calendarsResponse = await fetch(
         'https://www.googleapis.com/calendar/v3/users/me/calendarList',
         {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${currentAccessToken}`,
             'Content-Type': 'application/json',
           },
         }
       );
 
+      // Try to refresh token if initial request fails
       if (!calendarsResponse.ok) {
-        throw new Error(`Failed to fetch calendars: ${calendarsResponse.status}`);
+        const refreshed = await refreshTokenIfNeeded(calendarsResponse);
+        if (refreshed && currentAccessToken !== accessToken) {
+          // Retry with new token
+          const retryResponse = await fetch(
+            'https://www.googleapis.com/calendar/v3/users/me/calendarList',
+            {
+              headers: {
+                'Authorization': `Bearer ${currentAccessToken}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          if (!retryResponse.ok) {
+            throw new Error(`Failed to fetch calendars after token refresh: ${retryResponse.status}`);
+          }
+          
+          calendarsData = await retryResponse.json();
+        } else {
+          throw new Error(`Failed to fetch calendars: ${calendarsResponse.status}. Please reconnect your Google Calendar.`);
+        }
+      } else {
+        calendarsData = await calendarsResponse.json();
       }
 
-      const calendarsData = await calendarsResponse.json();
       const calendars = calendarsData.items || [];
       console.log(`Found ${calendars.length} calendars:`, calendars.map(c => c.summary));
 
@@ -137,7 +217,7 @@ serve(async (req) => {
             `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`,
             {
               headers: {
-                'Authorization': `Bearer ${accessToken}`,
+                'Authorization': `Bearer ${currentAccessToken}`,
                 'Content-Type': 'application/json',
               },
             }
