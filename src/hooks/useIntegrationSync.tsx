@@ -42,15 +42,24 @@ export const useIntegrationSync = () => {
 
   const syncGoogleCalendar = async (connection: IntegrationConnection) => {
     try {
-      console.log('Syncing Google Calendar for connection:', connection.id);
+      console.log('🔍 Syncing Google Calendar for connection:', connection.id);
       
       // Get the current user session to get access token
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Current session for sync:', !!session);
+      console.log('🔍 Provider token exists:', !!session?.provider_token);
+      
       if (!session?.provider_token) {
-        console.error('No Google access token available');
+        console.error('❌ No Google access token available');
+        toast({
+          title: "Sync Failed",
+          description: "No Google access token found. Please reconnect your Google account.",
+          variant: "destructive",
+        });
         return false;
       }
 
+      console.log('🔍 Calling sync edge function...');
       // Call the sync edge function
       const { data, error } = await supabase.functions.invoke('sync-google-calendar', {
         body: {
@@ -59,20 +68,22 @@ export const useIntegrationSync = () => {
         },
       });
 
+      console.log('🔍 Edge function response:', { data, error });
+
       if (error) {
-        console.error('Error calling sync function:', error);
+        console.error('❌ Error calling sync function:', error);
         return false;
       }
 
       if (data.success) {
-        console.log(`Successfully synced ${data.syncedEvents} events from Google Calendar`);
+        console.log(`✅ Successfully synced ${data.syncedEvents} events from Google Calendar`);
         return true;
       } else {
-        console.error('Sync failed:', data.error);
+        console.error('❌ Sync failed:', data.error);
         return false;
       }
     } catch (error) {
-      console.error('Error syncing Google Calendar:', error);
+      console.error('❌ Error syncing Google Calendar:', error);
       return false;
     }
   };
