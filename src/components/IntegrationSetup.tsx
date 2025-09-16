@@ -462,6 +462,39 @@ export const IntegrationSetup = () => {
             >
               📅 CREATE CONNECTION 📅
             </Button>
+            
+            <Button 
+              onClick={() => {
+                console.log('🔥 SYNC BUTTON CLICKED!');
+                alert('SYNC BUTTON CLICKED! - Calling sync edge function...');
+                
+                if (!user) {
+                  alert('ERROR: No user found!');
+                  return;
+                }
+                
+                // Call the sync edge function
+                supabase.functions.invoke('sync-google-calendar', {
+                  body: {
+                    connectionId: 'test-connection-id', // We'll get the real ID later
+                    accessToken: 'mock_token_for_testing', // This triggers mock data
+                  },
+                })
+                .then(({ data, error }) => {
+                  if (error) {
+                    alert('SYNC ERROR: ' + error.message);
+                    console.error('Sync error:', error);
+                  } else {
+                    alert('SYNC SUCCESS! Result: ' + JSON.stringify(data));
+                    console.log('Sync success:', data);
+                  }
+                });
+              }}
+              className="bg-purple-600 text-white hover:bg-purple-700 text-xl p-6"
+              size="lg"
+            >
+              🔄 SYNC CALENDAR NOW 🔄
+            </Button>
           </div>
         </CardContent>
       </Card>
