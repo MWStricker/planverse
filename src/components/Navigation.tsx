@@ -178,7 +178,7 @@ export const Navigation = ({
           <div className={`text-center flex-1 transition-opacity duration-300 ease-out ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {!isCollapsed && (
               <>
-                <h1 className="text-lg font-bold text-foreground">Course Connect</h1>
+                <h1 className="text-lg font-bold text-foreground">planverse</h1>
                 <p className="text-xs text-muted-foreground">Smart Scheduling</p>
               </>
             )}
