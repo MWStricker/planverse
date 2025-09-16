@@ -8,9 +8,10 @@ interface Event {
   id: string;
   title: string;
   start_time: string;
-  end_time?: string;
+  end_time: string;
   event_type: string;
   source_provider?: string;
+  is_all_day?: boolean;
 }
 
 interface Task {
@@ -273,17 +274,26 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                       }}
                     >
                       <div className="font-semibold leading-tight truncate mb-1">{event.title}</div>
-                      <div className="text-xs opacity-80 truncate flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-current opacity-60"></span>
-                         {event.start_time ? (() => {
-                           const date = new Date(event.start_time);
-                           if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-                             const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                             return fixedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                           }
-                           return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                         })() : 'All day'}
-                      </div>
+                       <div className="text-xs opacity-80 truncate flex items-center gap-1">
+                         <span className="w-1 h-1 rounded-full bg-current opacity-60"></span>
+                          {event.is_all_day ? 'All day' : (() => {
+                            const startDate = new Date(event.start_time);
+                            const endDate = new Date(event.end_time);
+                            
+                            // Handle special Canvas events
+                            if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
+                              const fixedStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 23, 59, 59);
+                              const fixedEndDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59);
+                              const startTime = fixedStartDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                              const endTime = fixedEndDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                              return `${startTime} - ${endTime}`;
+                            }
+                            
+                            const startTime = startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                            const endTime = endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                            return `${startTime} - ${endTime}`;
+                          })()}
+                       </div>
                     </div>
                   ))}
                   
