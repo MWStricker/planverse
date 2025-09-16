@@ -89,27 +89,36 @@ serve(async (req) => {
 
       const calendarsData = await calendarsResponse.json();
       const calendars = calendarsData.items || [];
-      console.log(`Found ${calendars.length} calendars`);
+      console.log(`Found ${calendars.length} calendars:`, calendars.map(c => c.summary));
 
       events = [];
       
-      // Fetch events from each calendar
+      // Fetch events from each calendar (including all calendars, not just primary)
       for (const calendar of calendars) {
-        if (!calendar.accessRole || calendar.accessRole === 'freeBusyReader') {
-          continue; // Skip calendars we can't read events from
+        // Skip calendars we can't read or that are hidden
+        if (!calendar.accessRole || 
+            calendar.accessRole === 'freeBusyReader' || 
+            calendar.hidden === true ||
+            calendar.selected === false) {
+          console.log(`⏭️  Skipping calendar: ${calendar.summary} (${calendar.accessRole || 'no access'})`);
+          continue;
         }
 
-        console.log(`📋 Fetching events from calendar: ${calendar.summary}`);
+        console.log(`📋 Fetching events from calendar: ${calendar.summary} (${calendar.id})`);
         
-        // Get past 12 months and future 24 months of events to ensure we get everything
-        const timeMin = new Date(Date.now() - 12 * 30 * 24 * 60 * 60 * 1000).toISOString();
-        const timeMax = new Date(Date.now() + 24 * 30 * 24 * 60 * 60 * 1000).toISOString();
+        // Get ALL events - much wider time range to ensure we don't miss anything
+        const timeMin = new Date(Date.now() - 24 * 30 * 24 * 60 * 60 * 1000).toISOString(); // 24 months back
+        const timeMax = new Date(Date.now() + 36 * 30 * 24 * 60 * 60 * 1000).toISOString(); // 36 months forward
         
         let nextPageToken = null;
         let calendarEvents = [];
+        let pageCount = 0;
         
         // Paginate through ALL events for this calendar
         do {
+          pageCount++;
+          console.log(`📄 Fetching page ${pageCount} for ${calendar.summary}...`);
+          
           const params = new URLSearchParams({
             maxResults: '2500', // Maximum allowed per request
             singleEvents: 'true', // Expand recurring events
@@ -123,6 +132,60 @@ serve(async (req) => {
           if (nextPageToken) {
             params.append('pageToken', nextPageToken);
           }
+
+          const eventsResponse = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+
+          if (!eventsResponse.ok) {
+            console.error(`❌ Failed to fetch events from calendar ${calendar.summary}: ${eventsResponse.status}`);
+            const errorText = await eventsResponse.text();
+            console.error('Error details:', errorText);
+            break;
+          }
+
+          const eventsData = await eventsResponse.json();
+          const pageEvents = eventsData.items || [];
+          calendarEvents = calendarEvents.concat(pageEvents);
+          
+          nextPageToken = eventsData.nextPageToken;
+          console.log(`📝 Fetched ${pageEvents.length} events from ${calendar.summary} page ${pageCount} (total: ${calendarEvents.length})`);
+          
+          // Safety break to prevent infinite loops
+          if (pageCount > 50) {
+            console.log(`⚠️  Stopping pagination at page ${pageCount} for safety`);
+            break;
+          }
+          
+        } while (nextPageToken);
+        
+        // Add calendar source to each event
+        calendarEvents.forEach(event => {
+          event.calendarName = calendar.summary;
+          event.calendarId = calendar.id;
+          event.calendarColor = calendar.backgroundColor || calendar.colorId;
+        });
+        
+        events = events.concat(calendarEvents);
+        console.log(`✅ Total events from ${calendar.summary}: ${calendarEvents.length}`);
+      }
+      
+      console.log(`🎯 TOTAL EVENTS FETCHED FROM ALL CALENDARS: ${events.length}`);
+      
+      // Log breakdown by calendar
+      const eventsByCalendar = {};
+      events.forEach(event => {
+        const calName = event.calendarName || 'Unknown';
+        eventsByCalendar[calName] = (eventsByCalendar[calName] || 0) + 1;
+      });
+      console.log('📊 Events by calendar:', eventsByCalendar);
+    }
 
           const eventsResponse = await fetch(
             `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`,
