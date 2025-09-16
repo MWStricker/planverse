@@ -187,41 +187,7 @@ serve(async (req) => {
       console.log('📊 Events by calendar:', eventsByCalendar);
     }
 
-          const eventsResponse = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-
-          if (!eventsResponse.ok) {
-            console.error(`Failed to fetch events from calendar ${calendar.summary}: ${eventsResponse.status}`);
-            break;
-          }
-
-          const eventsData = await eventsResponse.json();
-          const pageEvents = eventsData.items || [];
-          calendarEvents = calendarEvents.concat(pageEvents);
-          
-          nextPageToken = eventsData.nextPageToken;
-          console.log(`📝 Fetched ${pageEvents.length} events from ${calendar.summary} (total: ${calendarEvents.length})`);
-          
-        } while (nextPageToken);
-        
-        // Add calendar source to each event
-        calendarEvents.forEach(event => {
-          event.calendarName = calendar.summary;
-          event.calendarId = calendar.id;
-        });
-        
-        events = events.concat(calendarEvents);
-      }
-      
-      console.log(`✅ Total events fetched from all calendars: ${events.length}`);
-    }
+    console.log(`Processing ${events.length} events from Google Calendar`);
 
     console.log(`Processing ${events.length} events from Google Calendar`);
 
