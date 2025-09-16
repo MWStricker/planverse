@@ -477,7 +477,10 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               </p>
             </div>
             <Button 
-              onClick={() => window.location.hash = 'integrations'}
+              onClick={() => {
+                console.log("Button clicked - navigating to integrations");
+                window.location.hash = '#integrations';
+              }}
               className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg"
             >
               <Calendar className="h-4 w-4 mr-2" />
