@@ -66,6 +66,9 @@ export const IntegrationSetup = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { syncAllConnections, isProviderConnected, refreshConnections } = useIntegrationSync();
+  
+  console.log('🔍 IntegrationSetup component rendered');
+  console.log('🔍 Current user:', !!user);
 
   // Enhanced OAuth callback detection
   useEffect(() => {
@@ -695,13 +698,18 @@ export const IntegrationSetup = () => {
           const isConnected = connectedIntegrations.has(integration.id);
           const currentStatus = isConnected ? 'connected' : integration.status;
           
+          console.log('🔍 Rendering integration:', integration.id, 'requiresBackend:', integration.requiresBackend);
+          
           return (
             <Card 
               key={integration.id}
               className={`cursor-pointer transition-all hover:shadow-lg ${
                 selectedIntegration === integration.id ? 'ring-2 ring-primary' : ''
               } ${integration.requiresBackend ? 'opacity-75' : ''}`}
-              onClick={() => setSelectedIntegration(integration.id)}
+              onClick={() => {
+                console.log('🔍 Integration card clicked:', integration.id);
+                setSelectedIntegration(integration.id);
+              }}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
