@@ -279,6 +279,50 @@ export const IntegrationSetup = () => {
         </AlertDescription>
       </Alert>
 
+      {/* Manual Connection Check */}
+      <Card className="border-yellow-200 bg-yellow-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-yellow-800 mb-1">Debug: Check Connection Status</h4>
+              <p className="text-sm text-yellow-700">
+                If you've signed in with Google but don't see the sync button, click here to manually check your connection.
+              </p>
+            </div>
+            <Button 
+              onClick={async () => {
+                console.log('🔍 Manual connection check triggered');
+                const { data: { session } } = await supabase.auth.getSession();
+                console.log('🔍 Current session:', session);
+                
+                if (session?.provider_token && user) {
+                  console.log('🔍 Found session with provider token, creating connection...');
+                  const success = await createCalendarConnection(session);
+                  if (success) {
+                    setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+                    await refreshConnections();
+                    toast({
+                      title: "Connection Created",
+                      description: "Google Calendar connection has been established. You can now sync!",
+                    });
+                  }
+                } else {
+                  toast({
+                    title: "No Connection Found",
+                    description: "Please sign in with Google first using the Connect Now button.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              variant="outline"
+              className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+            >
+              Check Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Integration Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {integrations.map((integration) => {
