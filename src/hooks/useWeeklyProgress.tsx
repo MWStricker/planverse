@@ -58,22 +58,19 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const taskDate = new Date(task.due_date);
         
         if (isWithinInterval(taskDate, { start: currentWeekStart, end: currentWeekEnd })) {
-          // Only count tasks that are actually completed to match the 13 working assignments
+          // Include all assignments but track their actual completion status
           const currentTask = userTasks.find(t => t.id === task.id);
           const isCompleted = currentTask?.completion_status === 'completed';
           
-          // Only include completed assignments to get 13/13 instead of 13/15
-          if (isCompleted) {
-            assignments.push({
-              id: task.id,
-              title: task.title,
-              dueDate: taskDate,
-              isCompleted: true,
-              source: 'manual',
-              courseCode: task.course_name,
-              priority: task.priority_score || 0
-            });
-          }
+          assignments.push({
+            id: task.id,
+            title: task.title,
+            dueDate: taskDate,
+            isCompleted,
+            source: 'manual',
+            courseCode: task.course_name,
+            priority: task.priority_score || 0
+          });
         }
       });
 
@@ -118,31 +115,28 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
         
         if (isWithinInterval(eventDate, { start: currentWeekStart, end: currentWeekEnd })) {
-          // Only count Canvas assignments that are actually completed to match the 13 working assignments
+          // Include all Canvas assignments but track their actual completion status
           const currentEvent = userEvents.find(e => e.id === event.id);
           const isCompleted = currentEvent?.is_completed || false;
           
-          // Only include completed assignments to get 13/13 instead of 13/15
-          if (isCompleted) {
-            assignments.push({
-              id: event.id,
-              title: event.title,
-              dueDate: eventDate,
-              isCompleted: true,
-              source: 'canvas',
-              courseCode: event.course_name,
-              priority: 1
-            });
-          }
+          assignments.push({
+            id: event.id,
+            title: event.title,
+            dueDate: eventDate,
+            isCompleted,
+            source: 'canvas',
+            courseCode: event.course_name,
+            priority: 1
+          });
         }
       });
 
       // Sort assignments by due date
       assignments.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
-      const completedCount = assignments.length; // All included assignments are completed
-      const totalCount = assignments.length; // Total equals completed since we filtered out incomplete ones
-      const progressPercentage = totalCount > 0 ? 100 : 0; // 100% since all included are complete
+      const completedCount = assignments.filter(a => a.isCompleted).length;
+      const totalCount = assignments.length;
+      const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
       // Debug completion status for current week
       if (weekStart.getTime() === currentWeekStart.getTime()) {
