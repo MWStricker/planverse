@@ -176,8 +176,8 @@ const Auth = () => {
       <div className="flex items-center justify-center p-4 min-h-screen">
         <Card className="w-full max-w-md animate-fade-in shadow-xl border-0 bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center space-y-3">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center mb-2">
-              <User className="h-8 w-8 text-primary-foreground" />
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center mb-2 p-2">
+              <img src="/src/assets/planverse-logo.png" alt="Planverse" className="w-full h-full object-contain" />
             </div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               Welcome
