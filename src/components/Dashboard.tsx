@@ -1807,14 +1807,32 @@ export const Dashboard = () => {
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
                 (() => {
-                  // weeklyCanvasAssignments is already filtered, no need to filter again
-                  // tasksThisWeek is already filtered, no need to filter again
-                  const sortedItems = [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])].sort((a, b) => {
+                  // Filter out old assignments first, then sort
+                  const currentDate = new Date();
+                  const oneWeekAgo = new Date(currentDate);
+                  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                  
+                  // Filter out assignments more than a week overdue
+                  const currentRelevantItems = [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])].filter(item => {
+                    if (!item.due_date) return true; // Keep items without due dates
+                    const dueDate = new Date(item.due_date);
+                    return dueDate >= oneWeekAgo; // Only keep assignments from the last week or future
+                  });
+                  
+                  console.log('🧹 Filtered out old assignments. Current relevant items:', currentRelevantItems.length);
+                  console.log('🧹 Items kept:', currentRelevantItems.map(item => `${item.title} (due: ${item.due_date})`));
+                  
+                  // Sort by priority first, then by due date (recent due dates first)
+                  const sortedItems = currentRelevantItems.sort((a, b) => {
+                    // First sort by priority score (higher priority first)
+                    const priorityDiff = (b.priority_score || 2) - (a.priority_score || 2);
+                    if (priorityDiff !== 0) return priorityDiff;
+                    
+                    // Then sort by due date (sooner due dates first)
                     if (a.due_date && b.due_date) {
-                      const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-                      if (dateComparison !== 0) return dateComparison;
+                      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
                     }
-                    return (b.priority_score || 2) - (a.priority_score || 2);
+                    return 0;
                   });
 
                   // Group items by date
