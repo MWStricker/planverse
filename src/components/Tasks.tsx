@@ -99,199 +99,6 @@ export const Tasks = () => {
     },
   });
 
-  const onSubmitTask = async (values: z.infer<typeof taskFormSchema>) => {
-    if (!user) return;
-
-    // Combine date and time
-    const dueDateTime = new Date(values.due_date);
-    const [hours, minutes] = values.due_time.split(':');
-    dueDateTime.setHours(parseInt(hours), parseInt(minutes));
-
-    // Use keyword-based priority calculation instead of form priority
-    const calculatedPriority = calculatePriority(values.title, values.description || '', dueDateTime.toISOString());
-
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({
-          user_id: user.id,
-          title: values.title,
-          description: values.description || null,
-          course_name: values.course_name || null,
-          due_date: dueDateTime.toISOString(),
-          priority_score: calculatedPriority,
-          completion_status: 'pending',
-          source_provider: 'manual',
-          is_recurring: values.is_recurring || false,
-          recurrence_type: values.recurrence_type || null,
-          recurrence_pattern: values.recurrence_days ? { days: values.recurrence_days } : null,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating task:', error);
-        toast({
-          title: "Error",
-          description: "Failed to create task",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Task created successfully",
-        });
-        setIsAddDialogOpen(false);
-        resetForm();
-        fetchTasks(); // Refresh tasks
-        
-        // Notify other components to refresh
-        window.dispatchEvent(new CustomEvent('dataRefresh'));
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getNextRecurrences = (task: any, count: number = 3) => {
-    if (!task.is_recurring || !task.recurrence_type) return [];
-    
-    const baseDate = new Date(task.due_date);
-    const dates = [];
-    
-    for (let i = 0; i < count; i++) {
-      if (task.recurrence_type === 'daily') {
-        const nextDate = new Date(baseDate);
-        nextDate.setDate(baseDate.getDate() + i);
-        dates.push(nextDate);
-      } else if (task.recurrence_type === 'weekly' && task.recurrence_pattern?.days) {
-        for (const dayOfWeek of task.recurrence_pattern.days) {
-          const nextDate = new Date(baseDate);
-          const daysUntilTarget = (dayOfWeek - nextDate.getDay() + 7) % 7;
-          nextDate.setDate(baseDate.getDate() + daysUntilTarget + (Math.floor(i / task.recurrence_pattern.days.length) * 7));
-          
-          if (nextDate >= baseDate && dates.length < count) {
-            dates.push(nextDate);
-          }
-        }
-      } else if (task.recurrence_type === 'monthly') {
-        const nextDate = new Date(baseDate);
-        nextDate.setMonth(baseDate.getMonth() + i);
-        dates.push(nextDate);
-      }
-    }
-    
-    return dates.slice(0, count);
-  };
-
-  const onEditTask = async (values: z.infer<typeof taskFormSchema>) => {
-    if (!user || !editingTask) return;
-
-    // Combine date and time
-    const dueDateTime = new Date(values.due_date);
-    const [hours, minutes] = values.due_time.split(':');
-    dueDateTime.setHours(parseInt(hours), parseInt(minutes));
-
-    // Use keyword-based priority calculation for edited tasks too
-    const calculatedPriority = calculatePriority(values.title, values.description || '', dueDateTime.toISOString());
-
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          title: values.title,
-          description: values.description || null,
-          course_name: values.course_name || null,
-          due_date: dueDateTime.toISOString(),
-          priority_score: calculatedPriority,
-          is_recurring: values.is_recurring || false,
-          recurrence_type: values.recurrence_type || null,
-          recurrence_pattern: values.recurrence_days ? { days: values.recurrence_days } : null,
-        })
-        .eq('id', editingTask.id);
-
-      if (error) {
-        console.error('Error updating task:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update task",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Task updated successfully",
-        });
-        setIsEditDialogOpen(false);
-        setEditingTask(null);
-        form.reset();
-        fetchTasks(); // Refresh tasks
-        
-        // Notify other components to refresh
-        window.dispatchEvent(new CustomEvent('dataRefresh'));
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task);
-    
-    // Convert priority score back to string
-    const priorityMap: { [key: number]: "none" | "low" | "medium" | "high" } = {
-      0: "none",
-      1: "low",
-      2: "medium", 
-      3: "high"
-    };
-
-    // Parse due date and time
-    let dueDate: Date | undefined;
-    let dueTime = "12:00";
-    
-    if (task.due_date) {
-      dueDate = new Date(task.due_date);
-      dueTime = dueDate.toTimeString().slice(0, 5); // Get HH:MM format
-    }
-
-    form.reset({
-      title: task.title,
-      description: task.description || "",
-      course_name: task.course_name || "",
-      due_date: dueDate,
-      due_time: dueTime,
-      priority: priorityMap[task.priority_score || 0] || "none",
-      is_recurring: task.is_recurring || false,
-      recurrence_type: (task.recurrence_type as "daily" | "weekly" | "monthly") || undefined,
-      recurrence_days: task.recurrence_pattern?.days || undefined,
-    });
-    
-    setIsEditDialogOpen(true);
-  };
-
-  const resetForm = () => {
-    form.reset({
-      title: "",
-      description: "",
-      course_name: "",
-      due_date: new Date(),
-      due_time: "12:00",
-      priority: "none",
-    });
-    setEditingTask(null);
-  };
-
   // Function to calculate priority based on keywords and due date
   const calculatePriority = (title: string, description: string = '', dueDate?: string): number => {
     const text = `${title} ${description}`.toLowerCase();
@@ -371,40 +178,50 @@ export const Tasks = () => {
     }
   };
 
-  const convertEventToTask = async (event: any) => {
+  const onSubmitTask = async (values: z.infer<typeof taskFormSchema>) => {
     if (!user) return;
 
-    const priority = calculatePriority(event.title, event.description, event.start_time);
+    // Combine date and time
+    const dueDateTime = new Date(values.due_date);
+    const [hours, minutes] = values.due_time.split(':');
+    dueDateTime.setHours(parseInt(hours), parseInt(minutes));
+
+    // Use keyword-based priority calculation instead of form priority
+    const calculatedPriority = calculatePriority(values.title, values.description || '', dueDateTime.toISOString());
 
     try {
       const { data, error } = await supabase
         .from('tasks')
         .insert({
           user_id: user.id,
-          title: event.title,
-          description: event.description,
-          due_date: event.start_time,
-          source_provider: event.source_provider || 'calendar',
-          source_assignment_id: event.source_event_id,
-          priority_score: priority,
-          event_type: event.event_type,
-          completion_status: 'pending'
+          title: values.title,
+          description: values.description || null,
+          course_name: values.course_name || null,
+          due_date: dueDateTime.toISOString(),
+          priority_score: calculatedPriority,
+          completion_status: 'pending',
+          source_provider: 'manual',
+          is_recurring: values.is_recurring || false,
+          recurrence_type: values.recurrence_type || null,
+          recurrence_pattern: values.recurrence_days ? { days: values.recurrence_days } : null,
         })
         .select()
         .single();
 
       if (error) {
-        console.error('Error converting event to task:', error);
+        console.error('Error creating task:', error);
         toast({
           title: "Error",
-          description: "Failed to convert event to task",
+          description: "Failed to create task",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Success",
-          description: "Event converted to task successfully",
+          description: "Task created successfully",
         });
+        setIsAddDialogOpen(false);
+        form.reset();
         fetchTasks(); // Refresh tasks
         
         // Notify other components to refresh
@@ -412,6 +229,11 @@ export const Tasks = () => {
       }
     } catch (error) {
       console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -466,29 +288,40 @@ export const Tasks = () => {
     }
   };
 
-  const deleteTask = async (taskId: string) => {
+  const convertEventToTask = async (event: any) => {
     if (!user) return;
-    
+
+    const priority = calculatePriority(event.title, event.description, event.start_time);
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
-        .delete()
-        .eq('id', taskId);
+        .insert({
+          user_id: user.id,
+          title: event.title,
+          description: event.description,
+          due_date: event.start_time,
+          source_provider: event.source_provider || 'calendar',
+          source_assignment_id: event.source_event_id,
+          priority_score: priority,
+          event_type: event.event_type,
+          completion_status: 'pending'
+        })
+        .select()
+        .single();
 
       if (error) {
-        console.error('Error deleting task:', error);
+        console.error('Error converting event to task:', error);
         toast({
           title: "Error",
-          description: "Failed to delete task",
+          description: "Failed to convert event to task",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Success",
-          description: "Task deleted successfully",
+          description: "Event converted to task successfully",
         });
-        setIsEditDialogOpen(false);
-        setEditingTask(null);
         fetchTasks(); // Refresh tasks
         
         // Notify other components to refresh
@@ -496,109 +329,17 @@ export const Tasks = () => {
       }
     } catch (error) {
       console.error('Unexpected error:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
     }
   };
 
-  // Helper function to get task course color
-  const getTaskCourseColor = (task: Task) => {
-    // Extract course code from course_name or title
-    const courseCode = task.course_name || extractCourseCode(task.title);
-    
-    // First, try to use stored Canvas color
-    if (courseCode && storedColors[courseCode]) {
-      const color = storedColors[courseCode];
-      return `border-l-4 border-l-[${color}] bg-[${color}]/5`;
-    }
-    
-    // Fallback color mapping based on course type
-    const colorMappings: Record<string, string> = {
-      'HES': 'border-l-red-500 bg-red-50 dark:bg-red-900/10',
-      'LIFE': 'border-l-green-500 bg-green-50 dark:bg-green-900/10',
-      'LIFE-L': 'border-l-green-500 bg-green-50 dark:bg-green-900/10',
-      'MATH': 'border-l-amber-600 bg-amber-50 dark:bg-amber-900/10',
-      'MU': 'border-l-green-500 bg-green-50 dark:bg-green-900/10',
-      'PSY': 'border-l-red-500 bg-red-50 dark:bg-red-900/10',
-    };
-    
-    if (courseCode) {
-      // Direct match first
-      if (colorMappings[courseCode]) {
-        return colorMappings[courseCode];
-      }
-      
-      // Pattern matching for course prefixes
-      const prefix = courseCode.split('-')[0];
-      if (colorMappings[prefix]) {
-        return colorMappings[prefix];
-      }
-    }
-    
-    // Default color for tasks without course info
-    return 'border-l-4 border-l-border bg-muted/20';
-  };
-
-  // Extract course code from title or course name
-  const extractCourseCode = (title: string): string | null => {
-    if (!title) return null;
-    
-    // Enhanced patterns for Canvas course extraction
-    const patterns = [
-      // [2025FA-PSY-100-007] or [2025FA-LIFE-102-003] format
-      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)\]/i,
-      // [PSY-100-007-2025FA] format
-      /\[([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)-(\d{4}[A-Z]{2})\]/i,
-      // Simple course codes like PSY-100, MATH-118, LIFE-102, etc.
-      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?)\b/i,
-      // Lab courses like LIFE-102-L16
-      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}-?L\d*)\]/i
-    ];
-    
-    for (const pattern of patterns) {
-      const match = title.match(pattern);
-      if (match) {
-        // Return the course code, cleaning up any extra formatting
-        let courseCode = match[2] || match[1];
-        // Remove semester info and normalize format
-        courseCode = courseCode.replace(/\d{4}[A-Z]{2}/, '').replace(/^-|-$/, '');
-        
-        // Handle lab courses - keep the L designation but remove section numbers
-        if (courseCode.includes('-L')) {
-          courseCode = courseCode.replace(/-L\d+$/, '-L');
-        }
-        // If it's a regular course with section number, keep just the base course
-        else if (courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
-          courseCode = courseCode.replace(/-\d{3}$/, '');
-        }
-        
-        return courseCode.toUpperCase();
-      }
-    }
-    
-    return null;
+  const getTaskCourseColor = (task: Task): string => {
+    if (!task.course_name || !storedColors[task.course_name]) return '';
+    const color = storedColors[task.course_name];
+    return `border-l-4 border-l-[${color}]`;
   };
 
   useEffect(() => {
     fetchTasks();
-  }, [user]);
-
-  // Listen for data refresh events from other components
-  useEffect(() => {
-    const handleDataRefresh = () => {
-      fetchTasks();
-    };
-
-    window.addEventListener('dataRefresh', handleDataRefresh);
-    window.addEventListener('tasksCleared', handleDataRefresh);
-
-    return () => {
-      window.removeEventListener('dataRefresh', handleDataRefresh);
-      window.removeEventListener('tasksCleared', handleDataRefresh);
-    };
   }, [user]);
 
   // Fetch stored course colors
@@ -627,8 +368,8 @@ export const Tasks = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Combine and sort tasks by priority and due date - FILTER OUT PAST DUE ASSIGNMENTS
-  const allItems = [
+  // Combine and filter current tasks (FILTER OUT PAST DUE ASSIGNMENTS)
+  const allCurrentItems = [
     ...tasks.map(task => ({
       ...task,
       type: 'task',
@@ -657,8 +398,8 @@ export const Tasks = () => {
     })
   ];
 
-  // Filter and search
-  const filteredItems = allItems.filter(item => {
+  // Filter and search current items
+  const filteredCurrentItems = allCurrentItems.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -672,8 +413,8 @@ export const Tasks = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Sort by completion status first (pending tasks first), then by priority, then by due date
-  const sortedItems = filteredItems.sort((a, b) => {
+  // Sort current items by completion status first, then by priority, then by due date
+  const sortedCurrentItems = filteredCurrentItems.sort((a, b) => {
     // First sort by completion status (pending tasks first, completed tasks last)
     if (a.completion_status !== b.completion_status) {
       if (a.completion_status === 'completed' && b.completion_status === 'pending') return 1;
@@ -742,7 +483,6 @@ export const Tasks = () => {
                   Add Task
                 </Button>
               </DialogTrigger>
-              {/* Task Dialog Content - keeping all existing dialog content */}
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Add New Task</DialogTitle>
@@ -752,8 +492,6 @@ export const Tasks = () => {
                 </DialogHeader>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4" autoComplete="off">
-                    <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
-                    <input type="password" autoComplete="new-password" style={{display:'none'}} />
                     <FormField
                       control={form.control}
                       name="title"
@@ -764,7 +502,6 @@ export const Tasks = () => {
                             <Input 
                               placeholder="Enter task title..." 
                               autoComplete="off" 
-                              data-form-type="other"
                               {...field} 
                             />
                           </FormControl>
@@ -797,7 +534,6 @@ export const Tasks = () => {
                             <Input 
                               placeholder="Enter course name..." 
                               autoComplete="off" 
-                              data-form-type="other"
                               {...field} 
                             />
                           </FormControl>
@@ -813,12 +549,7 @@ export const Tasks = () => {
                         render={({ field }) => (
                           <FormItem className="flex flex-col">
                             <FormLabel>Due Date</FormLabel>
-                            <Popover onOpenChange={(open) => {
-                              // If closing and no date selected, auto-select today
-                              if (!open && !field.value) {
-                                field.onChange(new Date());
-                              }
-                            }}>
+                            <Popover>
                               <PopoverTrigger asChild>
                                 <FormControl>
                                   <Button
@@ -837,21 +568,17 @@ export const Tasks = () => {
                                   </Button>
                                 </FormControl>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0 bg-popover border" align="start">
+                              <PopoverContent className="w-auto p-0" align="start">
                                 <CalendarComponent
                                   mode="single"
                                   selected={field.value}
-                                  onSelect={(date) => {
-                                    console.log('Date selected:', date);
-                                    field.onChange(date);
-                                  }}
+                                  onSelect={field.onChange}
                                   disabled={(date) => {
                                     const today = new Date();
                                     today.setHours(0, 0, 0, 0);
                                     return date < today;
                                   }}
                                   initialFocus
-                                  className={cn("p-3 pointer-events-auto")}
                                 />
                               </PopoverContent>
                             </Popover>
@@ -873,15 +600,14 @@ export const Tasks = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-60 overflow-y-auto">
-                                {/* Generate time options every 15 minutes */}
                                 {Array.from({ length: 96 }, (_, i) => {
                                   const hour = Math.floor(i / 4);
                                   const minute = (i % 4) * 15;
                                   const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                                   const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-                                     hour: '2-digit',
-                                     minute: '2-digit',
-                                     hour12: true
+                                  const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true
                                   });
                                   return (
                                     <SelectItem key={timeString} value={timeString}>
@@ -897,132 +623,7 @@ export const Tasks = () => {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Priority Level</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select priority level" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-4 w-4 border border-muted-foreground rounded" />
-                                  No Priority
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="low">
-                                <div className="flex items-center gap-2">
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                  Low Priority
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="medium">
-                                <div className="flex items-center gap-2">
-                                  <BookOpen className="h-4 w-4 text-blue-500" />
-                                  Medium Priority
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="high">
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4 text-orange-500" />
-                                  High Priority
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Recurring task fields */}
-                    <FormField
-                      control={form.control}
-                      name="is_recurring"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                          <div className="space-y-0.5">
-                            <FormLabel>Recurring Task</FormLabel>
-                            <FormDescription>
-                              Create a task that repeats on a schedule
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    {form.watch("is_recurring") && (
-                      <div className="space-y-3">
-                        <FormField
-                          control={form.control}
-                          name="recurrence_type"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Recurrence Type</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select recurrence type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="daily">Daily</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {form.watch("recurrence_type") === "weekly" && (
-                          <FormField
-                            control={form.control}
-                            name="recurrence_days"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Days of Week</FormLabel>
-                                <div className="flex flex-wrap gap-2">
-                                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
-                                    <Button
-                                      key={day}
-                                      type="button"
-                                      variant={(field.value || []).includes(index) ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={() => {
-                                        const currentDays = field.value || [];
-                                        const newDays = currentDays.includes(index)
-                                          ? currentDays.filter(d => d !== index)
-                                          : [...currentDays, index];
-                                        field.onChange(newDays);
-                                      }}
-                                    >
-                                      {day}
-                                    </Button>
-                                  ))}
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
-                      </div>
-                    )}
-
-                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                    <DialogFooter>
                       <Button
                         type="button"
                         variant="outline"
@@ -1030,7 +631,7 @@ export const Tasks = () => {
                       >
                         Cancel
                       </Button>
-                      <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
+                      <Button type="submit">
                         Create Task
                       </Button>
                     </DialogFooter>
@@ -1048,10 +649,7 @@ export const Tasks = () => {
                   <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search tasks and assignments..."
-                      autoComplete="off"
-                      data-form-type="other"
-                      name="task-search"
+                      placeholder="Search current tasks..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -1084,14 +682,14 @@ export const Tasks = () => {
           </Card>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">High Priority</p>
-                    <p className="text-xl font-bold">{sortedItems.filter(item => item.priority === 3 && item.completion_status === 'pending').length}</p>
+                    <p className="text-xl font-bold">{sortedCurrentItems.filter(item => item.priority === 3 && item.completion_status === 'pending').length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1102,7 +700,7 @@ export const Tasks = () => {
                   <BookOpen className="h-5 w-5 text-accent" />
                   <div>
                     <p className="text-sm text-muted-foreground">Total Pending</p>
-                    <p className="text-xl font-bold">{sortedItems.filter(item => item.completion_status === 'pending').length}</p>
+                    <p className="text-xl font-bold">{sortedCurrentItems.filter(item => item.completion_status === 'pending').length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1113,7 +711,7 @@ export const Tasks = () => {
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <div>
                     <p className="text-sm text-muted-foreground">Completed</p>
-                    <p className="text-xl font-bold">{sortedItems.filter(item => item.completion_status === 'completed').length}</p>
+                    <p className="text-xl font-bold">{sortedCurrentItems.filter(item => item.completion_status === 'completed').length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1122,22 +720,18 @@ export const Tasks = () => {
 
           {/* Current Task List */}
           <div className="space-y-3">
-            {sortedItems.length === 0 ? (
+            {sortedCurrentItems.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-medium text-foreground mb-2">No current tasks found</h3>
                   <p className="text-muted-foreground mb-4">
-                    All tasks are completed or you haven't added any tasks yet
+                    All tasks are completed or you haven't added any current tasks yet
                   </p>
-                  <Button variant="outline">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Go to Integrations
-                  </Button>
                 </CardContent>
               </Card>
             ) : (
-              sortedItems.map((item) => {
+              sortedCurrentItems.map((item) => {
                 const taskCourseColor = item.type === 'task' ? getTaskCourseColor(item as Task) : '';
                 return (
                   <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${
@@ -1146,1137 +740,72 @@ export const Tasks = () => {
                     completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
                   } ${taskCourseColor}`}>
                     <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => item.type === 'task' ? toggleTaskCompletion(item.id, item.completion_status) : convertEventToTask(item)}
-                        className="flex-shrink-0"
-                      >
-                        {item.completion_status === 'completed' ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : item.type === 'event' ? (
-                          <Plus className="h-5 w-5" />
-                        ) : (
-                          <div className="h-5 w-5 border-2 border-muted-foreground rounded" />
-                        )}
-                      </Button>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className={`font-medium ${item.completion_status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                            {item.title}
-                            {completingTasks.has(item.id) && (
-                              <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
-                            )}
-                          </h3>
-                          <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
-                            {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
-                            {getPriorityLabel(item.priority)}
-                          </Badge>
-                          {item.type === 'event' && (
-                            <Badge variant="outline">From Calendar</Badge>
-                          )}
-                          {item.is_recurring && (
-                            <Badge variant="outline" className="text-xs">
-                              Recurring
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {item.description && (
-                          <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                        )}
-                        
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          {item.course_name && (
-                            <span className="flex items-center gap-1">
-                              <BookOpen className="h-3 w-3" />
-                              {item.course_name}
-                            </span>
-                          )}
-                          {item.due_date && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              Due: {new Date(item.due_date).toLocaleDateString()}
-                            </span>
-                          )}
-                          {item.source_provider && (
-                            <span>Source: {item.source_provider}</span>
-                          )}
-                        </div>
-
-                        {item.is_recurring && (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {item.recurrence_type === 'weekly' && item.recurrence_pattern?.days 
-                              ? `Recurrs weekly on ${item.recurrence_pattern.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
-                              : `Recurrs ${item.recurrence_type}`
-                            }
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Edit button for tasks (not events) */}
-                      {item.type === 'task' && (
+                      <div className="flex items-center gap-4">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEditTask(item as Task)}
+                          onClick={() => item.type === 'task' ? toggleTaskCompletion(item.id, item.completion_status) : convertEventToTask(item)}
                           className="flex-shrink-0"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          {item.completion_status === 'completed' ? (
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          ) : item.type === 'event' ? (
+                            <Plus className="h-5 w-5" />
+                          ) : (
+                            <div className="h-5 w-5 border-2 border-muted-foreground rounded" />
+                          )}
                         </Button>
-                      )}
-                    </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className={`font-medium ${item.completion_status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                              {item.title}
+                              {completingTasks.has(item.id) && (
+                                <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
+                              )}
+                            </h3>
+                            <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
+                              {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
+                              {getPriorityLabel(item.priority)}
+                            </Badge>
+                            {item.type === 'event' && (
+                              <Badge variant="outline">From Calendar</Badge>
+                            )}
+                          </div>
+                          
+                          {item.description && (
+                            <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
+                          )}
+                          
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            {item.course_name && (
+                              <span className="flex items-center gap-1">
+                                <BookOpen className="h-3 w-3" />
+                                {item.course_name}
+                              </span>
+                            )}
+                            {item.due_date && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Due: {new Date(item.due_date).toLocaleDateString()}
+                              </span>
+                            )}
+                            {item.source_provider && (
+                              <span>Source: {item.source_provider}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 );
               })
             )}
           </div>
-          </div>
-
-          {/* Edit Task Dialog */}
-          <PastDueAssignments />
         </TabsContent>
-      </Tabs>
 
-      {/* Edit Task Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-            <DialogDescription>
-              Update your task details.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onEditTask)} className="space-y-4" autoComplete="off">
-              <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
-              <input type="password" autoComplete="new-password" style={{display:'none'}} />
-              {/* Same form fields as add dialog */}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Task Title</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter task title..." 
-                        autoComplete="off" 
-                        data-form-type="other"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Enter task description..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="course_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Course (Optional)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter course name..." 
-                        autoComplete="off" 
-                        data-form-type="other"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="due_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Due Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "MMM dd, yyyy")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 bg-popover border" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date("1900-01-01")
-                            }
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="due_time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Due Time</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select time" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-60 overflow-y-auto">
-                          {Array.from({ length: 96 }, (_, i) => {
-                            const hour = Math.floor(i / 4);
-                            const minute = (i % 4) * 15;
-                            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                             const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-                               hour: '2-digit',
-                               minute: '2-digit',
-                               hour12: true
-                            });
-                            return (
-                              <SelectItem key={timeString} value={timeString}>
-                                {displayTime}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority Level</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">
-                          <div className="flex items-center gap-2">
-                            <div className="h-4 w-4 border border-muted-foreground rounded" />
-                            No Priority
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="low">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            Low Priority
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="medium">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-blue-500" />
-                            Medium Priority
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="high">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-orange-500" />
-                            High Priority
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="is_recurring"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Recurring Task</FormLabel>
-                      <FormDescription>
-                        Create a task that repeats on a schedule
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {form.watch("is_recurring") && (
-                <div className="space-y-3">
-                  <FormField
-                    control={form.control}
-                    name="recurrence_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Recurrence Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select recurrence type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {form.watch("recurrence_type") === "weekly" && (
-                    <FormField
-                      control={form.control}
-                      name="recurrence_days"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Days of Week</FormLabel>
-                          <div className="flex flex-wrap gap-2">
-                            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
-                              <Button
-                                key={day}
-                                type="button"
-                                variant={(field.value || []).includes(index) ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  const currentDays = field.value || [];
-                                  const newDays = currentDays.includes(index)
-                                    ? currentDays.filter(d => d !== index)
-                                    : [...currentDays, index];
-                                  field.onChange(newDays);
-                                }}
-                              >
-                                {day}
-                              </Button>
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                </div>
-              )}
-
-              <DialogFooter className="flex-col sm:flex-row gap-2">
-                <div className="flex gap-2 sm:mr-auto">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => editingTask && deleteTask(editingTask.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete Task
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
-                    Update Task
-                  </Button>
-                </div>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-          </p>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all px-8">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Task</DialogTitle>
-              <DialogDescription>
-                Create a new task with due date, time, and priority level.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4" autoComplete="off">
-                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
-                <input type="password" autoComplete="new-password" style={{display:'none'}} />
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Task Title</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter task title..." 
-                          autoComplete="off" 
-                          data-form-type="other"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter task description..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="course_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Course (Optional)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter course name..." 
-                          autoComplete="off" 
-                          data-form-type="other"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="due_date"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Due Date</FormLabel>
-                        <Popover onOpenChange={(open) => {
-                          // If closing and no date selected, auto-select today
-                          if (!open && !field.value) {
-                            field.onChange(new Date());
-                          }
-                        }}>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "MMM dd, yyyy")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-popover border" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={field.value}
-                              onSelect={(date) => {
-                                console.log('Date selected:', date);
-                                field.onChange(date);
-                              }}
-                              disabled={(date) => {
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                return date < today;
-                              }}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="due_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Due Time</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select time" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            {/* Generate time options every 15 minutes */}
-                            {Array.from({ length: 96 }, (_, i) => {
-                              const hour = Math.floor(i / 4);
-                              const minute = (i % 4) * 15;
-                              const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                               const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-                                 hour: '2-digit',
-                                 minute: '2-digit',
-                                 hour12: true
-                              });
-                              return (
-                                <SelectItem key={timeString} value={timeString}>
-                                  {displayTime}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Priority Level</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select priority level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            <div className="flex items-center gap-2">
-                              <div className="h-4 w-4 border border-muted-foreground rounded" />
-                              No Priority
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="low">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              Low Priority
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="medium">
-                            <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-blue-500" />
-                              Medium Priority
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="high">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-orange-500" />
-                              High Priority
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddDialogOpen(false);
-                      resetForm();
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
-                    Create Task
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Task Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          if (!open) {
-            resetForm();
-          }
-        }}>
-          <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Task</DialogTitle>
-              <DialogDescription>
-                Update task details, due date, time, and priority level.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onEditTask)} className="space-y-4" autoComplete="off">
-                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
-                <input type="password" autoComplete="new-password" style={{display:'none'}} />
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Task Title</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter task title..." 
-                          autoComplete="off" 
-                          data-form-type="other"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter task description..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="course_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Course (Optional)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter course name..." 
-                          autoComplete="off" 
-                          data-form-type="other"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="due_date"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Due Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "MMM dd, yyyy")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-popover border" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={field.value}
-                              onSelect={(date) => {
-                                console.log('Date selected (edit):', date);
-                                field.onChange(date);
-                              }}
-                              disabled={(date) => {
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                return date < today;
-                              }}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="due_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Due Time</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select time" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            {/* Generate time options every 15 minutes */}
-                            {Array.from({ length: 96 }, (_, i) => {
-                              const hour = Math.floor(i / 4);
-                              const minute = (i % 4) * 15;
-                              const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                               const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-                                 hour: '2-digit',
-                                 minute: '2-digit',
-                                 hour12: true
-                              });
-                              return (
-                                <SelectItem key={timeString} value={timeString}>
-                                  {displayTime}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Priority Level</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select priority level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            <div className="flex items-center gap-2">
-                              <div className="h-4 w-4 border border-muted-foreground rounded" />
-                              No Priority
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="low">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              Low Priority
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="medium">
-                            <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-blue-500" />
-                              Medium Priority
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="high">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-orange-500" />
-                              High Priority
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Recurring Task Section */}
-                <FormField
-                  control={form.control}
-                  name="is_recurring"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Recurring Task</FormLabel>
-                        <FormDescription>
-                          Make this task repeat automatically
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch("is_recurring") && (
-                  <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-                    <FormField
-                      control={form.control}
-                      name="recurrence_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Repeat</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select how often to repeat" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="daily">Daily</SelectItem>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {form.watch("recurrence_type") === "weekly" && (
-                      <FormField
-                        control={form.control}
-                        name="recurrence_days"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Select Days</FormLabel>
-                            <FormDescription>
-                              Choose which days of the week to repeat
-                            </FormDescription>
-                            <div className="flex flex-wrap gap-2">
-                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
-                                <Button
-                                  key={day}
-                                  type="button"
-                                  variant={field.value?.includes(index) ? "default" : "outline"}
-                                  size="sm"
-                                  onClick={() => {
-                                    const currentDays = field.value || [];
-                                    const newDays = currentDays.includes(index)
-                                      ? currentDays.filter(d => d !== index)
-                                      : [...currentDays, index];
-                                    field.onChange(newDays);
-                                  }}
-                                >
-                                  {day}
-                                </Button>
-                              ))}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-                  </div>
-                )}
-
-                <DialogFooter className="flex-col sm:flex-row gap-2">
-                  <div className="flex gap-2 sm:mr-auto">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={() => editingTask && deleteTask(editingTask.id)}
-                      className="flex items-center gap-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete Task
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsEditDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
-                      Update Task
-                    </Button>
-                  </div>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks and assignments..."
-                  autoComplete="off"
-                  data-form-type="other"
-                  name="task-search"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">High Priority</p>
-                <p className="text-xl font-bold">{sortedItems.filter(item => item.priority === 3 && item.completion_status === 'pending').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-accent" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Pending</p>
-                <p className="text-xl font-bold">{sortedItems.filter(item => item.completion_status === 'pending').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-xl font-bold">{sortedItems.filter(item => item.completion_status === 'completed').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Task List */}
-      <div className="space-y-3">
-        {sortedItems.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No tasks found</h3>
-              <p className="text-muted-foreground mb-4">
-                Connect your academic accounts in settings to sync assignments and events
-              </p>
-              <Button variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
-                Go to Integrations
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          sortedItems.map((item) => {
-            const taskCourseColor = item.type === 'task' ? getTaskCourseColor(item as Task) : '';
-            return (
-              <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${
-                item.completion_status === 'completed' ? 'opacity-60' : ''
-              } ${
-                completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
-              } ${taskCourseColor}`}>
-                <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => item.type === 'task' ? toggleTaskCompletion(item.id, item.completion_status) : convertEventToTask(item)}
-                    className="flex-shrink-0"
-                  >
-                    {item.completion_status === 'completed' ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : item.type === 'event' ? (
-                      <Plus className="h-5 w-5" />
-                    ) : (
-                      <div className="h-5 w-5 border-2 border-muted-foreground rounded" />
-                    )}
-                  </Button>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-medium ${item.completion_status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                        {item.title}
-                        {completingTasks.has(item.id) && (
-                          <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
-                        )}
-                      </h3>
-                      <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
-                        {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
-                        {getPriorityLabel(item.priority)}
-                      </Badge>
-                      {item.type === 'event' && (
-                        <Badge variant="outline">From Calendar</Badge>
-                      )}
-                      {item.is_recurring && (
-                        <Badge variant="outline" className="text-xs">
-                          Recurring
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                    )}
-                    
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {item.course_name && (
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          {item.course_name}
-                        </span>
-                      )}
-                      {item.due_date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Due: {new Date(item.due_date).toLocaleDateString()}
-                        </span>
-                      )}
-                      {item.source_provider && (
-                        <span>Source: {item.source_provider}</span>
-                      )}
-                    </div>
-
-                    {item.is_recurring && (
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {item.recurrence_type === 'weekly' && item.recurrence_pattern?.days 
-                          ? `Recurrs weekly on ${item.recurrence_pattern.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
-                          : `Recurrs ${item.recurrence_type}`
-                        }
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Edit button for tasks (not events) */}
-                  {item.type === 'task' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditTask(item as Task)}
-                      className="flex-shrink-0"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
+        <TabsContent value="past-due">
+          <PastDueAssignments />
         </TabsContent>
       </Tabs>
     </div>
