@@ -431,13 +431,14 @@ export const Dashboard = () => {
       return dueDate >= now && dueDate <= endOfCurrentWeek;
     });
     
-    // Calculate Canvas assignments inline (same logic as futureCanvasAssignments)
+    // Calculate Canvas assignments inline - but ONLY for this week
     const filteredEvents = filterRecentAssignments(userEvents);
     const canvasAssignments = filteredEvents
       .filter(event => {
         const eventDate = new Date(event.start_time || event.end_time);
         eventDate.setHours(0, 0, 0, 0);
-        return eventDate >= now; // Today and future only
+        // Must be within this week range (not all future)
+        return eventDate >= now && eventDate <= endOfCurrentWeek;
       })
       .map(event => ({
         id: event.id,
