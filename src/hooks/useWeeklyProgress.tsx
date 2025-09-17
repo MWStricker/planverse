@@ -40,7 +40,12 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
     
     const today = new Date();
     const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
-    const currentWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
+    const currentWeekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Sunday end
+    
+    console.log('📅 WEEK CALCULATION DEBUG:');
+    console.log('- Today:', format(today, 'MMM d, yyyy (EEEE)'));
+    console.log('- Current week start (Monday):', format(currentWeekStart, 'MMM d, yyyy (EEEE)'));
+    console.log('- Current week end (Sunday):', format(currentWeekEnd, 'MMM d, yyyy (EEEE)'));
 
     // Helper function to create a weekly group
     const createWeeklyGroup = (weekStart: Date, weekEnd: Date): WeeklyGroup => {
@@ -54,6 +59,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (!task.due_date) return;
         
         const dueDate = new Date(task.due_date);
+        console.log(`🔍 Checking manual task: "${task.title}" due ${format(dueDate, 'MMM d, yyyy')} - in current week: ${isWithinInterval(dueDate, { start: weekStart, end: weekEnd })}`);
         // Include ALL tasks due this week (both completed and pending)
         if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd })) {
           assignments.push({
@@ -106,6 +112,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (event.event_type !== 'assignment') return;
         
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
+        console.log(`🔍 Checking Canvas assignment: "${event.title}" due ${format(eventDate, 'MMM d, yyyy')} - in current week: ${isWithinInterval(eventDate, { start: weekStart, end: weekEnd })}`);
         // Include ALL assignments due this week (both completed and pending)
         if (isWithinInterval(eventDate, { start: weekStart, end: weekEnd })) {
           assignments.push({
