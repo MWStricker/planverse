@@ -1489,41 +1489,29 @@ export const Dashboard = () => {
                     {(() => {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
-                      const endOfToday = new Date(today);
-                      endOfToday.setHours(23, 59, 59, 999);
-                      
-                      console.log('DEBUG: Tasks Completed calculation starting');
-                      console.log('DEBUG: Today date range:', today, 'to', endOfToday);
+                      const todayStr = format(today, 'yyyy-MM-dd');
                       
                       // Use the same logic as Smart Priority Queue but filter for today only
                       let todaysItems: any[] = [];
                       
                       if (aiPriorities && aiPriorities.length > 0) {
-                        console.log('DEBUG: Using AI priorities');
                         // Filter AI priorities for today
                         todaysItems = aiPriorities.filter((item: any) => {
                           if (!item.dueDate) return false;
                           const itemDate = new Date(item.dueDate);
-                          return itemDate >= today && itemDate <= endOfToday;
+                          const itemDateStr = format(itemDate, 'yyyy-MM-dd');
+                          return itemDateStr === todayStr;
                         });
                       } else {
-                        console.log('DEBUG: Using manual filtering');
-                        // Filter manual tasks/assignments for today exactly like Smart Priority Queue
+                        // Filter manual tasks/assignments for today
                         const allItems = [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])];
-                        console.log('DEBUG: All items to filter:', allItems.length);
-                        
                         todaysItems = allItems.filter((item: any) => {
                           if (!item.due_date) return false;
                           const itemDate = new Date(item.due_date);
-                          const isToday = itemDate >= today && itemDate <= endOfToday;
-                          if (isToday) {
-                            console.log('DEBUG: Found today item:', item.title, 'due:', item.due_date);
-                          }
-                          return isToday;
+                          const itemDateStr = format(itemDate, 'yyyy-MM-dd');
+                          return itemDateStr === todayStr;
                         });
                       }
-                      
-                      console.log('DEBUG: Today\'s items:', todaysItems.length);
                       
                       if (todaysItems.length === 0) {
                         return "No Tasks Today!";
@@ -1533,23 +1521,18 @@ export const Dashboard = () => {
                         if (aiPriorities && aiPriorities.length > 0) {
                           return item.completed;
                         } else {
-                          // Check completion status from updated local state (same as Smart Priority Queue)
-                          let isCompleted = false;
+                          // Check completion status from updated local state
                           if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
                             // Find the current state from userEvents (which gets updated by handleItemToggle)
                             const currentEvent = userEvents.find(e => e.id === item.id);
-                            isCompleted = currentEvent?.is_completed || false;
+                            return currentEvent?.is_completed || false;
                           } else {
                             // Find the current state from userTasks (which gets updated by handleItemToggle)
                             const currentTask = userTasks.find(t => t.id === item.id);
-                            isCompleted = currentTask?.completion_status === 'completed';
+                            return currentTask?.completion_status === 'completed';
                           }
-                          console.log('DEBUG: Item completion check:', item.title, 'completed:', isCompleted);
-                          return isCompleted;
                         }
                       }).length;
-                      
-                      console.log('DEBUG: Completed count:', completedCount, 'out of', todaysItems.length);
                       
                       return completedCount === todaysItems.length 
                         ? "All Tasks Completed!" 
