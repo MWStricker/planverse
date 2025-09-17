@@ -1539,31 +1539,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground font-medium">Due This Week</p>
-                  <p className="text-lg font-bold text-foreground">{
-                    (() => {
-                      const now = new Date();
-                      const currentDay = now.getDay();
-                      const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
-                      const endOfCurrentWeek = new Date(now);
-                      endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
-                      endOfCurrentWeek.setHours(23, 59, 59, 999);
-                      
-                      // Use EXACTLY the same data as Smart Priority Queue for consistency
-                      const smartQueueItems = [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])];
-                      const pendingItems = smartQueueItems.filter(item => {
-                        if (item.completion_status === 'completed' || item.is_completed) return false;
-                        const dueDate = new Date(item.due_date);
-                        return dueDate >= now && dueDate <= endOfCurrentWeek;
-                      });
-                      
-                      console.log('🔍 DUE THIS WEEK DEBUG:');
-                      console.log('- Smart Queue Items:', smartQueueItems.length);
-                      console.log('- Pending Items:', pendingItems.length);
-                      console.log('- Should match Smart Priority Queue count');
-                      
-                      return pendingItems.length;
-                    })()
-                  }</p>
+                   <p className="text-lg font-bold text-foreground">{weeklyProgressData.currentWeek.totalCount}</p>
                 </div>
               </div>
             </CardContent>
