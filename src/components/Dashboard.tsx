@@ -2148,14 +2148,28 @@ export const Dashboard = () => {
                                        <div className="flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
                                         <span>
-                                           {task.due_date ? (() => {
-                                             const date = new Date(task.due_date);
-                                             if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
-                                               const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                                               return `${format(fixedDate, "MMM d")} at ${format(fixedDate, "h:mm a")}`;
+                                           {(() => {
+                                             console.log('🕐 Debug due date for task:', task.title);
+                                             console.log('🕐 - task.due_date:', task.due_date);
+                                             console.log('🕐 - task.start_time:', task.start_time);
+                                             console.log('🕐 - task.end_time:', task.end_time);
+                                             console.log('🕐 - task object:', task);
+                                             
+                                             const dueDate = task.due_date || task.start_time || task.end_time;
+                                             if (dueDate) {
+                                               const date = new Date(dueDate);
+                                               console.log('🕐 - parsed date:', date, 'isValid:', !isNaN(date.getTime()));
+                                               
+                                               if (!isNaN(date.getTime())) {
+                                                 if (task.source_provider === 'canvas' && dueDate.includes('23:59:59+00')) {
+                                                   const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                                                   return `Due: ${format(fixedDate, "MMM d")} at ${format(fixedDate, "h:mm a")}`;
+                                                 }
+                                                 return `Due: ${format(date, "MMM d")} at ${format(date, "h:mm a")}`;
+                                               }
                                              }
-                                             return `${format(date, "MMM d")} at ${format(date, "h:mm a")}`;
-                                           })() : "No due date"}
+                                             return "No due date";
+                                           })()}
                                         </span>
                                       </div>
                                       {task.estimated_hours && (
