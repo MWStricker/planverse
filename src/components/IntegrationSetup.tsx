@@ -239,7 +239,7 @@ export const IntegrationSetup = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly',
+          scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
           redirectTo: `${window.location.origin}/#integrations`,
           queryParams: {
             access_type: 'offline',
