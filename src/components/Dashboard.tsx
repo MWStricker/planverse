@@ -498,34 +498,46 @@ export const Dashboard = () => {
 
   // Get all assignments due today and beyond from events (Canvas assignments) with dynamic priority
   const futureCanvasAssignments = useMemo(() => {
-    // First filter out old assignments using centralized filter
-    const filteredEvents = filterCanvasAssignments(userEvents);
+    // For Smart Priority Queue, we want assignments due this week, not just recent ones
+    // So we'll filter differently here than the main filtering function
+    const canvasAssignments = userEvents.filter(event => 
+      event.event_type === 'assignment' && event.source_provider === 'canvas'
+    );
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    console.log('DEBUG - Today filtering:', {
-      today: today.toDateString()
+    // Get start of current week for Smart Priority Queue
+    const currentDay = today.getDay();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(startOfWeek.getDate() - currentDay);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    console.log('DEBUG - Smart Priority Queue filtering:', {
+      today: today.toDateString(),
+      startOfWeek: startOfWeek.toDateString()
     });
     
-    return filteredEvents
+    return canvasAssignments
       .filter(event => {
-        const eventDate = new Date(event.start_time || event.end_time);
+        const eventDate = new Date(event.start_time || event.end_time || '');
         eventDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
-        const isTodayOrFuture = eventDate >= today;
+        
+        // Include all assignments due from start of this week onwards (including overdue this week)
+        const isThisWeekOrLater = eventDate >= startOfWeek;
         
         // Filter out completed assignments
         const isNotCompleted = !event.is_completed;
         
-        console.log('DEBUG - Future check:', {
+        console.log('DEBUG - Assignment check:', {
           title: event.title,
           eventDate: eventDate.toDateString(),
-          isTodayOrFuture,
+          isThisWeekOrLater,
           isCompleted: event.is_completed,
           isNotCompleted
         });
         
-        return isTodayOrFuture && isNotCompleted;
+        return isThisWeekOrLater && isNotCompleted;
       })
       .map(event => {
         const eventDate = new Date(event.start_time || event.end_time);
