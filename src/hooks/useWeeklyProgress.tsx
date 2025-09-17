@@ -26,6 +26,11 @@ interface Event {
 
 export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
   return useMemo(() => {
+    console.log('🔄 useWeeklyProgress HOOK TRIGGERED');
+    console.log('- userTasks length:', userTasks.length);
+    console.log('- userEvents length:', userEvents.length);
+    console.log('- userEvents with is_completed=true:', userEvents.filter(e => e.is_completed).length);
+    
     const today = new Date();
     const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
     const currentWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
