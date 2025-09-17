@@ -294,6 +294,17 @@ export const Dashboard = () => {
     
     const weeklyCompletionRate = totalItemsDueThisWeek > 0 ? Math.round((totalItemsCompletedThisWeek / totalItemsDueThisWeek) * 100) : 0;
     
+    // DEBUG: Log the weekly progress calculation
+    console.log('📈 WEEKLY PROGRESS DEBUG:');
+    console.log('- tasksCompletedThisWeek:', tasksCompletedThisWeek);
+    console.log('- canvasAssignmentsCompletedThisWeek:', canvasAssignmentsCompletedThisWeek);
+    console.log('- totalItemsCompletedThisWeek:', totalItemsCompletedThisWeek);
+    console.log('- totalTasksDueThisWeek:', totalTasksDueThisWeek);
+    console.log('- totalCanvasAssignmentsDueThisWeek:', totalCanvasAssignmentsDueThisWeek);
+    console.log('- totalItemsDueThisWeek:', totalItemsDueThisWeek);
+    console.log('- weeklyCompletionRate:', weeklyCompletionRate + '%');
+    console.log('- Week range:', startOfWeek.toDateString(), 'to', endOfWeek.toDateString());
+    
     return {
       totalTasksToday,
       weeklyCompletionRate,
