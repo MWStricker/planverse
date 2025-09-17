@@ -273,7 +273,7 @@ export const Dashboard = () => {
     const filteredCanvasEvents = filterRecentAssignments(userEvents);
     const canvasAssignmentsCompletedThisWeek = filteredCanvasEvents.filter(event => {
       if (event.event_type !== 'assignment' || !event.is_completed) return false;
-      const eventDate = new Date(event.start_time || event.end_time);
+      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
       return eventDate >= startOfWeek && eventDate <= endOfWeek;
     }).length;
     
@@ -285,7 +285,7 @@ export const Dashboard = () => {
     
     const totalCanvasAssignmentsDueThisWeek = filteredCanvasEvents.filter(event => {
       if (event.event_type !== 'assignment') return false;
-      const eventDate = new Date(event.start_time || event.end_time);
+      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
       return eventDate >= startOfWeek && eventDate <= endOfWeek;
     }).length;
     
@@ -296,6 +296,8 @@ export const Dashboard = () => {
     
     // DEBUG: Log the weekly progress calculation
     console.log('📈 WEEKLY PROGRESS DEBUG:');
+    console.log('- Week range:', startOfWeek.toDateString(), 'to', endOfWeek.toDateString());
+    console.log('- Today:', today.toDateString());
     console.log('- tasksCompletedThisWeek:', tasksCompletedThisWeek);
     console.log('- canvasAssignmentsCompletedThisWeek:', canvasAssignmentsCompletedThisWeek);
     console.log('- totalItemsCompletedThisWeek:', totalItemsCompletedThisWeek);
@@ -303,7 +305,22 @@ export const Dashboard = () => {
     console.log('- totalCanvasAssignmentsDueThisWeek:', totalCanvasAssignmentsDueThisWeek);
     console.log('- totalItemsDueThisWeek:', totalItemsDueThisWeek);
     console.log('- weeklyCompletionRate:', weeklyCompletionRate + '%');
-    console.log('- Week range:', startOfWeek.toDateString(), 'to', endOfWeek.toDateString());
+    
+    // Debug: Show completed assignments for this week
+    const completedThisWeekDetails = filteredCanvasEvents.filter(event => {
+      if (event.event_type !== 'assignment' || !event.is_completed) return false;
+      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
+      return eventDate >= startOfWeek && eventDate <= endOfWeek;
+    });
+    console.log('- Completed assignments this week:', completedThisWeekDetails.map(e => `"${e.title}" (completed: ${e.is_completed})`));
+    
+    // Debug: Show all assignments due this week
+    const allDueThisWeekDetails = filteredCanvasEvents.filter(event => {
+      if (event.event_type !== 'assignment') return false;
+      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
+      return eventDate >= startOfWeek && eventDate <= endOfWeek;
+    });
+    console.log('- All assignments due this week:', allDueThisWeekDetails.map(e => `"${e.title}" (completed: ${e.is_completed})`));
     
     return {
       totalTasksToday,
