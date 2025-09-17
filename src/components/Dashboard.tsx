@@ -431,8 +431,25 @@ export const Dashboard = () => {
       return dueDate >= now && dueDate <= endOfCurrentWeek;
     });
     
+    // Calculate Canvas assignments inline (same logic as futureCanvasAssignments)
+    const filteredEvents = filterRecentAssignments(userEvents);
+    const canvasAssignments = filteredEvents
+      .filter(event => {
+        const eventDate = new Date(event.start_time || event.end_time);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate >= now; // Today and future only
+      })
+      .map(event => ({
+        id: event.id,
+        title: event.title,
+        due_date: event.start_time || event.end_time,
+        source_provider: 'canvas',
+        event_type: 'assignment',
+        is_completed: event.is_completed || false
+      }));
+    
     // Use the EXACT same filtering as Smart Priority Queue
-    const smartQueueItems = [...tasksThisWeek, ...(futureCanvasAssignments || [])];
+    const smartQueueItems = [...tasksThisWeek, ...canvasAssignments];
     
     const dueThisWeek = smartQueueItems.length || "N/A";
     
