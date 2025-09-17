@@ -414,7 +414,11 @@ export const Dashboard = () => {
     const tasksThisWeek = userTasks.filter(task => {
       if (!task.due_date || task.completion_status === 'completed') return false;
       const dueDate = new Date(task.due_date);
-      return dueDate >= now && dueDate <= endOfCurrentWeek;
+      // Include tasks due from the beginning of this week to the end of this week
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(startOfWeek.getDate() - currentDay);
+      startOfWeek.setHours(0, 0, 0, 0);
+      return dueDate >= startOfWeek && dueDate <= endOfCurrentWeek;
     });
     
     // Don't create a new filter - this will be replaced by futureCanvasAssignments data
@@ -583,14 +587,22 @@ export const Dashboard = () => {
     // Get Canvas assignments due this week (already filtered to exclude completed)
     const canvasAssignmentsThisWeek = futureCanvasAssignments.filter(assignment => {
       const dueDate = new Date(assignment.due_date);
-      return dueDate >= now && dueDate <= endOfCurrentWeek;
+      // Include assignments from the beginning of this week to the end of this week
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(startOfWeek.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return dueDate >= startOfWeek && dueDate <= endOfCurrentWeek;
     });
 
     // Get manual tasks due this week (exclude completed)
     const tasksThisWeek = userTasks.filter(task => {
       if (!task.due_date || task.completion_status === 'completed') return false;
       const dueDate = new Date(task.due_date);
-      return dueDate >= now && dueDate <= endOfCurrentWeek;
+      // Include tasks from the beginning of this week to the end of this week
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(startOfWeek.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return dueDate >= startOfWeek && dueDate <= endOfCurrentWeek;
     });
 
     const result = [
