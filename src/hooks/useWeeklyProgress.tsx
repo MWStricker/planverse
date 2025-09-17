@@ -58,8 +58,9 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const taskDate = new Date(task.due_date);
         
         if (isWithinInterval(taskDate, { start: currentWeekStart, end: currentWeekEnd })) {
-          // Force completed to match visual display (all assignments appear checked)
-          const isCompleted = true;
+          // Use EXACT same logic as Smart Priority Queue - check current state from userTasks array
+          const currentTask = userTasks.find(t => t.id === task.id);
+          const isCompleted = currentTask?.completion_status === 'completed';
           assignments.push({
             id: task.id,
             title: task.title,
@@ -113,8 +114,9 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
         
         if (isWithinInterval(eventDate, { start: currentWeekStart, end: currentWeekEnd })) {
-          // Force completed to match visual display (all assignments appear checked)
-          const isCompleted = true;
+          // Use EXACT same logic as Smart Priority Queue - check current state from userEvents array
+          const currentEvent = userEvents.find(e => e.id === event.id);
+          const isCompleted = currentEvent?.is_completed || false;
           assignments.push({
             id: event.id,
             title: event.title,
