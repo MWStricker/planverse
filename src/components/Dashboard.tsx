@@ -424,12 +424,19 @@ export const Dashboard = () => {
     endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
     endOfCurrentWeek.setHours(23, 59, 59, 999);
 
+    // Calculate tasks this week first (avoid circular dependency)
+    const tasksThisWeek = userTasks.filter(task => {
+      if (!task.due_date || task.completion_status === 'completed') return false;
+      const dueDate = new Date(task.due_date);
+      return dueDate >= now && dueDate <= endOfCurrentWeek;
+    });
+    
     // Use the EXACT same filtering as Smart Priority Queue
-    const smartQueueItems = [...(filteredData.tasksThisWeek || []), ...(futureCanvasAssignments || [])];
+    const smartQueueItems = [...tasksThisWeek, ...(futureCanvasAssignments || [])];
     
     const dueThisWeek = smartQueueItems.length || "N/A";
     
-    return { freeTimeToday, eventsThisWeek: smartQueueItems, tasksThisWeek: [], dueThisWeek };
+    return { freeTimeToday, eventsThisWeek: smartQueueItems, tasksThisWeek, dueThisWeek };
   }, [userEvents, userTasks, preferences]);
   
   // Combine all items due this week for the popup
