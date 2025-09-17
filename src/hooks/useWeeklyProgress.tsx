@@ -58,6 +58,38 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
 
       // Add Canvas assignments (same filtering as Smart Priority Queue)
       const filteredCanvasEvents = filterRecentAssignments(userEvents);
+      
+      // Debug: Log week information for current week
+      if (weekStart.getTime() === currentWeekStart.getTime()) {
+        console.log('🔍 DEBUGGING CURRENT WEEK ASSIGNMENTS:');
+        console.log('- Week range:', format(weekStart, 'MMM d'), 'to', format(weekEnd, 'MMM d'));
+        console.log('- Now:', format(now, 'MMM d HH:mm'));
+        console.log('- Total filtered Canvas events:', filteredCanvasEvents.length);
+        
+        let canvasAssignmentsInWeek = 0;
+        let futureCanvasAssignments = 0;
+        
+        filteredCanvasEvents.forEach(event => {
+          if (event.event_type !== 'assignment') return;
+          
+          const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
+          const isInWeek = isWithinInterval(eventDate, { start: weekStart, end: weekEnd });
+          const isFuture = eventDate >= now;
+          
+          if (isInWeek) {
+            canvasAssignmentsInWeek++;
+            console.log(`- Assignment in week: "${event.title}" due ${format(eventDate, 'MMM d')} (future: ${isFuture})`);
+          }
+          
+          if (isInWeek && isFuture) {
+            futureCanvasAssignments++;
+          }
+        });
+        
+        console.log('- Canvas assignments in current week:', canvasAssignmentsInWeek);
+        console.log('- Future Canvas assignments in current week:', futureCanvasAssignments);
+      }
+      
       filteredCanvasEvents.forEach(event => {
         if (event.event_type !== 'assignment') return;
         
@@ -120,9 +152,13 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
     }
 
     console.log('📊 WEEKLY PROGRESS GROUPS:');
+    console.log('- Today is:', format(today, 'MMM d, yyyy'));
     console.log('- Current week:', format(currentWeek.weekStart, 'MMM d'), '-', format(currentWeek.weekEnd, 'MMM d'));
     console.log('- Current week progress:', `${currentWeek.completedCount}/${currentWeek.totalCount} (${currentWeek.progressPercentage}%)`);
     console.log('- Current week assignments:', currentWeek.assignments.map(a => `"${a.title}" (${a.isCompleted ? 'completed' : 'pending'})`));
+    console.log('- Total userTasks:', userTasks.length);
+    console.log('- Total userEvents:', userEvents.length);
+    console.log('- Filtered Canvas Events:', filterRecentAssignments(userEvents).length);
 
     return {
       currentWeek,
