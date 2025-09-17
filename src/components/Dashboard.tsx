@@ -1486,14 +1486,31 @@ export const Dashboard = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {allTodaysItems.length === 0 
-                      ? "No Tasks Today!" 
-                      : allTodaysItems.length > 0 && allTodaysItems.every(item => 
-                          item.completion_status === 'completed' || item.is_completed
-                        )
-                      ? "All Tasks Completed!" 
-                      : `${allTodaysItems.filter(item => item.completion_status === 'completed' || item.is_completed).length}/${allTodaysItems.length}`
-                    }
+                    {(() => {
+                      // Use the same logic as Smart Priority Queue
+                      const priorityQueueItems = (aiPriorities && aiPriorities.length > 0) 
+                        ? aiPriorities 
+                        : [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])];
+                      
+                      if (priorityQueueItems.length === 0) {
+                        return "No Tasks Today!";
+                      }
+                      
+                      const completedCount = priorityQueueItems.filter((item: any) => {
+                        if (aiPriorities && aiPriorities.length > 0) {
+                          return item.completed;
+                        } else {
+                          // Use same completion logic as Smart Priority Queue fallback
+                          return item.source_provider === 'canvas' && item.event_type === 'assignment' 
+                            ? userEvents.find(e => e.id === item.id)?.is_completed 
+                            : item.completion_status === 'completed';
+                        }
+                      }).length;
+                      
+                      return completedCount === priorityQueueItems.length 
+                        ? "All Tasks Completed!" 
+                        : `${completedCount}/${priorityQueueItems.length}`;
+                    })()}
                   </p>
                 </div>
               </div>
