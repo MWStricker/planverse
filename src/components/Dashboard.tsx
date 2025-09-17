@@ -539,53 +539,80 @@ export const Dashboard = () => {
     // First filter out old assignments using centralized filter
     const filteredEvents = filterCanvasAssignments(userEvents);
     
-    return filteredEvents.map(event => {
-      const eventDate = new Date(event.start_time || event.end_time);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Dynamic priority based on due date
-      let dynamicPriority = 2; // Default medium priority
-      
-      // Check if due today
-      const isDueToday = (
-        eventDate.getDate() === today.getDate() &&
-        eventDate.getMonth() === today.getMonth() &&
-        eventDate.getFullYear() === today.getFullYear()
-      );
-      
-      // Check if due tomorrow
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const isDueTomorrow = (
-        eventDate.getDate() === tomorrow.getDate() &&
-        eventDate.getMonth() === tomorrow.getMonth() &&
-        eventDate.getFullYear() === tomorrow.getFullYear()
-      );
-      
-      if (isDueToday) {
-        dynamicPriority = 4; // Critical priority for today
-      } else if (isDueTomorrow) {
-        dynamicPriority = 3; // High priority for tomorrow
-      } else {
-        // Medium priority for assignments due within the week
-        dynamicPriority = 2;
-      }
-      
-      // Convert Canvas events to task-like objects for display
-      return {
-        id: event.id,
-        title: event.title,
-        due_date: event.start_time || event.end_time,
-        priority_score: dynamicPriority,
-        completion_status: 'pending',
-        source_provider: 'canvas',
-        course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course',
-        description: event.description || 'Canvas Assignment',
-        event_type: 'assignment',
-        is_completed: event.is_completed || false
-      };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get start and end of this week
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    console.log('DEBUG - Week filtering:', {
+      today: today.toDateString(),
+      startOfWeek: startOfWeek.toDateString(),
+      endOfWeek: endOfWeek.toDateString()
     });
+    
+    return filteredEvents
+      .filter(event => {
+        const eventDate = new Date(event.start_time || event.end_time);
+        const isThisWeek = eventDate >= startOfWeek && eventDate <= endOfWeek;
+        
+        console.log('DEBUG - Week check:', {
+          title: event.title,
+          eventDate: eventDate.toDateString(),
+          isThisWeek
+        });
+        
+        return isThisWeek;
+      })
+      .map(event => {
+        const eventDate = new Date(event.start_time || event.end_time);
+        
+        // Dynamic priority based on due date
+        let dynamicPriority = 2; // Default medium priority
+        
+        // Check if due today
+        const isDueToday = (
+          eventDate.getDate() === today.getDate() &&
+          eventDate.getMonth() === today.getMonth() &&
+          eventDate.getFullYear() === today.getFullYear()
+        );
+        
+        // Check if due tomorrow
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const isDueTomorrow = (
+          eventDate.getDate() === tomorrow.getDate() &&
+          eventDate.getMonth() === tomorrow.getMonth() &&
+          eventDate.getFullYear() === tomorrow.getFullYear()
+        );
+        
+        if (isDueToday) {
+          dynamicPriority = 4; // Critical priority for today
+        } else if (isDueTomorrow) {
+          dynamicPriority = 3; // High priority for tomorrow
+        } else {
+          // Medium priority for assignments due within the week
+          dynamicPriority = 2;
+        }
+        
+        // Convert Canvas events to task-like objects for display
+        return {
+          id: event.id,
+          title: event.title,
+          due_date: event.start_time || event.end_time,
+          priority_score: dynamicPriority,
+          completion_status: 'pending',
+          source_provider: 'canvas',
+          course_name: event.title.match(/\[([^\]]+)\]/)?.[1] || 'Canvas Course',
+          description: event.description || 'Canvas Assignment',
+          event_type: 'assignment',
+          is_completed: event.is_completed || false
+        };
+      });
   }, [userEvents]); // Add dependency for useMemo
 
   // Get today's Canvas assignments from events (only non-completed ones)
