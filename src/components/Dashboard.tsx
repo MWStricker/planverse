@@ -1,4 +1,4 @@
-import { Calendar, Clock, BookOpen, Target, Upload, Plus, CheckCircle, AlertCircle, Brain, CalendarIcon, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, BookOpen, Target, Upload, Plus, CheckCircle, AlertCircle, Brain, CalendarIcon, AlertTriangle, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,8 @@ import { ocrExtractText } from "@/lib/ocr";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
+import { WeeklyProgressCard } from "@/components/WeeklyProgressCard";
 import { z } from "zod";
 import { filterCanvasAssignments, filterRecentAssignments } from "@/lib/assignment-filters";
 
@@ -240,95 +242,8 @@ export const Dashboard = () => {
     
     return { completedTasks, today, endOfToday, startOfWeek, endOfWeek };
   }, [userTasks, userEvents, dateCalculations]);
-  // Memoized weekly metrics
-  const weeklyMetrics = useMemo(() => {
-    const { today, startOfWeek, endOfWeek } = taskMetrics;
-    
-    const totalTasksToday = userTasks.filter(task => {
-      if (!task.due_date) return false;
-      const dueDate = new Date(task.due_date);
-      return (
-        dueDate.getDate() === today.getDate() &&
-        dueDate.getMonth() === today.getMonth() &&
-        dueDate.getFullYear() === today.getFullYear()
-      );
-    }).length + userEvents.filter(event => {
-      if (event.event_type !== 'assignment') return false;
-      const eventDate = new Date(event.start_time || event.end_time);
-      return (
-        eventDate.getDate() === today.getDate() &&
-        eventDate.getMonth() === today.getMonth() &&
-        eventDate.getFullYear() === today.getFullYear()
-      );
-    }).length;
-    
-    // Use consistent logic: both completed and total should be based on items DUE this week
-    const tasksCompletedThisWeek = userTasks.filter(task => {
-      if (task.completion_status !== 'completed' || !task.due_date) return false;
-      const dueDate = new Date(task.due_date);
-      return dueDate >= startOfWeek && dueDate <= endOfWeek;
-    }).length;
-    
-    // Apply the same filtering as used elsewhere for Canvas assignments
-    const filteredCanvasEvents = filterRecentAssignments(userEvents);
-    const canvasAssignmentsCompletedThisWeek = filteredCanvasEvents.filter(event => {
-      if (event.event_type !== 'assignment' || !event.is_completed) return false;
-      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
-      return eventDate >= startOfWeek && eventDate <= endOfWeek;
-    }).length;
-    
-    const totalTasksDueThisWeek = userTasks.filter(task => {
-      if (!task.due_date) return false;
-      const dueDate = new Date(task.due_date);
-      return dueDate >= startOfWeek && dueDate <= endOfWeek;
-    }).length;
-    
-    const totalCanvasAssignmentsDueThisWeek = filteredCanvasEvents.filter(event => {
-      if (event.event_type !== 'assignment') return false;
-      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
-      return eventDate >= startOfWeek && eventDate <= endOfWeek;
-    }).length;
-    
-    const totalItemsCompletedThisWeek = tasksCompletedThisWeek + canvasAssignmentsCompletedThisWeek;
-    const totalItemsDueThisWeek = totalTasksDueThisWeek + totalCanvasAssignmentsDueThisWeek;
-    
-    const weeklyCompletionRate = totalItemsDueThisWeek > 0 ? Math.round((totalItemsCompletedThisWeek / totalItemsDueThisWeek) * 100) : 0;
-    
-    // DEBUG: Log the weekly progress calculation
-    console.log('📈 WEEKLY PROGRESS DEBUG:');
-    console.log('- Week range:', startOfWeek.toDateString(), 'to', endOfWeek.toDateString());
-    console.log('- Today:', today.toDateString());
-    console.log('- tasksCompletedThisWeek:', tasksCompletedThisWeek);
-    console.log('- canvasAssignmentsCompletedThisWeek:', canvasAssignmentsCompletedThisWeek);
-    console.log('- totalItemsCompletedThisWeek:', totalItemsCompletedThisWeek);
-    console.log('- totalTasksDueThisWeek:', totalTasksDueThisWeek);
-    console.log('- totalCanvasAssignmentsDueThisWeek:', totalCanvasAssignmentsDueThisWeek);
-    console.log('- totalItemsDueThisWeek:', totalItemsDueThisWeek);
-    console.log('- weeklyCompletionRate:', weeklyCompletionRate + '%');
-    
-    // Debug: Show completed assignments for this week
-    const completedThisWeekDetails = filteredCanvasEvents.filter(event => {
-      if (event.event_type !== 'assignment' || !event.is_completed) return false;
-      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
-      return eventDate >= startOfWeek && eventDate <= endOfWeek;
-    });
-    console.log('- Completed assignments this week:', completedThisWeekDetails.map(e => `"${e.title}" (completed: ${e.is_completed})`));
-    
-    // Debug: Show all assignments due this week
-    const allDueThisWeekDetails = filteredCanvasEvents.filter(event => {
-      if (event.event_type !== 'assignment') return false;
-      const eventDate = new Date(event.start_time || event.end_time || event.due_date);
-      return eventDate >= startOfWeek && eventDate <= endOfWeek;
-    });
-    console.log('- All assignments due this week:', allDueThisWeekDetails.map(e => `"${e.title}" (completed: ${e.is_completed})`));
-    
-    return {
-      totalTasksToday,
-      weeklyCompletionRate,
-      totalItemsCompletedThisWeek,
-      totalItemsDueThisWeek
-    };
-  }, [userTasks, userEvents, taskMetrics]);
+  // Use the new weekly progress hook
+  const weeklyProgressData = useWeeklyProgress(userTasks, userEvents);
 
   const completionRate = userTasks.length > 0 ? Math.round((taskMetrics.completedTasks / userTasks.length) * 100) : 0;
 
@@ -1663,52 +1578,10 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Weekly Progress</p>
-                  <p className="text-2xl font-bold text-foreground">{
-                    useMemo(() => {
-                      // Use the SAME logic as "due this week" count for consistency
-                      const now = new Date();
-                      const currentDay = now.getDay();
-                      const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
-                      const endOfCurrentWeek = new Date(now);
-                      endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
-                      endOfCurrentWeek.setHours(23, 59, 59, 999);
-                      
-                      // Count tasks due this week
-                      const allTasksThisWeek = userTasks.filter(task => {
-                        if (!task.due_date) return false;
-                        const dueDate = new Date(task.due_date);
-                        return dueDate >= now && dueDate <= endOfCurrentWeek;
-                      });
-                      
-                      const completedTasksThisWeek = allTasksThisWeek.filter(task => 
-                        task.completion_status === 'completed'
-                      );
-                      
-                      // Count Canvas assignments due this week - use userEvents directly for real-time updates
-                      const filteredEvents = filterRecentAssignments(userEvents);
-                      const allCanvasThisWeek = filteredEvents.filter(event => {
-                        if (event.event_type !== 'assignment') return false;
-                        const eventDate = new Date(event.start_time || event.end_time);
-                        return eventDate >= now && eventDate <= endOfCurrentWeek;
-                      });
-                      
-                      const completedCanvasThisWeek = allCanvasThisWeek.filter(assignment => 
-                        assignment.is_completed
-                      );
-                      
-                      const totalCompleted = completedTasksThisWeek.length + completedCanvasThisWeek.length;
-                      const totalDue = allTasksThisWeek.length + allCanvasThisWeek.length;
-                      
-                      // DEBUG: Log what we're actually counting
-                      console.log('🔍 WEEKLY PROGRESS DETAILED DEBUG:');
-                      console.log('Week range:', now.toDateString(), 'to', endOfCurrentWeek.toDateString());
-                      console.log('Tasks due this week:', allTasksThisWeek.map(t => ({title: t.title, completed: t.completion_status === 'completed'})));
-                      console.log('Canvas due this week:', allCanvasThisWeek.map(c => ({title: c.title, completed: c.is_completed})));
-                      console.log('Summary:', `${totalCompleted}/${totalDue} = ${totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) : 0}%`);
-                      
-                      return totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) + "%" : "No items this week";
-                    }, [userTasks, userEvents]) // React to state changes
-                  }</p>
+                  <p className="text-2xl font-bold text-foreground">{weeklyProgressData.currentWeek.progressPercentage}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    {weeklyProgressData.currentWeek.completedCount} of {weeklyProgressData.currentWeek.totalCount} completed
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -2418,6 +2291,41 @@ export const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Weekly Progress Groups Section */}
+      <div className="mt-8 space-y-6">
+        <h2 className="text-2xl font-bold">Weekly Progress Overview</h2>
+        
+        {/* Current Week - Detailed View */}
+        <WeeklyProgressCard 
+          weekGroup={weeklyProgressData.currentWeek} 
+          showAssignments={true}
+        />
+        
+        {/* Previous Weeks */}
+        {weeklyProgressData.previousWeeks.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Previous Weeks</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {weeklyProgressData.previousWeeks.map((week, index) => (
+                <WeeklyProgressCard key={index} weekGroup={week} />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Upcoming Weeks */}
+        {weeklyProgressData.upcomingWeeks.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Upcoming Weeks</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {weeklyProgressData.upcomingWeeks.map((week, index) => (
+                <WeeklyProgressCard key={index} weekGroup={week} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
