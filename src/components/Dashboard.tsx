@@ -1665,7 +1665,7 @@ export const Dashboard = () => {
                       
                       const completedTasksThisWeek = allTasksThisWeek.filter(task => 
                         task.completion_status === 'completed'
-                      ).length;
+                      );
                       
                       // Count Canvas assignments due this week - use userEvents directly for real-time updates
                       const filteredEvents = filterRecentAssignments(userEvents);
@@ -1677,10 +1677,17 @@ export const Dashboard = () => {
                       
                       const completedCanvasThisWeek = allCanvasThisWeek.filter(assignment => 
                         assignment.is_completed
-                      ).length;
+                      );
                       
-                      const totalCompleted = completedTasksThisWeek + completedCanvasThisWeek;
+                      const totalCompleted = completedTasksThisWeek.length + completedCanvasThisWeek.length;
                       const totalDue = allTasksThisWeek.length + allCanvasThisWeek.length;
+                      
+                      // DEBUG: Log what we're actually counting
+                      console.log('🔍 WEEKLY PROGRESS DETAILED DEBUG:');
+                      console.log('Week range:', now.toDateString(), 'to', endOfCurrentWeek.toDateString());
+                      console.log('Tasks due this week:', allTasksThisWeek.map(t => ({title: t.title, completed: t.completion_status === 'completed'})));
+                      console.log('Canvas due this week:', allCanvasThisWeek.map(c => ({title: c.title, completed: c.is_completed})));
+                      console.log('Summary:', `${totalCompleted}/${totalDue} = ${totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) : 0}%`);
                       
                       return totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) + "%" : "No items this week";
                     }, [userTasks, userEvents]) // React to state changes
