@@ -26,10 +26,17 @@ interface Event {
 
 export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
   return useMemo(() => {
-    console.log('🔄 useWeeklyProgress HOOK TRIGGERED');
+    console.log('🔄 useWeeklyProgress HOOK TRIGGERED - FORCED UPDATE');
     console.log('- userTasks length:', userTasks.length);
     console.log('- userEvents length:', userEvents.length);
     console.log('- userEvents with is_completed=true:', userEvents.filter(e => e.is_completed).length);
+    
+    // Debug all Canvas assignments completion status
+    const canvasAssignments = userEvents.filter(e => e.event_type === 'assignment');
+    console.log('🎯 ALL CANVAS ASSIGNMENTS:');
+    canvasAssignments.forEach((assignment, index) => {
+      console.log(`  ${index + 1}. "${assignment.title}" - is_completed: ${assignment.is_completed} (ID: ${assignment.id})`);
+    });
     
     const today = new Date();
     const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
