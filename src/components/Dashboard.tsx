@@ -204,47 +204,17 @@ export const Dashboard = () => {
   const taskMetrics = useMemo(() => {
     const { today, endOfToday, startOfWeek, endOfWeek } = dateCalculations;
     
-    const completedTasksToday = userTasks.filter(task => {
-      if (task.completion_status !== 'completed' || !task.completed_at) return false;
-      const completedDate = new Date(task.completed_at);
-      return completedDate >= today && completedDate <= endOfToday;
-    }).length;
+    // Count ALL completed tasks (regardless of when they were completed)
+    const completedTasksCount = userTasks.filter(task => 
+      task.completion_status === 'completed'
+    ).length;
     
-    const completedEventsToday = userEvents.filter(event => {
-      if (event.event_type !== 'assignment' || !event.is_completed) return false;
-      
-      // For Canvas assignments, check if they're due today (not when they were completed)
-      const eventDate = new Date(event.start_time || event.end_time);
-      const isToday = (
-        eventDate.getDate() === today.getDate() &&
-        eventDate.getMonth() === today.getMonth() &&
-        eventDate.getFullYear() === today.getFullYear()
-      );
-      
-      return isToday;
-    }).length;
+    // Count ALL completed assignments (regardless of when they were completed)
+    const completedEventsCount = userEvents.filter(event => 
+      event.event_type === 'assignment' && event.is_completed
+    ).length;
     
-    const completedTasks = completedTasksToday + completedEventsToday;
-    
-    console.log('DETAILED Task metrics calculation:', {
-      completedTasksToday,
-      completedEventsToday,
-      totalCompleted: completedTasks,
-      totalEvents: userEvents.length,
-      eventsWithCompleted: userEvents.filter(e => e.is_completed).length,
-      assignmentEvents: userEvents.filter(e => e.event_type === 'assignment').length,
-      completedAssignmentEvents: userEvents.filter(e => e.event_type === 'assignment' && e.is_completed).length,
-      todayDate: today.toISOString(),
-      sampleEvents: userEvents.filter(e => e.event_type === 'assignment').slice(0, 3).map(e => ({
-        id: e.id,
-        title: e.title,
-        event_type: e.event_type,
-        is_completed: e.is_completed,
-        start_time: e.start_time,
-        end_time: e.end_time,
-        eventDate: new Date(e.start_time || e.end_time).toISOString()
-      }))
-    });
+    const completedTasks = completedTasksCount + completedEventsCount;
     
     return { completedTasks, today, endOfToday, startOfWeek, endOfWeek };
   }, [userTasks, userEvents, dateCalculations]);

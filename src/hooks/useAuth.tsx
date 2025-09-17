@@ -48,41 +48,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []); // Remove loading dependency to prevent infinite re-renders
 
   const signOut = async () => {
-    console.log('useAuth signOut called');
-    console.log('Current session before signout:', session);
-    console.log('Current user before signout:', user);
-    
     try {
-      // Clear local state first
-      console.log('Clearing local state first...');
-      setSession(null);
-      setUser(null);
-      
-      // Clear localStorage manually to ensure session is removed
-      console.log('Clearing localStorage...');
-      localStorage.removeItem('supabase.auth.token');
-      localStorage.clear();
-      
-      console.log('Calling supabase.auth.signOut()...');
       const { error } = await supabase.auth.signOut();
-      console.log('Supabase signOut response:', { error });
-      
       if (error) {
         console.error('Sign out error:', error);
       }
       
-      // Force redirect to auth page
-      console.log('Force redirecting to /auth...');
-      window.location.replace('/auth');
+      // Clear local state after successful signout
+      setSession(null);
+      setUser(null);
       
     } catch (error) {
       console.error('Unexpected sign out error:', error);
-      // Force clear everything and redirect
-      setSession(null);
-      setUser(null);
-      localStorage.clear();
-      console.log('Force redirecting to /auth due to error...');
-      window.location.replace('/auth');
     }
   };
 
