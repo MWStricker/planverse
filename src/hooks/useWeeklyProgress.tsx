@@ -39,9 +39,10 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       console.log(`  ${index + 1}. "${assignment.title}" - is_completed: ${assignment.is_completed} (ID: ${assignment.id})`);
     });
     
-    // Week is Sept 15-21, 2025 (Monday to Sunday)
-    const currentWeekStart = new Date('2025-09-15T00:00:00');
-    const currentWeekEnd = new Date('2025-09-21T23:59:59');
+    // Use the same dynamic week calculation as DebugWeeklyProgress
+    const today = new Date();
+    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    const currentWeekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Sunday
 
     // Helper function to create a weekly group
     const createWeeklyGroup = (weekStart: Date, weekEnd: Date): WeeklyGroup => {
@@ -55,11 +56,8 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (!task.due_date) return;
         
         const taskDate = new Date(task.due_date);
-        const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
-        const startDateOnly = new Date(2025, 8, 15); // Sept 15
-        const endDateOnly = new Date(2025, 8, 21);   // Sept 21
         
-        if (taskDateOnly >= startDateOnly && taskDateOnly <= endDateOnly) {
+        if (isWithinInterval(taskDate, { start: currentWeekStart, end: currentWeekEnd })) {
           console.log(`✅ MANUAL TASK IN WEEK: "${task.title}" - Due: ${taskDate.toDateString()} - Completed: ${task.completion_status === 'completed'}`);
           assignments.push({
             id: task.id,
@@ -112,11 +110,8 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (event.event_type !== 'assignment') return;
         
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
-        const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-        const startDateOnly = new Date(2025, 8, 15); // Sept 15
-        const endDateOnly = new Date(2025, 8, 21);   // Sept 21
         
-        if (eventDateOnly >= startDateOnly && eventDateOnly <= endDateOnly) {
+        if (isWithinInterval(eventDate, { start: currentWeekStart, end: currentWeekEnd })) {
           console.log(`✅ CANVAS ASSIGNMENT IN WEEK: "${event.title}" - Due: ${eventDate.toDateString()} - Completed: ${event.is_completed || false}`);
           assignments.push({
             id: event.id,
