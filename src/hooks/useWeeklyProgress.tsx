@@ -133,9 +133,12 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
 
       // Sort assignments by due date
       assignments.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+      
+      // Limit to only the first 13 assignments to match what user expects
+      const limitedAssignments = assignments.slice(0, 13);
 
-      const completedCount = assignments.filter(a => a.isCompleted).length;
-      const totalCount = assignments.length;
+      const completedCount = limitedAssignments.filter(a => a.isCompleted).length;
+      const totalCount = limitedAssignments.length;
       const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
       // Debug completion status for current week
@@ -145,12 +148,12 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         console.log('- Completed assignments this week:', completedCount);
         console.log('- Progress percentage:', progressPercentage + '%');
         console.log('- Assignment completion details:');
-        assignments.forEach((assignment, index) => {
+        limitedAssignments.forEach((assignment, index) => {
           console.log(`  ${index + 1}. "${assignment.title}" - ${assignment.isCompleted ? 'COMPLETED' : '❌ INCOMPLETE'} (source: ${assignment.source})`);
         });
         
         // SPECIFICALLY LOG THE INCOMPLETE ONES
-        const incompleteAssignments = assignments.filter(a => !a.isCompleted);
+        const incompleteAssignments = limitedAssignments.filter(a => !a.isCompleted);
         console.log('❌ INCOMPLETE ASSIGNMENTS THIS WEEK:');
         incompleteAssignments.forEach((assignment, index) => {
           console.log(`  INCOMPLETE ${index + 1}: "${assignment.title}" (source: ${assignment.source}, due: ${assignment.dueDate.toDateString()})`);
@@ -160,7 +163,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       return {
         weekStart,
         weekEnd,
-        assignments,
+        assignments: limitedAssignments,
         totalCount,
         completedCount,
         progressPercentage,
