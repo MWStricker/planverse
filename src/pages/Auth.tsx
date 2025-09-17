@@ -172,274 +172,297 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-      <div className="flex items-center justify-center p-4 min-h-screen">
-        <Card className="w-full max-w-md animate-fade-in shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-3">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center mb-2 p-2">
-              <img src="/src/assets/planverse-logo.png" alt="Planverse" className="w-full h-full object-contain" />
-            </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Welcome
-            </CardTitle>
-            <p className="text-muted-foreground">All your resources in one place!</p>
-          </CardHeader>
-        <CardContent className="space-y-6">
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-              <TabsTrigger value="signin" className="transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Sign In
-              </TabsTrigger>
-              <TabsTrigger value="signup" className="transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Sign Up
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin" className="mt-6">
-              <form onSubmit={handleSignIn} className="space-y-6" autoComplete="off">
-                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
-                <input type="password" autoComplete="new-password" style={{display:'none'}} />
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
-                  <div className="relative group">
-                    <Mail className={`absolute left-3 top-3 h-4 w-4 transition-colors duration-200 ${
-                      emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
-                    }`} />
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={handleEmailChange}
-                      required
-                      className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/50"
-                    />
-                    {email && (
-                      <div className="absolute right-3 top-3">
-                        {emailValid ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-orange-500" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
-                  <div className="relative group">
-                    <Lock className={`absolute left-3 top-3 h-4 w-4 transition-colors duration-200 ${
-                      isTyping ? 'text-primary' : 'text-muted-foreground'
-                    }`} />
-                    <Input
-                      id="signin-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={handlePasswordChange}
-                      required
-                      className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/50"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                
-                {error && (
-                  <Alert variant="destructive" className="animate-fade-in">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary transition-all duration-500 shadow-lg hover:shadow-2xl hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group" 
-                  disabled={loading || !emailValid}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span className="animate-pulse">Signing In...</span>
-                    </>
-                  ) : (
-                    <>
-                      <User className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
-                      <span className="font-medium">Sign In</span>
-                    </>
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup" className="mt-6">
-              <form onSubmit={handleSignUp} className="space-y-6" autoComplete="off">
-                <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
-                <input type="password" autoComplete="new-password" style={{display:'none'}} />
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
-                  <div className="relative group">
-                    <Mail className={`absolute left-3 top-3 h-4 w-4 transition-colors duration-200 ${
-                      emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
-                    }`} />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={handleEmailChange}
-                      required
-                      className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/50"
-                    />
-                    {email && (
-                      <div className="absolute right-3 top-3">
-                        {emailValid ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-orange-500" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
-                  <div className="relative group">
-                    <Lock className={`absolute left-3 top-3 h-4 w-4 transition-colors duration-200 ${
-                      isTyping ? 'text-primary' : 'text-muted-foreground'
-                    }`} />
-                    <Input
-                      id="signup-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={handlePasswordChange}
-                      required
-                      minLength={6}
-                      className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/50"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {password && (
-                    <div className="space-y-2 animate-fade-in">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Password strength</span>
-                        <span className={`font-medium ${
-                          passwordStrength >= 4 ? 'text-green-500' : 
-                          passwordStrength >= 3 ? 'text-yellow-500' : 
-                          passwordStrength >= 2 ? 'text-orange-500' : 'text-red-500'
-                        }`}>
-                          {passwordStrength >= 4 ? 'Strong' : 
-                           passwordStrength >= 3 ? 'Good' : 
-                           passwordStrength >= 2 ? 'Fair' : 'Weak'}
-                        </span>
-                      </div>
-                      <div className="flex space-x-1">
-                        {[...Array(5)].map((_, i) => (
-                          <div
-                            key={i}
-                            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                              i < passwordStrength
-                                ? passwordStrength >= 4 ? 'bg-green-500' : 
-                                  passwordStrength >= 3 ? 'bg-yellow-500' : 
-                                  passwordStrength >= 2 ? 'bg-orange-500' : 'bg-red-500'
-                                : 'bg-muted'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {error && (
-                  <Alert variant="destructive" className="animate-fade-in">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-600 transition-all duration-500 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-muted disabled:to-muted relative overflow-hidden group text-white" 
-                  disabled={loading || !emailValid || passwordStrength < 2}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span className="animate-pulse">Creating Account...</span>
-                    </>
-                  ) : (
-                    <>
-                      <User className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
-                      <span className="font-medium">Create Account</span>
-                    </>
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-          
-          <div className="mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-3 text-muted-foreground font-medium">Or continue with</span>
-              </div>
-            </div>
-            
-            <Button
-              variant="outline"
-              className="w-full mt-6 h-12 border-2 border-border/50 hover:border-border hover:bg-muted/30 transition-all duration-400 group relative overflow-hidden hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 via-blue-50/30 to-blue-50/0 -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <svg className="mr-3 h-5 w-5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              {loading ? (
-                <div className="flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  <span className="animate-pulse">Connecting...</span>
-                </div>
-              ) : (
-                <span className="font-medium group-hover:text-foreground transition-colors">Continue with Google</span>
-              )}
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        {/* Header Section */}
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mb-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <img src="/src/assets/planverse-logo.png" alt="Planverse" className="w-12 h-12 object-contain" />
           </div>
-        </CardContent>
-      </Card>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3">
+            Welcome to Planverse
+          </h1>
+          <p className="text-muted-foreground text-lg">All your resources in one place!</p>
+        </div>
+
+        {/* Main Card */}
+        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm animate-scale-in">
+          <CardContent className="p-8">
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl mb-8">
+                <TabsTrigger 
+                  value="signin" 
+                  className="rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground"
+                >
+                  Sign In
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="signup" 
+                  className="rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground"
+                >
+                  Sign Up
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="signin" className="mt-0">
+                <form onSubmit={handleSignIn} className="space-y-6" autoComplete="off">
+                  <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+                  <input type="password" autoComplete="new-password" style={{display:'none'}} />
+                  
+                  <div className="space-y-3">
+                    <Label htmlFor="signin-email" className="text-sm font-semibold text-foreground/90">
+                      Email Address
+                    </Label>
+                    <div className="relative group">
+                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                        emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                      }`} />
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={handleEmailChange}
+                        required
+                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                      />
+                      {email && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          {emailValid ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-orange-500" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Label htmlFor="signin-password" className="text-sm font-semibold text-foreground/90">
+                      Password
+                    </Label>
+                    <div className="relative group">
+                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                        isTyping ? 'text-primary' : 'text-muted-foreground'
+                      }`} />
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={handlePasswordChange}
+                        required
+                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {error && (
+                    <Alert variant="destructive" className="animate-fade-in rounded-xl border-2">
+                      <AlertCircle className="h-5 w-5" />
+                      <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group" 
+                    disabled={loading || !emailValid}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                        <span className="animate-pulse">Signing In...</span>
+                      </>
+                    ) : (
+                      <>
+                        <User className="mr-3 h-5 w-5 transition-transform group-hover:scale-110" />
+                        <span>Sign In</span>
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup" className="mt-0">
+                <form onSubmit={handleSignUp} className="space-y-6" autoComplete="off">
+                  <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+                  <input type="password" autoComplete="new-password" style={{display:'none'}} />
+                  
+                  <div className="space-y-3">
+                    <Label htmlFor="signup-email" className="text-sm font-semibold text-foreground/90">
+                      Email Address
+                    </Label>
+                    <div className="relative group">
+                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                        emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                      }`} />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={handleEmailChange}
+                        required
+                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                      />
+                      {email && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          {emailValid ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-orange-500" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label htmlFor="signup-password" className="text-sm font-semibold text-foreground/90">
+                      Password
+                    </Label>
+                    <div className="relative group">
+                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                        isTyping ? 'text-primary' : 'text-muted-foreground'
+                      }`} />
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create a strong password"
+                        value={password}
+                        onChange={handlePasswordChange}
+                        required
+                        minLength={6}
+                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {password && (
+                      <div className="space-y-3 animate-fade-in p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-foreground/80">Password strength</span>
+                          <span className={`font-semibold ${
+                            passwordStrength >= 4 ? 'text-green-600' : 
+                            passwordStrength >= 3 ? 'text-yellow-600' : 
+                            passwordStrength >= 2 ? 'text-orange-600' : 'text-red-600'
+                          }`}>
+                            {passwordStrength >= 4 ? 'Strong' : 
+                             passwordStrength >= 3 ? 'Good' : 
+                             passwordStrength >= 2 ? 'Fair' : 'Weak'}
+                          </span>
+                        </div>
+                        <div className="flex space-x-2">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`h-2 flex-1 rounded-full transition-all duration-300 ${
+                                i < passwordStrength
+                                  ? passwordStrength >= 4 ? 'bg-green-500' : 
+                                    passwordStrength >= 3 ? 'bg-yellow-500' : 
+                                    passwordStrength >= 2 ? 'bg-orange-500' : 'bg-red-500'
+                                  : 'bg-muted'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {error && (
+                    <Alert variant="destructive" className="animate-fade-in rounded-xl border-2">
+                      <AlertCircle className="h-5 w-5" />
+                      <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-muted disabled:to-muted relative overflow-hidden group text-white" 
+                    disabled={loading || !emailValid || passwordStrength < 2}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                        <span className="animate-pulse">Creating Account...</span>
+                      </>
+                    ) : (
+                      <>
+                        <User className="mr-3 h-5 w-5 transition-transform group-hover:scale-110" />
+                        <span>Create Account</span>
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+            
+            <div className="mt-8">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-muted" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-4 text-muted-foreground font-medium">Or continue with</span>
+                </div>
+              </div>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full mt-6 h-14 text-base font-semibold rounded-xl border-2 transition-all duration-200 hover:bg-muted/50 hover:border-primary/30 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {loading ? (
+                  <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                ) : (
+                  <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                )}
+                <span>Continue with Google</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Footer */}
+        <div className="text-center mt-8 text-sm text-muted-foreground">
+          <p>By signing up, you agree to our Terms of Service and Privacy Policy</p>
+        </div>
       </div>
     </div>
   );
