@@ -1646,7 +1646,43 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Weekly Progress</p>
-                  <p className="text-2xl font-bold text-foreground">{weeklyMetrics.totalItemsDueThisWeek > 0 ? `${weeklyMetrics.weeklyCompletionRate}%` : "No items this week"}</p>
+                  <p className="text-2xl font-bold text-foreground">{
+                    (() => {
+                      // Use the SAME logic as "due this week" count for consistency
+                      const now = new Date();
+                      const currentDay = now.getDay();
+                      const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
+                      const endOfCurrentWeek = new Date(now);
+                      endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
+                      endOfCurrentWeek.setHours(23, 59, 59, 999);
+                      
+                      // Count tasks due this week
+                      const allTasksThisWeek = userTasks.filter(task => {
+                        if (!task.due_date) return false;
+                        const dueDate = new Date(task.due_date);
+                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      });
+                      
+                      const completedTasksThisWeek = allTasksThisWeek.filter(task => 
+                        task.completion_status === 'completed'
+                      ).length;
+                      
+                      // Count Canvas assignments due this week  
+                      const allCanvasThisWeek = futureCanvasAssignments.filter(assignment => {
+                        const dueDate = new Date(assignment.due_date);
+                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      });
+                      
+                      const completedCanvasThisWeek = allCanvasThisWeek.filter(assignment => 
+                        assignment.is_completed
+                      ).length;
+                      
+                      const totalCompleted = completedTasksThisWeek + completedCanvasThisWeek;
+                      const totalDue = allTasksThisWeek.length + allCanvasThisWeek.length;
+                      
+                      return totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) + "%" : "No items this week";
+                    })()
+                  }</p>
                 </div>
               </div>
             </CardContent>
