@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { filterCanvasAssignments } from "@/lib/assignment-filters";
+import { filterCanvasAssignments, filterRecentAssignments } from "@/lib/assignment-filters";
 
 interface Task {
   id: string;
@@ -424,26 +424,35 @@ export const Dashboard = () => {
     endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
     endOfCurrentWeek.setHours(23, 59, 59, 999);
 
-    const eventsThisWeek = userEvents.filter(event => {
+    // Apply the same filtering logic as assignment-filters.ts for Canvas assignments
+    const filteredEvents = filterRecentAssignments(userEvents);
+    
+    const eventsThisWeek = filteredEvents.filter(event => {
       if (!event.start_time && !event.end_time) return false;
       if (event.event_type === 'assignment' && event.is_completed) return false;
       const eventDate = new Date(event.start_time || event.end_time);
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      return eventDate >= oneWeekAgo && eventDate <= endOfCurrentWeek;
+      return eventDate >= now && eventDate <= endOfCurrentWeek;
     });
+    
+    // Also include non-assignment events for this week
+    const otherEventsThisWeek = userEvents.filter(event => {
+      if (event.event_type === 'assignment') return false; // Skip assignments, already handled above
+      if (!event.start_time && !event.end_time) return false;
+      const eventDate = new Date(event.start_time || event.end_time);
+      return eventDate >= now && eventDate <= endOfCurrentWeek;
+    });
+    
+    const allEventsThisWeek = [...eventsThisWeek, ...otherEventsThisWeek];
     
     const tasksThisWeek = userTasks.filter(task => {
       if (!task.due_date || task.completion_status === 'completed') return false;
       const dueDate = new Date(task.due_date);
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      return dueDate >= oneWeekAgo && dueDate <= endOfCurrentWeek;
+      return dueDate >= now && dueDate <= endOfCurrentWeek;
     });
     
-    const dueThisWeek = eventsThisWeek.length + tasksThisWeek.length || "N/A";
+    const dueThisWeek = allEventsThisWeek.length + tasksThisWeek.length || "N/A";
     
-    return { freeTimeToday, eventsThisWeek, tasksThisWeek, dueThisWeek };
+    return { freeTimeToday, eventsThisWeek: allEventsThisWeek, tasksThisWeek, dueThisWeek };
   }, [userEvents, userTasks, preferences]);
   
   // Combine all items due this week for the popup
