@@ -53,8 +53,9 @@ serve(async (req) => {
 
     console.log(`Starting Google Calendar sync for connection: ${connectionId}`);
 
-    // Declare events variable with proper scope
+    // Declare events and tasks variables with proper scope
     let events = [];
+    let tasks = [];
 
     // For testing purposes, if no real access token, create sample Google Calendar events
     if (!finalAccessToken || finalAccessToken === 'mock_token_for_testing') {
