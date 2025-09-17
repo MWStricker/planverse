@@ -1431,28 +1431,28 @@ export const Dashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-card to-muted border-0 shadow-md">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg">
-                  <Clock className="h-5 w-5 text-primary" />
+                  <Clock className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Free Time Today</p>
-                  <p className="text-2xl font-bold text-foreground">{filteredData.freeTimeToday}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Free Time Today</p>
+                  <p className="text-lg font-bold text-foreground">{filteredData.freeTimeToday}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-card to-muted border-0 shadow-md">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-success/10 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-success" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-xs text-muted-foreground font-medium">Tasks Completed</p>
+                  <p className="text-lg font-bold text-foreground">
                     {(() => {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
@@ -1532,14 +1532,14 @@ export const Dashboard = () => {
             className="bg-gradient-to-br from-card to-muted border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => setIsDueThisWeekOpen(true)}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-warning/10 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-warning" />
+                  <AlertCircle className="h-4 w-4 text-warning" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Due This Week</p>
-                  <p className="text-2xl font-bold text-foreground">{
+                  <p className="text-xs text-muted-foreground font-medium">Due This Week</p>
+                  <p className="text-lg font-bold text-foreground">{
                     (() => {
                       const now = new Date();
                       const currentDay = now.getDay();
@@ -1570,14 +1570,14 @@ export const Dashboard = () => {
           </Card>
 
           <Card className="bg-gradient-to-br from-card to-muted border-0 shadow-md">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-accent/10 rounded-lg">
-                  <Target className="h-5 w-5 text-accent" />
+                  <Target className="h-4 w-4 text-accent" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Weekly Progress</p>
-                  <p className="text-2xl font-bold text-foreground">{weeklyProgressData.currentWeek.progressPercentage}%</p>
+                  <p className="text-xs text-muted-foreground font-medium">Weekly Progress</p>
+                  <p className="text-lg font-bold text-foreground">{weeklyProgressData.currentWeek.progressPercentage}%</p>
                   <p className="text-xs text-muted-foreground">
                     {weeklyProgressData.currentWeek.completedCount} of {weeklyProgressData.currentWeek.totalCount} completed
                   </p>
@@ -1615,28 +1615,28 @@ export const Dashboard = () => {
                            'bg-secondary'  // Default
                          }`} />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-sm text-foreground">{task.title}</p>
-                            {task.source_provider === 'canvas' && (
-                              <Badge variant="secondary" className="text-xs h-5 px-2 bg-transparent border-0">
-                                Canvas
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{task.due_date ? (() => {
-                              const date = new Date(task.due_date);
-                              if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
-                                const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                                return format(fixedDate, "hh:mm a");
-                              }
-                              return format(date, "hh:mm a");
-                            })() : "No time"}</span>
-                          </div>
-                          {task.course_name && (
-                            <p className="text-xs text-muted-foreground">{task.course_name}</p>
-                          )}
+                           <div className="flex items-center gap-2 mb-1">
+                             <p className="font-medium text-sm text-foreground leading-tight">{task.title}</p>
+                             {task.source_provider === 'canvas' && (
+                               <Badge variant="secondary" className="text-xs h-4 px-2 bg-transparent border-0">
+                                 Canvas
+                               </Badge>
+                             )}
+                           </div>
+                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                             <Clock className="h-3 w-3" />
+                             <span>{task.due_date ? (() => {
+                               const date = new Date(task.due_date);
+                               if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+                                 const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                                 return format(fixedDate, "hh:mm a");
+                               }
+                               return format(date, "hh:mm a");
+                             })() : "No time"}</span>
+                           </div>
+                           {task.course_name && (
+                             <p className="text-xs text-muted-foreground truncate">{task.course_name}</p>
+                           )}
                         </div>
                       </div>
                     ))}
@@ -1650,16 +1650,16 @@ export const Dashboard = () => {
                           event.type === 'study' ? 'bg-accent' :
                           'bg-muted-foreground'
                         }`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm mb-1">{event.title}</p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{event.time}</span>
-                          </div>
-                          {event.location && (
-                            <p className="text-xs text-muted-foreground">{event.location}</p>
-                          )}
-                        </div>
+                         <div className="flex-1 min-w-0">
+                           <p className="font-medium text-sm mb-1 leading-tight">{event.title}</p>
+                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                             <Clock className="h-3 w-3" />
+                             <span>{event.time}</span>
+                           </div>
+                           {event.location && (
+                             <p className="text-xs text-muted-foreground truncate">{event.location}</p>
+                           )}
+                         </div>
                         {event.type === 'study' && (
                           <Badge variant="secondary" className="bg-accent/10 text-accent text-xs">
                             Suggested
@@ -1711,23 +1711,23 @@ export const Dashboard = () => {
                         <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
                         <div className={`w-2 h-2 rounded-full bg-${task.courseColor || 'primary'}`} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                            {task.title}
-                          </h3>
-                          {task.course && (
-                            <Badge variant="secondary" className="text-xs bg-transparent border-0">
-                              {task.course}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-1">{task.workloadReason || task.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>Due: {task.dueDate || 'No due date'}</span>
-                          <span>Est: {task.estimatedHours || 0}h</span>
-                        </div>
-                      </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="flex items-center gap-2 mb-1">
+                           <h3 className={`font-medium text-sm leading-tight ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                             {task.title}
+                           </h3>
+                           {task.course && (
+                             <Badge variant="secondary" className="text-xs bg-transparent border-0 h-4 px-2">
+                               {task.course}
+                             </Badge>
+                           )}
+                         </div>
+                         <p className="text-xs text-muted-foreground mb-1 leading-relaxed">{task.workloadReason || task.description}</p>
+                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                           <span>Due: {task.dueDate || 'No due date'}</span>
+                           <span>Est: {task.estimatedHours || 0}h</span>
+                         </div>
+                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge 
