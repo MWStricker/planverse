@@ -242,8 +242,23 @@ export const Dashboard = () => {
     
     return { completedTasks, today, endOfToday, startOfWeek, endOfWeek };
   }, [userTasks, userEvents, dateCalculations]);
-  // Use the new weekly progress hook
+  // Use the new weekly progress hook - force re-calculation when events/tasks change
   const weeklyProgressData = useWeeklyProgress(userTasks, userEvents);
+  
+  // Force re-render when completion status changes by adding a completion hash
+  const completionHash = useMemo(() => {
+    const completedEvents = userEvents.filter(e => e.is_completed).map(e => e.id).sort().join(',');
+    const completedTasks = userTasks.filter(t => t.completion_status === 'completed').map(t => t.id).sort().join(',');
+    return `${completedEvents}-${completedTasks}`;
+  }, [userTasks, userEvents]);
+
+  
+  // Debug completion changes
+  useEffect(() => {
+    console.log('🔄 COMPLETION STATUS CHANGED:', completionHash);
+    console.log('- Total events with is_completed=true:', userEvents.filter(e => e.is_completed).length);
+    console.log('- Total tasks with completed status:', userTasks.filter(t => t.completion_status === 'completed').length);
+  }, [completionHash, userEvents, userTasks]);
 
   const completionRate = userTasks.length > 0 ? Math.round((taskMetrics.completedTasks / userTasks.length) * 100) : 0;
 
