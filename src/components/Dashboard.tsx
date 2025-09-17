@@ -1812,7 +1812,7 @@ export const Dashboard = () => {
                   </div>
                 ))
               ) : (() => {
-                // New filtering logic: next 2 days + high priority within next month
+                // Smart filtering logic: next 2 days, or next 2 days with assignments + high priority within next month
                 const currentDate = new Date();
                 const twoDaysFromNow = new Date(currentDate);
                 twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
@@ -1822,54 +1822,94 @@ export const Dashboard = () => {
                 oneMonthFromNow.setDate(oneMonthFromNow.getDate() + 30);
                 oneMonthFromNow.setHours(23, 59, 59, 999);
                 
-                console.log('🎯 Smart Priority Queue Filters:');
-                console.log('- Next 2 days:', currentDate.toDateString(), 'to', twoDaysFromNow.toDateString());
-                console.log('- Next month for high priority:', currentDate.toDateString(), 'to', oneMonthFromNow.toDateString());
-                
-                // Filter tasks for next 2 days OR high priority within next month
-                const filteredTasks = userTasks?.filter(task => {
+                // First, check for assignments in the next 2 days
+                const next2DaysTasks = userTasks?.filter(task => {
                   if (!task.due_date || task.completion_status === 'completed') return false;
                   const dueDate = new Date(task.due_date);
-                  
-                  // Include if due in next 2 days
-                  if (dueDate >= currentDate && dueDate <= twoDaysFromNow) {
-                    return true;
-                  }
-                  
-                  // Include if high priority and due within next month
-                  if ((task.priority_score >= 3) && dueDate >= currentDate && dueDate <= oneMonthFromNow) {
-                    return true;
-                  }
-                  
-                  return false;
+                  return dueDate >= currentDate && dueDate <= twoDaysFromNow;
                 }) || [];
                 
-                // Filter Canvas assignments for next 2 days OR high priority within next month
-                const filteredCanvasAssignments = userEvents?.filter(event => {
+                const next2DaysCanvas = userEvents?.filter(event => {
                   if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
                   const eventDate = new Date(event.start_time || event.end_time || '');
-                  
-                  // Include if due in next 2 days
-                  if (eventDate >= currentDate && eventDate <= twoDaysFromNow) {
-                    return true;
-                  }
-                  
-                  // Include if high priority and due within next month
-                  const isHighPriority = event.priority_score >= 3;
-                  if (isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow) {
-                    return true;
-                  }
-                  
-                  return false;
+                  return eventDate >= currentDate && eventDate <= twoDaysFromNow;
                 }) || [];
                 
-                console.log('📋 Filtered tasks (next 2 days + high priority):', filteredTasks.length, filteredTasks.map(t => ({title: t.title, due: t.due_date, priority: t.priority_score})));
-                console.log('📋 Filtered Canvas assignments (next 2 days + high priority):', filteredCanvasAssignments.length, filteredCanvasAssignments.map(e => ({title: e.title, due: e.start_time, priority: e.priority_score})));
+                let filteredTasks = [];
+                let filteredCanvasAssignments = [];
+                let dateRangeUsed = '';
+                
+                if (next2DaysTasks.length > 0 || next2DaysCanvas.length > 0) {
+                  // Use next 2 days
+                  filteredTasks = next2DaysTasks;
+                  filteredCanvasAssignments = next2DaysCanvas;
+                  dateRangeUsed = 'next 2 days';
+                } else {
+                  // Fallback: find the next 2 days that have assignments
+                  const allFutureAssignments = [
+                    ...(userTasks?.filter(task => {
+                      if (!task.due_date || task.completion_status === 'completed') return false;
+                      const dueDate = new Date(task.due_date);
+                      return dueDate >= currentDate && dueDate <= oneMonthFromNow;
+                    }).map(task => ({ ...task, type: 'task', date: new Date(task.due_date) })) || []),
+                    ...(userEvents?.filter(event => {
+                      if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                      const eventDate = new Date(event.start_time || event.end_time || '');
+                      return eventDate >= currentDate && eventDate <= oneMonthFromNow;
+                    }).map(event => ({ ...event, type: 'canvas', date: new Date(event.start_time || event.end_time || '') })) || [])
+                  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+                  
+                  if (allFutureAssignments.length > 0) {
+                    // Get unique dates and take first 2 dates that have assignments
+                    const uniqueDates = [...new Set(allFutureAssignments.map(item => 
+                      item.date.toDateString()
+                    ))].slice(0, 2);
+                    
+                    if (uniqueDates.length > 0) {
+                      const endDate = new Date(uniqueDates[uniqueDates.length - 1]);
+                      endDate.setHours(23, 59, 59, 999);
+                      
+                      filteredTasks = allFutureAssignments.filter(item => 
+                        item.type === 'task' && item.date <= endDate
+                      );
+                      filteredCanvasAssignments = allFutureAssignments.filter(item => 
+                        item.type === 'canvas' && item.date <= endDate
+                      );
+                      
+                      dateRangeUsed = `next ${uniqueDates.length} day(s) with assignments`;
+                    }
+                  }
+                }
+                
+                // Always add high priority assignments within next month (if not already included)
+                const highPriorityTasks = userTasks?.filter(task => {
+                  if (!task.due_date || task.completion_status === 'completed') return false;
+                  if (filteredTasks.some(ft => ft.id === task.id)) return false; // Already included
+                  const dueDate = new Date(task.due_date);
+                  return (task.priority_score >= 3) && dueDate >= currentDate && dueDate <= oneMonthFromNow;
+                }) || [];
+                
+                const highPriorityCanvas = userEvents?.filter(event => {
+                  if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                  if (filteredCanvasAssignments.some(fc => fc.id === event.id)) return false; // Already included
+                  const eventDate = new Date(event.start_time || event.end_time || '');
+                  const isHighPriority = event.priority_score >= 3;
+                  return isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow;
+                }) || [];
+                
+                // Combine filtered results
+                filteredTasks = [...filteredTasks, ...highPriorityTasks];
+                filteredCanvasAssignments = [...filteredCanvasAssignments, ...highPriorityCanvas];
+                
+                console.log('🎯 Smart Priority Queue Filters:');
+                console.log('- Date range used:', dateRangeUsed);
+                console.log('- Filtered tasks:', filteredTasks.length, filteredTasks.map(t => ({title: t.title, due: t.due_date, priority: t.priority_score})));
+                console.log('- Filtered Canvas assignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(e => ({title: e.title, due: e.start_time, priority: e.priority_score})));
                 
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
                 (() => {
-                  // Get filtered items using new logic
+                  // Get filtered items using smart logic
                   const currentDate = new Date();
                   const twoDaysFromNow = new Date(currentDate);
                   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
@@ -1879,44 +1919,76 @@ export const Dashboard = () => {
                   oneMonthFromNow.setDate(oneMonthFromNow.getDate() + 30);
                   oneMonthFromNow.setHours(23, 59, 59, 999);
                   
-                  // Filter tasks
-                  const smartFilteredTasks = userTasks?.filter(task => {
+                  // Apply same logic as above for consistency
+                  const next2DaysTasks = userTasks?.filter(task => {
                     if (!task.due_date || task.completion_status === 'completed') return false;
                     const dueDate = new Date(task.due_date);
-                    
-                    // Include if due in next 2 days
-                    if (dueDate >= currentDate && dueDate <= twoDaysFromNow) {
-                      return true;
-                    }
-                    
-                    // Include if high priority and due within next month
-                    if ((task.priority_score >= 3) && dueDate >= currentDate && dueDate <= oneMonthFromNow) {
-                      return true;
-                    }
-                    
-                    return false;
+                    return dueDate >= currentDate && dueDate <= twoDaysFromNow;
                   }) || [];
                   
-                  // Filter Canvas assignments
-                  const smartFilteredCanvasAssignments = userEvents?.filter(event => {
+                  const next2DaysCanvas = userEvents?.filter(event => {
                     if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
                     const eventDate = new Date(event.start_time || event.end_time || '');
-                    
-                    // Include if due in next 2 days
-                    if (eventDate >= currentDate && eventDate <= twoDaysFromNow) {
-                      return true;
-                    }
-                    
-                    // Include if high priority and due within next month
-                    const isHighPriority = event.priority_score >= 3;
-                    if (isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow) {
-                      return true;
-                    }
-                    
-                    return false;
+                    return eventDate >= currentDate && eventDate <= twoDaysFromNow;
                   }) || [];
                   
-                  const currentRelevantItems = [...smartFilteredTasks, ...smartFilteredCanvasAssignments];
+                  let smartFilteredTasks = [];
+                  let smartFilteredCanvasAssignments = [];
+                  
+                  if (next2DaysTasks.length > 0 || next2DaysCanvas.length > 0) {
+                    smartFilteredTasks = next2DaysTasks;
+                    smartFilteredCanvasAssignments = next2DaysCanvas;
+                  } else {
+                    // Fallback: find the next 2 days that have assignments
+                    const allFutureAssignments = [
+                      ...(userTasks?.filter(task => {
+                        if (!task.due_date || task.completion_status === 'completed') return false;
+                        const dueDate = new Date(task.due_date);
+                        return dueDate >= currentDate && dueDate <= oneMonthFromNow;
+                      }).map(task => ({ ...task, type: 'task', date: new Date(task.due_date) })) || []),
+                      ...(userEvents?.filter(event => {
+                        if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                        const eventDate = new Date(event.start_time || event.end_time || '');
+                        return eventDate >= currentDate && eventDate <= oneMonthFromNow;
+                      }).map(event => ({ ...event, type: 'canvas', date: new Date(event.start_time || event.end_time || '') })) || [])
+                    ].sort((a, b) => a.date.getTime() - b.date.getTime());
+                    
+                    if (allFutureAssignments.length > 0) {
+                      const uniqueDates = [...new Set(allFutureAssignments.map(item => 
+                        item.date.toDateString()
+                      ))].slice(0, 2);
+                      
+                      if (uniqueDates.length > 0) {
+                        const endDate = new Date(uniqueDates[uniqueDates.length - 1]);
+                        endDate.setHours(23, 59, 59, 999);
+                        
+                        smartFilteredTasks = allFutureAssignments.filter(item => 
+                          item.type === 'task' && item.date <= endDate
+                        );
+                        smartFilteredCanvasAssignments = allFutureAssignments.filter(item => 
+                          item.type === 'canvas' && item.date <= endDate
+                        );
+                      }
+                    }
+                  }
+                  
+                  // Add high priority assignments within next month
+                  const highPriorityTasks = userTasks?.filter(task => {
+                    if (!task.due_date || task.completion_status === 'completed') return false;
+                    if (smartFilteredTasks.some(ft => ft.id === task.id)) return false;
+                    const dueDate = new Date(task.due_date);
+                    return (task.priority_score >= 3) && dueDate >= currentDate && dueDate <= oneMonthFromNow;
+                  }) || [];
+                  
+                  const highPriorityCanvas = userEvents?.filter(event => {
+                    if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                    if (smartFilteredCanvasAssignments.some(fc => fc.id === event.id)) return false;
+                    const eventDate = new Date(event.start_time || event.end_time || '');
+                    const isHighPriority = event.priority_score >= 3;
+                    return isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow;
+                  }) || [];
+                  
+                  const currentRelevantItems = [...smartFilteredTasks, ...highPriorityTasks, ...smartFilteredCanvasAssignments, ...highPriorityCanvas];
                   
                   console.log('🧹 Filtered out old assignments. Current relevant items:', currentRelevantItems.length);
                   console.log('🧹 Items kept:', currentRelevantItems.map(item => `${item.title} (due: ${item.due_date})`));
