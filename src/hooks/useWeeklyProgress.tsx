@@ -34,12 +34,15 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
     const createWeeklyGroup = (weekStart: Date, weekEnd: Date): WeeklyGroup => {
       const assignments: WeeklyAssignment[] = [];
       
-      // Add manual tasks for this week
+      // Add manual tasks for this week (apply same filtering as Smart Priority Queue)
+      // Only include future tasks (not overdue) to match Smart Priority Queue logic
+      const now = new Date();
       userTasks.forEach(task => {
         if (!task.due_date) return;
         
         const dueDate = new Date(task.due_date);
-        if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd })) {
+        // Only include tasks that are due in the future (same as Smart Priority Queue)
+        if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd }) && dueDate >= now) {
           assignments.push({
             id: task.id,
             title: task.title,

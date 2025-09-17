@@ -1548,21 +1548,20 @@ export const Dashboard = () => {
                       endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
                       endOfCurrentWeek.setHours(23, 59, 59, 999);
                       
-                      // Count tasks due this week (not completed)
-                      const tasksThisWeekCount = userTasks.filter(task => {
-                        if (!task.due_date || task.completion_status === 'completed') return false;
-                        const dueDate = new Date(task.due_date);
+                      // Use EXACTLY the same data as Smart Priority Queue for consistency
+                      const smartQueueItems = [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])];
+                      const pendingItems = smartQueueItems.filter(item => {
+                        if (item.completion_status === 'completed' || item.is_completed) return false;
+                        const dueDate = new Date(item.due_date);
                         return dueDate >= now && dueDate <= endOfCurrentWeek;
-                      }).length;
+                      });
                       
-                      // Count Canvas assignments due this week (not completed)
-                      const canvasThisWeekCount = futureCanvasAssignments.filter(assignment => {
-                        if (assignment.is_completed) return false;
-                        const dueDate = new Date(assignment.due_date);
-                        return dueDate >= now && dueDate <= endOfCurrentWeek;
-                      }).length;
+                      console.log('🔍 DUE THIS WEEK DEBUG:');
+                      console.log('- Smart Queue Items:', smartQueueItems.length);
+                      console.log('- Pending Items:', pendingItems.length);
+                      console.log('- Should match Smart Priority Queue count');
                       
-                      return tasksThisWeekCount + canvasThisWeekCount;
+                      return pendingItems.length;
                     })()
                   }</p>
                 </div>
