@@ -200,23 +200,44 @@ export const Dashboard = () => {
     return { today, endOfToday, startOfWeek, endOfWeek };
   }, []);
 
-  // Memoized task calculations
+  // Memoized task calculations - match exactly what the priority queue shows
   const taskMetrics = useMemo(() => {
     const { today, endOfToday, startOfWeek, endOfWeek } = dateCalculations;
     
-    // Count ALL completed tasks (regardless of when they were completed)
-    const completedTasksCount = userTasks.filter(task => 
+    // Count completed items from TODAY'S priority queue items
+    const todaysTasksTotal = userTasks.filter(task => {
+      if (!task.due_date) return false;
+      const dueDate = new Date(task.due_date);
+      return (
+        dueDate.getDate() === today.getDate() &&
+        dueDate.getMonth() === today.getMonth() &&
+        dueDate.getFullYear() === today.getFullYear()
+      );
+    });
+    
+    const todaysCanvasTotal = userEvents.filter(event => {
+      if (event.event_type !== 'assignment') return false;
+      const eventDate = new Date(event.start_time || event.end_time);
+      return (
+        eventDate.getDate() === today.getDate() &&
+        eventDate.getMonth() === today.getMonth() &&
+        eventDate.getFullYear() === today.getFullYear()
+      );
+    });
+    
+    const totalItemsToday = todaysTasksTotal.length + todaysCanvasTotal.length;
+    
+    const completedTasksToday = todaysTasksTotal.filter(task => 
       task.completion_status === 'completed'
     ).length;
     
-    // Count ALL completed assignments (regardless of when they were completed)
-    const completedEventsCount = userEvents.filter(event => 
-      event.event_type === 'assignment' && event.is_completed
+    const completedCanvasToday = todaysCanvasTotal.filter(event => 
+      event.is_completed
     ).length;
     
-    const completedTasks = completedTasksCount + completedEventsCount;
+    const completedTasks = completedTasksToday + completedCanvasToday;
     
-    return { completedTasks, today, endOfToday, startOfWeek, endOfWeek };
+    return { completedTasks, totalItemsToday, today, endOfToday, startOfWeek, endOfWeek };
   }, [userTasks, userEvents, dateCalculations]);
   // Memoized weekly metrics
   const weeklyMetrics = useMemo(() => {
@@ -1457,75 +1478,42 @@ export const Dashboard = () => {
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
                   <p className="text-2xl font-bold text-foreground">
                     {(() => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const endOfToday = new Date(today);
-                      endOfToday.setHours(23, 59, 59, 999);
+                      const completedCount = allTodaysItems.filter(item => {
+                        return item.source_provider === 'canvas' && item.event_type === 'assignment' 
+                          ? userEvents.find(e => e.id === item.id)?.is_completed 
+                          : item.completion_status === 'completed';
+                      }).length;
                       
-                      console.log('DEBUG: Tasks Completed calculation starting');
-                      console.log('DEBUG: Today date range:', today, 'to', endOfToday);
+                      if (allTodaysItems.length === 0) {
+                        return "No Tasks Today!";
+                      }
+                      
+                      return completedCount === allTodaysItems.length 
+                        ? "All Tasks Completed!" 
+                        : `${completedCount}/${allTodaysItems.length}`;
+                    })()}
+                  </p>
                       
                       // Use the same logic as Smart Priority Queue but filter for today only
                       let todaysItems: any[] = [];
                       
-                      if (aiPriorities && aiPriorities.length > 0) {
-                        console.log('DEBUG: Using AI priorities');
-                        // Filter AI priorities for today
-                        todaysItems = aiPriorities.filter((item: any) => {
-                          if (!item.dueDate) return false;
-                          const itemDate = new Date(item.dueDate);
-                          return itemDate >= today && itemDate <= endOfToday;
-                        });
-                      } else {
-                        console.log('DEBUG: Using manual filtering');
-                        // Filter manual tasks/assignments for today exactly like Smart Priority Queue
-                        const allItems = [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])];
-                        console.log('DEBUG: All items to filter:', allItems.length);
-                        
-                        todaysItems = allItems.filter((item: any) => {
-                          if (!item.due_date) return false;
-                          const itemDate = new Date(item.due_date);
-                          const isToday = itemDate >= today && itemDate <= endOfToday;
-                          if (isToday) {
-                            console.log('DEBUG: Found today item:', item.title, 'due:', item.due_date);
-                          }
-                          return isToday;
-                        });
-                      }
-                      
-                      console.log('DEBUG: Today\'s items:', todaysItems.length);
-                      
-                      if (todaysItems.length === 0) {
-                        return "No Tasks Today!";
-                      }
-                      
-                      const completedCount = todaysItems.filter((item: any) => {
-                        if (aiPriorities && aiPriorities.length > 0) {
-                          return item.completed;
-                        } else {
-                          // Check completion status from updated local state (same as Smart Priority Queue)
-                          let isCompleted = false;
-                          if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
-                            // Find the current state from userEvents (which gets updated by handleItemToggle)
-                            const currentEvent = userEvents.find(e => e.id === item.id);
-                            isCompleted = currentEvent?.is_completed || false;
-                          } else {
-                            // Find the current state from userTasks (which gets updated by handleItemToggle)
-                            const currentTask = userTasks.find(t => t.id === item.id);
-                            isCompleted = currentTask?.completion_status === 'completed';
-                          }
-                          console.log('DEBUG: Item completion check:', item.title, 'completed:', isCompleted);
-                          return isCompleted;
-                        }
-                      }).length;
-                      
-                      console.log('DEBUG: Completed count:', completedCount, 'out of', todaysItems.length);
-                      
-                      return completedCount === todaysItems.length 
-                        ? "All Tasks Completed!" 
-                        : `${completedCount}/${todaysItems.length}`;
-                    })()}
-                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="bg-gradient-to-br from-card to-muted border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setIsDueThisWeekOpen(true)}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-warning/10 rounded-lg">
+                  <Clock className="h-5 w-5 text-warning" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Due This Week</p>
+                  <p className="text-2xl font-bold text-foreground">{weeklyMetrics.totalItemsDueThisWeek}</p>
                 </div>
               </div>
             </CardContent>
