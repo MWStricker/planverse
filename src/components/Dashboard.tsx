@@ -25,6 +25,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { WeeklyProgressCard } from "@/components/WeeklyProgressCard";
+import { DebugWeeklyProgress } from "@/components/DebugWeeklyProgress";
 import { z } from "zod";
 import { filterCanvasAssignments, filterRecentAssignments } from "@/lib/assignment-filters";
 
@@ -2303,6 +2304,9 @@ export const Dashboard = () => {
       {/* Weekly Progress Groups Section */}
       <div className="mt-8 space-y-6">
         <h2 className="text-2xl font-bold">Weekly Progress Overview</h2>
+        
+        {/* DEBUG: Show exact incomplete assignments */}
+        <DebugWeeklyProgress userTasks={userTasks} userEvents={userEvents} />
         
         {/* Current Week - Detailed View */}
         <WeeklyProgressCard 
