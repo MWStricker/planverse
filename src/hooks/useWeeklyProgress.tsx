@@ -135,7 +135,14 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         console.log('- Progress percentage:', progressPercentage + '%');
         console.log('- Assignment completion details:');
         assignments.forEach((assignment, index) => {
-          console.log(`  ${index + 1}. "${assignment.title}" - ${assignment.isCompleted ? 'COMPLETED' : 'PENDING'} (source: ${assignment.source})`);
+          console.log(`  ${index + 1}. "${assignment.title}" - ${assignment.isCompleted ? 'COMPLETED' : '❌ INCOMPLETE'} (source: ${assignment.source})`);
+        });
+        
+        // SPECIFICALLY LOG THE INCOMPLETE ONES
+        const incompleteAssignments = assignments.filter(a => !a.isCompleted);
+        console.log('❌ INCOMPLETE ASSIGNMENTS THIS WEEK:');
+        incompleteAssignments.forEach((assignment, index) => {
+          console.log(`  INCOMPLETE ${index + 1}: "${assignment.title}" (source: ${assignment.source}, due: ${assignment.dueDate.toDateString()})`);
         });
       }
 
