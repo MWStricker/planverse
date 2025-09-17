@@ -39,9 +39,18 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
     });
     
     const today = new Date();
-    // Current week: Monday Sept 16 to Sunday Sept 22, 2025
-    const currentWeekStart = new Date(2025, 8, 16); // Sept 16, 2025 (Monday)
-    const currentWeekEnd = new Date(2025, 8, 22, 23, 59, 59); // Sept 22, 2025 (Sunday end of day)
+    const now = new Date();
+    
+    // Calculate end of current week (Sunday) - EXACT same logic as Dashboard
+    const currentDayOfWeek = now.getDay();
+    const daysUntilSunday = currentDayOfWeek === 0 ? 0 : 7 - currentDayOfWeek;
+    const endOfCurrentWeek = new Date(now);
+    endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
+    endOfCurrentWeek.setHours(23, 59, 59, 999);
+    
+    // Use the same week boundaries as Dashboard
+    const currentWeekStart = now;
+    const currentWeekEnd = endOfCurrentWeek;
 
     // Helper function to create a weekly group
     const createWeeklyGroup = (weekStart: Date, weekEnd: Date): WeeklyGroup => {
@@ -50,13 +59,13 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       // Use EXACTLY the same logic as Smart Priority Queue and "Due This Week" tab
       const now = new Date();
       
-      // Add manual tasks (same filtering as Smart Priority Queue)
+      // Use EXACT same logic as Dashboard "Due This Week" 
       userTasks.forEach(task => {
         if (!task.due_date) return;
         
         const dueDate = new Date(task.due_date);
-        // Only include tasks due between Monday and Sunday of THIS week
-        if (dueDate >= weekStart && dueDate <= weekEnd) {
+        // Include ALL tasks due from now until end of week (completed AND pending)
+        if (dueDate >= now && dueDate <= endOfCurrentWeek) {
           assignments.push({
             id: task.id,
             title: task.title,
@@ -107,8 +116,8 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (event.event_type !== 'assignment') return;
         
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
-        // Only include assignments due between Monday and Sunday of THIS week
-        if (eventDate >= weekStart && eventDate <= weekEnd) {
+        // Include ALL Canvas assignments due from now until end of week (completed AND pending)
+        if (eventDate >= now && eventDate <= endOfCurrentWeek) {
           assignments.push({
             id: event.id,
             title: event.title,
@@ -116,7 +125,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
             isCompleted: event.is_completed || false,
             source: 'canvas',
             courseCode: event.course_name,
-            priority: 1 // Default priority for Canvas assignments
+            priority: 1
           });
         }
       });
