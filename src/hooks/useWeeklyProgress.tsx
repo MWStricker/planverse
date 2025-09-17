@@ -115,6 +115,18 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       const totalCount = assignments.length;
       const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
+      // Debug completion status for current week
+      if (weekStart.getTime() === currentWeekStart.getTime()) {
+        console.log('🔢 WEEKLY PROGRESS COMPLETION DETAILS:');
+        console.log('- Total assignments this week:', totalCount);
+        console.log('- Completed assignments this week:', completedCount);
+        console.log('- Progress percentage:', progressPercentage + '%');
+        console.log('- Assignment completion details:');
+        assignments.forEach((assignment, index) => {
+          console.log(`  ${index + 1}. "${assignment.title}" - ${assignment.isCompleted ? 'COMPLETED' : 'PENDING'} (source: ${assignment.source})`);
+        });
+      }
+
       return {
         weekStart,
         weekEnd,
