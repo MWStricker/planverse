@@ -424,35 +424,12 @@ export const Dashboard = () => {
     endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
     endOfCurrentWeek.setHours(23, 59, 59, 999);
 
-    // Apply the same filtering logic as assignment-filters.ts for Canvas assignments
-    const filteredEvents = filterRecentAssignments(userEvents);
+    // Use the EXACT same filtering as Smart Priority Queue
+    const smartQueueItems = [...(filteredData.tasksThisWeek || []), ...(futureCanvasAssignments || [])];
     
-    const eventsThisWeek = filteredEvents.filter(event => {
-      if (!event.start_time && !event.end_time) return false;
-      if (event.event_type === 'assignment' && event.is_completed) return false;
-      const eventDate = new Date(event.start_time || event.end_time);
-      return eventDate >= now && eventDate <= endOfCurrentWeek;
-    });
+    const dueThisWeek = smartQueueItems.length || "N/A";
     
-    // Also include non-assignment events for this week
-    const otherEventsThisWeek = userEvents.filter(event => {
-      if (event.event_type === 'assignment') return false; // Skip assignments, already handled above
-      if (!event.start_time && !event.end_time) return false;
-      const eventDate = new Date(event.start_time || event.end_time);
-      return eventDate >= now && eventDate <= endOfCurrentWeek;
-    });
-    
-    const allEventsThisWeek = [...eventsThisWeek, ...otherEventsThisWeek];
-    
-    const tasksThisWeek = userTasks.filter(task => {
-      if (!task.due_date || task.completion_status === 'completed') return false;
-      const dueDate = new Date(task.due_date);
-      return dueDate >= now && dueDate <= endOfCurrentWeek;
-    });
-    
-    const dueThisWeek = allEventsThisWeek.length + tasksThisWeek.length || "N/A";
-    
-    return { freeTimeToday, eventsThisWeek: allEventsThisWeek, tasksThisWeek, dueThisWeek };
+    return { freeTimeToday, eventsThisWeek: smartQueueItems, tasksThisWeek: [], dueThisWeek };
   }, [userEvents, userTasks, preferences]);
   
   // Combine all items due this week for the popup
