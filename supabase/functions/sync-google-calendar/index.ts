@@ -287,6 +287,7 @@ serve(async (req) => {
       
       try {
         // Get all task lists
+        console.log('🔍 Requesting task lists from Google Tasks API...');
         const taskListsResponse = await fetch(
           'https://tasks.googleapis.com/tasks/v1/users/@me/lists',
           {
@@ -297,7 +298,12 @@ serve(async (req) => {
           }
         );
 
-        if (taskListsResponse.ok) {
+        console.log(`📊 Task lists response status: ${taskListsResponse.status}`);
+        if (!taskListsResponse.ok) {
+          const errorText = await taskListsResponse.text();
+          console.error(`❌ Failed to fetch task lists: ${taskListsResponse.status}`);
+          console.error(`❌ Error details: ${errorText}`);
+        } else {
           const taskListsData = await taskListsResponse.json();
           const taskLists = taskListsData.items || [];
           console.log(`Found ${taskLists.length} task lists:`, taskLists.map(tl => tl.title));
@@ -334,11 +340,11 @@ serve(async (req) => {
           }
           
           console.log(`🎯 TOTAL TASKS FETCHED: ${tasks.length}`);
-        } else {
-          console.error(`❌ Failed to fetch task lists: ${taskListsResponse.status}`);
         }
       } catch (taskError) {
         console.error('❌ Error fetching Google Tasks:', taskError);
+        console.error('❌ Task error details:', taskError.message);
+        console.error('❌ Task error stack:', taskError.stack);
       }
     }
 
