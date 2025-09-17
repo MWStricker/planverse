@@ -58,11 +58,13 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const taskDate = new Date(task.due_date);
         
         if (isWithinInterval(taskDate, { start: currentWeekStart, end: currentWeekEnd })) {
+          // Use EXACT same completion logic as Smart Priority Queue (line 1549 in Dashboard)
+          const isCompleted = task.completion_status === 'completed';
           assignments.push({
             id: task.id,
             title: task.title,
             dueDate: taskDate,
-            isCompleted: true, // Force all to be completed since they're visually marked as such
+            isCompleted,
             source: 'manual',
             courseCode: task.course_name,
             priority: task.priority_score || 0
@@ -111,11 +113,13 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
         
         if (isWithinInterval(eventDate, { start: currentWeekStart, end: currentWeekEnd })) {
+          // Use EXACT same completion logic as Smart Priority Queue (line 1545 in Dashboard)
+          const isCompleted = event.is_completed || false;
           assignments.push({
             id: event.id,
             title: event.title,
             dueDate: eventDate,
-            isCompleted: true, // Force all to be completed since they're visually marked as such
+            isCompleted,
             source: 'canvas',
             courseCode: event.course_name,
             priority: 1
