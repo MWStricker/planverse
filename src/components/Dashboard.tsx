@@ -1954,146 +1954,108 @@ export const Dashboard = () => {
                      ])
                    );
 
-                   return (
-                     <div className="space-y-6">
-                       {Object.values(sortedGroups).map((group: any, groupIndex: number) => (
-                        <div key={groupIndex} className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-sm text-foreground">
-                              {getDateLabel(group.date)}
-                            </h4>
-                            <div className="h-px bg-border flex-1" />
-                            <span className="text-xs text-muted-foreground">
-                              {group.date && !isNaN(group.date.getTime()) ? format(group.date, 'MMM d, yyyy') : 'Invalid Date'}
-                            </span>
-                          </div>
+                    return (
+                      <div className="space-y-4">
+                        {Object.values(sortedGroups).map((group: any, groupIndex: number) => (
+                         <div key={groupIndex} className="space-y-2">
+                           <div className="flex items-center gap-2">
+                             <h4 className="font-medium text-xs text-foreground uppercase tracking-wide">
+                               {getDateLabel(group.date)}
+                             </h4>
+                             <div className="h-px bg-border flex-1" />
+                             <span className="text-xs text-muted-foreground">
+                               {group.date && !isNaN(group.date.getTime()) ? format(group.date, 'MMM d') : 'Invalid Date'}
+                             </span>
+                           </div>
                            {group.items.map((task: any, index: number) => {
                              const isCompleted = task.source_provider === 'canvas' && task.event_type === 'assignment' 
                                ? userEvents.find(e => e.id === task.id)?.is_completed 
                                : task.completion_status === 'completed';
                              
                              return (
-                             <div 
-                               key={task.id} 
-                               className={`flex items-center gap-4 p-4 rounded-lg border transition-all hover:shadow-md bg-card border-border ${
-                                 isCompleted ? 'opacity-60' : ''
-                               }`}
-                             >
-                               <Checkbox
-                                 checked={isCompleted}
-                                 onCheckedChange={(checked) => {
-                                   handleItemToggle(task, !!checked);
-                                 }}
-                                 className="flex-shrink-0"
-                               />
-                               <div 
-                                 className="flex items-center gap-3 flex-1 cursor-pointer"
-                                 onClick={() => {
-                                   setSelectedTask(task);
-                                   setIsTaskDetailOpen(true);
-                                 }}
-                               >
-                                 <div className="flex items-center gap-2">
-                                   <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
-                                   <div className={`w-2 h-2 rounded-full ${
-                                      task.priority_score === 3 ? 'bg-destructive' :
-                                      task.priority_score === 2 ? 'bg-primary' :
-                                      task.priority_score === 1 ? 'bg-muted-foreground' :
-                                      'bg-secondary'
-                                   }`} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                   <div className="flex items-center gap-2 mb-1">
-                                     <h3 className={`font-medium text-foreground ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                                       {task.title}
-                                     </h3>
-                                    {task.source_provider === 'canvas' && (
-                                      <Badge variant="secondary" className="text-xs bg-transparent border-0">
-                                        Canvas
-                                      </Badge>
-                                    )}
-                                    {task.event_type === 'assignment' && (
-                                      <Badge variant="secondary" className="text-xs bg-transparent border-0">
-                                        Assignment
-                                      </Badge>
-                                    )}
-                                    {task.course_name && (
-                                      <Badge variant="secondary" className="text-xs bg-transparent border-0">
-                                        {task.course_name}
-                                      </Badge>
-                                    )}
-                                   </div>
-                                   <div className={`text-sm mb-1 ${isCompleted ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
-                                     {task.description ? (
-                                      <div>
-                                        {task.description.length > 60 ? (
-                                          <>
-                                            <span>{task.description.slice(0, 60)}</span>
-                                            {!expandedDescriptions.has(task.id) && <span>...</span>}
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleDescription(task.id);
-                                              }}
-                                              className="ml-1 text-primary hover:underline text-xs font-medium"
-                                            >
-                                              {expandedDescriptions.has(task.id) ? "less" : "more"}
-                                            </button>
-                                            {expandedDescriptions.has(task.id) && (
-                                              <div className="mt-1">
-                                                <span>{task.description.substring(60).trim()}</span>
-                                                {task.source_provider === 'canvas' && task.description.length === 63 && (
-                                                  <div className="mt-1 text-xs text-orange-600">
-                                                    ⚠️ Canvas description appears truncated - check Canvas directly for complete instructions
-                                                  </div>
-                                                )}
-                                              </div>
-                                            )}
-                                          </>
-                                        ) : (
-                                          <div>
-                                            <span>{task.description}</span>
-                                            {task.source_provider === 'canvas' && task.description.length === 63 && (
-                                              <div className="mt-1 text-xs text-orange-600">
-                                                ⚠️ Canvas description appears truncated - check Canvas directly for complete instructions
-                                              </div>
-                                            )}
-                                          </div>
+                              <div 
+                                key={task.id} 
+                                className={`flex items-start gap-3 p-3 rounded-lg border transition-all hover:shadow-sm bg-card border-border ${
+                                  isCompleted ? 'opacity-60' : ''
+                                }`}
+                              >
+                                <Checkbox
+                                  checked={isCompleted}
+                                  onCheckedChange={(checked) => {
+                                    handleItemToggle(task, !!checked);
+                                  }}
+                                  className="flex-shrink-0 mt-0.5"
+                                />
+                                <div 
+                                  className="flex items-start gap-2 flex-1 cursor-pointer min-w-0"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setIsTaskDetailOpen(true);
+                                  }}
+                                >
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${
+                                       task.priority_score === 3 ? 'bg-destructive' :
+                                       task.priority_score === 2 ? 'bg-primary' :
+                                       task.priority_score === 1 ? 'bg-muted-foreground' :
+                                       'bg-secondary'
+                                    }`} />
+                                 </div>
+                                 <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <h3 className={`text-sm font-medium text-foreground truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                                        {task.title}
+                                      </h3>
+                                      <div className="flex items-center gap-1 flex-shrink-0">
+                                        {task.source_provider === 'canvas' && (
+                                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                                            Canvas
+                                          </Badge>
+                                        )}
+                                        {task.course_name && (
+                                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 truncate max-w-20">
+                                            {task.course_name}
+                                          </Badge>
                                         )}
                                       </div>
-                                    ) : (
-                                      <span>No description available</span>
-                                    )}
-                                   </div>
-                                   <div className={`flex items-center gap-4 text-xs ${isCompleted ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
-                                     <div className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      <span className="font-medium">
-                                         {task.due_date ? (() => {
-                                           const date = new Date(task.due_date);
-                                           if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
-                                             const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                                             return format(fixedDate, "hh:mm a");
-                                           }
-                                           return format(date, "hh:mm a");
-                                         })() : "No time set"}
-                                      </span>
                                     </div>
-                                    {task.estimated_hours && (
-                                      <span>Est: {task.estimated_hours}h</span>
+                                    
+                                    {task.description && task.description.length > 0 && (
+                                      <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                        {task.description.length > 80 ? `${task.description.slice(0, 80)}...` : task.description}
+                                      </div>
                                     )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant={getPriorityColor(task.priority_score || 2)}
-                                  className="text-xs"
-                                >
-                                  {getPriorityLabel(task.priority_score || 2)}
-                                </Badge>
-                              </div>
-                            </div>
+                                    
+                                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                                      <div className="flex items-center gap-1">
+                                       <Clock className="h-3 w-3" />
+                                       <span>
+                                          {task.due_date ? (() => {
+                                            const date = new Date(task.due_date);
+                                            if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+                                              const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                                              return format(fixedDate, "h:mm a");
+                                            }
+                                            return format(date, "h:mm a");
+                                          })() : "No time"}
+                                       </span>
+                                     </div>
+                                     {task.estimated_hours && (
+                                       <span>Est: {task.estimated_hours}h</span>
+                                     )}
+                                   </div>
+                                 </div>
+                               </div>
+                               <div className="flex items-start pt-0.5">
+                                 <Badge 
+                                   variant={getPriorityColor(task.priority_score || 2)}
+                                   className="text-[10px] px-1.5 py-0 h-5"
+                                 >
+                                   {getPriorityLabel(task.priority_score || 2)}
+                                 </Badge>
+                               </div>
+                             </div>
                             );
                            })}
                         </div>
