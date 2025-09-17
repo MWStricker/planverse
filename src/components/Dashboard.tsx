@@ -1594,8 +1594,30 @@ export const Dashboard = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Due This Week</p>
                   <p className="text-2xl font-bold text-foreground">{
-                    // Use EXACT same calculation as Smart Priority Queue
-                    [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])].length
+                    (() => {
+                      const now = new Date();
+                      const currentDay = now.getDay();
+                      const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
+                      const endOfCurrentWeek = new Date(now);
+                      endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
+                      endOfCurrentWeek.setHours(23, 59, 59, 999);
+                      
+                      // Count tasks due this week (not completed)
+                      const tasksThisWeekCount = userTasks.filter(task => {
+                        if (!task.due_date || task.completion_status === 'completed') return false;
+                        const dueDate = new Date(task.due_date);
+                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      }).length;
+                      
+                      // Count Canvas assignments due this week (not completed)
+                      const canvasThisWeekCount = futureCanvasAssignments.filter(assignment => {
+                        if (assignment.is_completed) return false;
+                        const dueDate = new Date(assignment.due_date);
+                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      }).length;
+                      
+                      return tasksThisWeekCount + canvasThisWeekCount;
+                    })()
                   }</p>
                 </div>
               </div>
