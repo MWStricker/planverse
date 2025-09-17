@@ -52,6 +52,17 @@ serve(async (req) => {
     }
 
     console.log(`Starting Google Calendar sync for connection: ${connectionId}`);
+    
+    // Debug: Check what scopes the token actually has
+    console.log('🔍 Checking token scopes...');
+    try {
+      const tokenInfoResponse = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${finalAccessToken}`);
+      const tokenInfo = await tokenInfoResponse.json();
+      console.log('🔑 Token scopes:', tokenInfo.scope);
+      console.log('🔑 Token info:', JSON.stringify(tokenInfo, null, 2));
+    } catch (scopeError) {
+      console.error('❌ Error checking token scopes:', scopeError);
+    }
 
     // Declare events and tasks variables with proper scope
     let events = [];
