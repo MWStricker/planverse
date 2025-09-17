@@ -1838,6 +1838,10 @@ export const Dashboard = () => {
                   tomorrow.setDate(tomorrow.getDate() + 1);
 
                   const getDateLabel = (date: Date) => {
+                    // Validate date before formatting
+                    if (isNaN(date.getTime())) {
+                      return 'Invalid Date';
+                    }
                     const dateStr = format(date, 'yyyy-MM-dd');
                     const todayStr = format(today, 'yyyy-MM-dd');
                     const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
@@ -1884,7 +1888,7 @@ export const Dashboard = () => {
                             </h4>
                             <div className="h-px bg-border flex-1" />
                             <span className="text-xs text-muted-foreground">
-                              {format(group.date, 'MMM d, yyyy')}
+                              {group.date && !isNaN(group.date.getTime()) ? format(group.date, 'MMM d, yyyy') : 'Invalid Date'}
                             </span>
                           </div>
                            {group.items.map((task: any, index: number) => {
@@ -2252,7 +2256,11 @@ export const Dashboard = () => {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <CalendarIcon className="h-4 w-4" />
-                            {format(new Date(item.due_date), "MMM dd, yyyy 'at' h:mm a")}
+                            {(() => {
+                              if (!item.due_date) return 'No due date';
+                              const date = new Date(item.due_date);
+                              return !isNaN(date.getTime()) ? format(date, "MMM dd, yyyy 'at' h:mm a") : 'Invalid date';
+                            })()}
                           </div>
                           {item.course_name && item.course_name !== 'No Course' && (
                             <div className="flex items-center gap-1">
@@ -2301,7 +2309,11 @@ export const Dashboard = () => {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            Completed {format(new Date(item.completed_at), "h:mm a")}
+                            Completed {(() => {
+                              if (!item.completed_at) return 'unknown time';
+                              const date = new Date(item.completed_at);
+                              return !isNaN(date.getTime()) ? format(date, "h:mm a") : 'invalid time';
+                            })()}
                           </div>
                           {item.course_name && item.course_name !== 'No Course' && (
                             <div className="flex items-center gap-1">
