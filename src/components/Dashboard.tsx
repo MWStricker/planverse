@@ -2144,24 +2144,24 @@ export const Dashboard = () => {
                                       </div>
                                     )}
                                     
-                                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                                      <div className="flex items-center gap-1">
-                                       <Clock className="h-3 w-3" />
-                                       <span>
-                                          {task.due_date ? (() => {
-                                            const date = new Date(task.due_date);
-                                            if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
-                                              const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-                                              return format(fixedDate, "h:mm a");
-                                            }
-                                            return format(date, "h:mm a");
-                                          })() : "No time"}
-                                       </span>
-                                     </div>
-                                     {task.estimated_hours && (
-                                       <span>Est: {task.estimated_hours}h</span>
-                                     )}
-                                   </div>
+                                     <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                                       <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        <span>
+                                           {task.due_date ? (() => {
+                                             const date = new Date(task.due_date);
+                                             if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
+                                               const fixedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+                                               return `${format(fixedDate, "MMM d")} at ${format(fixedDate, "h:mm a")}`;
+                                             }
+                                             return `${format(date, "MMM d")} at ${format(date, "h:mm a")}`;
+                                           })() : "No due date"}
+                                        </span>
+                                      </div>
+                                      {task.estimated_hours && (
+                                        <span>Est: {task.estimated_hours}h</span>
+                                      )}
+                                    </div>
                                  </div>
                                </div>
                                <div className="flex items-start pt-0.5">
