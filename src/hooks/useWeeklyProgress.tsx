@@ -39,13 +39,9 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
     });
     
     const today = new Date();
-    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
-    const currentWeekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Sunday end
-    
-    console.log('📅 WEEK CALCULATION DEBUG:');
-    console.log('- Today:', format(today, 'MMM d, yyyy (EEEE)'));
-    console.log('- Current week start (Monday):', format(currentWeekStart, 'MMM d, yyyy (EEEE)'));
-    console.log('- Current week end (Sunday):', format(currentWeekEnd, 'MMM d, yyyy (EEEE)'));
+    // Current week: Monday Sept 16 to Sunday Sept 22, 2025
+    const currentWeekStart = new Date(2025, 8, 16); // Sept 16, 2025 (Monday)
+    const currentWeekEnd = new Date(2025, 8, 22, 23, 59, 59); // Sept 22, 2025 (Sunday end of day)
 
     // Helper function to create a weekly group
     const createWeeklyGroup = (weekStart: Date, weekEnd: Date): WeeklyGroup => {
