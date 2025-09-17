@@ -448,6 +448,9 @@ export const IntegrationSetup = () => {
           await refreshConnections();
           
           console.log('✅ Sync successful:', syncData);
+          console.log('📊 Events synced:', syncData.syncedEvents);
+          console.log('📋 Tasks synced:', syncData.syncedTasks);
+          console.log('❌ Errors:', syncData.errors);
           toast({
             title: "Calendar Synced Successfully!",
             description: `Imported ${syncData.syncedEvents || 0} events from your Google Calendar. Check your calendar views to see the events!`,
