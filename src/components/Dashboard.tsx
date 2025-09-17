@@ -592,14 +592,35 @@ export const Dashboard = () => {
   const todaysCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
     const eventDate = new Date(assignment.due_date);
     const today = new Date();
+    
+    console.log('DEBUG - Assignment check:', {
+      title: assignment.title,
+      due_date: assignment.due_date,
+      eventDate: eventDate.toDateString(),
+      today: today.toDateString(),
+      eventDay: eventDate.getDate(),
+      todayDay: today.getDate(),
+      eventMonth: eventDate.getMonth(),
+      todayMonth: today.getMonth(),
+      eventYear: eventDate.getFullYear(),
+      todayYear: today.getFullYear()
+    });
+    
     const isToday = (
       eventDate.getDate() === today.getDate() &&
       eventDate.getMonth() === today.getMonth() &&
       eventDate.getFullYear() === today.getFullYear()
     );
+    
+    console.log('DEBUG - Is today?', isToday);
+    
     // Filter out completed assignments
     const originalEvent = userEvents.find(e => e.id === assignment.id);
-    return isToday && !originalEvent?.is_completed;
+    const isNotCompleted = !originalEvent?.is_completed;
+    
+    console.log('DEBUG - Is not completed?', isNotCompleted);
+    
+    return isToday && isNotCompleted;
   });
 
   // Get today's tasks (only non-completed ones)
