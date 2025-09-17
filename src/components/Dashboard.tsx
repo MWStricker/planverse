@@ -1816,6 +1816,11 @@ export const Dashboard = () => {
                   // Group items by date
                   const groupedItems = sortedItems.reduce((groups: any, item: any) => {
                     const date = item.due_date ? new Date(item.due_date) : new Date();
+                    // Check if date is valid before formatting
+                    if (isNaN(date.getTime())) {
+                      console.warn('Invalid date found for item:', item.title, 'due_date:', item.due_date);
+                      return groups; // Skip items with invalid dates
+                    }
                     const dateKey = format(date, 'yyyy-MM-dd');
                     
                     if (!groups[dateKey]) {
