@@ -91,9 +91,11 @@ export const Dashboard = () => {
   const [availableCourses, setAvailableCourses] = useState<{code: string, color: string}[]>([]);
   
   const handleItemToggle = useCallback(async (item: any, isCompleted: boolean) => {
+    console.log('🔄 TOGGLING ITEM:', item.title, 'to', isCompleted);
     try {
       if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
         // Handle Canvas assignments (events)
+        console.log('📝 Updating Canvas event:', item.id, 'is_completed:', isCompleted);
         const { error } = await supabase
           .from('events')
           .update({ is_completed: isCompleted })
@@ -110,14 +112,18 @@ export const Dashboard = () => {
           return;
         }
 
-        // Update local events state
-        setUserEvents(prevEvents => 
-          prevEvents.map(event => 
+        console.log('✅ Successfully updated Canvas event completion status');
+        // Update local events state with logging
+        setUserEvents(prevEvents => {
+          const updatedEvents = prevEvents.map(event => 
             event.id === item.id ? { ...event, is_completed: isCompleted } : event
-          )
-        );
+          );
+          console.log('📊 Updated events - completed count:', updatedEvents.filter(e => e.is_completed).length);
+          return updatedEvents;
+        });
       } else {
         // Handle manual tasks
+        console.log('📝 Updating manual task:', item.id, 'completion_status:', isCompleted ? 'completed' : 'pending');
         const { error } = await supabase
           .from('tasks')
           .update({ 
@@ -137,7 +143,19 @@ export const Dashboard = () => {
           return;
         }
 
-        // Update local tasks state
+        console.log('✅ Successfully updated manual task completion status');
+        // Update local tasks state with logging
+        setUserTasks(prevTasks => {
+          const updatedTasks = prevTasks.map(task => 
+            task.id === item.id ? { 
+              ...task, 
+              completion_status: isCompleted ? 'completed' : 'pending',
+              completed_at: isCompleted ? new Date().toISOString() : null
+            } : task
+          );
+          console.log('📊 Updated tasks - completed count:', updatedTasks.filter(t => t.completion_status === 'completed').length);
+          return updatedTasks;
+        });
         setUserTasks(prevTasks => 
           prevTasks.map(task => 
             task.id === item.id ? { 
