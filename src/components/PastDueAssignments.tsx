@@ -415,7 +415,7 @@ export const PastDueAssignments = () => {
                           {daysOverdue} day{daysOverdue !== 1 ? 's' : ''} overdue
                         </Badge>
                         {item.type === 'event' && (
-                          <Badge variant="outline">From Canvas</Badge>
+                          <span className="text-xs text-muted-foreground">From Canvas</span>
                         )}
                       </div>
                       
