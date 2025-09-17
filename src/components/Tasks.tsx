@@ -377,11 +377,12 @@ export const Tasks = () => {
         ? task.priority_score 
         : calculatePriority(task.title, task.description, task.due_date)
     })).filter(task => {
-      // Filter out past due tasks
+      // Only filter out tasks that are more than a week past due
       if (!task.due_date) return true; // Keep tasks without due dates
       const dueDate = new Date(task.due_date);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate >= today; // Only keep current and future tasks
+      const oneWeekAgo = new Date(today);
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      return dueDate >= oneWeekAgo; // Keep tasks due within the last week or in the future
     }),
     ...events.map(event => ({
       ...event,
@@ -390,11 +391,12 @@ export const Tasks = () => {
       completion_status: 'pending',
       priority: calculatePriority(event.title, event.description, event.start_time)
     })).filter(event => {
-      // Filter out past due events
+      // Only filter out events that are more than a week past due
       if (!event.start_time) return true; // Keep events without start times
       const eventDate = new Date(event.start_time);
-      eventDate.setHours(0, 0, 0, 0);
-      return eventDate >= today; // Only keep current and future events
+      const oneWeekAgo = new Date(today);
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      return eventDate >= oneWeekAgo; // Keep events due within the last week or in the future
     })
   ];
 
