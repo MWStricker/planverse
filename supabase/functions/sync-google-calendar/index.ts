@@ -279,13 +279,74 @@ serve(async (req) => {
         eventsByCalendar[calName] = (eventsByCalendar[calName] || 0) + 1;
       });
       console.log('📊 Events by calendar:', eventsByCalendar);
+
+      // Fetch Google Tasks
+      console.log('📋 Fetching Google Tasks...');
+      let tasks = [];
+      
+      try {
+        // Get all task lists
+        const taskListsResponse = await fetch(
+          'https://tasks.googleapis.com/tasks/v1/users/@me/lists',
+          {
+            headers: {
+              'Authorization': `Bearer ${currentAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (taskListsResponse.ok) {
+          const taskListsData = await taskListsResponse.json();
+          const taskLists = taskListsData.items || [];
+          console.log(`Found ${taskLists.length} task lists:`, taskLists.map(tl => tl.title));
+
+          // Fetch tasks from each task list
+          for (const taskList of taskLists) {
+            console.log(`📝 Fetching tasks from list: ${taskList.title}`);
+            
+            const tasksResponse = await fetch(
+              `https://tasks.googleapis.com/tasks/v1/lists/${taskList.id}/tasks?showCompleted=true&showHidden=true`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${currentAccessToken}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+
+            if (tasksResponse.ok) {
+              const tasksData = await tasksResponse.json();
+              const listTasks = tasksData.items || [];
+              
+              // Add task list info to each task
+              listTasks.forEach(task => {
+                task.taskListName = taskList.title;
+                task.taskListId = taskList.id;
+              });
+              
+              tasks = tasks.concat(listTasks);
+              console.log(`✅ Fetched ${listTasks.length} tasks from ${taskList.title}`);
+            } else {
+              console.error(`❌ Failed to fetch tasks from list ${taskList.title}: ${tasksResponse.status}`);
+            }
+          }
+          
+          console.log(`🎯 TOTAL TASKS FETCHED: ${tasks.length}`);
+        } else {
+          console.error(`❌ Failed to fetch task lists: ${taskListsResponse.status}`);
+        }
+      } catch (taskError) {
+        console.error('❌ Error fetching Google Tasks:', taskError);
+      }
     }
 
-    console.log(`Processing ${events.length} events from Google Calendar`);
+    console.log(`Processing ${events.length} events and ${tasks?.length || 0} tasks from Google Calendar`);
 
-    console.log(`Processing ${events.length} events from Google Calendar`);
+    console.log(`Processing ${events.length} events and ${tasks?.length || 0} tasks from Google Calendar`);
 
     let syncedEvents = 0;
+    let syncedTasks = 0;
     let errors = 0;
 
     // Process each event with detailed logging
@@ -384,6 +445,88 @@ serve(async (req) => {
       }
     }
 
+    // Process Google Tasks
+    if (tasks && tasks.length > 0) {
+      console.log(`📋 Processing ${tasks.length} Google Tasks`);
+      
+      for (const task of tasks) {
+        try {
+          // Skip completed tasks that don't have due dates (to avoid clutter)
+          if (task.status === 'completed' && !task.due) {
+            continue;
+          }
+
+          console.log(`🔄 Processing task: ${task.title || 'Untitled'} from ${task.taskListName || 'Unknown list'}`);
+
+          // Check if task already exists
+          const { data: existingTask } = await supabase
+            .from('tasks')
+            .select('id, updated_at')
+            .eq('user_id', user.id)
+            .eq('source_provider', 'google')
+            .eq('source_task_id', task.id)
+            .single();
+
+          // Determine due date
+          let dueDate = null;
+          if (task.due) {
+            dueDate = new Date(task.due).toISOString();
+          }
+
+          const taskData = {
+            user_id: user.id,
+            title: task.title || 'Untitled Task',
+            description: [
+              task.notes || '',
+              task.taskListName ? `📋 List: ${task.taskListName}` : '',
+              task.webViewLink ? `🔗 View in Google Tasks: ${task.webViewLink}` : ''
+            ].filter(Boolean).join('\n\n'),
+            due_date: dueDate,
+            completed: task.status === 'completed',
+            completed_at: task.completed ? new Date(task.completed).toISOString() : null,
+            priority: 'medium', // Google Tasks doesn't have priority, so default to medium
+            source_provider: 'google',
+            source_task_id: task.id,
+            updated_at: new Date().toISOString(),
+          };
+
+          if (existingTask) {
+            // Update existing task
+            const { error: updateError } = await supabase
+              .from('tasks')
+              .update(taskData)
+              .eq('id', existingTask.id);
+
+            if (updateError) {
+              console.error(`❌ Error updating task ${task.title}:`, updateError);
+              errors++;
+            } else {
+              console.log(`✅ Updated task: ${task.title}`);
+              syncedTasks++;
+            }
+          } else {
+            // Create new task
+            taskData.created_at = new Date().toISOString();
+            
+            const { error: insertError } = await supabase
+              .from('tasks')
+              .insert(taskData);
+
+            if (insertError) {
+              console.error(`❌ Error inserting task ${task.title}:`, insertError);
+              errors++;
+            } else {
+              console.log(`🆕 Created new task: ${task.title}`);
+              syncedTasks++;
+            }
+          }
+        } catch (taskError) {
+          console.error(`❌ Error processing task ${task.title || 'Unknown'}:`, taskError);
+          errors++;
+        }
+      }
+    }
+
     // Update connection last sync time
     await supabase
       .from('calendar_connections')
@@ -393,14 +536,16 @@ serve(async (req) => {
       })
       .eq('id', connectionId);
 
-    console.log(`Sync complete: ${syncedEvents} events synced, ${errors} errors`);
+    console.log(`Sync complete: ${syncedEvents} events synced, ${syncedTasks} tasks synced, ${errors} errors`);
 
     return new Response(
       JSON.stringify({
         success: true,
         syncedEvents,
+        syncedTasks,
         errors,
         totalEvents: events.length,
+        totalTasks: tasks?.length || 0,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
