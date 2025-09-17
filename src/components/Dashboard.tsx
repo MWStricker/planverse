@@ -262,13 +262,16 @@ export const Dashboard = () => {
       );
     }).length;
     
+    // Use consistent logic: both completed and total should be based on items DUE this week
     const tasksCompletedThisWeek = userTasks.filter(task => {
-      if (task.completion_status !== 'completed' || !task.completed_at) return false;
-      const completedDate = new Date(task.completed_at);
-      return completedDate >= startOfWeek && completedDate <= endOfWeek;
+      if (task.completion_status !== 'completed' || !task.due_date) return false;
+      const dueDate = new Date(task.due_date);
+      return dueDate >= startOfWeek && dueDate <= endOfWeek;
     }).length;
     
-    const canvasAssignmentsCompletedThisWeek = userEvents.filter(event => {
+    // Apply the same filtering as used elsewhere for Canvas assignments
+    const filteredCanvasEvents = filterRecentAssignments(userEvents);
+    const canvasAssignmentsCompletedThisWeek = filteredCanvasEvents.filter(event => {
       if (event.event_type !== 'assignment' || !event.is_completed) return false;
       const eventDate = new Date(event.start_time || event.end_time);
       return eventDate >= startOfWeek && eventDate <= endOfWeek;
@@ -280,7 +283,7 @@ export const Dashboard = () => {
       return dueDate >= startOfWeek && dueDate <= endOfWeek;
     }).length;
     
-    const totalCanvasAssignmentsDueThisWeek = userEvents.filter(event => {
+    const totalCanvasAssignmentsDueThisWeek = filteredCanvasEvents.filter(event => {
       if (event.event_type !== 'assignment') return false;
       const eventDate = new Date(event.start_time || event.end_time);
       return eventDate >= startOfWeek && eventDate <= endOfWeek;
