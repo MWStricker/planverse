@@ -39,9 +39,9 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       console.log(`  ${index + 1}. "${assignment.title}" - is_completed: ${assignment.is_completed} (ID: ${assignment.id})`);
     });
     
-    // FIXED: Only count assignments due THIS specific week (Sept 16-22, 2025)
-    const currentWeekStart = new Date(2025, 8, 16, 0, 0, 0); // Sept 16, 2025 Monday 
-    const currentWeekEnd = new Date(2025, 8, 22, 23, 59, 59); // Sept 22, 2025 Sunday
+    // Use date-based filtering to match exactly what user sees in calendar
+    const currentWeekStart = new Date('2025-09-16T00:00:00');
+    const currentWeekEnd = new Date('2025-09-22T23:59:59');
 
     // Helper function to create a weekly group
     const createWeeklyGroup = (weekStart: Date, weekEnd: Date): WeeklyGroup => {
@@ -50,17 +50,20 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       // Use EXACTLY the same logic as Smart Priority Queue and "Due This Week" tab
       const now = new Date();
       
-      // Only count tasks due Sept 16-22, 2025
+      // Count tasks with due_date between Sept 16-22 (date-based)
       userTasks.forEach(task => {
         if (!task.due_date) return;
         
-        const dueDate = new Date(task.due_date);
-        // STRICT check: only assignments due between Sept 16-22, 2025
-        if (dueDate >= currentWeekStart && dueDate <= currentWeekEnd) {
+        const taskDate = new Date(task.due_date);
+        const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+        const startDateOnly = new Date(2025, 8, 16); // Sept 16
+        const endDateOnly = new Date(2025, 8, 22);   // Sept 22
+        
+        if (taskDateOnly >= startDateOnly && taskDateOnly <= endDateOnly) {
           assignments.push({
             id: task.id,
             title: task.title,
-            dueDate,
+            dueDate: taskDate,
             isCompleted: task.completion_status === 'completed',
             source: 'manual',
             courseCode: task.course_name,
@@ -103,13 +106,16 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         console.log('- Future Canvas assignments in current week:', futureCanvasAssignments);
       }
       
-      // Only count Canvas assignments due Sept 16-22, 2025
+      // Count Canvas assignments with start_date between Sept 16-22 (date-based)
       filteredCanvasEvents.forEach(event => {
         if (event.event_type !== 'assignment') return;
         
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
-        // STRICT check: only assignments due between Sept 16-22, 2025
-        if (eventDate >= currentWeekStart && eventDate <= currentWeekEnd) {
+        const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+        const startDateOnly = new Date(2025, 8, 16); // Sept 16
+        const endDateOnly = new Date(2025, 8, 22);   // Sept 22
+        
+        if (eventDateOnly >= startDateOnly && eventDateOnly <= endDateOnly) {
           assignments.push({
             id: event.id,
             title: event.title,
