@@ -59,9 +59,8 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (!task.due_date) return;
         
         const dueDate = new Date(task.due_date);
-        console.log(`🔍 Checking manual task: "${task.title}" due ${format(dueDate, 'MMM d, yyyy')} - in current week: ${isWithinInterval(dueDate, { start: weekStart, end: weekEnd })}`);
-        // Include ALL tasks due this week (both completed and pending)
-        if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd })) {
+        // Only include tasks due between Monday and Sunday of THIS week
+        if (dueDate >= weekStart && dueDate <= weekEnd) {
           assignments.push({
             id: task.id,
             title: task.title,
@@ -112,9 +111,8 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (event.event_type !== 'assignment') return;
         
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
-        console.log(`🔍 Checking Canvas assignment: "${event.title}" due ${format(eventDate, 'MMM d, yyyy')} - in current week: ${isWithinInterval(eventDate, { start: weekStart, end: weekEnd })}`);
-        // Include ALL assignments due this week (both completed and pending)
-        if (isWithinInterval(eventDate, { start: weekStart, end: weekEnd })) {
+        // Only include assignments due between Monday and Sunday of THIS week
+        if (eventDate >= weekStart && eventDate <= weekEnd) {
           assignments.push({
             id: event.id,
             title: event.title,
