@@ -1485,7 +1485,16 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  <p className="text-2xl font-bold text-foreground">{weeklyMetrics.totalTasksToday > 0 ? `${taskMetrics.completedTasks}/${weeklyMetrics.totalTasksToday}` : "No Tasks Today!"}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {allTodaysItems.length === 0 
+                      ? "No Tasks Today!" 
+                      : allTodaysItems.length > 0 && allTodaysItems.every(item => 
+                          item.completion_status === 'completed' || item.is_completed
+                        )
+                      ? "All Tasks Completed!" 
+                      : `${allTodaysItems.filter(item => item.completion_status === 'completed' || item.is_completed).length}/${allTodaysItems.length}`
+                    }
+                  </p>
                 </div>
               </div>
             </CardContent>
