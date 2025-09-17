@@ -42,8 +42,8 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (!task.due_date) return;
         
         const dueDate = new Date(task.due_date);
-        // Only include tasks that are due in the future (same as Smart Priority Queue)
-        if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd }) && dueDate >= now) {
+        // Include ALL tasks due this week (both completed and pending)
+        if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd })) {
           assignments.push({
             id: task.id,
             title: task.title,
@@ -94,8 +94,8 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         if (event.event_type !== 'assignment') return;
         
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
-        // Only include assignments that are due in the future and within this week
-        if (isWithinInterval(eventDate, { start: weekStart, end: weekEnd }) && eventDate >= now) {
+        // Include ALL assignments due this week (both completed and pending)
+        if (isWithinInterval(eventDate, { start: weekStart, end: weekEnd })) {
           assignments.push({
             id: event.id,
             title: event.title,
