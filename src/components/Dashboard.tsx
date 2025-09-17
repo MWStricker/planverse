@@ -423,25 +423,6 @@ export const Dashboard = () => {
     return { freeTimeToday, eventsThisWeek: [], tasksThisWeek, dueThisWeek };
   }, [userEvents, userTasks, preferences]);
   
-  // Combine all items due this week for the popup
-  const allDueThisWeek = useMemo(() => [
-    ...filteredData.eventsThisWeek.map(event => ({
-      id: event.id,
-      title: event.title,
-      due_date: event.start_time || event.end_time,
-      type: 'event',
-      course_name: event.course_name || 'No Course',
-      source: event.source_provider || 'Manual'
-    })),
-    ...filteredData.tasksThisWeek.map(task => ({
-      id: task.id,
-      title: task.title,
-      due_date: task.due_date,
-      type: 'task',
-      course_name: task.course_name || 'No Course',
-      source: 'Manual'
-    }))
-  ].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()), [filteredData]);
 
   // Get completed tasks and assignments for today
   const completedItemsToday = useMemo(() => {
@@ -529,13 +510,18 @@ export const Dashboard = () => {
         eventDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
         const isTodayOrFuture = eventDate >= today;
         
+        // Filter out completed assignments
+        const isNotCompleted = !event.is_completed;
+        
         console.log('DEBUG - Future check:', {
           title: event.title,
           eventDate: eventDate.toDateString(),
-          isTodayOrFuture
+          isTodayOrFuture,
+          isCompleted: event.is_completed,
+          isNotCompleted
         });
         
-        return isTodayOrFuture;
+        return isTodayOrFuture && isNotCompleted;
       })
       .map(event => {
         const eventDate = new Date(event.start_time || event.end_time);
@@ -583,6 +569,48 @@ export const Dashboard = () => {
         };
       });
   }, [userEvents]); // Add dependency for useMemo
+
+  // Combine all items due this week for the popup - use futureCanvasAssignments to ensure consistency
+  const allDueThisWeek = useMemo(() => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
+    const endOfCurrentWeek = new Date(now);
+    endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
+    endOfCurrentWeek.setHours(23, 59, 59, 999);
+
+    // Get Canvas assignments due this week (already filtered to exclude completed)
+    const canvasAssignmentsThisWeek = futureCanvasAssignments.filter(assignment => {
+      const dueDate = new Date(assignment.due_date);
+      return dueDate >= now && dueDate <= endOfCurrentWeek;
+    });
+
+    // Get manual tasks due this week (exclude completed)
+    const tasksThisWeek = userTasks.filter(task => {
+      if (!task.due_date || task.completion_status === 'completed') return false;
+      const dueDate = new Date(task.due_date);
+      return dueDate >= now && dueDate <= endOfCurrentWeek;
+    });
+
+    return [
+      ...canvasAssignmentsThisWeek.map(assignment => ({
+        id: assignment.id,
+        title: assignment.title,
+        due_date: assignment.due_date,
+        type: 'assignment',
+        course_name: assignment.course_name || 'Canvas Course',
+        source: 'Canvas'
+      })),
+      ...tasksThisWeek.map(task => ({
+        id: task.id,
+        title: task.title,
+        due_date: task.due_date,
+        type: 'task',
+        course_name: task.course_name || 'No Course',
+        source: 'Manual'
+      }))
+    ].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+  }, [futureCanvasAssignments, userTasks]);
 
   // Get today's Canvas assignments from events (only non-completed ones)
   const todaysCanvasAssignments = futureCanvasAssignments.filter(assignment => {
