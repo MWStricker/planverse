@@ -204,49 +204,42 @@ export const Dashboard = () => {
   const taskMetrics = useMemo(() => {
     const { today, endOfToday, startOfWeek, endOfWeek } = dateCalculations;
     
-    const completedTasksToday = userTasks.filter(task => {
-      if (task.completion_status !== 'completed' || !task.completed_at) return false;
-      const completedDate = new Date(task.completed_at);
-      return completedDate >= today && completedDate <= endOfToday;
+    // Count all completed tasks (not just those completed today)
+    const completedTasksTotal = userTasks.filter(task => {
+      return task.completion_status === 'completed';
     }).length;
     
-    const completedEventsToday = userEvents.filter(event => {
-      if (event.event_type !== 'assignment' || !event.is_completed) return false;
-      
-      // For Canvas assignments, check if they're due today (not when they were completed)
+    // Count all completed assignments (not just those due today)
+    const completedEventsTotal = userEvents.filter(event => {
+      return event.event_type === 'assignment' && event.is_completed;
+    }).length;
+    
+    const completedTasks = completedTasksTotal + completedEventsTotal;
+    
+    // Calculate total tasks available today (for denominator)
+    const totalTasksToday = userTasks.filter(task => {
+      if (!task.due_date) return false;
+      const dueDate = new Date(task.due_date);
+      return (
+        dueDate.getDate() === today.getDate() &&
+        dueDate.getMonth() === today.getMonth() &&
+        dueDate.getFullYear() === today.getFullYear()
+      );
+    }).length;
+    
+    const totalEventsToday = userEvents.filter(event => {
+      if (event.event_type !== 'assignment') return false;
       const eventDate = new Date(event.start_time || event.end_time);
-      const isToday = (
+      return (
         eventDate.getDate() === today.getDate() &&
         eventDate.getMonth() === today.getMonth() &&
         eventDate.getFullYear() === today.getFullYear()
       );
-      
-      return isToday;
     }).length;
     
-    const completedTasks = completedTasksToday + completedEventsToday;
+    const totalItemsToday = totalTasksToday + totalEventsToday;
     
-    console.log('DETAILED Task metrics calculation:', {
-      completedTasksToday,
-      completedEventsToday,
-      totalCompleted: completedTasks,
-      totalEvents: userEvents.length,
-      eventsWithCompleted: userEvents.filter(e => e.is_completed).length,
-      assignmentEvents: userEvents.filter(e => e.event_type === 'assignment').length,
-      completedAssignmentEvents: userEvents.filter(e => e.event_type === 'assignment' && e.is_completed).length,
-      todayDate: today.toISOString(),
-      sampleEvents: userEvents.filter(e => e.event_type === 'assignment').slice(0, 3).map(e => ({
-        id: e.id,
-        title: e.title,
-        event_type: e.event_type,
-        is_completed: e.is_completed,
-        start_time: e.start_time,
-        end_time: e.end_time,
-        eventDate: new Date(e.start_time || e.end_time).toISOString()
-      }))
-    });
-    
-    return { completedTasks, today, endOfToday, startOfWeek, endOfWeek };
+    return { completedTasks, totalItemsToday, today, endOfToday, startOfWeek, endOfWeek };
   }, [userTasks, userEvents, dateCalculations]);
   // Memoized weekly metrics
   const weeklyMetrics = useMemo(() => {
@@ -307,7 +300,7 @@ export const Dashboard = () => {
     };
   }, [userTasks, userEvents, taskMetrics]);
 
-  const completionRate = userTasks.length > 0 ? Math.round((taskMetrics.completedTasks / userTasks.length) * 100) : 0;
+  const completionRate = taskMetrics.totalItemsToday > 0 ? Math.round((taskMetrics.completedTasks / taskMetrics.totalItemsToday) * 100) : 0;
 
   // Task form
   const form = useForm<z.infer<typeof taskFormSchema>>({
@@ -1485,59 +1478,12 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {(() => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const todayStr = format(today, 'yyyy-MM-dd');
-                      
-                      // Use the same logic as Smart Priority Queue but filter for today only
-                      let todaysItems: any[] = [];
-                      
-                      if (aiPriorities && aiPriorities.length > 0) {
-                        // Filter AI priorities for today
-                        todaysItems = aiPriorities.filter((item: any) => {
-                          if (!item.dueDate) return false;
-                          const itemDate = new Date(item.dueDate);
-                          const itemDateStr = format(itemDate, 'yyyy-MM-dd');
-                          return itemDateStr === todayStr;
-                        });
-                      } else {
-                        // Filter manual tasks/assignments for today
-                        const allItems = [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])];
-                        todaysItems = allItems.filter((item: any) => {
-                          if (!item.due_date) return false;
-                          const itemDate = new Date(item.due_date);
-                          const itemDateStr = format(itemDate, 'yyyy-MM-dd');
-                          return itemDateStr === todayStr;
-                        });
-                      }
-                      
-                      if (todaysItems.length === 0) {
-                        return "No Tasks Today!";
-                      }
-                      
-                      const completedCount = todaysItems.filter((item: any) => {
-                        if (aiPriorities && aiPriorities.length > 0) {
-                          return item.completed;
-                        } else {
-                          // Check completion status from updated local state
-                          if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
-                            // Find the current state from userEvents (which gets updated by handleItemToggle)
-                            const currentEvent = userEvents.find(e => e.id === item.id);
-                            return currentEvent?.is_completed || false;
-                          } else {
-                            // Find the current state from userTasks (which gets updated by handleItemToggle)
-                            const currentTask = userTasks.find(t => t.id === item.id);
-                            return currentTask?.completion_status === 'completed';
-                          }
-                        }
-                      }).length;
-                      
-                      return completedCount === todaysItems.length 
-                        ? "All Tasks Completed!" 
-                        : `${completedCount}/${todaysItems.length}`;
-                    })()}
+                   <p className="text-2xl font-bold text-foreground">
+                     {taskMetrics.totalItemsToday === 0 
+                       ? "No Tasks Today!"
+                       : taskMetrics.completedTasks === taskMetrics.totalItemsToday 
+                         ? "All Tasks Completed!" 
+                         : `${taskMetrics.completedTasks}/${taskMetrics.totalItemsToday}`}
                   </p>
                 </div>
               </div>
