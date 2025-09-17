@@ -2070,23 +2070,6 @@ export const Dashboard = () => {
                 </Badge>
               </div>
 
-              {/* Description */}
-              {selectedTask.description && (
-                <div>
-                  <h4 className="font-medium text-sm mb-2">Description</h4>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {selectedTask.description}
-                    </p>
-                    {selectedTask.source_provider === 'canvas' && selectedTask.description.length === 63 && (
-                      <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-800">
-                        <p className="font-medium">⚠️ Description may be incomplete</p>
-                        <p>This Canvas assignment description appears to be truncated. Check Canvas directly for full instructions.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Task Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
