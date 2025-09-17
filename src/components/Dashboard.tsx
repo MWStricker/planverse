@@ -1647,7 +1647,7 @@ export const Dashboard = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Weekly Progress</p>
                   <p className="text-2xl font-bold text-foreground">{
-                    (() => {
+                    useMemo(() => {
                       // Use the SAME logic as "due this week" count for consistency
                       const now = new Date();
                       const currentDay = now.getDay();
@@ -1667,10 +1667,12 @@ export const Dashboard = () => {
                         task.completion_status === 'completed'
                       ).length;
                       
-                      // Count Canvas assignments due this week  
-                      const allCanvasThisWeek = futureCanvasAssignments.filter(assignment => {
-                        const dueDate = new Date(assignment.due_date);
-                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      // Count Canvas assignments due this week - use userEvents directly for real-time updates
+                      const filteredEvents = filterRecentAssignments(userEvents);
+                      const allCanvasThisWeek = filteredEvents.filter(event => {
+                        if (event.event_type !== 'assignment') return false;
+                        const eventDate = new Date(event.start_time || event.end_time);
+                        return eventDate >= now && eventDate <= endOfCurrentWeek;
                       });
                       
                       const completedCanvasThisWeek = allCanvasThisWeek.filter(assignment => 
@@ -1681,7 +1683,7 @@ export const Dashboard = () => {
                       const totalDue = allTasksThisWeek.length + allCanvasThisWeek.length;
                       
                       return totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) + "%" : "No items this week";
-                    })()
+                    }, [userTasks, userEvents]) // React to state changes
                   }</p>
                 </div>
               </div>
