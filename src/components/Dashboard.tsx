@@ -1521,10 +1521,16 @@ export const Dashboard = () => {
                         if (aiPriorities && aiPriorities.length > 0) {
                           return item.completed;
                         } else {
-                          // Use same completion logic as Smart Priority Queue fallback
-                          return item.source_provider === 'canvas' && item.event_type === 'assignment' 
-                            ? userEvents.find(e => e.id === item.id)?.is_completed 
-                            : item.completion_status === 'completed';
+                          // Check completion status from updated local state
+                          if (item.source_provider === 'canvas' && item.event_type === 'assignment') {
+                            // Find the current state from userEvents (which gets updated by handleItemToggle)
+                            const currentEvent = userEvents.find(e => e.id === item.id);
+                            return currentEvent?.is_completed || false;
+                          } else {
+                            // Find the current state from userTasks (which gets updated by handleItemToggle)
+                            const currentTask = userTasks.find(t => t.id === item.id);
+                            return currentTask?.completion_status === 'completed';
+                          }
                         }
                       }).length;
                       
