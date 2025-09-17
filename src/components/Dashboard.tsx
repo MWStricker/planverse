@@ -1812,66 +1812,111 @@ export const Dashboard = () => {
                   </div>
                 ))
               ) : (() => {
-                // Debug: log what data we have
-                console.log('Debug - filteredData:', filteredData);
-                console.log('Debug - futureCanvasAssignments:', futureCanvasAssignments);
+                // New filtering logic: next 2 days + high priority within next month
+                const currentDate = new Date();
+                const twoDaysFromNow = new Date(currentDate);
+                twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+                twoDaysFromNow.setHours(23, 59, 59, 999);
                 
-                // Filter out tasks more than a week overdue before checking length
-                const oneWeekAgo = new Date();
-                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                const oneMonthFromNow = new Date(currentDate);
+                oneMonthFromNow.setDate(oneMonthFromNow.getDate() + 30);
+                oneMonthFromNow.setHours(23, 59, 59, 999);
                 
-                const filteredTasks = filteredData?.tasksThisWeek || []; // Already filtered
-                const filteredCanvasAssignments = futureCanvasAssignments || []; // Already filtered
+                console.log('🎯 Smart Priority Queue Filters:');
+                console.log('- Next 2 days:', currentDate.toDateString(), 'to', twoDaysFromNow.toDateString());
+                console.log('- Next month for high priority:', currentDate.toDateString(), 'to', oneMonthFromNow.toDateString());
                 
-                console.log('🎯 DEBUG - Smart Priority Queue:');
-                console.log('- userTasks total:', userTasks?.length || 0);
-                console.log('- userEvents total:', userEvents?.length || 0);
-                console.log('- filteredData:', filteredData);
-                console.log('- filteredTasks (tasksThisWeek):', filteredTasks.length, filteredTasks.map(t => ({title: t.title, due: t.due_date})));
-                console.log('- futureCanvasAssignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(c => ({title: c.title, due: c.due_date})));
-                console.log('- Total items in Smart Queue:', [...filteredTasks, ...filteredCanvasAssignments].length);
-                
-                // Show specific tasks that should be in this week
-                const now = new Date();
-                const currentDay = now.getDay();
-                const startOfWeek = new Date(now);
-                startOfWeek.setDate(startOfWeek.getDate() - currentDay);
-                startOfWeek.setHours(0, 0, 0, 0);
-                const endOfWeek = new Date(startOfWeek);
-                endOfWeek.setDate(endOfWeek.getDate() + 6);
-                endOfWeek.setHours(23, 59, 59, 999);
-                
-                console.log('📅 This week range:', startOfWeek.toDateString(), 'to', endOfWeek.toDateString());
-                
-                const tasksInRange = userTasks.filter(task => {
+                // Filter tasks for next 2 days OR high priority within next month
+                const filteredTasks = userTasks?.filter(task => {
                   if (!task.due_date || task.completion_status === 'completed') return false;
                   const dueDate = new Date(task.due_date);
-                  return dueDate >= startOfWeek && dueDate <= endOfWeek;
-                });
+                  
+                  // Include if due in next 2 days
+                  if (dueDate >= currentDate && dueDate <= twoDaysFromNow) {
+                    return true;
+                  }
+                  
+                  // Include if high priority and due within next month
+                  if ((task.priority_score >= 3) && dueDate >= currentDate && dueDate <= oneMonthFromNow) {
+                    return true;
+                  }
+                  
+                  return false;
+                }) || [];
                 
-                const eventsInRange = userEvents.filter(event => {
+                // Filter Canvas assignments for next 2 days OR high priority within next month
+                const filteredCanvasAssignments = userEvents?.filter(event => {
                   if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
                   const eventDate = new Date(event.start_time || event.end_time || '');
-                  return eventDate >= startOfWeek && eventDate <= endOfWeek;
-                });
+                  
+                  // Include if due in next 2 days
+                  if (eventDate >= currentDate && eventDate <= twoDaysFromNow) {
+                    return true;
+                  }
+                  
+                  // Include if high priority and due within next month
+                  const isHighPriority = event.priority_score >= 3;
+                  if (isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow) {
+                    return true;
+                  }
+                  
+                  return false;
+                }) || [];
                 
-                console.log('📋 Raw tasks this week:', tasksInRange.map(t => ({title: t.title, due: t.due_date})));
-                console.log('📋 Raw Canvas assignments this week:', eventsInRange.map(e => ({title: e.title, due: e.start_time})));
+                console.log('📋 Filtered tasks (next 2 days + high priority):', filteredTasks.length, filteredTasks.map(t => ({title: t.title, due: t.due_date, priority: t.priority_score})));
+                console.log('📋 Filtered Canvas assignments (next 2 days + high priority):', filteredCanvasAssignments.length, filteredCanvasAssignments.map(e => ({title: e.title, due: e.start_time, priority: e.priority_score})));
                 
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
                 (() => {
-                  // Filter out old assignments first, then sort
+                  // Get filtered items using new logic
                   const currentDate = new Date();
-                  const oneWeekAgo = new Date(currentDate);
-                  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                  const twoDaysFromNow = new Date(currentDate);
+                  twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+                  twoDaysFromNow.setHours(23, 59, 59, 999);
                   
-                  // Filter out assignments more than a week overdue
-                  const currentRelevantItems = [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])].filter(item => {
-                    if (!item.due_date) return true; // Keep items without due dates
-                    const dueDate = new Date(item.due_date);
-                    return dueDate >= oneWeekAgo; // Only keep assignments from the last week or future
-                  });
+                  const oneMonthFromNow = new Date(currentDate);
+                  oneMonthFromNow.setDate(oneMonthFromNow.getDate() + 30);
+                  oneMonthFromNow.setHours(23, 59, 59, 999);
+                  
+                  // Filter tasks
+                  const smartFilteredTasks = userTasks?.filter(task => {
+                    if (!task.due_date || task.completion_status === 'completed') return false;
+                    const dueDate = new Date(task.due_date);
+                    
+                    // Include if due in next 2 days
+                    if (dueDate >= currentDate && dueDate <= twoDaysFromNow) {
+                      return true;
+                    }
+                    
+                    // Include if high priority and due within next month
+                    if ((task.priority_score >= 3) && dueDate >= currentDate && dueDate <= oneMonthFromNow) {
+                      return true;
+                    }
+                    
+                    return false;
+                  }) || [];
+                  
+                  // Filter Canvas assignments
+                  const smartFilteredCanvasAssignments = userEvents?.filter(event => {
+                    if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                    const eventDate = new Date(event.start_time || event.end_time || '');
+                    
+                    // Include if due in next 2 days
+                    if (eventDate >= currentDate && eventDate <= twoDaysFromNow) {
+                      return true;
+                    }
+                    
+                    // Include if high priority and due within next month
+                    const isHighPriority = event.priority_score >= 3;
+                    if (isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow) {
+                      return true;
+                    }
+                    
+                    return false;
+                  }) || [];
+                  
+                  const currentRelevantItems = [...smartFilteredTasks, ...smartFilteredCanvasAssignments];
                   
                   console.log('🧹 Filtered out old assignments. Current relevant items:', currentRelevantItems.length);
                   console.log('🧹 Items kept:', currentRelevantItems.map(item => `${item.title} (due: ${item.due_date})`));
