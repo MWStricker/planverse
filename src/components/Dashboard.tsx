@@ -1539,9 +1539,9 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Due This Week</p>
-                  <p className="text-2xl font-bold text-foreground">{allDueThisWeek.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount}</p>
                   <p className="text-xs text-muted-foreground">
-                    Same as Smart Priority Queue
+                    {weeklyProgressData.currentWeek.completedCount} completed, {weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount} pending
                   </p>
                 </div>
               </div>
@@ -1734,18 +1734,9 @@ export const Dashboard = () => {
                 const filteredCanvasAssignments = futureCanvasAssignments || []; // Already filtered
                 
                 console.log('🎯 DEBUG - Smart Priority Queue:');
-                console.log('- filteredTasks:', filteredTasks.length, filteredTasks.map(t => `"${t.title}" (completed: ${t.completion_status === 'completed'})`));
-                console.log('- futureCanvasAssignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(c => `"${c.title}" (completed: ${c.is_completed})`));
+                console.log('- filteredTasks:', filteredTasks.length, filteredTasks.map(t => t.title));
+                console.log('- futureCanvasAssignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(c => c.title));
                 console.log('- Total items in Smart Queue:', [...filteredTasks, ...filteredCanvasAssignments].length);
-                
-                // Add comparison with weekly progress data
-                console.log('📊 WEEKLY PROGRESS COMPARISON:');
-                console.log('- Weekly progress pending assignments:', weeklyProgressData.currentWeek.assignments.filter(a => !a.isCompleted).length);
-                console.log('- Due this week calculation:', weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount);
-                console.log('- Discrepancy:', (weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount) - [...filteredTasks, ...filteredCanvasAssignments].filter(item => {
-                  if (item.source_provider === 'canvas') return !item.is_completed;
-                  return item.completion_status !== 'completed';
-                }).length);
                 
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
@@ -2164,7 +2155,7 @@ export const Dashboard = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-warning" />
-              Due This Week ({allDueThisWeek.length} pending items)
+              Due This Week ({weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount} pending, {weeklyProgressData.currentWeek.totalCount} total)
             </DialogTitle>
             <DialogDescription>
               All assignments and tasks due by the end of this week

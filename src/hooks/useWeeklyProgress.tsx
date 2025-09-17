@@ -118,7 +118,6 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
     console.log('- Current week:', format(currentWeek.weekStart, 'MMM d'), '-', format(currentWeek.weekEnd, 'MMM d'));
     console.log('- Current week progress:', `${currentWeek.completedCount}/${currentWeek.totalCount} (${currentWeek.progressPercentage}%)`);
     console.log('- Current week assignments:', currentWeek.assignments.map(a => `"${a.title}" (${a.isCompleted ? 'completed' : 'pending'})`));
-    console.log('- Current week pending assignments:', currentWeek.assignments.filter(a => !a.isCompleted).map(a => `"${a.title}"`));
 
     return {
       currentWeek,
