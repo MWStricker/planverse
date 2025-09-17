@@ -386,7 +386,7 @@ export const Dashboard = () => {
     return { freeTimeToday, eventsThisWeek: [], tasksThisWeek, dueThisWeek };
   }, [userEvents, userTasks, preferences]);
   
-  // Use the new weekly progress data for "due this week"
+  // Combine all items due this week for the popup
   const allDueThisWeek = useMemo(() => [
     ...filteredData.eventsThisWeek.map(event => ({
       id: event.id,
@@ -1539,10 +1539,32 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Due This Week</p>
-                  <p className="text-2xl font-bold text-foreground">{weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {weeklyProgressData.currentWeek.completedCount} completed, {weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount} pending
-                  </p>
+                  <p className="text-2xl font-bold text-foreground">{
+                    (() => {
+                      const now = new Date();
+                      const currentDay = now.getDay();
+                      const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
+                      const endOfCurrentWeek = new Date(now);
+                      endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
+                      endOfCurrentWeek.setHours(23, 59, 59, 999);
+                      
+                      // Count tasks due this week (not completed)
+                      const tasksThisWeekCount = userTasks.filter(task => {
+                        if (!task.due_date || task.completion_status === 'completed') return false;
+                        const dueDate = new Date(task.due_date);
+                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      }).length;
+                      
+                      // Count Canvas assignments due this week (not completed)
+                      const canvasThisWeekCount = futureCanvasAssignments.filter(assignment => {
+                        if (assignment.is_completed) return false;
+                        const dueDate = new Date(assignment.due_date);
+                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      }).length;
+                      
+                      return tasksThisWeekCount + canvasThisWeekCount;
+                    })()
+                  }</p>
                 </div>
               </div>
             </CardContent>
@@ -2155,7 +2177,7 @@ export const Dashboard = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-warning" />
-              Due This Week ({weeklyProgressData.currentWeek.totalCount - weeklyProgressData.currentWeek.completedCount} pending, {weeklyProgressData.currentWeek.totalCount} total)
+              Due This Week ({allDueThisWeek.length} items)
             </DialogTitle>
             <DialogDescription>
               All assignments and tasks due by the end of this week
