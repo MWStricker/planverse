@@ -1812,6 +1812,9 @@ export const Dashboard = () => {
                 const filteredCanvasAssignments = futureCanvasAssignments || []; // Already filtered
                 
                 console.log('🎯 DEBUG - Smart Priority Queue:');
+                console.log('- userTasks total:', userTasks?.length || 0);
+                console.log('- userEvents total:', userEvents?.length || 0);
+                console.log('- filteredData:', filteredData);
                 console.log('- filteredTasks:', filteredTasks.length, filteredTasks.map(t => t.title));
                 console.log('- futureCanvasAssignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(c => c.title));
                 console.log('- Total items in Smart Queue:', [...filteredTasks, ...filteredCanvasAssignments].length);
