@@ -1487,16 +1487,37 @@ export const Dashboard = () => {
                   <p className="text-sm text-muted-foreground">Tasks Completed</p>
                   <p className="text-2xl font-bold text-foreground">
                     {(() => {
-                      // Use the same logic as Smart Priority Queue
-                      const priorityQueueItems = (aiPriorities && aiPriorities.length > 0) 
-                        ? aiPriorities 
-                        : [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])];
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const todayStr = format(today, 'yyyy-MM-dd');
                       
-                      if (priorityQueueItems.length === 0) {
+                      // Use the same logic as Smart Priority Queue but filter for today only
+                      let todaysItems: any[] = [];
+                      
+                      if (aiPriorities && aiPriorities.length > 0) {
+                        // Filter AI priorities for today
+                        todaysItems = aiPriorities.filter((item: any) => {
+                          if (!item.dueDate) return false;
+                          const itemDate = new Date(item.dueDate);
+                          const itemDateStr = format(itemDate, 'yyyy-MM-dd');
+                          return itemDateStr === todayStr;
+                        });
+                      } else {
+                        // Filter manual tasks/assignments for today
+                        const allItems = [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])];
+                        todaysItems = allItems.filter((item: any) => {
+                          if (!item.due_date) return false;
+                          const itemDate = new Date(item.due_date);
+                          const itemDateStr = format(itemDate, 'yyyy-MM-dd');
+                          return itemDateStr === todayStr;
+                        });
+                      }
+                      
+                      if (todaysItems.length === 0) {
                         return "No Tasks Today!";
                       }
                       
-                      const completedCount = priorityQueueItems.filter((item: any) => {
+                      const completedCount = todaysItems.filter((item: any) => {
                         if (aiPriorities && aiPriorities.length > 0) {
                           return item.completed;
                         } else {
@@ -1507,9 +1528,9 @@ export const Dashboard = () => {
                         }
                       }).length;
                       
-                      return completedCount === priorityQueueItems.length 
+                      return completedCount === todaysItems.length 
                         ? "All Tasks Completed!" 
-                        : `${completedCount}/${priorityQueueItems.length}`;
+                        : `${completedCount}/${todaysItems.length}`;
                     })()}
                   </p>
                 </div>
