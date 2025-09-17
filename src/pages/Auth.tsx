@@ -182,7 +182,7 @@ const Auth = () => {
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               Welcome
             </CardTitle>
-            <p className="text-muted-foreground">Join thousands of students connecting their courses</p>
+            <p className="text-muted-foreground">All your resources in one place</p>
           </CardHeader>
         <CardContent className="space-y-6">
           <Tabs defaultValue="signin" className="w-full">
