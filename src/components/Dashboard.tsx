@@ -424,42 +424,20 @@ export const Dashboard = () => {
     endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
     endOfCurrentWeek.setHours(23, 59, 59, 999);
 
-    // Calculate tasks this week first (avoid circular dependency)
+    // Use EXACTLY the same data as Smart Priority Queue
+    // The Smart Priority Queue uses: filteredData.tasksThisWeek + futureCanvasAssignments
+    // So the "due this week" count should use the same data sources
+    
     const tasksThisWeek = userTasks.filter(task => {
       if (!task.due_date || task.completion_status === 'completed') return false;
       const dueDate = new Date(task.due_date);
       return dueDate >= now && dueDate <= endOfCurrentWeek;
     });
     
-    // Calculate Canvas assignments inline - but ONLY for this week
-    const filteredEvents = filterRecentAssignments(userEvents);
-    const canvasAssignments = filteredEvents
-      .filter(event => {
-        const eventDate = new Date(event.start_time || event.end_time);
-        eventDate.setHours(0, 0, 0, 0);
-        // Must be within this week range (not all future)
-        return eventDate >= now && eventDate <= endOfCurrentWeek;
-      })
-      .map(event => ({
-        id: event.id,
-        title: event.title,
-        due_date: event.start_time || event.end_time,
-        source_provider: 'canvas',
-        event_type: 'assignment',
-        is_completed: event.is_completed || false
-      }));
+    // Don't create a new filter - this will be replaced by futureCanvasAssignments data
+    const dueThisWeek = "calculating..."; // Will be updated after futureCanvasAssignments is defined
     
-    // Use the EXACT same filtering as Smart Priority Queue
-    const smartQueueItems = [...tasksThisWeek, ...canvasAssignments];
-    
-    console.log('📊 DEBUG - Due This Week Calculation:');
-    console.log('- tasksThisWeek:', tasksThisWeek.length, tasksThisWeek.map(t => t.title));
-    console.log('- canvasAssignments:', canvasAssignments.length, canvasAssignments.map(c => c.title));
-    console.log('- Total smartQueueItems:', smartQueueItems.length);
-    
-    const dueThisWeek = smartQueueItems.length || "N/A";
-    
-    return { freeTimeToday, eventsThisWeek: smartQueueItems, tasksThisWeek, dueThisWeek };
+    return { freeTimeToday, eventsThisWeek: [], tasksThisWeek, dueThisWeek };
   }, [userEvents, userTasks, preferences]);
   
   // Combine all items due this week for the popup
@@ -1615,7 +1593,10 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Due This Week</p>
-                  <p className="text-2xl font-bold text-foreground">{filteredData.dueThisWeek}</p>
+                  <p className="text-2xl font-bold text-foreground">{
+                    // Use EXACT same calculation as Smart Priority Queue
+                    [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])].length
+                  }</p>
                 </div>
               </div>
             </CardContent>
