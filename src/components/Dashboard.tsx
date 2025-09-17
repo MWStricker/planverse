@@ -1648,30 +1648,49 @@ export const Dashboard = () => {
                   <p className="text-sm text-muted-foreground">Weekly Progress</p>
                   <p className="text-2xl font-bold text-foreground">{
                     useMemo(() => {
-                      // Use EXACTLY THE SAME data sources as Smart Priority Queue
-                      const smartQueueTasks = filteredData?.tasksThisWeek || [];
-                      const smartQueueCanvas = futureCanvasAssignments || [];
+                      // Use the SAME logic as "due this week" count for consistency
+                      const now = new Date();
+                      const currentDay = now.getDay();
+                      const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
+                      const endOfCurrentWeek = new Date(now);
+                      endOfCurrentWeek.setDate(endOfCurrentWeek.getDate() + daysUntilSunday);
+                      endOfCurrentWeek.setHours(23, 59, 59, 999);
                       
-                      // Count completed items from the exact same data shown in Smart Priority Queue
-                      const completedTasks = smartQueueTasks.filter(task => 
+                      // Count tasks due this week
+                      const allTasksThisWeek = userTasks.filter(task => {
+                        if (!task.due_date) return false;
+                        const dueDate = new Date(task.due_date);
+                        return dueDate >= now && dueDate <= endOfCurrentWeek;
+                      });
+                      
+                      const completedTasksThisWeek = allTasksThisWeek.filter(task => 
                         task.completion_status === 'completed'
-                      ).length;
+                      );
                       
-                      const completedCanvas = smartQueueCanvas.filter(assignment => 
+                      // Count Canvas assignments due this week - use userEvents directly for real-time updates
+                      const filteredEvents = filterRecentAssignments(userEvents);
+                      const allCanvasThisWeek = filteredEvents.filter(event => {
+                        if (event.event_type !== 'assignment') return false;
+                        const eventDate = new Date(event.start_time || event.end_time);
+                        return eventDate >= now && eventDate <= endOfCurrentWeek;
+                      });
+                      
+                      const completedCanvasThisWeek = allCanvasThisWeek.filter(assignment => 
                         assignment.is_completed
-                      ).length;
+                      );
                       
-                      const totalCompleted = completedTasks + completedCanvas;
-                      const totalItems = smartQueueTasks.length + smartQueueCanvas.length;
+                      const totalCompleted = completedTasksThisWeek.length + completedCanvasThisWeek.length;
+                      const totalDue = allTasksThisWeek.length + allCanvasThisWeek.length;
                       
-                      // DEBUG: Show what Smart Priority Queue items we're using
-                      console.log('📊 SMART PRIORITY QUEUE CORRELATION:');
-                      console.log('Smart Queue Tasks:', smartQueueTasks.map(t => ({title: t.title, completed: t.completion_status === 'completed'})));
-                      console.log('Smart Queue Canvas:', smartQueueCanvas.map(c => ({title: c.title, completed: c.is_completed})));
-                      console.log('Weekly Progress:', `${totalCompleted}/${totalItems} = ${totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0}%`);
+                      // DEBUG: Log what we're actually counting
+                      console.log('🔍 WEEKLY PROGRESS DETAILED DEBUG:');
+                      console.log('Week range:', now.toDateString(), 'to', endOfCurrentWeek.toDateString());
+                      console.log('Tasks due this week:', allTasksThisWeek.map(t => ({title: t.title, completed: t.completion_status === 'completed'})));
+                      console.log('Canvas due this week:', allCanvasThisWeek.map(c => ({title: c.title, completed: c.is_completed})));
+                      console.log('Summary:', `${totalCompleted}/${totalDue} = ${totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) : 0}%`);
                       
-                      return totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) + "%" : "No items";
-                    }, [filteredData, futureCanvasAssignments]) // Use same dependencies as Smart Priority Queue
+                      return totalDue > 0 ? Math.round((totalCompleted / totalDue) * 100) + "%" : "No items this week";
+                    }, [userTasks, userEvents]) // React to state changes
                   }</p>
                 </div>
               </div>
