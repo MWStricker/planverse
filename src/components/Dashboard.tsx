@@ -1827,9 +1827,36 @@ export const Dashboard = () => {
                 console.log('- userTasks total:', userTasks?.length || 0);
                 console.log('- userEvents total:', userEvents?.length || 0);
                 console.log('- filteredData:', filteredData);
-                console.log('- filteredTasks:', filteredTasks.length, filteredTasks.map(t => t.title));
-                console.log('- futureCanvasAssignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(c => c.title));
+                console.log('- filteredTasks (tasksThisWeek):', filteredTasks.length, filteredTasks.map(t => ({title: t.title, due: t.due_date})));
+                console.log('- futureCanvasAssignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(c => ({title: c.title, due: c.due_date})));
                 console.log('- Total items in Smart Queue:', [...filteredTasks, ...filteredCanvasAssignments].length);
+                
+                // Show specific tasks that should be in this week
+                const now = new Date();
+                const currentDay = now.getDay();
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(startOfWeek.getDate() - currentDay);
+                startOfWeek.setHours(0, 0, 0, 0);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(endOfWeek.getDate() + 6);
+                endOfWeek.setHours(23, 59, 59, 999);
+                
+                console.log('📅 This week range:', startOfWeek.toDateString(), 'to', endOfWeek.toDateString());
+                
+                const tasksInRange = userTasks.filter(task => {
+                  if (!task.due_date || task.completion_status === 'completed') return false;
+                  const dueDate = new Date(task.due_date);
+                  return dueDate >= startOfWeek && dueDate <= endOfWeek;
+                });
+                
+                const eventsInRange = userEvents.filter(event => {
+                  if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                  const eventDate = new Date(event.start_time || event.end_time || '');
+                  return eventDate >= startOfWeek && eventDate <= endOfWeek;
+                });
+                
+                console.log('📋 Raw tasks this week:', tasksInRange.map(t => ({title: t.title, due: t.due_date})));
+                console.log('📋 Raw Canvas assignments this week:', eventsInRange.map(e => ({title: e.title, due: e.start_time})));
                 
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
