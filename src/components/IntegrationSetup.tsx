@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock, RefreshCw } from "lucide-react";
+import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock, RefreshCw, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -750,28 +750,89 @@ export const IntegrationSetup = () => {
                    </Button>
                   ) : (
                       <div className="space-y-2">
-                        <Button 
-                          className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🔥🔥🔥 BUTTON CLICKED - EVENT TRIGGERED! 🔥🔥🔥');
-                            console.log('🔥 Current user:', !!user);
-                            console.log('🔥 isConnecting:', isConnecting);
-                            try {
-                              handleGoogleCalendarSync();
-                            } catch (error) {
-                              console.error('🔥 Error in handleGoogleCalendarSync:', error);
-                            }
-                          }}
-                          disabled={isConnecting}
-                          type="button"
-                        >
-                          <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
-                          {isConnecting ? 'Syncing...' : 'Sync Google Calendar'}
-                        </Button>
+                        {currentStatus === 'connected' ? (
+                          <>
+                            <Button 
+                              className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('🔥🔥🔥 SYNC BUTTON CLICKED! 🔥🔥🔥');
+                                try {
+                                  handleGoogleCalendarSync();
+                                } catch (error) {
+                                  console.error('🔥 Error in handleGoogleCalendarSync:', error);
+                                }
+                              }}
+                              disabled={isConnecting}
+                              type="button"
+                            >
+                              <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
+                              {isConnecting ? 'Syncing...' : 'Sync Calendar & Tasks'}
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              className="w-full"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  // Sign out from Supabase to clear the Google session
+                                  await supabase.auth.signOut();
+                                  // Delete any stored calendar connections
+                                  await supabase
+                                    .from('calendar_connections')
+                                    .delete()
+                                    .eq('user_id', user?.id)
+                                    .eq('provider', 'google');
+                                  
+                                  toast({
+                                    title: "Disconnected",
+                                    description: "Google Calendar connection removed. Click 'Connect & Sync' to re-authorize with Tasks access.",
+                                  });
+                                  
+                                  // Refresh the page to update connection status
+                                  window.location.reload();
+                                } catch (error) {
+                                  console.error('Error disconnecting:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to disconnect. Please try again.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              type="button"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Disconnect Google
+                            </Button>
+                          </>
+                        ) : (
+                          <Button 
+                            className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('🔥🔥🔥 CONNECT BUTTON CLICKED! 🔥🔥🔥');
+                              try {
+                                handleGoogleCalendarSync();
+                              } catch (error) {
+                                console.error('🔥 Error in handleGoogleCalendarSync:', error);
+                              }
+                            }}
+                            disabled={isConnecting}
+                            type="button"
+                          >
+                            <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
+                            {isConnecting ? 'Connecting...' : 'Connect & Sync with Tasks'}
+                          </Button>
+                        )}
                         <p className="text-xs text-center text-muted-foreground">
-                          Will sign you in with Google if needed, then sync your calendar
+                          {currentStatus === 'connected' 
+                            ? 'Syncs both calendar events and tasks from Google'
+                            : 'Will request both Calendar and Tasks permissions'
+                          }
                         </p>
                       </div>
                    )}
