@@ -534,39 +534,31 @@ export const Dashboard = () => {
     });
   }, [userTasks, taskMetrics]);
 
-  // Get all assignments due this week from events (Canvas assignments) with dynamic priority
-  const weeklyCanvasAssignments = useMemo(() => {
+  // Get all assignments due today and beyond from events (Canvas assignments) with dynamic priority
+  const futureCanvasAssignments = useMemo(() => {
     // First filter out old assignments using centralized filter
     const filteredEvents = filterCanvasAssignments(userEvents);
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Get start and end of this week
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-    
-    console.log('DEBUG - Week filtering:', {
-      today: today.toDateString(),
-      startOfWeek: startOfWeek.toDateString(),
-      endOfWeek: endOfWeek.toDateString()
+    console.log('DEBUG - Today filtering:', {
+      today: today.toDateString()
     });
     
     return filteredEvents
       .filter(event => {
         const eventDate = new Date(event.start_time || event.end_time);
-        const isThisWeek = eventDate >= startOfWeek && eventDate <= endOfWeek;
+        eventDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
+        const isTodayOrFuture = eventDate >= today;
         
-        console.log('DEBUG - Week check:', {
+        console.log('DEBUG - Future check:', {
           title: event.title,
           eventDate: eventDate.toDateString(),
-          isThisWeek
+          isTodayOrFuture
         });
         
-        return isThisWeek;
+        return isTodayOrFuture;
       })
       .map(event => {
         const eventDate = new Date(event.start_time || event.end_time);
@@ -595,7 +587,7 @@ export const Dashboard = () => {
         } else if (isDueTomorrow) {
           dynamicPriority = 3; // High priority for tomorrow
         } else {
-          // Medium priority for assignments due within the week
+          // Medium priority for future assignments
           dynamicPriority = 2;
         }
         
@@ -616,22 +608,9 @@ export const Dashboard = () => {
   }, [userEvents]); // Add dependency for useMemo
 
   // Get today's Canvas assignments from events (only non-completed ones)
-  const todaysCanvasAssignments = weeklyCanvasAssignments.filter(assignment => {
+  const todaysCanvasAssignments = futureCanvasAssignments.filter(assignment => {
     const eventDate = new Date(assignment.due_date);
     const today = new Date();
-    
-    console.log('DEBUG - Assignment check:', {
-      title: assignment.title,
-      due_date: assignment.due_date,
-      eventDate: eventDate.toDateString(),
-      today: today.toDateString(),
-      eventDay: eventDate.getDate(),
-      todayDay: today.getDate(),
-      eventMonth: eventDate.getMonth(),
-      todayMonth: today.getMonth(),
-      eventYear: eventDate.getFullYear(),
-      todayYear: today.getFullYear()
-    });
     
     const isToday = (
       eventDate.getDate() === today.getDate() &&
@@ -639,21 +618,29 @@ export const Dashboard = () => {
       eventDate.getFullYear() === today.getFullYear()
     );
     
-    console.log('DEBUG - Is today?', isToday);
-    
     // Filter out completed assignments
     const originalEvent = userEvents.find(e => e.id === assignment.id);
     const isNotCompleted = !originalEvent?.is_completed;
     
-    console.log('DEBUG - Is not completed?', isNotCompleted);
-    
     return isToday && isNotCompleted;
   });
 
-  // Get today's tasks (only non-completed ones)
-  const todaysActiveTasks = todaysTasks.filter(task => 
-    task.completion_status !== 'completed'
-  );
+  // Get today's tasks (only non-completed ones due today or later)
+  const todaysActiveTasks = userTasks.filter(task => {
+    if (task.completion_status === 'completed' || !task.due_date) return false;
+    
+    const dueDate = new Date(task.due_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    // Only show tasks due today
+    return (
+      dueDate.getDate() === today.getDate() &&
+      dueDate.getMonth() === today.getMonth() &&
+      dueDate.getFullYear() === today.getFullYear()
+    );
+  });
 
   // Combine active tasks and Canvas assignments for today
   const allTodaysItems = [...todaysActiveTasks, ...todaysCanvasAssignments].sort((a, b) => {
@@ -1549,7 +1536,7 @@ export const Dashboard = () => {
                       } else {
                         console.log('DEBUG: Using manual filtering');
                         // Filter manual tasks/assignments for today exactly like Smart Priority Queue
-                        const allItems = [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])];
+                        const allItems = [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])];
                         console.log('DEBUG: All items to filter:', allItems.length);
                         
                         todaysItems = allItems.filter((item: any) => {
@@ -1791,14 +1778,14 @@ export const Dashboard = () => {
               ) : (() => {
                 // Debug: log what data we have
                 console.log('Debug - filteredData:', filteredData);
-                console.log('Debug - weeklyCanvasAssignments:', weeklyCanvasAssignments);
+                console.log('Debug - futureCanvasAssignments:', futureCanvasAssignments);
                 
                 // Filter out tasks more than a week overdue before checking length
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                 
                 const filteredTasks = filteredData?.tasksThisWeek || []; // Already filtered
-                const filteredCanvasAssignments = weeklyCanvasAssignments || []; // Already filtered
+                const filteredCanvasAssignments = futureCanvasAssignments || []; // Already filtered
                 
                 console.log('Debug - filteredTasks:', filteredTasks);
                 console.log('Debug - filteredCanvasAssignments:', filteredCanvasAssignments);
@@ -1808,7 +1795,7 @@ export const Dashboard = () => {
                 (() => {
                   // weeklyCanvasAssignments is already filtered, no need to filter again
                   // tasksThisWeek is already filtered, no need to filter again
-                  const sortedItems = [...(filteredData?.tasksThisWeek || []), ...(weeklyCanvasAssignments || [])].sort((a, b) => {
+                  const sortedItems = [...(filteredData?.tasksThisWeek || []), ...(futureCanvasAssignments || [])].sort((a, b) => {
                     if (a.due_date && b.due_date) {
                       const dateComparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
                       if (dateComparison !== 0) return dateComparison;
