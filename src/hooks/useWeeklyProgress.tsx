@@ -50,7 +50,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       // Use EXACTLY the same logic as Smart Priority Queue and "Due This Week" tab
       const now = new Date();
       
-      // Count tasks with due_date between Sept 16-22 (date-based)
+      // Count tasks with due_date between Sept 15-21 (date-based)
       userTasks.forEach(task => {
         if (!task.due_date) return;
         
@@ -60,6 +60,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const endDateOnly = new Date(2025, 8, 21);   // Sept 21
         
         if (taskDateOnly >= startDateOnly && taskDateOnly <= endDateOnly) {
+          console.log(`✅ MANUAL TASK IN WEEK: "${task.title}" - Due: ${taskDate.toDateString()} - Completed: ${task.completion_status === 'completed'}`);
           assignments.push({
             id: task.id,
             title: task.title,
@@ -106,7 +107,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         console.log('- Future Canvas assignments in current week:', futureCanvasAssignments);
       }
       
-      // Count Canvas assignments with start_date between Sept 16-22 (date-based)
+      // Count Canvas assignments with start_date between Sept 15-21 (date-based)
       filteredCanvasEvents.forEach(event => {
         if (event.event_type !== 'assignment') return;
         
@@ -116,6 +117,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         const endDateOnly = new Date(2025, 8, 21);   // Sept 21
         
         if (eventDateOnly >= startDateOnly && eventDateOnly <= endDateOnly) {
+          console.log(`✅ CANVAS ASSIGNMENT IN WEEK: "${event.title}" - Due: ${eventDate.toDateString()} - Completed: ${event.is_completed || false}`);
           assignments.push({
             id: event.id,
             title: event.title,
