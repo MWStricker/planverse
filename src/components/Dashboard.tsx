@@ -572,6 +572,7 @@ export const Dashboard = () => {
 
   // Combine all items due this week for the popup - use futureCanvasAssignments to ensure consistency
   const allDueThisWeek = useMemo(() => {
+    console.log('🔧 allDueThisWeek calculating...');
     const now = new Date();
     const currentDay = now.getDay();
     const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
@@ -592,7 +593,7 @@ export const Dashboard = () => {
       return dueDate >= now && dueDate <= endOfCurrentWeek;
     });
 
-    return [
+    const result = [
       ...canvasAssignmentsThisWeek.map(assignment => ({
         id: assignment.id,
         title: assignment.title,
@@ -610,6 +611,9 @@ export const Dashboard = () => {
         source: 'Manual'
       }))
     ].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    
+    console.log('🔧 allDueThisWeek calculated:', result.length, 'items');
+    return result;
   }, [futureCanvasAssignments, userTasks]);
 
   // Get today's Canvas assignments from events (only non-completed ones)
@@ -2217,7 +2221,7 @@ export const Dashboard = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-warning" />
-              Due This Week ({allDueThisWeek.length} items)
+              Due This Week ({(() => { console.log('🔧 Accessing allDueThisWeek.length:', allDueThisWeek?.length); return allDueThisWeek?.length || 0; })()} items)
             </DialogTitle>
             <DialogDescription>
               All assignments and tasks due by the end of this week
