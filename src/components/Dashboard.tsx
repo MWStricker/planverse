@@ -264,6 +264,9 @@ export const Dashboard = () => {
   // Use the new weekly progress hook - force re-calculation when events/tasks change
   const weeklyProgressData = useWeeklyProgress(userTasks, userEvents);
   
+  // FORCE UPDATE: Add timestamp to force recalculation
+  const forceUpdate = Date.now();
+  
   // Force re-render when completion status changes by adding a completion hash
   const completionHash = useMemo(() => {
     const completedEvents = userEvents.filter(e => e.is_completed).map(e => e.id).sort().join(',');
