@@ -452,6 +452,11 @@ export const Dashboard = () => {
     // Use the EXACT same filtering as Smart Priority Queue
     const smartQueueItems = [...tasksThisWeek, ...canvasAssignments];
     
+    console.log('📊 DEBUG - Due This Week Calculation:');
+    console.log('- tasksThisWeek:', tasksThisWeek.length, tasksThisWeek.map(t => t.title));
+    console.log('- canvasAssignments:', canvasAssignments.length, canvasAssignments.map(c => c.title));
+    console.log('- Total smartQueueItems:', smartQueueItems.length);
+    
     const dueThisWeek = smartQueueItems.length || "N/A";
     
     return { freeTimeToday, eventsThisWeek: smartQueueItems, tasksThisWeek, dueThisWeek };
@@ -1798,8 +1803,10 @@ export const Dashboard = () => {
                 const filteredTasks = filteredData?.tasksThisWeek || []; // Already filtered
                 const filteredCanvasAssignments = futureCanvasAssignments || []; // Already filtered
                 
-                console.log('Debug - filteredTasks:', filteredTasks);
-                console.log('Debug - filteredCanvasAssignments:', filteredCanvasAssignments);
+                console.log('🎯 DEBUG - Smart Priority Queue:');
+                console.log('- filteredTasks:', filteredTasks.length, filteredTasks.map(t => t.title));
+                console.log('- futureCanvasAssignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(c => c.title));
+                console.log('- Total items in Smart Queue:', [...filteredTasks, ...filteredCanvasAssignments].length);
                 
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
