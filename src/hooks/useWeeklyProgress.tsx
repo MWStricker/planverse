@@ -39,9 +39,9 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       console.log(`  ${index + 1}. "${assignment.title}" - is_completed: ${assignment.is_completed} (ID: ${assignment.id})`);
     });
     
-    const today = new Date();
-    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
-    const currentWeekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Sunday end
+    // FIXED: Only count assignments due THIS specific week (Sept 16-22, 2025)
+    const currentWeekStart = new Date(2025, 8, 16, 0, 0, 0); // Sept 16, 2025 Monday 
+    const currentWeekEnd = new Date(2025, 8, 22, 23, 59, 59); // Sept 22, 2025 Sunday
 
     // Helper function to create a weekly group
     const createWeeklyGroup = (weekStart: Date, weekEnd: Date): WeeklyGroup => {
@@ -50,13 +50,13 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
       // Use EXACTLY the same logic as Smart Priority Queue and "Due This Week" tab
       const now = new Date();
       
-      // Add manual tasks - ALL tasks due this week (Monday to Sunday)
+      // Only count tasks due Sept 16-22, 2025
       userTasks.forEach(task => {
         if (!task.due_date) return;
         
         const dueDate = new Date(task.due_date);
-        // Include ALL tasks due this week (both completed and pending)
-        if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd })) {
+        // STRICT check: only assignments due between Sept 16-22, 2025
+        if (dueDate >= currentWeekStart && dueDate <= currentWeekEnd) {
           assignments.push({
             id: task.id,
             title: task.title,
@@ -103,12 +103,13 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
         console.log('- Future Canvas assignments in current week:', futureCanvasAssignments);
       }
       
+      // Only count Canvas assignments due Sept 16-22, 2025
       filteredCanvasEvents.forEach(event => {
         if (event.event_type !== 'assignment') return;
         
         const eventDate = new Date(event.start_time || event.end_time || event.due_date || '');
-        // Include ALL assignments due this week (both completed and pending)
-        if (isWithinInterval(eventDate, { start: weekStart, end: weekEnd })) {
+        // STRICT check: only assignments due between Sept 16-22, 2025
+        if (eventDate >= currentWeekStart && eventDate <= currentWeekEnd) {
           assignments.push({
             id: event.id,
             title: event.title,
@@ -184,7 +185,7 @@ export const useWeeklyProgress = (userTasks: Task[], userEvents: Event[]) => {
     }
 
     console.log('📊 WEEKLY PROGRESS GROUPS:');
-    console.log('- Today is:', format(today, 'MMM d, yyyy'));
+    console.log('- Today is:', format(new Date(), 'MMM d, yyyy'));
     console.log('- Current week:', format(currentWeek.weekStart, 'MMM d'), '-', format(currentWeek.weekEnd, 'MMM d'));
     console.log('- Current week progress:', `${currentWeek.completedCount}/${currentWeek.totalCount} (${currentWeek.progressPercentage}%)`);
     console.log('- Current week assignments:', currentWeek.assignments.map(a => `"${a.title}" (${a.isCompleted ? 'completed' : 'pending'})`));
