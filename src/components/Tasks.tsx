@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
@@ -27,6 +28,7 @@ import {
   getPriorityEmoji,
   PRIORITY_CONFIG 
 } from "@/lib/priority-utils";
+import { PastDueAssignments } from "@/components/PastDueAssignments";
 
 interface Task {
   id: string;
@@ -621,7 +623,11 @@ export const Tasks = () => {
     fetchStoredColors();
   }, [user?.id]);
 
-  // Combine and sort tasks by priority and due date
+  // Get current date for filtering
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Combine and sort tasks by priority and due date - FILTER OUT PAST DUE ASSIGNMENTS
   const allItems = [
     ...tasks.map(task => ({
       ...task,
@@ -629,14 +635,26 @@ export const Tasks = () => {
       priority: task.priority_score !== null && task.priority_score !== undefined 
         ? task.priority_score 
         : calculatePriority(task.title, task.description, task.due_date)
-    })),
+    })).filter(task => {
+      // Filter out past due tasks
+      if (!task.due_date) return true; // Keep tasks without due dates
+      const dueDate = new Date(task.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate >= today; // Only keep current and future tasks
+    }),
     ...events.map(event => ({
       ...event,
       type: 'event',
       due_date: event.start_time,
       completion_status: 'pending',
       priority: calculatePriority(event.title, event.description, event.start_time)
-    }))
+    })).filter(event => {
+      // Filter out past due events
+      if (!event.start_time) return true; // Keep events without start times
+      const eventDate = new Date(event.start_time);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= today; // Only keep current and future events
+    })
   ];
 
   // Filter and search
@@ -698,6 +716,832 @@ export const Tasks = () => {
           <h1 className="text-3xl font-bold text-foreground mb-2">Tasks & Assignments</h1>
           <p className="text-muted-foreground">
             Manage your tasks synced from connected integrations
+          </p>
+        </div>
+      </div>
+
+      <Tabs defaultValue="current" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="current" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Current Tasks
+          </TabsTrigger>
+          <TabsTrigger value="past-due" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Past Due
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="current" className="space-y-6">
+          {/* Add Task Button */}
+          <div className="flex justify-end">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all px-8">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
+              </DialogTrigger>
+              {/* Task Dialog Content - keeping all existing dialog content */}
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add New Task</DialogTitle>
+                  <DialogDescription>
+                    Create a new task with due date, time, and priority level.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4" autoComplete="off">
+                    <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+                    <input type="password" autoComplete="new-password" style={{display:'none'}} />
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Task Title</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter task title..." 
+                              autoComplete="off" 
+                              data-form-type="other"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description (Optional)</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Enter task description..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="course_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Course (Optional)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter course name..." 
+                              autoComplete="off" 
+                              data-form-type="other"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="due_date"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Due Date</FormLabel>
+                            <Popover onOpenChange={(open) => {
+                              // If closing and no date selected, auto-select today
+                              if (!open && !field.value) {
+                                field.onChange(new Date());
+                              }
+                            }}>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "MMM dd, yyyy")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0 bg-popover border" align="start">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={(date) => {
+                                    console.log('Date selected:', date);
+                                    field.onChange(date);
+                                  }}
+                                  disabled={(date) => {
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    return date < today;
+                                  }}
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="due_time"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Due Time</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select time" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="max-h-60 overflow-y-auto">
+                                {/* Generate time options every 15 minutes */}
+                                {Array.from({ length: 96 }, (_, i) => {
+                                  const hour = Math.floor(i / 4);
+                                  const minute = (i % 4) * 15;
+                                  const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                   const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                                     hour: '2-digit',
+                                     minute: '2-digit',
+                                     hour12: true
+                                  });
+                                  return (
+                                    <SelectItem key={timeString} value={timeString}>
+                                      {displayTime}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="priority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Priority Level</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select priority level" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-4 w-4 border border-muted-foreground rounded" />
+                                  No Priority
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="low">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  Low Priority
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="medium">
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="h-4 w-4 text-blue-500" />
+                                  Medium Priority
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="high">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-orange-500" />
+                                  High Priority
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Recurring task fields */}
+                    <FormField
+                      control={form.control}
+                      name="is_recurring"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Recurring Task</FormLabel>
+                            <FormDescription>
+                              Create a task that repeats on a schedule
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch("is_recurring") && (
+                      <div className="space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="recurrence_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Recurrence Type</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select recurrence type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="daily">Daily</SelectItem>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {form.watch("recurrence_type") === "weekly" && (
+                          <FormField
+                            control={form.control}
+                            name="recurrence_days"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Days of Week</FormLabel>
+                                <div className="flex flex-wrap gap-2">
+                                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                                    <Button
+                                      key={day}
+                                      type="button"
+                                      variant={(field.value || []).includes(index) ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        const currentDays = field.value || [];
+                                        const newDays = currentDays.includes(index)
+                                          ? currentDays.filter(d => d !== index)
+                                          : [...currentDays, index];
+                                        field.onChange(newDays);
+                                      }}
+                                    >
+                                      {day}
+                                    </Button>
+                                  ))}
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsAddDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
+                        Create Task
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Filters */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search tasks and assignments..."
+                      autoComplete="off"
+                      data-form-type="other"
+                      name="task-search"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterPriority} onValueChange={setFilterPriority}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priority</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">High Priority</p>
+                    <p className="text-xl font-bold">{sortedItems.filter(item => item.priority === 3 && item.completion_status === 'pending').length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-accent" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Pending</p>
+                    <p className="text-xl font-bold">{sortedItems.filter(item => item.completion_status === 'pending').length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Completed</p>
+                    <p className="text-xl font-bold">{sortedItems.filter(item => item.completion_status === 'completed').length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Current Task List */}
+          <div className="space-y-3">
+            {sortedItems.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No current tasks found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    All tasks are completed or you haven't added any tasks yet
+                  </p>
+                  <Button variant="outline">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Go to Integrations
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              sortedItems.map((item) => {
+                const taskCourseColor = item.type === 'task' ? getTaskCourseColor(item as Task) : '';
+                return (
+                  <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${
+                    item.completion_status === 'completed' ? 'opacity-60' : ''
+                  } ${
+                    completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
+                  } ${taskCourseColor}`}>
+                    <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => item.type === 'task' ? toggleTaskCompletion(item.id, item.completion_status) : convertEventToTask(item)}
+                        className="flex-shrink-0"
+                      >
+                        {item.completion_status === 'completed' ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : item.type === 'event' ? (
+                          <Plus className="h-5 w-5" />
+                        ) : (
+                          <div className="h-5 w-5 border-2 border-muted-foreground rounded" />
+                        )}
+                      </Button>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className={`font-medium ${item.completion_status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {item.title}
+                            {completingTasks.has(item.id) && (
+                              <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
+                            )}
+                          </h3>
+                          <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
+                            {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
+                            {getPriorityLabel(item.priority)}
+                          </Badge>
+                          {item.type === 'event' && (
+                            <Badge variant="outline">From Calendar</Badge>
+                          )}
+                          {item.is_recurring && (
+                            <Badge variant="outline" className="text-xs">
+                              Recurring
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
+                        )}
+                        
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          {item.course_name && (
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="h-3 w-3" />
+                              {item.course_name}
+                            </span>
+                          )}
+                          {item.due_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Due: {new Date(item.due_date).toLocaleDateString()}
+                            </span>
+                          )}
+                          {item.source_provider && (
+                            <span>Source: {item.source_provider}</span>
+                          )}
+                        </div>
+
+                        {item.is_recurring && (
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {item.recurrence_type === 'weekly' && item.recurrence_pattern?.days 
+                              ? `Recurrs weekly on ${item.recurrence_pattern.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
+                              : `Recurrs ${item.recurrence_type}`
+                            }
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Edit button for tasks (not events) */}
+                      {item.type === 'task' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditTask(item as Task)}
+                          className="flex-shrink-0"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+          </div>
+
+          {/* Edit Task Dialog */}
+          <PastDueAssignments />
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>
+              Update your task details.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEditTask)} className="space-y-4" autoComplete="off">
+              <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
+              <input type="password" autoComplete="new-password" style={{display:'none'}} />
+              {/* Same form fields as add dialog */}
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Task Title</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter task title..." 
+                        autoComplete="off" 
+                        data-form-type="other"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Enter task description..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="course_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Course (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter course name..." 
+                        autoComplete="off" 
+                        data-form-type="other"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="due_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Due Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "MMM dd, yyyy")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-popover border" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="due_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Due Time</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select time" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {Array.from({ length: 96 }, (_, i) => {
+                            const hour = Math.floor(i / 4);
+                            const minute = (i % 4) * 15;
+                            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                             const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                               hour: '2-digit',
+                               minute: '2-digit',
+                               hour12: true
+                            });
+                            return (
+                              <SelectItem key={timeString} value={timeString}>
+                                {displayTime}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority Level</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <div className="flex items-center gap-2">
+                            <div className="h-4 w-4 border border-muted-foreground rounded" />
+                            No Priority
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="low">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            Low Priority
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="medium">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-blue-500" />
+                            Medium Priority
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="high">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            High Priority
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="is_recurring"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Recurring Task</FormLabel>
+                      <FormDescription>
+                        Create a task that repeats on a schedule
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch("is_recurring") && (
+                <div className="space-y-3">
+                  <FormField
+                    control={form.control}
+                    name="recurrence_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Recurrence Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select recurrence type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("recurrence_type") === "weekly" && (
+                    <FormField
+                      control={form.control}
+                      name="recurrence_days"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Days of Week</FormLabel>
+                          <div className="flex flex-wrap gap-2">
+                            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                              <Button
+                                key={day}
+                                type="button"
+                                variant={(field.value || []).includes(index) ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const currentDays = field.value || [];
+                                  const newDays = currentDays.includes(index)
+                                    ? currentDays.filter(d => d !== index)
+                                    : [...currentDays, index];
+                                  field.onChange(newDays);
+                                }}
+                              >
+                                {day}
+                              </Button>
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+              )}
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <div className="flex gap-2 sm:mr-auto">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => editingTask && deleteTask(editingTask.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Task
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-gradient-to-r from-primary to-accent text-white">
+                    Update Task
+                  </Button>
+                </div>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
           </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -1433,7 +2277,8 @@ export const Tasks = () => {
             );
           })
         )}
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
