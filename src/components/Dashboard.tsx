@@ -204,31 +204,29 @@ export const Dashboard = () => {
   const taskMetrics = useMemo(() => {
     const { today, endOfToday, startOfWeek, endOfWeek } = dateCalculations;
     
-    // Count only tasks completed TODAY that were originally due today (matching Smart Priority Queue logic)
+    // Count tasks that were DUE TODAY and are completed (matching Smart Priority Queue scope)
     const completedTasksCount = userTasks.filter(task => {
-      if (task.completion_status !== 'completed' || !task.completed_at || !task.due_date) return false;
+      if (task.completion_status !== 'completed' || !task.due_date) return false;
       
-      const completedDate = new Date(task.completed_at);
       const dueDate = new Date(task.due_date);
       
-      // Must be completed today AND originally due today
-      const completedToday = completedDate >= today && completedDate <= endOfToday;
+      // Must be due today (same logic as Smart Priority Queue)
       const wasDueToday = (
         dueDate.getDate() === today.getDate() &&
         dueDate.getMonth() === today.getMonth() &&
         dueDate.getFullYear() === today.getFullYear()
       );
       
-      return completedToday && wasDueToday;
+      return wasDueToday;
     }).length;
     
-    // Count only Canvas assignments completed TODAY that were originally due today
+    // Count Canvas assignments that were DUE TODAY and are completed
     const completedEventsCount = userEvents.filter(event => {
       if (event.event_type !== 'assignment' || !event.is_completed || !event.event_date) return false;
       
       const eventDate = new Date(event.event_date);
       
-      // Must be due today (matching Smart Priority Queue logic)
+      // Must be due today (same logic as Smart Priority Queue)
       const wasDueToday = (
         eventDate.getDate() === today.getDate() &&
         eventDate.getMonth() === today.getMonth() &&
