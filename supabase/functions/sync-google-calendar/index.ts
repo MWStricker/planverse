@@ -296,6 +296,30 @@ serve(async (req) => {
       console.log('📋 Fetching Google Tasks...');
       console.log('🔑 Current access token exists:', !!currentAccessToken);
       console.log('🔑 Access token length:', currentAccessToken?.length || 0);
+      
+      // First, test if we have proper Tasks API access by checking scopes
+      console.log('🔍 Testing Google Tasks API access...');
+      const scopeTestResponse = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + encodeURIComponent(currentAccessToken));
+      const scopeInfo = await scopeTestResponse.json();
+      console.log('🔍 Current token scopes:', scopeInfo.scope);
+      
+      const hasTasksScope = scopeInfo.scope && scopeInfo.scope.includes('https://www.googleapis.com/auth/tasks');
+      console.log('✅ Has Tasks scope:', hasTasksScope);
+      
+      if (!hasTasksScope) {
+        console.log('❌ Google Tasks scope not granted. User needs to re-authorize with Tasks scope.');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Google Tasks scope not granted. Please reconnect your Google account to enable Tasks sync.',
+          eventsCount: events.length,
+          tasksCount: 0,
+          errors: [],
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        });
+      }
+      
       let tasks = [];
       
       try {
