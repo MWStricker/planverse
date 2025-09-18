@@ -294,6 +294,8 @@ serve(async (req) => {
 
       // Fetch Google Tasks
       console.log('📋 Fetching Google Tasks...');
+      console.log('🔑 Current access token exists:', !!currentAccessToken);
+      console.log('🔑 Access token length:', currentAccessToken?.length || 0);
       let tasks = [];
       
       try {
@@ -334,16 +336,23 @@ serve(async (req) => {
             }
           );
           
+          console.log(`📊 Default tasks response status: ${defaultTasksResponse.status}`);
           if (defaultTasksResponse.ok) {
             const defaultTasksData = await defaultTasksResponse.json();
-            console.log(`📋 Default task list response:`, JSON.stringify(defaultTasksData, null, 2));
+            console.log(`📋 Default task list raw response:`, JSON.stringify(defaultTasksData, null, 2));
             const defaultTasks = defaultTasksData.items || [];
-            defaultTasks.forEach(task => {
+            console.log(`📋 Found ${defaultTasks.length} tasks in default list`);
+            defaultTasks.forEach((task, index) => {
+              console.log(`📝 Task ${index + 1}: "${task.title}" - Status: ${task.status}, Due: ${task.due || 'No due date'}`);
               task.taskListName = 'My Tasks';
               task.taskListId = '@default';
             });
             tasks = tasks.concat(defaultTasks);
-            console.log(`✅ Fetched ${defaultTasks.length} tasks from default list`);
+            console.log(`✅ Added ${defaultTasks.length} tasks from default list`);
+          } else {
+            const errorText = await defaultTasksResponse.text();
+            console.error(`❌ Default tasks API failed: ${defaultTasksResponse.status}`);
+            console.error(`❌ Error details: ${errorText}`);
           }
           
           // Fetch tasks from each named task list
