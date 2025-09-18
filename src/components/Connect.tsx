@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,8 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConnect, Post, Comment } from '@/hooks/useConnect';
 import { useAuth } from '@/hooks/useAuth';
+import { PeopleDirectory } from './PeopleDirectory';
+import { MessagingCenter } from './MessagingCenter';
 import { formatDistanceToNow } from 'date-fns';
 
 export const Connect = () => {
@@ -24,6 +27,7 @@ export const Connect = () => {
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
 
   const handleCreatePost = async () => {
     if (!newPostContent.trim()) return;
@@ -81,43 +85,65 @@ export const Connect = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Student Connect</h1>
-        <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create Post
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create a New Post</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Textarea
-                placeholder="What's on your mind?"
-                value={newPostContent}
-                onChange={(e) => setNewPostContent(e.target.value)}
-                className="min-h-[120px]"
-              />
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsPostDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
-                  Post
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      {/* Posts Feed */}
-      <div className="space-y-4">
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="feed" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="feed" className="flex items-center gap-2">
+            <Share2 className="h-4 w-4" />
+            Feed
+          </TabsTrigger>
+          <TabsTrigger value="people" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            People
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Messages
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="feed" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Latest Posts</h2>
+            <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Post
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create a New Post</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="What's on your mind?"
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsPostDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
+                      Post
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Posts Feed */}
+          <div className="max-w-2xl mx-auto space-y-4">
         {posts.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
@@ -125,126 +151,144 @@ export const Connect = () => {
             </CardContent>
           </Card>
         ) : (
-          posts.map((post) => (
-            <Card key={post.id} className="animate-fade-in">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={post.profiles.avatar_url} />
-                    <AvatarFallback>
-                      {post.profiles.display_name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">
-                        {post.profiles.display_name}
-                      </h3>
-                      {post.profiles.school && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <School className="h-3 w-3" />
-                          {post.profiles.school}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {post.profiles.major && (
-                        <span>{post.profiles.major}</span>
-                      )}
-                      <span>•</span>
-                      <span>{formatTimeAgo(post.created_at)}</span>
+            posts.map((post) => (
+              <Card key={post.id} className="animate-fade-in">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={post.profiles.avatar_url} />
+                      <AvatarFallback>
+                        {post.profiles.display_name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">
+                          {post.profiles.display_name}
+                        </h3>
+                        {post.profiles.school && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <School className="h-3 w-3" />
+                            {post.profiles.school}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {post.profiles.major && (
+                          <span>{post.profiles.major}</span>
+                        )}
+                        <span>•</span>
+                        <span>{formatTimeAgo(post.created_at)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground whitespace-pre-wrap mb-4">{post.content}</p>
-                
-                {post.image_url && (
-                  <img 
-                    src={post.image_url} 
-                    alt="Post image" 
-                    className="w-full rounded-lg mb-4 max-h-96 object-cover"
-                  />
-                )}
+                </CardHeader>
+                <CardContent>
+                  <p className="text-foreground whitespace-pre-wrap mb-4">{post.content}</p>
+                  
+                  {post.image_url && (
+                    <img 
+                      src={post.image_url} 
+                      alt="Post image" 
+                      className="w-full rounded-lg mb-4 max-h-96 object-cover"
+                    />
+                  )}
 
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="flex items-center gap-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleLike(post.id)}
-                      className={`flex items-center gap-2 ${
-                        post.user_liked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground'
-                      }`}
-                    >
-                      <Heart className={`h-4 w-4 ${post.user_liked ? 'fill-current' : ''}`} />
-                      {post.likes_count}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewComments(post)}
-                      className="flex items-center gap-2 text-muted-foreground"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      {post.comments_count}
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="text-muted-foreground">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                    {user && post.user_id === user.id && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-background border border-border shadow-lg z-50">
-                          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem 
-                                onSelect={(e) => {
-                                  e.preventDefault();
-                                  setPostToDelete(post.id);
-                                  setDeleteDialogOpen(true);
-                                }}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Post
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Post</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this post? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={handleDeletePost}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex items-center gap-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleLike(post.id)}
+                        className={`flex items-center gap-2 ${
+                          post.user_liked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground'
+                        }`}
+                      >
+                        <Heart className={`h-4 w-4 ${post.user_liked ? 'fill-current' : ''}`} />
+                        {post.likes_count}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewComments(post)}
+                        className="flex items-center gap-2 text-muted-foreground"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        {post.comments_count}
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-muted-foreground"
+                        onClick={() => setSelectedChatUserId(post.user_id)}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      {user && post.user_id === user.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-muted-foreground">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-background border border-border shadow-lg z-50">
+                            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem 
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    setPostToDelete(post.id);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                  className="text-destructive focus:text-destructive"
                                 >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Post
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this post? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={handleDeletePost}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            ))
         )}
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="people">
+          <PeopleDirectory onStartChat={(userId) => setSelectedChatUserId(userId)} />
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <MessagingCenter 
+            selectedUserId={selectedChatUserId} 
+            onClose={() => setSelectedChatUserId(null)}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Comments Dialog */}
       <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>

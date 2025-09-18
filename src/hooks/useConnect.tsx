@@ -34,15 +34,15 @@ export interface Comment {
 }
 
 export interface PublicProfile {
-  id: string;
-  user_id: string;
-  display_name?: string;
+  id?: string;
+  user_id?: string;
+  display_name: string;
   avatar_url?: string;
   school?: string;
   major?: string;
   bio?: string;
   graduation_year?: number;
-  is_public: boolean;
+  is_public?: boolean;
 }
 
 export const useConnect = () => {

@@ -95,6 +95,30 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
       course_colors: {
         Row: {
           canvas_color: string
@@ -605,19 +629,16 @@ export type Database = {
       }
     }
     Views: {
-      conversations: {
-        Row: {
-          last_message_at: string | null
-          user1_id: string | null
-          user2_id: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       decrement_likes_count: {
         Args: { post_id: string }
         Returns: undefined
+      }
+      get_or_create_conversation: {
+        Args: { other_user_id: string }
+        Returns: string
       }
       increment_comments_count: {
         Args: { post_id: string }

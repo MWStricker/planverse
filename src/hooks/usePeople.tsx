@@ -1,0 +1,143 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
+
+export interface Person {
+  id: string;
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  school?: string;
+  major?: string;
+  bio?: string;
+  graduation_year?: number;
+  created_at: string;
+}
+
+export const usePeople = () => {
+  const { user } = useAuth();
+  const [people, setPeople] = useState<Person[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchPeople = async (query?: string) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      let queryBuilder = supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_public', true)
+        .neq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (query && query.trim()) {
+        queryBuilder = queryBuilder.or(`
+          display_name.ilike.%${query}%,
+          school.ilike.%${query}%,
+          major.ilike.%${query}%,
+          bio.ilike.%${query}%
+        `);
+      }
+
+      const { data, error } = await queryBuilder.limit(50);
+
+      if (error) throw error;
+
+      setPeople(data || []);
+    } catch (error) {
+      console.error('Error fetching people:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchPeople = async (query: string) => {
+    setSearchQuery(query);
+    await fetchPeople(query);
+  };
+
+  const fetchPeopleBySchool = async (school: string) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_public', true)
+        .eq('school', school)
+        .neq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setPeople(data || []);
+    } catch (error) {
+      console.error('Error fetching people by school:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPeopleByMajor = async (major: string) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_public', true)
+        .eq('major', major)
+        .neq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setPeople(data || []);
+    } catch (error) {
+      console.error('Error fetching people by major:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPersonByUserId = async (userId: string): Promise<Person | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_public', true)
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching person:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchPeople();
+    }
+  }, [user]);
+
+  return {
+    people,
+    loading,
+    searchQuery,
+    fetchPeople,
+    searchPeople,
+    fetchPeopleBySchool,
+    fetchPeopleByMajor,
+    getPersonByUserId
+  };
+};
