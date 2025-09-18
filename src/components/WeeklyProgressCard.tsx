@@ -9,18 +9,29 @@ import type { WeeklyGroup } from '@/types/weeklyProgress';
 interface WeeklyProgressCardProps {
   weekGroup: WeeklyGroup;
   showAssignments?: boolean;
+  onWeekClick?: (weekStart: Date, weekEnd: Date) => void;
 }
 
 export const WeeklyProgressCard: React.FC<WeeklyProgressCardProps> = ({ 
   weekGroup, 
-  showAssignments = false 
+  showAssignments = false,
+  onWeekClick
 }) => {
   const weekLabel = weekGroup.isCurrentWeek 
     ? 'This Week' 
     : `${format(weekGroup.weekStart, 'MMM d')} - ${format(weekGroup.weekEnd, 'MMM d')}`;
 
+  const handleWeekClick = () => {
+    if (onWeekClick) {
+      onWeekClick(weekGroup.weekStart, weekGroup.weekEnd);
+    }
+  };
+
   return (
-    <Card className={`${weekGroup.isCurrentWeek ? 'border-primary bg-primary/5' : ''}`}>
+    <Card 
+      className={`${weekGroup.isCurrentWeek ? 'border-primary bg-primary/5' : ''} ${onWeekClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={handleWeekClick}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">

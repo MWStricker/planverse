@@ -95,7 +95,7 @@ const Index = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigateToCalendar={() => setCurrentPage('calendar')} />;
       case 'upload':
         return (
           <div className="p-6">

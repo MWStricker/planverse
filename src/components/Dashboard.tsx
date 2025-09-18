@@ -74,7 +74,7 @@ const mockTasks: Task[] = [];
 
 const todaySchedule: ScheduleEvent[] = [];
 
-export const Dashboard = () => {
+export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: () => void }) => {
   const { user } = useAuth();
   const { preferences } = usePreferences();
   const { toast } = useToast();
@@ -2576,6 +2576,11 @@ export const Dashboard = () => {
         <WeeklyProgressCard 
           weekGroup={weeklyProgressData.currentWeek} 
           showAssignments={true}
+          onWeekClick={() => {
+            if (onNavigateToCalendar) {
+              onNavigateToCalendar();
+            }
+          }}
         />
         
         {/* Previous Weeks */}
@@ -2584,7 +2589,15 @@ export const Dashboard = () => {
             <h3 className="text-lg font-semibold mb-4">Previous Weeks</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {weeklyProgressData.previousWeeks.map((week, index) => (
-                <WeeklyProgressCard key={index} weekGroup={week} />
+                <WeeklyProgressCard 
+                  key={index} 
+                  weekGroup={week} 
+                  onWeekClick={() => {
+                    if (onNavigateToCalendar) {
+                      onNavigateToCalendar();
+                    }
+                  }}
+                />
               ))}
             </div>
           </div>
