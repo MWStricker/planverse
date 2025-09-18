@@ -64,8 +64,8 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('general');
   const [visibility, setVisibility] = useState('public');
-  const [targetMajor, setTargetMajor] = useState('');
-  const [targetCommunity, setTargetCommunity] = useState('');
+  const [targetMajor, setTargetMajor] = useState('all-majors');
+  const [targetCommunity, setTargetCommunity] = useState('all-schools');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -75,8 +75,8 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
     setContent('');
     setPostType('general');
     setVisibility('public');
-    setTargetMajor('');
-    setTargetCommunity('');
+    setTargetMajor('all-majors');
+    setTargetCommunity('all-schools');
     setTags([]);
     setNewTag('');
     setImageFile(null);
@@ -105,8 +105,8 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
     
     const success = await onCreatePost({
       content,
-      targetMajor: targetMajor || undefined,
-      targetCommunity: targetCommunity || undefined,
+      targetMajor: targetMajor === 'all-majors' ? undefined : targetMajor,
+      targetCommunity: targetCommunity === 'all-schools' ? undefined : targetCommunity,
       postType,
       visibility,
       tags
@@ -211,7 +211,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                   <SelectValue placeholder="All majors" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48">
-                  <SelectItem value="">All majors</SelectItem>
+                  <SelectItem value="all-majors">All majors</SelectItem>
                   {collegeMajors.map((major) => (
                     <SelectItem key={major} value={major}>
                       {major}
@@ -229,7 +229,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                   <SelectValue placeholder="All schools" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48">
-                  <SelectItem value="">All schools</SelectItem>
+                  <SelectItem value="all-schools">All schools</SelectItem>
                   {universities.slice(0, 50).map((university) => (
                     <SelectItem key={university.id} value={university.name}>
                       {university.name}
