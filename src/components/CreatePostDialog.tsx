@@ -73,12 +73,22 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Update defaults when profile loads
+  React.useEffect(() => {
+    if (profile?.major) {
+      setTargetMajor(profile.major);
+    }
+    if (profile?.school) {
+      setTargetCommunity(profile.school);
+    }
+  }, [profile]);
+
   const resetForm = () => {
     setContent('');
     setPostType('general');
     setVisibility('public');
-    setTargetMajor('all-majors');
-    setTargetCommunity('all-schools');
+    setTargetMajor(profile?.major || 'all-majors');
+    setTargetCommunity(profile?.school || 'all-schools');
     setTags([]);
     setNewTag('');
     setImageFile(null);
