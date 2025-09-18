@@ -155,11 +155,13 @@ const Index = () => {
     <ProfileEditingProvider>
       <div className="flex h-screen bg-background">
         <div 
-          className={`flex-shrink-0 transition-[width] duration-300 ease-out will-change-[width] ${
+          className={`flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
           style={{ 
-            contain: 'layout',
+            contain: 'layout style paint',
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden'
           }}
         >
           <Navigation 
@@ -172,7 +174,7 @@ const Index = () => {
             onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
         </div>
-        <div className="flex-1 overflow-auto scroll-performance">
+        <div className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
           {renderPage()}
         </div>
       </div>
