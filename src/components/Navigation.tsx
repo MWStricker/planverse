@@ -304,11 +304,10 @@ export const Navigation = ({
           </Button>
         </div>
         
-        {/* Bottom Panel */}
+        {/* Clock Section */}
         {!isCollapsed && (
           <div className="mt-3 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <NotificationCenter />
+            <div className="flex justify-center mb-2">
               <AnalogClock />
             </div>
             <div className="text-xs text-muted-foreground text-center">
