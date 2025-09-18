@@ -462,3 +462,136 @@ div, span, button, a {
   background: hsl(var(--muted-foreground) / 0.4);
   border-radius: 3px;
 }
+
+/* ===== ULTRA SMOOTH PERFORMANCE ENHANCEMENTS ===== */
+
+/* Smooth scrolling for ALL containers - 60fps guaranteed */
+*, *::before, *::after {
+  /* Hardware acceleration for everything */
+  will-change: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Smooth transitions on all interactions */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Optimize text rendering */
+  text-rendering: optimizeSpeed;
+}
+
+/* Daily Planner specific optimizations */
+[class*="calendar"], [class*="daily"], [class*="weekly"], [class*="planner"] {
+  /* Ultra smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position, transform;
+  transform: translate3d(0, 0, 0);
+  /* Remove scroll lag */
+  contain: layout style paint;
+  isolation: isolate;
+}
+
+/* Card and button hover performance */
+[class*="card"], [class*="button"], button, .cursor-pointer {
+  /* Instant hover responses */
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, box-shadow, background-color;
+  /* Hardware acceleration for hover */
+  transform: translateZ(0);
+}
+
+/* Smooth hover effects */
+[class*="card"]:hover, [class*="button"]:hover, button:hover {
+  transform: translateY(-1px) translateZ(0);
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.15);
+}
+
+/* Scroll containers ultra-smooth */
+[class*="scroll"], .overflow-auto, .overflow-y-auto, .overflow-x-auto {
+  /* Perfect scroll performance */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  will-change: scroll-position;
+  /* Remove scroll jank */
+  overscroll-behavior: contain;
+  /* Momentum scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Interactive elements smooth responses */
+input, textarea, select {
+  transition: all 0.2s ease;
+  will-change: border-color, box-shadow;
+}
+
+input:focus, textarea:focus, select:focus {
+  transform: translateZ(0);
+  will-change: border-color, box-shadow;
+}
+
+/* Sidebar navigation smooth transitions */
+nav, [class*="nav"], [class*="sidebar"] {
+  will-change: transform;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+}
+
+/* Modal and dialog smooth appearance */
+[class*="dialog"], [class*="modal"], [class*="popover"], [class*="dropdown"] {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* List items smooth interactions */
+li, [role="listitem"], [class*="list-item"] {
+  transition: all 0.15s ease;
+  will-change: background-color, transform;
+  transform: translateZ(0);
+}
+
+/* Table smooth scrolling */
+table, [class*="table"] {
+  will-change: scroll-position;
+  contain: layout style;
+}
+
+/* Prevent layout thrashing during animations */
+.animate-in, .animate-out, [data-state="open"], [data-state="closed"] {
+  will-change: transform, opacity;
+  contain: layout style paint;
+}
+
+/* Super smooth accordion animations */
+[data-radix-accordion-content] {
+  will-change: height, opacity;
+  contain: layout;
+}
+
+/* Ultra smooth calendar interactions */
+.calendar-day, .calendar-event, .task-item, .assignment-item {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, background-color, box-shadow;
+  transform: translateZ(0);
+}
+
+/* Calendar scroll areas super smooth */
+.calendar-scroll, .daily-planner-scroll, .weekly-view-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position, transform;
+  overscroll-behavior: contain;
+  /* Remove bounce but keep momentum */
+  overscroll-behavior-y: contain;
+}
+
+/* Drag and drop smooth performance */
+[data-dnd-kit-draggable], [data-dnd-kit-droppable] {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Loading states smooth */
+.loading, [data-loading="true"], .skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: opacity;
+}

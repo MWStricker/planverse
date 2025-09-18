@@ -122,11 +122,66 @@ export default {
             transform: "translateX(0%)",
           },
         },
+        // Smooth performance animations
+        "smooth-fade-in": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px) translateZ(0)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0) translateZ(0)",
+          },
+        },
+        "smooth-scale": {
+          "0%": {
+            transform: "scale(0.95) translateZ(0)",
+            opacity: "0",
+          },
+          "100%": {
+            transform: "scale(1) translateZ(0)",
+            opacity: "1",
+          },
+        },
+        "smooth-slide-up": {
+          "0%": {
+            transform: "translateY(20px) translateZ(0)",
+            opacity: "0",
+          },
+          "100%": {
+            transform: "translateY(0) translateZ(0)",
+            opacity: "1",
+          },
+        },
+        "ultra-smooth-scroll": {
+          "0%": {
+            transform: "translateY(0) translateZ(0)",
+          },
+          "100%": {
+            transform: "translateY(0) translateZ(0)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "scroll-text": "scroll-text 3s linear infinite",
+        // Ultra smooth animations
+        "smooth-fade-in": "smooth-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        "smooth-scale": "smooth-scale 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        "smooth-slide-up": "smooth-slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      },
+      // Enhanced transitions for ultra smooth interactions
+      transitionTimingFunction: {
+        'ultra-smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'bounce-smooth': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        'smooth-in': 'cubic-bezier(0.4, 0, 1, 1)',
+        'smooth-out': 'cubic-bezier(0, 0, 0.2, 1)',
+      },
+      transitionDuration: {
+        '150': '150ms',
+        '250': '250ms',
+        '350': '350ms',
       },
     },
   },
