@@ -168,9 +168,9 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
                 <SelectTrigger>
                   <SelectValue placeholder="All majors" />
                 </SelectTrigger>
-                <SelectContent className="max-h-48">
+                <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="all-majors">All majors</SelectItem>
-                  {collegeMajors.slice(0, 20).map((major) => (
+                  {collegeMajors.map((major) => (
                     <SelectItem key={major} value={major}>
                       {major}
                     </SelectItem>
@@ -185,9 +185,9 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
                 <SelectTrigger>
                   <SelectValue placeholder="All schools" />
                 </SelectTrigger>
-                <SelectContent className="max-h-48">
+                <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="all-schools">All schools</SelectItem>
-                  {universities.slice(0, 20).map((university) => (
+                  {universities.map((university) => (
                     <SelectItem key={university.id} value={university.name}>
                       {university.name}
                     </SelectItem>

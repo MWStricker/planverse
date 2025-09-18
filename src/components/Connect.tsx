@@ -159,8 +159,8 @@ export const Connect = () => {
         </TabsList>
 
         <TabsContent value="feed" className="space-y-6">
-          {/* Post Filters - Temporarily disabled to debug */}
-          {/* <PostFilters onFilterChange={setPostFilters} /> */}
+          {/* Post Filters */}
+          <PostFilters onFilterChange={setPostFilters} />
           
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Latest Posts</h2>

@@ -23,6 +23,7 @@ import { collegeMajors } from '@/data/collegeMajors';
 import { universities } from '@/data/universities';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -69,6 +70,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
   const resetForm = () => {
@@ -80,6 +82,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
     setTags([]);
     setNewTag('');
     setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleClose = () => {
@@ -98,13 +101,58 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('post-images')
+      .upload(fileName, file);
+    
+    if (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('post-images')
+      .getPublicUrl(data.path);
+    
+    return publicUrl;
+  };
+
   const handleCreatePost = async () => {
     if (!content.trim()) return;
 
     setUploading(true);
     
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      imageUrl = await uploadImage(imageFile) || undefined;
+    }
+    
     const success = await onCreatePost({
       content,
+      imageUrl,
       targetMajor: targetMajor === 'all-majors' ? undefined : targetMajor,
       targetCommunity: targetCommunity === 'all-schools' ? undefined : targetCommunity,
       postType,
@@ -210,7 +258,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="All majors" />
                 </SelectTrigger>
-                <SelectContent className="max-h-48">
+                 <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="all-majors">All majors</SelectItem>
                   {collegeMajors.map((major) => (
                     <SelectItem key={major} value={major}>
@@ -228,9 +276,9 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="All schools" />
                 </SelectTrigger>
-                <SelectContent className="max-h-48">
+                <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="all-schools">All schools</SelectItem>
-                  {universities.slice(0, 50).map((university) => (
+                  {universities.map((university) => (
                     <SelectItem key={university.id} value={university.name}>
                       {university.name}
                     </SelectItem>
@@ -313,35 +361,69 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
 
           <Separator />
 
-          {/* Actions */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Add Image
-              </Button>
-            </div>
+          {/* Image Upload and Actions */}
+          <div className="space-y-4">
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="relative">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-full max-h-64 object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={removeImage}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 cursor-pointer"
+                    asChild
+                  >
+                    <span>
+                      <Upload className="h-4 w-4" />
+                      Add Image
+                    </span>
+                  </Button>
+                </label>
+              </div>
 
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={uploading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreatePost}
-                disabled={!content.trim() || uploading}
-              >
-                {uploading ? 'Posting...' : 'Post'}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={uploading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreatePost}
+                  disabled={!content.trim() || uploading}
+                >
+                  {uploading ? 'Posting...' : 'Post'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
