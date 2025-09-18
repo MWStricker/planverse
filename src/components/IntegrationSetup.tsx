@@ -217,25 +217,8 @@ export const IntegrationSetup = () => {
       setIsConnecting(true);
       console.log('🔍 Starting Google Calendar connection and sync...');
       
-      // Check if user is already authenticated with Google and has calendar access
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.provider_token) {
-        console.log('✅ Found existing Google session, attempting direct sync...');
-        
-        // Try to sync immediately with existing token
-        const syncResult = await syncGoogleCalendarNow(session.provider_token);
-        if (syncResult) {
-          toast({
-            title: "Calendar Synced!",
-            description: "Your Google Calendar events have been imported successfully.",
-          });
-          return;
-        }
-      }
-      
-      // If no session or sync failed, initiate OAuth
-      console.log('🔍 Starting OAuth flow...');
+      // Always force re-authentication with calendar scopes to ensure we have the right permissions
+      console.log('🔍 Starting OAuth flow with calendar scopes...');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -243,7 +226,7 @@ export const IntegrationSetup = () => {
           redirectTo: `${window.location.origin}/#integrations`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'consent', // Always prompt for consent to get new scopes
             include_granted_scopes: 'true',
           },
         },
@@ -464,7 +447,7 @@ export const IntegrationSetup = () => {
       } else {
         console.log('🔍 User not authenticated with Google, redirecting to sign in...');
         
-        // Redirect to Google OAuth
+        // Redirect to Google OAuth with calendar scopes
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -472,7 +455,7 @@ export const IntegrationSetup = () => {
             redirectTo: `${window.location.origin}/#integrations`,
             queryParams: {
               access_type: 'offline',
-              prompt: 'consent',
+              prompt: 'consent', // Force consent screen to get calendar permissions
               include_granted_scopes: 'true',
             },
           },
