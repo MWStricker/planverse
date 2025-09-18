@@ -90,7 +90,7 @@ export const UserStatusIndicator = ({
 
   const statusDot = (
     <div 
-      className={`rounded-full border-2 border-border/30 ${getStatusColor(status)} ${getSizeClass(size)} transition-all duration-200`}
+      className={`rounded-full border border-background ${getStatusColor(status)} ${getSizeClass(size)}`}
       title={getStatusLabel(status)}
     />
   );
@@ -107,13 +107,10 @@ export const UserStatusIndicator = ({
         <Button
           variant="ghost"
           size="sm"
-          className="p-1 h-auto hover:bg-muted/50 rounded-md border border-transparent hover:border-border/50 transition-all duration-200 group"
+          className="p-1 h-auto hover:bg-muted/30 rounded transition-all duration-200"
           disabled={isUpdating}
         >
-          <div 
-            className={`rounded-full border-2 border-border/30 group-hover:border-gray-400 group-hover:bg-gray-400 ${!isUpdating ? getStatusColor(status) : 'bg-gray-400'} ${getSizeClass(size)} transition-all duration-200`}
-            title={isUpdating ? 'Updating...' : `Click to change status (Currently: ${getStatusLabel(status)})`}
-          />
+          {statusDot}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
