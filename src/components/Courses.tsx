@@ -559,12 +559,12 @@ export const Courses = ({}: CoursesProps = {}) => {
     
     // Generate consistent color for unknown courses using hash
     const courseColors = [
-      'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200',
-      'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-200',
-      'bg-teal-100 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200',
-      'bg-orange-100 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200',
-      'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200',
-      'bg-pink-100 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800 text-pink-800 dark:text-pink-200',
+      'bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-100',
+      'bg-purple-100 dark:bg-purple-900 border-purple-200 dark:border-purple-700 text-purple-800 dark:text-purple-100',
+      'bg-teal-100 dark:bg-teal-900 border-teal-200 dark:border-teal-700 text-teal-800 dark:text-teal-100',
+      'bg-orange-100 dark:bg-orange-900 border-orange-200 dark:border-orange-700 text-orange-800 dark:text-orange-100',
+      'bg-emerald-100 dark:bg-emerald-900 border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-100',
+      'bg-pink-100 dark:bg-pink-900 border-pink-200 dark:border-pink-700 text-pink-800 dark:text-pink-100',
     ];
     
     // Simple hash function
