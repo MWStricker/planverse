@@ -316,8 +316,9 @@ serve(async (req) => {
           console.error(`❌ Error details: ${errorText}`);
         } else {
           const taskListsData = await taskListsResponse.json();
+          console.log(`📋 Raw task lists response:`, JSON.stringify(taskListsData, null, 2));
           const taskLists = taskListsData.items || [];
-          console.log(`Found ${taskLists.length} task lists:`, taskLists.map(tl => tl.title));
+          console.log(`Found ${taskLists.length} task lists:`, taskLists.map(tl => `"${tl.title}"`));
 
           // Fetch tasks from each task list
           for (const taskList of taskLists) {
@@ -335,12 +336,14 @@ serve(async (req) => {
 
             if (tasksResponse.ok) {
               const tasksData = await tasksResponse.json();
+              console.log(`📋 Raw tasks response for "${taskList.title}":`, JSON.stringify(tasksData, null, 2));
               const listTasks = tasksData.items || [];
               
               // Add task list info to each task
               listTasks.forEach(task => {
                 task.taskListName = taskList.title;
                 task.taskListId = taskList.id;
+                console.log(`🔍 Task details: "${task.title}" - Status: ${task.status}, Due: ${task.due || 'No due date'}, Updated: ${task.updated}`);
               });
               
               tasks = tasks.concat(listTasks);
