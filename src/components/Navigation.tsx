@@ -13,6 +13,8 @@ import { AnalogClock } from "@/components/AnalogClock";
 import { supabase } from "@/integrations/supabase/client";
 import { useTabReorder } from "@/hooks/useTabReorder";
 import { SortableTabItem } from "@/components/SortableTabItem";
+import { NotificationCenter } from "./NotificationCenter";
+import { useRealtime } from "@/hooks/useRealtime";
 
 interface NavigationProps {
   currentPage: string;
@@ -38,6 +40,7 @@ export const Navigation = ({
   const { user } = useAuth();
   const { profile } = useProfile();
   const { liveEditedProfile } = useProfileEditing();
+  const { unreadCount } = useRealtime();
 
   // Fetch courses data
   useEffect(() => {
@@ -182,7 +185,10 @@ export const Navigation = ({
                 <p className="text-xs text-muted-foreground">Smart Scheduling</p>
               </>
             )}
-          </div>
+              <AnalogClock />
+              <Badge variant="secondary" className="text-xs">
+                {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+              </Badge>
           
           {/* Small Reorder Button */}
           {!isCollapsed && (
@@ -305,9 +311,13 @@ export const Navigation = ({
         {/* Digital Clock */}
         {!isCollapsed && (
           <div className="mt-3 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]">
-            <AnalogClock />
+            <div className="text-xs text-muted-foreground text-center">
+              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
           </div>
         )}
+      </div>
+    </div>
       </div>
     </div>
   );

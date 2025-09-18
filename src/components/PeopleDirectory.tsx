@@ -23,6 +23,7 @@ import { PublicProfile } from './PublicProfile';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
+import { OnlineStatus } from './OnlineStatus';
 
 interface PeopleDirectoryProps {
   onStartChat?: (userId: string) => void;
@@ -146,6 +147,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               </h4>
               
               <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                <OnlineStatus userId={person.user_id} />
                 {person.school && (
                   <Badge variant="secondary" className="flex items-center gap-1 text-xs">
                     <School className="h-3 w-3" />
@@ -350,6 +352,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                       </h4>
                       
                       <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                        <OnlineStatus userId={friend.friend_profile!.id} />
                         {friend.friend_profile?.school && (
                           <Badge variant="secondary" className="flex items-center gap-1 text-xs">
                             <School className="h-3 w-3" />
