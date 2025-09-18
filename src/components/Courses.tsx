@@ -526,22 +526,22 @@ export const Courses = ({}: CoursesProps = {}) => {
     // First, try to use stored Canvas color
     if (storedColors && extractedCourseCode && storedColors[extractedCourseCode]) {
       const color = storedColors[extractedCourseCode];
-      return `bg-[${color}]/20 border-[${color}]/30 text-[${color}] dark:bg-[${color}]/10 dark:border-[${color}]/40 dark:text-[${color}]`;
+      return `bg-[${color}] border-[${color}] text-white dark:bg-[${color}] dark:border-[${color}] dark:text-white`;
     }
     
-    // Fallback color mapping based on course type - same as Calendar
+    // Fallback color mapping based on course type - solid colors for better readability
     const colorMappings: Record<string, string> = {
-      'HES': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
-      'HES-145': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
-      'PSY': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
-      'PSY-100': 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
-      'LIFE': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
-      'LIFE-102': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
-      'LIFE-102-L': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
-      'MU': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
-      'MU-100': 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
-      'MATH': 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200',
-      'MATH-118': 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200',
+      'HES': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
+      'HES-145': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
+      'PSY': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
+      'PSY-100': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
+      'LIFE': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
+      'LIFE-102': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
+      'LIFE-102-L': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
+      'MU': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
+      'MU-100': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
+      'MATH': 'bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-600 dark:text-white',
+      'MATH-118': 'bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-600 dark:text-white',
     };
     
     // Direct match first
