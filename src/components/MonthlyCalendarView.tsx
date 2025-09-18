@@ -173,7 +173,14 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
       <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg" style={{
         transform: 'translate3d(0, 0, 0)',
         backfaceVisibility: 'hidden',
-        contain: 'layout style paint'
+        contain: 'strict',
+        isolation: 'isolate',
+        perspective: '1000px',
+        WebkitPerspective: '1000px',
+        WebkitTransform: 'translate3d(0, 0, 0)',
+        WebkitBackfaceVisibility: 'hidden',
+        WebkitTransformStyle: 'preserve-3d',
+        transformStyle: 'preserve-3d'
       }}>
         {/* Header Row - Days of Week */}
         <div className="grid grid-cols-7 bg-gradient-to-r from-muted/30 to-muted/50 backdrop-blur-sm">
@@ -199,7 +206,7 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-[140px] border-r border-b border-border/30 last:border-r-0 p-2 transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative group/day ${
+                className={`min-h-[140px] border-r border-b border-border/30 last:border-r-0 p-2 transition-all duration-100 ease-out relative group/day ${
                   isToday(day) 
                     ? "bg-gradient-to-br from-primary/5 to-primary/10 ring-1 ring-primary/20" 
                     : isCurrentMonth
@@ -209,7 +216,11 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                 style={{
                   transform: 'translate3d(0, 0, 0)',
                   backfaceVisibility: 'hidden',
-                  contain: 'layout style'
+                  contain: 'strict',
+                  isolation: 'isolate',
+                  WebkitTransform: 'translate3d(0, 0, 0)',
+                  WebkitBackfaceVisibility: 'hidden',
+                  willChange: 'transform, opacity'
                 }}
                 onClick={() => isCurrentMonth && handleCellClick(day)}
               >
@@ -248,11 +259,14 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                     {dayEvents.map((event, eventIndex) => (
                       <div
                         key={event.id}
-                        className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs ${getEventColorClass(event.title)}`}
+                        className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-100 ease-out text-xs ${getEventColorClass(event.title)}`}
                         style={{ 
-                          animationDelay: `${eventIndex * 30}ms`,
+                          animationDelay: `${eventIndex * 20}ms`,
                           transform: 'translate3d(0, 0, 0)',
-                          backfaceVisibility: 'hidden'
+                          backfaceVisibility: 'hidden',
+                          WebkitTransform: 'translate3d(0, 0, 0)',
+                          WebkitBackfaceVisibility: 'hidden',
+                          willChange: 'transform'
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -280,8 +294,15 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                     {dayTasks.map((task, taskIndex) => (
                       <div
                         key={task.id}
-                        className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-200 text-xs ${getTaskColorClass(task)} animate-fade-in`}
-                        style={{ animationDelay: `${(dayEvents.length + taskIndex) * 50}ms` }}
+                        className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-100 ease-out text-xs ${getTaskColorClass(task)} animate-fade-in`}
+                        style={{ 
+                          animationDelay: `${(dayEvents.length + taskIndex) * 20}ms`,
+                          transform: 'translate3d(0, 0, 0)',
+                          backfaceVisibility: 'hidden',
+                          WebkitTransform: 'translate3d(0, 0, 0)',
+                          WebkitBackfaceVisibility: 'hidden',
+                          willChange: 'transform'
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleTaskClick(task);

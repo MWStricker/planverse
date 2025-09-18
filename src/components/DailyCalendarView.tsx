@@ -285,13 +285,20 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
 
       {/* Hourly Schedule */}
       <div ref={scrollContainerRef} className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg max-h-[600px] overflow-y-auto" style={{ 
-        scrollBehavior: 'smooth', 
+        scrollBehavior: 'auto', 
         transform: 'translate3d(0, 0, 0)',
         backfaceVisibility: 'hidden',
         willChange: 'scroll-position, transform',
-        contain: 'layout style paint',
+        contain: 'strict',
         WebkitOverflowScrolling: 'touch',
-        overscrollBehavior: 'contain'
+        overscrollBehavior: 'contain',
+        isolation: 'isolate',
+        perspective: '1000px',
+        WebkitPerspective: '1000px',
+        WebkitTransform: 'translate3d(0, 0, 0)',
+        WebkitBackfaceVisibility: 'hidden',
+        WebkitTransformStyle: 'preserve-3d',
+        transformStyle: 'preserve-3d'
       }}>
         {TIME_SLOTS.map((timeSlot, index) => {
           const { events: slotEvents, tasks: slotTasks } = getItemsForTimeSlot(timeSlot.hour);
@@ -319,13 +326,17 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
               
               {/* Content Area */}
               <div 
-                className={`flex-1 min-h-[80px] p-3 cursor-pointer transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative ${
+                className={`flex-1 min-h-[80px] p-3 cursor-pointer transition-all duration-100 ease-out relative ${
                   !hasItems ? "hover:bg-accent/20 hover:shadow-sm" : ""
                 }`}
                 style={{ 
                   transform: 'translate3d(0, 0, 0)',
                   backfaceVisibility: 'hidden',
-                  contain: 'layout style'
+                  contain: 'strict',
+                  isolation: 'isolate',
+                  WebkitTransform: 'translate3d(0, 0, 0)',
+                  WebkitBackfaceVisibility: 'hidden',
+                  willChange: 'transform, opacity'
                 }}
                 onClick={() => !hasItems && handleCellClick(timeSlot.hour)}
               >
@@ -349,8 +360,15 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                   {slotEvents.map((event, eventIndex) => (
                     <div
                       key={event.id}
-                      className={`p-3 rounded-lg cursor-pointer hover:scale-[1.02] transition-all duration-200 ${getEventColorClass(event.title)} animate-fade-in`}
-                      style={{ animationDelay: `${eventIndex * 50}ms` }}
+                      className={`p-3 rounded-lg cursor-pointer hover:scale-[1.02] transition-all duration-100 ease-out ${getEventColorClass(event.title)} animate-fade-in`}
+                      style={{ 
+                        animationDelay: `${eventIndex * 30}ms`,
+                        transform: 'translate3d(0, 0, 0)',
+                        backfaceVisibility: 'hidden',
+                        WebkitTransform: 'translate3d(0, 0, 0)',
+                        WebkitBackfaceVisibility: 'hidden',
+                        willChange: 'transform'
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEventClick(event);
@@ -376,8 +394,15 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
                   {slotTasks.map((task, taskIndex) => (
                     <div
                       key={task.id}
-                      className={`p-3 rounded-lg cursor-pointer hover:scale-[1.02] transition-all duration-200 ${getTaskColorClass(task)} animate-fade-in`}
-                      style={{ animationDelay: `${(slotEvents.length + taskIndex) * 50}ms` }}
+                      className={`p-3 rounded-lg cursor-pointer hover:scale-[1.02] transition-all duration-100 ease-out ${getTaskColorClass(task)} animate-fade-in`}
+                      style={{ 
+                        animationDelay: `${(slotEvents.length + taskIndex) * 30}ms`,
+                        transform: 'translate3d(0, 0, 0)',
+                        backfaceVisibility: 'hidden',
+                        WebkitTransform: 'translate3d(0, 0, 0)',
+                        WebkitBackfaceVisibility: 'hidden',
+                        willChange: 'transform'
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleTaskClick(task);
