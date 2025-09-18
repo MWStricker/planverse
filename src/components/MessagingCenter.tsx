@@ -32,11 +32,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
+    console.log('MessagingCenter: useEffect triggered - user:', user?.id, 'conversations:', conversations.length);
     scrollToBottom();
   }, [messages]);
 

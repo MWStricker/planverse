@@ -38,16 +38,25 @@ export const useMessaging = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchConversations = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('useMessaging: No user, skipping fetchConversations');
+      return;
+    }
 
     try {
+      console.log('useMessaging: Querying conversations table...');
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('last_message_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('useMessaging: Conversations query result:', { data, error });
+
+      if (error) {
+        console.error('useMessaging: Error fetching conversations:', error);
+        throw error;
+      }
 
       // Get other user profiles separately
       const conversationsWithProfiles = await Promise.all(
@@ -68,8 +77,11 @@ export const useMessaging = () => {
       );
 
       setConversations(conversationsWithProfiles);
+      console.log('useMessaging: Set conversations:', conversationsWithProfiles);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -160,6 +172,7 @@ export const useMessaging = () => {
   };
 
   useEffect(() => {
+    console.log('useMessaging: useEffect triggered - user:', user?.id);
     if (user) {
       fetchConversations();
     }
