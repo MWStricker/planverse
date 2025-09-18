@@ -322,7 +322,31 @@ serve(async (req) => {
           const taskLists = taskListsData.items || [];
           console.log(`Found ${taskLists.length} task lists:`, taskLists.map(tl => `"${tl.title}"`));
 
-          // Fetch tasks from each task list
+          // Try to fetch from default task list first
+          console.log('🔍 Trying to fetch from default task list (@default)...');
+          const defaultTasksResponse = await fetch(
+            'https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=false&maxResults=100',
+            {
+              headers: {
+                'Authorization': `Bearer ${currentAccessToken}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          if (defaultTasksResponse.ok) {
+            const defaultTasksData = await defaultTasksResponse.json();
+            console.log(`📋 Default task list response:`, JSON.stringify(defaultTasksData, null, 2));
+            const defaultTasks = defaultTasksData.items || [];
+            defaultTasks.forEach(task => {
+              task.taskListName = 'My Tasks';
+              task.taskListId = '@default';
+            });
+            tasks = tasks.concat(defaultTasks);
+            console.log(`✅ Fetched ${defaultTasks.length} tasks from default list`);
+          }
+          
+          // Fetch tasks from each named task list
           for (const taskList of taskLists) {
             console.log(`📝 Fetching tasks from list: ${taskList.title} (ID: ${taskList.id})`);
             
