@@ -200,7 +200,7 @@ interface WeatherData {
   location?: string;
 }
 
-const Calendar = () => {
+const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
   // Function to calculate animation duration based on text length
   const getAnimationDuration = (text: string) => {
     // Very generous time calculation to ensure full readability
@@ -215,8 +215,8 @@ const Calendar = () => {
   };
   const { user } = useAuth();
   const { toast } = useToast();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('day');
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>(initialDate ? 'week' : 'day');
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<Task[]>([]);

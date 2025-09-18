@@ -24,6 +24,7 @@ const Index = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
+  const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   
@@ -95,7 +96,16 @@ const Index = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard onNavigateToCalendar={() => setCurrentPage('calendar')} />;
+        // Clear selected week when returning to dashboard
+        if (selectedWeekStart) {
+          setSelectedWeekStart(null);
+        }
+        return <Dashboard onNavigateToCalendar={(weekStart?: Date) => {
+          if (weekStart) {
+            setSelectedWeekStart(weekStart);
+          }
+          setCurrentPage('calendar');
+        }} />;
       case 'upload':
         return (
           <div className="p-6">
@@ -118,7 +128,7 @@ const Index = () => {
       case 'settings':
         return <Settings defaultTab={settingsTab} />;
       case 'calendar':
-        return <Calendar />;
+        return <Calendar initialDate={selectedWeekStart || undefined} />;
       case 'connect':
         return <Connect />;
       case 'tasks':

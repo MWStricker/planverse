@@ -74,7 +74,7 @@ const mockTasks: Task[] = [];
 
 const todaySchedule: ScheduleEvent[] = [];
 
-export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: () => void }) => {
+export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (weekStart?: Date) => void }) => {
   const { user } = useAuth();
   const { preferences } = usePreferences();
   const { toast } = useToast();
@@ -2576,9 +2576,9 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: () 
         <WeeklyProgressCard 
           weekGroup={weeklyProgressData.currentWeek} 
           showAssignments={true}
-          onWeekClick={() => {
+          onWeekClick={(weekStart) => {
             if (onNavigateToCalendar) {
-              onNavigateToCalendar();
+              onNavigateToCalendar(weekStart);
             }
           }}
         />
@@ -2592,9 +2592,9 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: () 
                 <WeeklyProgressCard 
                   key={index} 
                   weekGroup={week} 
-                  onWeekClick={() => {
+                  onWeekClick={(weekStart) => {
                     if (onNavigateToCalendar) {
-                      onNavigateToCalendar();
+                      onNavigateToCalendar(weekStart);
                     }
                   }}
                 />
