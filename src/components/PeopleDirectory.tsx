@@ -24,6 +24,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { OnlineStatus } from './OnlineStatus';
+import { UserStatusIndicator } from './UserStatusIndicator';
+import { useRealtime } from '@/hooks/useRealtime';
 
 interface PeopleDirectoryProps {
   onStartChat?: (userId: string) => void;
@@ -31,6 +33,7 @@ interface PeopleDirectoryProps {
 
 export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat }) => {
   const { toast } = useToast();
+  const { getUserStatus } = useRealtime();
   const { 
     people, 
     loading, 
@@ -141,10 +144,17 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
             </Avatar>
             
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-foreground cursor-pointer hover:text-primary"
-                  onClick={() => handleViewProfile(person)}>
-                {person.display_name}
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold text-foreground cursor-pointer hover:text-primary"
+                    onClick={() => handleViewProfile(person)}>
+                  {person.display_name}
+                </h4>
+                <UserStatusIndicator 
+                  status={getUserStatus(person.user_id)} 
+                  isCurrentUser={false}
+                  size="sm"
+                />
+              </div>
               
               <div className="flex flex-wrap gap-1 mt-1 mb-2">
                 <OnlineStatus userId={person.user_id} />
@@ -347,9 +357,16 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-foreground">
-                        {friend.friend_profile?.display_name}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-foreground">
+                          {friend.friend_profile?.display_name}
+                        </h4>
+                        <UserStatusIndicator 
+                          status={getUserStatus(friend.friend_profile!.id)} 
+                          isCurrentUser={false}
+                          size="sm"
+                        />
+                      </div>
                       
                       <div className="flex flex-wrap gap-1 mt-1 mb-2">
                         <OnlineStatus userId={friend.friend_profile!.id} />
@@ -415,9 +432,16 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h4 className="font-medium text-foreground">
-                          {request.sender_profile?.display_name}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-foreground">
+                            {request.sender_profile?.display_name}
+                          </h4>
+                          <UserStatusIndicator 
+                            status={getUserStatus(request.sender_id)} 
+                            isCurrentUser={false}
+                            size="sm"
+                          />
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           {request.sender_profile?.school && (
                             <span>{request.sender_profile.school}</span>
@@ -468,9 +492,16 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h4 className="font-medium text-foreground">
-                          {request.receiver_profile?.display_name}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-foreground">
+                            {request.receiver_profile?.display_name}
+                          </h4>
+                          <UserStatusIndicator 
+                            status={getUserStatus(request.receiver_id)} 
+                            isCurrentUser={false}
+                            size="sm"
+                          />
+                        </div>
                         <p className="text-sm text-muted-foreground">Request pending</p>
                       </div>
                     </div>

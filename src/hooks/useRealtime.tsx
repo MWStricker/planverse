@@ -3,11 +3,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/components/ui/use-toast';
 
+interface UserPresence {
+  user_id: string;
+  status: 'online' | 'idle' | 'dnd' | 'offline';
+  last_seen: string;
+}
+
 interface RealtimeContextType {
   onlineUsers: string[];
   unreadCount: number;
+  userStatuses: Record<string, UserPresence>;
+  currentUserStatus: 'online' | 'idle' | 'dnd' | 'offline';
   markNotificationAsRead: (notificationId: string) => void;
-  updatePresence: (status: 'online' | 'away' | 'offline') => void;
+  updatePresence: (status: 'online' | 'idle' | 'dnd' | 'offline') => void;
+  getUserStatus: (userId: string) => 'online' | 'idle' | 'dnd' | 'offline';
 }
 
 const RealtimeContext = createContext<RealtimeContextType | null>(null);
@@ -29,9 +38,11 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const { toast } = useToast();
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userStatuses, setUserStatuses] = useState<Record<string, UserPresence>>({});
+  const [currentUserStatus, setCurrentUserStatus] = useState<'online' | 'idle' | 'dnd' | 'offline'>('offline');
 
   // Update user presence
-  const updatePresence = async (status: 'online' | 'away' | 'offline') => {
+  const updatePresence = async (status: 'online' | 'idle' | 'dnd' | 'offline') => {
     if (!user) return;
 
     const { error } = await supabase
@@ -44,7 +55,14 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
 
     if (error) {
       console.error('Error updating presence:', error);
+    } else {
+      setCurrentUserStatus(status);
     }
+  };
+
+  // Get user status
+  const getUserStatus = (userId: string): 'online' | 'idle' | 'dnd' | 'offline' => {
+    return userStatuses[userId]?.status || 'offline';
   };
 
   // Mark notification as read
@@ -77,6 +95,18 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
         },
         (payload) => {
           console.log('Presence change:', payload);
+          const presence = payload.new as UserPresence;
+          if (presence) {
+            setUserStatuses(prev => ({
+              ...prev,
+              [presence.user_id]: presence
+            }));
+            
+            // Update current user status if this is their presence change
+            if (presence.user_id === user.id) {
+              setCurrentUserStatus(presence.status);
+            }
+          }
           // Refresh online users list
           loadOnlineUsers();
         }
@@ -198,11 +228,12 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
     // Load initial data
     loadOnlineUsers();
     loadUnreadCount();
+    loadUserStatuses();
 
     // Set up visibility change handler
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        updatePresence('away');
+        updatePresence('idle');
       } else {
         updatePresence('online');
       }
@@ -271,11 +302,41 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
     setUnreadCount(unreadMessages + unreadNotifications);
   };
 
+  // Load initial user statuses
+  const loadUserStatuses = async () => {
+    const { data, error } = await supabase
+      .from('user_presence')
+      .select('*');
+    
+    if (error) {
+      console.error('Error loading user statuses:', error);
+    } else if (data) {
+      const statusMap = data.reduce((acc, presence) => {
+        const userPresence: UserPresence = {
+          user_id: presence.user_id,
+          status: presence.status as 'online' | 'idle' | 'dnd' | 'offline',
+          last_seen: presence.last_seen
+        };
+        acc[presence.user_id] = userPresence;
+        return acc;
+      }, {} as Record<string, UserPresence>);
+      setUserStatuses(statusMap);
+      
+      // Set current user status if found
+      if (user?.id && statusMap[user.id]) {
+        setCurrentUserStatus(statusMap[user.id].status);
+      }
+    }
+  };
+
   const value = {
     onlineUsers,
     unreadCount,
+    userStatuses,
+    currentUserStatus,
     markNotificationAsRead,
-    updatePresence
+    updatePresence,
+    getUserStatus
   };
 
   return (

@@ -15,6 +15,7 @@ import { useTabReorder } from "@/hooks/useTabReorder";
 import { SortableTabItem } from "@/components/SortableTabItem";
 import { NotificationCenter } from "./NotificationCenter";
 import { useRealtime } from "@/hooks/useRealtime";
+import { UserStatusIndicator } from "./UserStatusIndicator";
 
 interface NavigationProps {
   currentPage: string;
@@ -40,7 +41,7 @@ export const Navigation = ({
   const { user } = useAuth();
   const { profile } = useProfile();
   const { liveEditedProfile } = useProfileEditing();
-  const { unreadCount } = useRealtime();
+  const { unreadCount, currentUserStatus } = useRealtime();
 
   // Fetch courses data
   useEffect(() => {
@@ -263,9 +264,16 @@ export const Navigation = ({
           </Avatar>
           {!isCollapsed && (
             <div className="flex-1 min-w-0 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]">
+              <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-foreground truncate">
                   {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
                 </p>
+                <UserStatusIndicator 
+                  status={currentUserStatus} 
+                  isCurrentUser={true}
+                  size="sm"
+                />
+              </div>
               <p className="text-xs text-muted-foreground truncate">
                 {(() => {
                   const currentMajor = liveEditedProfile.major || profile?.major;
