@@ -190,14 +190,7 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
       <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg" style={{
         transform: 'translate3d(0, 0, 0)',
         backfaceVisibility: 'hidden',
-        contain: 'strict',
-        isolation: 'isolate',
-        perspective: '1000px',
-        WebkitPerspective: '1000px',
-        WebkitTransform: 'translate3d(0, 0, 0)',
-        WebkitBackfaceVisibility: 'hidden',
-        WebkitTransformStyle: 'preserve-3d',
-        transformStyle: 'preserve-3d'
+        contain: 'layout style paint'
       }}>
         {/* Header Row */}
         <div className="grid grid-cols-8 bg-gradient-to-r from-muted/30 to-muted/50 backdrop-blur-sm">
@@ -250,7 +243,7 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
               return (
                 <div
                   key={cellKey}
-                  className={`min-h-[60px] border-r border-b border-border/30 last:border-r-0 p-2 space-y-1.5 cursor-pointer transition-all duration-100 ease-out relative group/cell ${
+                  className={`min-h-[60px] border-r border-b border-border/30 last:border-r-0 p-2 space-y-1.5 cursor-pointer transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative group/cell ${
                     isCurrentHour 
                       ? "bg-gradient-to-br from-primary/5 to-primary/10 ring-1 ring-primary/20" 
                       : "hover:bg-accent/20 hover:shadow-sm"
@@ -258,11 +251,7 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                   style={{
                     transform: 'translate3d(0, 0, 0)',
                     backfaceVisibility: 'hidden',
-                    contain: 'strict',
-                    isolation: 'isolate',
-                    WebkitTransform: 'translate3d(0, 0, 0)',
-                    WebkitBackfaceVisibility: 'hidden',
-                    willChange: 'transform, opacity'
+                    contain: 'layout style'
                   }}
                   onClick={() => handleCellClick(day, timeSlot.hour)}
                   title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to add event`}
@@ -285,14 +274,11 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                   {slotEvents.map((event, eventIndex) => (
                     <div
                       key={event.id}
-                      className={`p-2 rounded-lg text-xs cursor-pointer hover:scale-[1.02] transition-all duration-100 ease-out relative z-10 ${getEventColorClass(event.title)}`}
+                      className={`p-2 rounded-lg text-xs cursor-pointer hover:scale-[1.02] transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative z-10 ${getEventColorClass(event.title)}`}
                       style={{ 
-                        animationDelay: `${eventIndex * 30}ms`,
+                        animationDelay: `${eventIndex * 50}ms`,
                         transform: 'translate3d(0, 0, 0)',
-                        backfaceVisibility: 'hidden',
-                        WebkitTransform: 'translate3d(0, 0, 0)',
-                        WebkitBackfaceVisibility: 'hidden',
-                        willChange: 'transform'
+                        backfaceVisibility: 'hidden'
                       }}
                       title={`Click to view event: ${event.title}`}
                       onClick={(e) => {
@@ -328,15 +314,8 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                   {slotTasks.map((task, taskIndex) => (
                     <div
                       key={task.id}
-                      className="p-2 rounded-lg text-xs bg-gradient-to-br from-amber-50 to-yellow-100 border-l-4 border-l-amber-400 text-amber-700 shadow-sm cursor-pointer hover:scale-[1.02] transition-all duration-100 ease-out relative z-10 animate-fade-in"
-                      style={{ 
-                        animationDelay: `${(slotEvents.length + taskIndex) * 30}ms`,
-                        transform: 'translate3d(0, 0, 0)',
-                        backfaceVisibility: 'hidden',
-                        WebkitTransform: 'translate3d(0, 0, 0)',
-                        WebkitBackfaceVisibility: 'hidden',
-                        willChange: 'transform'
-                      }}
+                      className="p-2 rounded-lg text-xs bg-gradient-to-br from-amber-50 to-yellow-100 border-l-4 border-l-amber-400 text-amber-700 shadow-sm cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 animate-fade-in"
+                      style={{ animationDelay: `${(slotEvents.length + taskIndex) * 50}ms` }}
                       title={`Click to view task: ${task.title}`}
                       onClick={(e) => {
                         e.stopPropagation();
