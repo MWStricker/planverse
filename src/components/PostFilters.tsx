@@ -53,8 +53,8 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
     const newFilters = {
       search: updates.search ?? searchQuery,
       postType: updates.postType ?? selectedPostType,
-      major: updates.major ?? selectedMajor,
-      school: updates.school ?? selectedSchool,
+      major: updates.major === 'all-majors' ? '' : (updates.major ?? selectedMajor),
+      school: updates.school === 'all-schools' ? '' : (updates.school ?? selectedSchool),
       sortBy: updates.sortBy ?? selectedSort,
     };
 
@@ -169,7 +169,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
                   <SelectValue placeholder="All majors" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48">
-                  <SelectItem value="">All majors</SelectItem>
+                  <SelectItem value="all-majors">All majors</SelectItem>
                   {collegeMajors.slice(0, 20).map((major) => (
                     <SelectItem key={major} value={major}>
                       {major}
@@ -186,7 +186,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
                   <SelectValue placeholder="All schools" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48">
-                  <SelectItem value="">All schools</SelectItem>
+                  <SelectItem value="all-schools">All schools</SelectItem>
                   {universities.slice(0, 20).map((university) => (
                     <SelectItem key={university.id} value={university.name}>
                       {university.name}
