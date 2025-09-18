@@ -320,7 +320,8 @@ serve(async (req) => {
         });
       }
       
-      let tasks = [];
+      // Reset tasks array for this connection
+      tasks = [];
       
       try {
         // Get all task lists
