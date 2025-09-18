@@ -185,14 +185,24 @@ export const Navigation = ({
           }`}>
             {!isCollapsed && (
               <>
-                <h1 className="text-lg font-bold text-foreground transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">Planverse</h1>
-                <p className="text-xs text-muted-foreground transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">Smart Scheduling</p>
+                <h1 className={`text-lg font-bold text-foreground transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                  isCollapsed ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
+                }`} style={{ transitionDelay: isCollapsed ? '0ms' : '100ms' }}>
+                  Planverse
+                </h1>
+                <p className={`text-xs text-muted-foreground transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                  isCollapsed ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
+                }`} style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}>
+                  Smart Scheduling
+                </p>
               </>
             )}
           </div>
           {/* Small Reorder Button */}
           {!isCollapsed && (
-            <div className="flex flex-col gap-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+            <div className={`flex flex-col gap-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
+              isCollapsed ? 'opacity-0 scale-90 translate-x-2' : 'opacity-100 scale-100 translate-x-0'
+            }`} style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}>
               {!isReorderMode ? (
                 <Button
                   variant="ghost"
@@ -211,13 +221,15 @@ export const Navigation = ({
                 >
                   <X className="h-3 w-3" />
                 </Button>
-              )}
+               )}
             </div>
           )}
         </div>
         
         {isReorderMode && !isCollapsed && (
-          <div className="mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20 animate-smooth-fade-in transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+          <div className={`mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20 transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+            isCollapsed ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+          }`} style={{ transitionDelay: isCollapsed ? '0ms' : '300ms' }}>
             <p className="text-xs text-foreground font-medium text-center">
               Drag tabs to reorder
             </p>
@@ -268,9 +280,13 @@ export const Navigation = ({
             </AvatarFallback>
           </Avatar>
           {!isCollapsed && (
-            <div className="flex-1 min-w-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+            <div className={`flex-1 min-w-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
+              isCollapsed ? 'opacity-0 scale-95 translate-x-4' : 'opacity-100 scale-100 translate-x-0'
+            }`} style={{ transitionDelay: isCollapsed ? '0ms' : '150ms' }}>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-foreground truncate">
+                <p className={`text-sm font-medium text-foreground truncate transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                  isCollapsed ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'
+                }`} style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}>
                   {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
                 </p>
                 <UserStatusIndicator 
@@ -279,7 +295,9 @@ export const Navigation = ({
                   size="sm"
                 />
               </div>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className={`text-xs text-muted-foreground truncate transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                isCollapsed ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'
+              }`} style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}>
                 {(() => {
                   const currentMajor = liveEditedProfile.major || profile?.major;
                   if (!currentMajor) return 'Student';
@@ -297,7 +315,9 @@ export const Navigation = ({
         
         {/* Clock and Controls Section */}
         {!isCollapsed && (
-          <div className="mt-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+          <div className={`mt-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
+            isCollapsed ? 'opacity-0 scale-90 translate-y-3' : 'opacity-100 scale-100 translate-y-0'
+          }`} style={{ transitionDelay: isCollapsed ? '0ms' : '300ms' }}>
             <div className="flex items-center justify-center gap-2">
               <Button 
                 variant="ghost" 
