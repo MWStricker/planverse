@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
 export interface UserPreferences {
-  theme: 'default' | 'dark' | 'warm' | 'ocean' | 'forest' | 'sunset';
+  theme: 'default' | 'dark' | 'warm' | 'ocean' | 'forest' | 'sunset' | 'custom';
   boldText: boolean;
   textSize: 'small' | 'medium' | 'large';
   wakeUpTime: string; // Format: "HH:MM" (24-hour)
@@ -224,66 +224,87 @@ export const usePreferences = () => {
       }
     };
 
-    // Apply custom primary color (affects background and main theme)
-    if (prefs.customPrimaryColor) {
-      const [h, s, l] = hexToHsl(prefs.customPrimaryColor);
-      
-      // Calculate appropriate background lightness
-      const bgLightness = Math.min(Math.max(l + 35, 92), 98); // Ensure light enough background
-      const cardLightness = Math.min(Math.max(l + 30, 88), 95); // Slightly darker than background
-      const mutedLightness = Math.min(Math.max(l + 25, 85), 92); // Even slightly darker
-      
-      // Set background colors with proper contrast
-      root.style.setProperty('--background', `${h} ${Math.max(s - 30, 5)}% ${bgLightness}%`);
-      root.style.setProperty('--foreground', getContrastingText(bgLightness));
-      
-      // Set card colors
-      root.style.setProperty('--card', `${h} ${Math.max(s - 35, 5)}% ${cardLightness}%`);
-      root.style.setProperty('--card-foreground', getContrastingText(cardLightness));
-      
-      // Set muted colors
-      root.style.setProperty('--muted', `${h} ${Math.max(s - 25, 5)}% ${mutedLightness}%`);
-      root.style.setProperty('--muted-foreground', '0 0% 40%'); // Always readable muted text
-      
-      // Set border colors with proper visibility
-      root.style.setProperty('--border', getContrastingBorder(bgLightness, h, s));
-      root.style.setProperty('--input', getContrastingBorder(bgLightness, h, s));
-      
-      // Set popover colors (same as background for consistency)
-      root.style.setProperty('--popover', `${h} ${Math.max(s - 30, 5)}% ${bgLightness}%`);
-      root.style.setProperty('--popover-foreground', getContrastingText(bgLightness));
-      
-      // Set sidebar colors (slightly different from main background)
-      const sidebarLightness = Math.min(Math.max(l + 30, 88), 95);
-      root.style.setProperty('--sidebar-background', `${h} ${Math.max(s - 25, 5)}% ${sidebarLightness}%`);
-      root.style.setProperty('--sidebar-foreground', getContrastingText(sidebarLightness));
-      root.style.setProperty('--sidebar-border', getContrastingBorder(sidebarLightness, h, s));
-    }
+    // Only apply custom colors if theme is set to 'custom'
+    if (prefs.theme === 'custom') {
+      // Apply custom primary color (affects background and main theme)
+      if (prefs.customPrimaryColor) {
+        const [h, s, l] = hexToHsl(prefs.customPrimaryColor);
+        
+        // Calculate appropriate background lightness
+        const bgLightness = Math.min(Math.max(l + 35, 92), 98); // Ensure light enough background
+        const cardLightness = Math.min(Math.max(l + 30, 88), 95); // Slightly darker than background
+        const mutedLightness = Math.min(Math.max(l + 25, 85), 92); // Even slightly darker
+        
+        // Set background colors with proper contrast
+        root.style.setProperty('--background', `${h} ${Math.max(s - 30, 5)}% ${bgLightness}%`);
+        root.style.setProperty('--foreground', getContrastingText(bgLightness));
+        
+        // Set card colors
+        root.style.setProperty('--card', `${h} ${Math.max(s - 35, 5)}% ${cardLightness}%`);
+        root.style.setProperty('--card-foreground', getContrastingText(cardLightness));
+        
+        // Set muted colors
+        root.style.setProperty('--muted', `${h} ${Math.max(s - 25, 5)}% ${mutedLightness}%`);
+        root.style.setProperty('--muted-foreground', '0 0% 40%'); // Always readable muted text
+        
+        // Set border colors with proper visibility
+        root.style.setProperty('--border', getContrastingBorder(bgLightness, h, s));
+        root.style.setProperty('--input', getContrastingBorder(bgLightness, h, s));
+        
+        // Set popover colors (same as background for consistency)
+        root.style.setProperty('--popover', `${h} ${Math.max(s - 30, 5)}% ${bgLightness}%`);
+        root.style.setProperty('--popover-foreground', getContrastingText(bgLightness));
+        
+        // Set sidebar colors (slightly different from main background)
+        const sidebarLightness = Math.min(Math.max(l + 30, 88), 95);
+        root.style.setProperty('--sidebar-background', `${h} ${Math.max(s - 25, 5)}% ${sidebarLightness}%`);
+        root.style.setProperty('--sidebar-foreground', getContrastingText(sidebarLightness));
+        root.style.setProperty('--sidebar-border', getContrastingBorder(sidebarLightness, h, s));
+      }
 
-    // Apply custom secondary color (now acts as accent/button color)
-    if (prefs.customSecondaryColor) {
-      const [h, s, l] = hexToHsl(prefs.customSecondaryColor);
-      const hslString = `${h} ${s}% ${l}%`;
+      // Apply custom secondary color (now acts as accent/button color)
+      if (prefs.customSecondaryColor) {
+        const [h, s, l] = hexToHsl(prefs.customSecondaryColor);
+        const hslString = `${h} ${s}% ${l}%`;
+        
+        // Set primary/accent colors (buttons, links, interactive elements)
+        root.style.setProperty('--primary', hslString);
+        root.style.setProperty('--primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+        root.style.setProperty('--primary-muted', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+        root.style.setProperty('--primary-dark', `${h} ${s}% ${Math.max(l - 15, 5)}%`);
+        
+        // Set accent colors
+        root.style.setProperty('--accent', `${(h + 15) % 360} ${s}% ${l}%`);
+        root.style.setProperty('--accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+        root.style.setProperty('--accent-muted', `${(h + 15) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+        
+        // Set sidebar interactive colors
+        root.style.setProperty('--sidebar-primary', hslString);
+        root.style.setProperty('--sidebar-primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+        root.style.setProperty('--sidebar-accent', `${(h + 10) % 360} ${s}% ${l}%`);
+        root.style.setProperty('--sidebar-accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+        
+        // Set ring color for focus states
+        root.style.setProperty('--ring', hslString);
+      }
+    } else {
+      // For non-custom themes, remove custom color properties to allow default theme styles
+      const propertiesToReset = [
+        '--primary', '--primary-foreground', '--primary-muted', '--primary-dark',
+        '--secondary', '--secondary-foreground',
+        '--accent', '--accent-foreground', '--accent-muted',
+        '--background', '--foreground',
+        '--card', '--card-foreground',
+        '--muted', '--muted-foreground',
+        '--border', '--input',
+        '--popover', '--popover-foreground',
+        '--sidebar-background', '--sidebar-foreground', '--sidebar-border',
+        '--sidebar-primary', '--sidebar-primary-foreground',
+        '--sidebar-accent', '--sidebar-accent-foreground',
+        '--ring'
+      ];
       
-      // Set primary/accent colors (buttons, links, interactive elements)
-      root.style.setProperty('--primary', hslString);
-      root.style.setProperty('--primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-      root.style.setProperty('--primary-muted', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
-      root.style.setProperty('--primary-dark', `${h} ${s}% ${Math.max(l - 15, 5)}%`);
-      
-      // Set accent colors
-      root.style.setProperty('--accent', `${(h + 15) % 360} ${s}% ${l}%`);
-      root.style.setProperty('--accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-      root.style.setProperty('--accent-muted', `${(h + 15) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
-      
-      // Set sidebar interactive colors
-      root.style.setProperty('--sidebar-primary', hslString);
-      root.style.setProperty('--sidebar-primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-      root.style.setProperty('--sidebar-accent', `${(h + 10) % 360} ${s}% ${l}%`);
-      root.style.setProperty('--sidebar-accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-      
-      // Set ring color for focus states
-      root.style.setProperty('--ring', hslString);
+      propertiesToReset.forEach(prop => root.style.removeProperty(prop));
     }
   };
 

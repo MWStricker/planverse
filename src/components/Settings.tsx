@@ -335,6 +335,11 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   };
 
   const handleApplyCustomColor = async (colorType: 'primary' | 'secondary') => {
+    // Automatically switch to custom theme when applying custom colors
+    if (preferences.theme !== 'custom') {
+      await updatePreference('theme', 'custom');
+    }
+    
     setIsChangingColor(true);
     try {
       const color = colorType === 'primary' ? customPrimaryColor : customSecondaryColor;
@@ -757,6 +762,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               { id: 'ocean', name: 'Ocean', colors: ['bg-cyan-500', 'bg-blue-600'], icon: '🌊' },
               { id: 'forest', name: 'Forest', colors: ['bg-green-600', 'bg-emerald-500'], icon: '🌲' },
               { id: 'sunset', name: 'Sunset', colors: ['bg-pink-500', 'bg-purple-600'], icon: '🌅' },
+              { id: 'custom', name: 'Custom', colors: ['bg-gradient-to-r from-purple-500 to-blue-500'], icon: '🎛️' },
             ].map((theme) => (
               <Button
                 key={theme.id}
@@ -780,15 +786,19 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
         </CardContent>
       </Card>
 
-      {/* Custom Theme Colors */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Custom Colors
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      {/* Custom Theme Colors - Only show when Custom theme is selected */}
+      {preferences.theme === 'custom' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" />
+              Custom Colors
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Customize your theme colors. Select the "Custom" theme above to use these settings.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
           <div className="space-y-6">
             {/* Primary Color Section */}
             <div className="space-y-4">
@@ -980,6 +990,26 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Help text when custom theme is not selected */}
+      {preferences.theme !== 'custom' && (
+        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Palette className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Want to customize colors?
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-300">
+                  Select the "Custom" theme above to access color customization options.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Text Preferences */}
       <Card>
