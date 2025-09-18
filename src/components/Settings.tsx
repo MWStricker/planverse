@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar, RefreshCw } from "lucide-react";
+import { ImageCropper } from "@/components/ImageCropper";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,6 +149,8 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   const [customPrimaryColor, setCustomPrimaryColor] = useState('#3b82f6');
   const [customSecondaryColor, setCustomSecondaryColor] = useState('#8b5cf6');
   const [isChangingColor, setIsChangingColor] = useState(false);
+  const [showImageCropper, setShowImageCropper] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   
   // Get all public universities sorted alphabetically by name
   const getAllPublicUniversities = () => {
@@ -1100,7 +1103,26 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
       return;
     }
 
-    await uploadAvatar(file);
+    // Store the selected file and show cropper
+    setSelectedImageFile(file);
+    setShowImageCropper(true);
+    
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
+  };
+
+  const handleCroppedImage = async (croppedBlob: Blob) => {
+    setShowImageCropper(false);
+    setSelectedImageFile(null);
+    
+    // Convert blob to file for upload
+    const croppedFile = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+    await uploadAvatar(croppedFile);
+  };
+
+  const handleCropperClose = () => {
+    setShowImageCropper(false);
+    setSelectedImageFile(null);
   };
 
   const renderProfile = () => (
@@ -1146,7 +1168,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     {uploading ? 'Uploading...' : 'Upload Photo'}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    JPG, PNG or WebP. Max size 5MB.
+                    JPG, PNG or WebP. Max size 5MB. You'll be able to crop and resize after selecting.
                   </p>
                 </div>
               </div>
@@ -1915,6 +1937,16 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
           {renderTabContent()}
         </div>
       </div>
+      
+      {/* Image Cropper Modal */}
+      {selectedImageFile && (
+        <ImageCropper
+          open={showImageCropper}
+          onClose={handleCropperClose}
+          imageFile={selectedImageFile}
+          onCrop={handleCroppedImage}
+        />
+      )}
     </div>
   );
 };
