@@ -1812,7 +1812,7 @@ export const Dashboard = () => {
                   </div>
                 ))
               ) : (() => {
-                // Smart filtering logic: next 2 days, or next 2 days with assignments + high priority within next month
+                // Smart filtering logic: next 2 days, or next 2 days with assignments + high priority within next month + keyword-based priority
                 const currentDate = new Date();
                 const twoDaysFromNow = new Date(currentDate);
                 twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
@@ -1821,6 +1821,19 @@ export const Dashboard = () => {
                 const oneMonthFromNow = new Date(currentDate);
                 oneMonthFromNow.setDate(oneMonthFromNow.getDate() + 30);
                 oneMonthFromNow.setHours(23, 59, 59, 999);
+                
+                // Keywords that indicate high-priority assignments
+                const priorityKeywords = [
+                  'test', 'exam', 'midterm', 'final', 'quiz', 'essay', 'paper', 'project', 
+                  'presentation', 'assignment', 'homework', 'lab', 'report', 'thesis',
+                  'dissertation', 'review', 'critique', 'analysis', 'research'
+                ];
+                
+                const containsPriorityKeyword = (text: string) => {
+                  if (!text) return false;
+                  const lowerText = text.toLowerCase();
+                  return priorityKeywords.some(keyword => lowerText.includes(keyword));
+                };
                 
                 // First, check for assignments in the next 2 days
                 const next2DaysTasks = userTasks?.filter(task => {
@@ -1897,19 +1910,40 @@ export const Dashboard = () => {
                   return isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow;
                 }) || [];
                 
+                // Add keyword-based priority assignments within next month (if not already included)
+                const keywordPriorityTasks = userTasks?.filter(task => {
+                  if (!task.due_date || task.completion_status === 'completed') return false;
+                  if (filteredTasks.some(ft => ft.id === task.id)) return false; // Already included
+                  if (highPriorityTasks.some(hpt => hpt.id === task.id)) return false; // Already included
+                  const dueDate = new Date(task.due_date);
+                  const hasKeyword = containsPriorityKeyword(task.title) || containsPriorityKeyword(task.description);
+                  return hasKeyword && dueDate >= currentDate && dueDate <= oneMonthFromNow;
+                }) || [];
+                
+                const keywordPriorityCanvas = userEvents?.filter(event => {
+                  if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                  if (filteredCanvasAssignments.some(fc => fc.id === event.id)) return false; // Already included
+                  if (highPriorityCanvas.some(hpc => hpc.id === event.id)) return false; // Already included
+                  const eventDate = new Date(event.start_time || event.end_time || '');
+                  const hasKeyword = containsPriorityKeyword(event.title) || containsPriorityKeyword(event.description);
+                  return hasKeyword && eventDate >= currentDate && eventDate <= oneMonthFromNow;
+                }) || [];
+                
                 // Combine filtered results
-                filteredTasks = [...filteredTasks, ...highPriorityTasks];
-                filteredCanvasAssignments = [...filteredCanvasAssignments, ...highPriorityCanvas];
+                filteredTasks = [...filteredTasks, ...highPriorityTasks, ...keywordPriorityTasks];
+                filteredCanvasAssignments = [...filteredCanvasAssignments, ...highPriorityCanvas, ...keywordPriorityCanvas];
                 
                 console.log('🎯 Smart Priority Queue Filters:');
                 console.log('- Date range used:', dateRangeUsed);
-                console.log('- Filtered tasks:', filteredTasks.length, filteredTasks.map(t => ({title: t.title, due: t.due_date, priority: t.priority_score})));
-                console.log('- Filtered Canvas assignments:', filteredCanvasAssignments.length, filteredCanvasAssignments.map(e => ({title: e.title, due: e.start_time, priority: e.priority_score})));
+                console.log('- Priority keywords found in tasks:', keywordPriorityTasks.map(t => ({title: t.title, keyword: priorityKeywords.find(k => t.title?.toLowerCase().includes(k) || t.description?.toLowerCase().includes(k))})));
+                console.log('- Priority keywords found in canvas:', keywordPriorityCanvas.map(e => ({title: e.title, keyword: priorityKeywords.find(k => e.title?.toLowerCase().includes(k) || e.description?.toLowerCase().includes(k))})));
+                console.log('- Filtered tasks total:', filteredTasks.length);
+                console.log('- Filtered Canvas assignments total:', filteredCanvasAssignments.length);
                 
                 return [...filteredTasks, ...filteredCanvasAssignments].length > 0;
               })() ? (
                 (() => {
-                  // Get filtered items using smart logic
+                  // Get filtered items using smart logic (same as above)
                   const currentDate = new Date();
                   const twoDaysFromNow = new Date(currentDate);
                   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
@@ -1919,7 +1953,20 @@ export const Dashboard = () => {
                   oneMonthFromNow.setDate(oneMonthFromNow.getDate() + 30);
                   oneMonthFromNow.setHours(23, 59, 59, 999);
                   
-                  // Apply same logic as above for consistency
+                  // Keywords that indicate high-priority assignments
+                  const priorityKeywords = [
+                    'test', 'exam', 'midterm', 'final', 'quiz', 'essay', 'paper', 'project', 
+                    'presentation', 'assignment', 'homework', 'lab', 'report', 'thesis',
+                    'dissertation', 'review', 'critique', 'analysis', 'research'
+                  ];
+                  
+                  const containsPriorityKeyword = (text: string) => {
+                    if (!text) return false;
+                    const lowerText = text.toLowerCase();
+                    return priorityKeywords.some(keyword => lowerText.includes(keyword));
+                  };
+                  
+                  // Apply same logic as the check above
                   const next2DaysTasks = userTasks?.filter(task => {
                     if (!task.due_date || task.completion_status === 'completed') return false;
                     const dueDate = new Date(task.due_date);
@@ -1988,7 +2035,26 @@ export const Dashboard = () => {
                     return isHighPriority && eventDate >= currentDate && eventDate <= oneMonthFromNow;
                   }) || [];
                   
-                  const currentRelevantItems = [...smartFilteredTasks, ...highPriorityTasks, ...smartFilteredCanvasAssignments, ...highPriorityCanvas];
+                  // Add keyword-based priority assignments within next month
+                  const keywordPriorityTasks = userTasks?.filter(task => {
+                    if (!task.due_date || task.completion_status === 'completed') return false;
+                    if (smartFilteredTasks.some(ft => ft.id === task.id)) return false;
+                    if (highPriorityTasks.some(hpt => hpt.id === task.id)) return false;
+                    const dueDate = new Date(task.due_date);
+                    const hasKeyword = containsPriorityKeyword(task.title) || containsPriorityKeyword(task.description);
+                    return hasKeyword && dueDate >= currentDate && dueDate <= oneMonthFromNow;
+                  }) || [];
+                  
+                  const keywordPriorityCanvas = userEvents?.filter(event => {
+                    if (event.event_type !== 'assignment' || event.source_provider !== 'canvas' || event.is_completed) return false;
+                    if (smartFilteredCanvasAssignments.some(fc => fc.id === event.id)) return false;
+                    if (highPriorityCanvas.some(hpc => hpc.id === event.id)) return false;
+                    const eventDate = new Date(event.start_time || event.end_time || '');
+                    const hasKeyword = containsPriorityKeyword(event.title) || containsPriorityKeyword(event.description);
+                    return hasKeyword && eventDate >= currentDate && eventDate <= oneMonthFromNow;
+                  }) || [];
+                  
+                  const currentRelevantItems = [...smartFilteredTasks, ...highPriorityTasks, ...keywordPriorityTasks, ...smartFilteredCanvasAssignments, ...highPriorityCanvas, ...keywordPriorityCanvas];
                   
                   console.log('🧹 Filtered out old assignments. Current relevant items:', currentRelevantItems.length);
                   console.log('🧹 Items kept:', currentRelevantItems.map(item => `${item.title} (due: ${item.due_date})`));
