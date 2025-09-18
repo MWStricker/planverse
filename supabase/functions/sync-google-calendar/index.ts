@@ -464,13 +464,17 @@ serve(async (req) => {
     }
 
     // Process Google Tasks
+    console.log(`📋 TASK DEBUG: Found ${tasks ? tasks.length : 0} tasks from Google API`);
     if (tasks && tasks.length > 0) {
       console.log(`📋 Processing ${tasks.length} Google Tasks`);
       
       for (const task of tasks) {
         try {
+          console.log(`🔍 TASK DEBUG: Task "${task.title}" - Status: ${task.status}, Due: ${task.due}, Notes: ${task.notes ? 'Has notes' : 'No notes'}`);
+          
           // Skip completed tasks that don't have due dates (to avoid clutter)
           if (task.status === 'completed' && !task.due) {
+            console.log(`⏭️ SKIPPING completed task without due date: ${task.title}`);
             continue;
           }
 
