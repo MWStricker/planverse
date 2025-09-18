@@ -482,7 +482,7 @@ serve(async (req) => {
             .select('id, updated_at')
             .eq('user_id', user.id)
             .eq('source_provider', 'google')
-            .eq('source_task_id', task.id)
+            .eq('source_assignment_id', task.id)
             .single();
 
           // Determine due date
@@ -500,11 +500,11 @@ serve(async (req) => {
               task.webViewLink ? `🔗 View in Google Tasks: ${task.webViewLink}` : ''
             ].filter(Boolean).join('\n\n'),
             due_date: dueDate,
-            completed: task.status === 'completed',
+            completion_status: task.status === 'completed' ? 'completed' : 'pending',
             completed_at: task.completed ? new Date(task.completed).toISOString() : null,
-            priority: 'medium', // Google Tasks doesn't have priority, so default to medium
+            priority_score: 5, // Google Tasks doesn't have priority, so default to medium (score 5)
             source_provider: 'google',
-            source_task_id: task.id,
+            source_assignment_id: task.id,
             updated_at: new Date().toISOString(),
           };
 
