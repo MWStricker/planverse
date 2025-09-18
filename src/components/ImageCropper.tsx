@@ -89,16 +89,21 @@ export const ImageCropper = ({ open, onClose, imageFile, onCrop }: ImageCropperP
     // Restore context
     ctx.restore();
 
-    // Draw crop overlay
+    // Draw crop overlay - darken everything except the crop area
     const cropX = (canvas.width - cropSize) / 2;
     const cropY = (canvas.height - cropSize) / 2;
 
-    // Draw dark overlay
+    // Draw dark overlay around the crop area (not over it)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Clear crop area
-    ctx.clearRect(cropX, cropY, cropSize, cropSize);
+    
+    // Top area
+    ctx.fillRect(0, 0, canvas.width, cropY);
+    // Bottom area
+    ctx.fillRect(0, cropY + cropSize, canvas.width, canvas.height - (cropY + cropSize));
+    // Left area
+    ctx.fillRect(0, cropY, cropX, cropSize);
+    // Right area
+    ctx.fillRect(cropX + cropSize, cropY, canvas.width - (cropX + cropSize), cropSize);
 
     // Draw crop border
     ctx.strokeStyle = '#3b82f6';
@@ -106,7 +111,7 @@ export const ImageCropper = ({ open, onClose, imageFile, onCrop }: ImageCropperP
     ctx.strokeRect(cropX, cropY, cropSize, cropSize);
 
     // Draw corner indicators
-    const cornerSize = 10;
+    const cornerSize = 8;
     ctx.fillStyle = '#3b82f6';
     ctx.fillRect(cropX - cornerSize/2, cropY - cornerSize/2, cornerSize, cornerSize);
     ctx.fillRect(cropX + cropSize - cornerSize/2, cropY - cornerSize/2, cornerSize, cornerSize);
