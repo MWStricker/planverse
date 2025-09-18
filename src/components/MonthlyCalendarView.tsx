@@ -170,7 +170,11 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg" style={{
+        transform: 'translate3d(0, 0, 0)',
+        backfaceVisibility: 'hidden',
+        contain: 'layout style paint'
+      }}>
         {/* Header Row - Days of Week */}
         <div className="grid grid-cols-7 bg-gradient-to-r from-muted/30 to-muted/50 backdrop-blur-sm">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
@@ -195,13 +199,18 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-[140px] border-r border-b border-border/30 last:border-r-0 p-2 transition-all duration-200 relative group/day ${
+                className={`min-h-[140px] border-r border-b border-border/30 last:border-r-0 p-2 transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative group/day ${
                   isToday(day) 
                     ? "bg-gradient-to-br from-primary/5 to-primary/10 ring-1 ring-primary/20" 
                     : isCurrentMonth
                       ? "hover:bg-accent/20 hover:shadow-sm cursor-pointer"
                       : "bg-muted/20 text-muted-foreground"
                 }`}
+                style={{
+                  transform: 'translate3d(0, 0, 0)',
+                  backfaceVisibility: 'hidden',
+                  contain: 'layout style'
+                }}
                 onClick={() => isCurrentMonth && handleCellClick(day)}
               >
                 {/* Date Header */}
@@ -226,15 +235,25 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
 
                 {/* Events and Tasks */}
                 {isCurrentMonth && (
-                  <div className={`space-y-1 max-h-[80px] overflow-y-scroll pr-1 ${
+                  <div className={`space-y-1 max-h-[80px] pr-1 ${
                     (dayEvents.length + dayTasks.length) > 1 ? 'force-scrollbar-always' : 'custom-scrollbar'
-                  }`}>{/* Show scrollbar when multiple items */}
+                  }`} style={{
+                    overflowY: 'scroll',
+                    WebkitOverflowScrolling: 'touch',
+                    overscrollBehavior: 'contain',
+                    transform: 'translate3d(0, 0, 0)',
+                    backfaceVisibility: 'hidden'
+                  }}>{/* Show scrollbar when multiple items */}
                     {/* Events */}
                     {dayEvents.map((event, eventIndex) => (
                       <div
                         key={event.id}
-                        className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-200 text-xs ${getEventColorClass(event.title)} animate-fade-in`}
-                        style={{ animationDelay: `${eventIndex * 50}ms` }}
+                        className={`p-1.5 rounded-md cursor-pointer hover:scale-[1.02] transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs ${getEventColorClass(event.title)}`}
+                        style={{ 
+                          animationDelay: `${eventIndex * 30}ms`,
+                          transform: 'translate3d(0, 0, 0)',
+                          backfaceVisibility: 'hidden'
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEventClick(event);

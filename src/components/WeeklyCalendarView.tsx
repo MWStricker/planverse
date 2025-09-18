@@ -187,7 +187,11 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg" style={{
+        transform: 'translate3d(0, 0, 0)',
+        backfaceVisibility: 'hidden',
+        contain: 'layout style paint'
+      }}>
         {/* Header Row */}
         <div className="grid grid-cols-8 bg-gradient-to-r from-muted/30 to-muted/50 backdrop-blur-sm">
           <div className="p-3 text-xs font-medium text-muted-foreground border-r border-border/40 bg-muted/20">
@@ -239,11 +243,16 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
               return (
                 <div
                   key={cellKey}
-                  className={`min-h-[60px] border-r border-b border-border/30 last:border-r-0 p-2 space-y-1.5 cursor-pointer transition-all duration-300 relative group/cell ${
+                  className={`min-h-[60px] border-r border-b border-border/30 last:border-r-0 p-2 space-y-1.5 cursor-pointer transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative group/cell ${
                     isCurrentHour 
                       ? "bg-gradient-to-br from-primary/5 to-primary/10 ring-1 ring-primary/20" 
                       : "hover:bg-accent/20 hover:shadow-sm"
                   } ${index % 4 === 0 ? "border-t-border/50" : ""}`}
+                  style={{
+                    transform: 'translate3d(0, 0, 0)',
+                    backfaceVisibility: 'hidden',
+                    contain: 'layout style'
+                  }}
                   onClick={() => handleCellClick(day, timeSlot.hour)}
                   title={`${format(day, 'MMM d')} at ${timeSlot.label} - Click to add event`}
                 >
@@ -265,8 +274,12 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
                   {slotEvents.map((event, eventIndex) => (
                     <div
                       key={event.id}
-                      className={`p-2 rounded-lg text-xs cursor-pointer hover:scale-[1.02] transition-all duration-200 relative z-10 ${getEventColorClass(event.title)} animate-fade-in`}
-                      style={{ animationDelay: `${eventIndex * 50}ms` }}
+                      className={`p-2 rounded-lg text-xs cursor-pointer hover:scale-[1.02] transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative z-10 ${getEventColorClass(event.title)}`}
+                      style={{ 
+                        animationDelay: `${eventIndex * 50}ms`,
+                        transform: 'translate3d(0, 0, 0)',
+                        backfaceVisibility: 'hidden'
+                      }}
                       title={`Click to view event: ${event.title}`}
                       onClick={(e) => {
                         e.stopPropagation();

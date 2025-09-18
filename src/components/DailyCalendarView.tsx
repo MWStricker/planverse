@@ -188,7 +188,11 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
   });
 
   return (
-    <div className="w-full max-w-4xl mx-auto smooth-scroll">
+    <div className="w-full max-w-4xl mx-auto" style={{ 
+      transform: 'translate3d(0, 0, 0)',
+      backfaceVisibility: 'hidden',
+      contain: 'layout style'
+    }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col">
@@ -280,7 +284,15 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
       )}
 
       {/* Hourly Schedule */}
-      <div ref={scrollContainerRef} className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg smooth-scroll will-change-scroll max-h-[600px] overflow-y-auto" style={{ scrollBehavior: 'smooth', transform: 'translateZ(0)' }}>
+      <div ref={scrollContainerRef} className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden shadow-lg max-h-[600px] overflow-y-auto" style={{ 
+        scrollBehavior: 'smooth', 
+        transform: 'translate3d(0, 0, 0)',
+        backfaceVisibility: 'hidden',
+        willChange: 'scroll-position, transform',
+        contain: 'layout style paint',
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain'
+      }}>
         {TIME_SLOTS.map((timeSlot, index) => {
           const { events: slotEvents, tasks: slotTasks } = getItemsForTimeSlot(timeSlot.hour);
           const isCurrentHour = isToday(currentDay) && getHours(new Date()) === timeSlot.hour;
@@ -307,10 +319,14 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
               
               {/* Content Area */}
               <div 
-                className={`flex-1 min-h-[80px] p-3 cursor-pointer transition-all duration-200 relative will-change-transform ${
+                className={`flex-1 min-h-[80px] p-3 cursor-pointer transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] relative ${
                   !hasItems ? "hover:bg-accent/20 hover:shadow-sm" : ""
                 }`}
-                style={{ transform: 'translateZ(0)' }}
+                style={{ 
+                  transform: 'translate3d(0, 0, 0)',
+                  backfaceVisibility: 'hidden',
+                  contain: 'layout style'
+                }}
                 onClick={() => !hasItems && handleCellClick(timeSlot.hour)}
               >
                 {/* Current time indicator */}
