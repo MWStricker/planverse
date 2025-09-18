@@ -345,28 +345,50 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
       const root = document.documentElement;
       
       if (colorType === 'primary') {
-        // Primary color changes background and main theme colors
-        root.style.setProperty('--background', `${h} ${Math.max(s - 30, 0)}% ${Math.min(l + 45, 98)}%`);
-        root.style.setProperty('--foreground', l > 50 ? '0 0% 5%' : '0 0% 95%');
+        // Primary color changes background and main theme colors with proper contrast
+        const bgLightness = Math.min(Math.max(l + 35, 92), 98); // Ensure light enough background
+        const cardLightness = Math.min(Math.max(l + 30, 88), 95); // Slightly darker than background
+        const mutedLightness = Math.min(Math.max(l + 25, 85), 92); // Even slightly darker
         
-        // Set card and muted colors to complement background
-        root.style.setProperty('--card', `${h} ${Math.max(s - 35, 0)}% ${Math.min(l + 40, 95)}%`);
-        root.style.setProperty('--card-foreground', l > 50 ? '0 0% 10%' : '0 0% 90%');
-        root.style.setProperty('--muted', `${h} ${Math.max(s - 25, 0)}% ${Math.min(l + 35, 92)}%`);
-        root.style.setProperty('--muted-foreground', l > 50 ? '0 0% 25%' : '0 0% 75%');
+        // Helper function for contrasting text
+        const getContrastingText = (backgroundL: number) => {
+          return backgroundL > 60 ? '0 0% 10%' : '0 0% 95%';
+        };
         
-        // Set border colors to match theme
-        root.style.setProperty('--border', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 25, 85)}%`);
-        root.style.setProperty('--input', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 25, 85)}%`);
+        // Helper function for visible borders
+        const getContrastingBorder = (backgroundL: number, h: number, s: number) => {
+          if (backgroundL > 70) {
+            return `${h} ${Math.max(s - 10, 0)}% ${Math.max(backgroundL - 25, 15)}%`;
+          } else {
+            return `${h} ${Math.max(s - 10, 0)}% ${Math.min(backgroundL + 25, 85)}%`;
+          }
+        };
+        
+        // Set background colors with proper contrast
+        root.style.setProperty('--background', `${h} ${Math.max(s - 30, 5)}% ${bgLightness}%`);
+        root.style.setProperty('--foreground', getContrastingText(bgLightness));
+        
+        // Set card colors
+        root.style.setProperty('--card', `${h} ${Math.max(s - 35, 5)}% ${cardLightness}%`);
+        root.style.setProperty('--card-foreground', getContrastingText(cardLightness));
+        
+        // Set muted colors
+        root.style.setProperty('--muted', `${h} ${Math.max(s - 25, 5)}% ${mutedLightness}%`);
+        root.style.setProperty('--muted-foreground', '0 0% 40%'); // Always readable
+        
+        // Set border colors with proper visibility
+        root.style.setProperty('--border', getContrastingBorder(bgLightness, h, s));
+        root.style.setProperty('--input', getContrastingBorder(bgLightness, h, s));
         
         // Set popover colors
-        root.style.setProperty('--popover', `${h} ${Math.max(s - 30, 0)}% ${Math.min(l + 45, 98)}%`);
-        root.style.setProperty('--popover-foreground', l > 50 ? '0 0% 5%' : '0 0% 95%');
+        root.style.setProperty('--popover', `${h} ${Math.max(s - 30, 5)}% ${bgLightness}%`);
+        root.style.setProperty('--popover-foreground', getContrastingText(bgLightness));
         
-        // Set sidebar background to match
-        root.style.setProperty('--sidebar-background', `${h} ${Math.max(s - 25, 0)}% ${Math.min(l + 35, 95)}%`);
-        root.style.setProperty('--sidebar-foreground', l > 50 ? '0 0% 10%' : '0 0% 90%');
-        root.style.setProperty('--sidebar-border', `${h} ${Math.max(s - 15, 0)}% ${Math.min(l + 20, 80)}%`);
+        // Set sidebar colors
+        const sidebarLightness = Math.min(Math.max(l + 30, 88), 95);
+        root.style.setProperty('--sidebar-background', `${h} ${Math.max(s - 25, 5)}% ${sidebarLightness}%`);
+        root.style.setProperty('--sidebar-foreground', getContrastingText(sidebarLightness));
+        root.style.setProperty('--sidebar-border', getContrastingBorder(sidebarLightness, h, s));
         
         // Save to preferences
         await updatePreference('customPrimaryColor', color);
