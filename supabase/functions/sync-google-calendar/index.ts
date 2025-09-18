@@ -328,7 +328,7 @@ serve(async (req) => {
         console.log('🔑 Access token (first 50 chars):', currentAccessToken?.substring(0, 50) + '...');
         
         const taskListsResponse = await fetch(
-          'https://tasks.googleapis.com/tasks/v1/users/@me/lists',
+          'https://www.googleapis.com/tasks/v1/users/@me/lists',
           {
             headers: {
               'Authorization': `Bearer ${currentAccessToken}`,
@@ -351,7 +351,7 @@ serve(async (req) => {
           // Try to fetch from default task list first
           console.log('🔍 Trying to fetch from default task list (@default)...');
           const defaultTasksResponse = await fetch(
-            'https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=false&maxResults=100',
+            'https://www.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=false&maxResults=100',
             {
               headers: {
                 'Authorization': `Bearer ${currentAccessToken}`,
@@ -383,7 +383,7 @@ serve(async (req) => {
           for (const taskList of taskLists) {
             console.log(`📝 Fetching tasks from list: ${taskList.title} (ID: ${taskList.id})`);
             
-            const tasksUrl = `https://tasks.googleapis.com/tasks/v1/lists/${taskList.id}/tasks?showCompleted=true&showHidden=false&maxResults=100`;
+            const tasksUrl = `https://www.googleapis.com/tasks/v1/lists/${taskList.id}/tasks?showCompleted=true&showHidden=false&maxResults=100`;
             console.log(`🔗 Tasks API URL: ${tasksUrl}`);
             
             const tasksResponse = await fetch(tasksUrl, {
