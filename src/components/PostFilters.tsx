@@ -19,7 +19,7 @@ interface PostFiltersProps {
 }
 
 const POST_TYPES = [
-  { value: '', label: 'All Types', icon: Globe },
+  { value: 'all-types', label: 'All Types', icon: Globe },
   { value: 'general', label: 'General', icon: Globe },
   { value: 'academic', label: 'Academic', icon: GraduationCap },
   { value: 'social', label: 'Social', icon: Users },
@@ -37,9 +37,9 @@ const SORT_OPTIONS = [
 
 export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPostType, setSelectedPostType] = useState('');
-  const [selectedMajor, setSelectedMajor] = useState('');
-  const [selectedSchool, setSelectedSchool] = useState('');
+  const [selectedPostType, setSelectedPostType] = useState('all-types');
+  const [selectedMajor, setSelectedMajor] = useState('all-majors');
+  const [selectedSchool, setSelectedSchool] = useState('all-schools');
   const [selectedSort, setSelectedSort] = useState('newest');
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -52,7 +52,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
   }>) => {
     const newFilters = {
       search: updates.search ?? searchQuery,
-      postType: updates.postType ?? selectedPostType,
+      postType: updates.postType === 'all-types' ? '' : (updates.postType ?? selectedPostType),
       major: updates.major === 'all-majors' ? '' : (updates.major ?? selectedMajor),
       school: updates.school === 'all-schools' ? '' : (updates.school ?? selectedSchool),
       sortBy: updates.sortBy ?? selectedSort,
@@ -71,14 +71,14 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
   const clearFilters = () => {
     handleFilterUpdate({
       search: '',
-      postType: '',
-      major: '',
-      school: '',
+      postType: 'all-types',
+      major: 'all-majors',
+      school: 'all-schools',
       sortBy: 'newest'
     });
   };
 
-  const activeFiltersCount = [selectedPostType, selectedMajor, selectedSchool].filter(Boolean).length;
+  const activeFiltersCount = [selectedPostType === 'all-types' ? '' : selectedPostType, selectedMajor === 'all-majors' ? '' : selectedMajor, selectedSchool === 'all-schools' ? '' : selectedSchool].filter(Boolean).length;
 
   return (
     <Card className="mb-6">
