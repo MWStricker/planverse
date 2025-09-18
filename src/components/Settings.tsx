@@ -345,28 +345,51 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
       const root = document.documentElement;
       
       if (colorType === 'primary') {
-        // Set primary color and its variants for complete theme change
+        // Primary color changes background and main theme colors
+        root.style.setProperty('--background', `${h} ${Math.max(s - 30, 0)}% ${Math.min(l + 45, 98)}%`);
+        root.style.setProperty('--foreground', l > 50 ? '0 0% 5%' : '0 0% 95%');
+        
+        // Set card and muted colors to complement background
+        root.style.setProperty('--card', `${h} ${Math.max(s - 35, 0)}% ${Math.min(l + 40, 95)}%`);
+        root.style.setProperty('--card-foreground', l > 50 ? '0 0% 10%' : '0 0% 90%');
+        root.style.setProperty('--muted', `${h} ${Math.max(s - 25, 0)}% ${Math.min(l + 35, 92)}%`);
+        root.style.setProperty('--muted-foreground', l > 50 ? '0 0% 25%' : '0 0% 75%');
+        
+        // Set border colors to match theme
+        root.style.setProperty('--border', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 25, 85)}%`);
+        root.style.setProperty('--input', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 25, 85)}%`);
+        
+        // Set popover colors
+        root.style.setProperty('--popover', `${h} ${Math.max(s - 30, 0)}% ${Math.min(l + 45, 98)}%`);
+        root.style.setProperty('--popover-foreground', l > 50 ? '0 0% 5%' : '0 0% 95%');
+        
+        // Set sidebar background to match
+        root.style.setProperty('--sidebar-background', `${h} ${Math.max(s - 25, 0)}% ${Math.min(l + 35, 95)}%`);
+        root.style.setProperty('--sidebar-foreground', l > 50 ? '0 0% 10%' : '0 0% 90%');
+        root.style.setProperty('--sidebar-border', `${h} ${Math.max(s - 15, 0)}% ${Math.min(l + 20, 80)}%`);
+        
+        // Save to preferences
+        await updatePreference('customPrimaryColor', color);
+      } else {
+        // Secondary color now acts as accent/button color (what primary was before)
         root.style.setProperty('--primary', hslString);
         root.style.setProperty('--primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
         root.style.setProperty('--primary-muted', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
         root.style.setProperty('--primary-dark', `${h} ${s}% ${Math.max(l - 15, 5)}%`);
         
-        // Update accent to complement primary
-        root.style.setProperty('--accent', `${(h + 30) % 360} ${s}% ${l}%`);
+        // Set accent colors
+        root.style.setProperty('--accent', `${(h + 15) % 360} ${s}% ${l}%`);
         root.style.setProperty('--accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-        root.style.setProperty('--accent-muted', `${(h + 30) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+        root.style.setProperty('--accent-muted', `${(h + 15) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
         
-        // Update sidebar colors to match theme
+        // Set sidebar interactive colors
         root.style.setProperty('--sidebar-primary', hslString);
         root.style.setProperty('--sidebar-primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-        root.style.setProperty('--sidebar-accent', `${(h + 15) % 360} ${s}% ${l}%`);
+        root.style.setProperty('--sidebar-accent', `${(h + 10) % 360} ${s}% ${l}%`);
+        root.style.setProperty('--sidebar-accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
         
-        // Save to preferences
-        await updatePreference('customPrimaryColor', color);
-      } else {
-        // Set secondary color
-        root.style.setProperty('--secondary', hslString);
-        root.style.setProperty('--secondary-foreground', l > 50 ? '0 0% 0%' : '0 0% 100%');
+        // Set ring color for focus states
+        root.style.setProperty('--ring', hslString);
         
         // Save to preferences
         await updatePreference('customSecondaryColor', color);
@@ -396,18 +419,22 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
     
     const root = document.documentElement;
     // Remove all custom color properties to restore defaults
-    root.style.removeProperty('--primary');
-    root.style.removeProperty('--primary-foreground');
-    root.style.removeProperty('--primary-muted');
-    root.style.removeProperty('--primary-dark');
-    root.style.removeProperty('--secondary');
-    root.style.removeProperty('--secondary-foreground');
-    root.style.removeProperty('--accent');
-    root.style.removeProperty('--accent-foreground');
-    root.style.removeProperty('--accent-muted');
-    root.style.removeProperty('--sidebar-primary');
-    root.style.removeProperty('--sidebar-primary-foreground');
-    root.style.removeProperty('--sidebar-accent');
+    const propertiesToReset = [
+      '--primary', '--primary-foreground', '--primary-muted', '--primary-dark',
+      '--secondary', '--secondary-foreground',
+      '--accent', '--accent-foreground', '--accent-muted',
+      '--background', '--foreground',
+      '--card', '--card-foreground',
+      '--muted', '--muted-foreground',
+      '--border', '--input',
+      '--popover', '--popover-foreground',
+      '--sidebar-background', '--sidebar-foreground', '--sidebar-border',
+      '--sidebar-primary', '--sidebar-primary-foreground',
+      '--sidebar-accent', '--sidebar-accent-foreground',
+      '--ring'
+    ];
+    
+    propertiesToReset.forEach(prop => root.style.removeProperty(prop));
     
     toast({
       title: "Colors reset",
@@ -746,7 +773,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <div>
                 <h4 className="font-medium text-foreground mb-2">Primary Color</h4>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Changes the entire website theme including dark mode, accents, and sidebar
+                  Changes the website background, cards, and overall theme colors
                 </p>
               </div>
               
@@ -826,7 +853,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <div>
                 <h4 className="font-medium text-foreground mb-2">Secondary Color</h4>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Customize secondary elements and button variants
+                  Controls buttons, links, and interactive accent elements
                 </p>
               </div>
               

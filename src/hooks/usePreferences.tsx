@@ -209,34 +209,58 @@ export const usePreferences = () => {
       return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
     };
 
-    // Apply custom primary color (affects entire theme)
+    // Apply custom primary color (affects background and main theme)
     if (prefs.customPrimaryColor) {
       const [h, s, l] = hexToHsl(prefs.customPrimaryColor);
+      
+      // Set background colors based on primary
+      root.style.setProperty('--background', `${h} ${Math.max(s - 30, 0)}% ${Math.min(l + 45, 98)}%`);
+      root.style.setProperty('--foreground', l > 50 ? '0 0% 5%' : '0 0% 95%');
+      
+      // Set card and muted colors to complement background
+      root.style.setProperty('--card', `${h} ${Math.max(s - 35, 0)}% ${Math.min(l + 40, 95)}%`);
+      root.style.setProperty('--card-foreground', l > 50 ? '0 0% 10%' : '0 0% 90%');
+      root.style.setProperty('--muted', `${h} ${Math.max(s - 25, 0)}% ${Math.min(l + 35, 92)}%`);
+      root.style.setProperty('--muted-foreground', l > 50 ? '0 0% 25%' : '0 0% 75%');
+      
+      // Set border colors to match theme
+      root.style.setProperty('--border', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 25, 85)}%`);
+      root.style.setProperty('--input', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 25, 85)}%`);
+      
+      // Set popover colors
+      root.style.setProperty('--popover', `${h} ${Math.max(s - 30, 0)}% ${Math.min(l + 45, 98)}%`);
+      root.style.setProperty('--popover-foreground', l > 50 ? '0 0% 5%' : '0 0% 95%');
+      
+      // Set sidebar background to match
+      root.style.setProperty('--sidebar-background', `${h} ${Math.max(s - 25, 0)}% ${Math.min(l + 35, 95)}%`);
+      root.style.setProperty('--sidebar-foreground', l > 50 ? '0 0% 10%' : '0 0% 90%');
+      root.style.setProperty('--sidebar-border', `${h} ${Math.max(s - 15, 0)}% ${Math.min(l + 20, 80)}%`);
+    }
+
+    // Apply custom secondary color (now acts as accent/button color)
+    if (prefs.customSecondaryColor) {
+      const [h, s, l] = hexToHsl(prefs.customSecondaryColor);
       const hslString = `${h} ${s}% ${l}%`;
       
-      // Set primary color and its variants
+      // Set primary/accent colors (buttons, links, interactive elements)
       root.style.setProperty('--primary', hslString);
       root.style.setProperty('--primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
       root.style.setProperty('--primary-muted', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
       root.style.setProperty('--primary-dark', `${h} ${s}% ${Math.max(l - 15, 5)}%`);
       
-      // Update accent to complement primary
-      root.style.setProperty('--accent', `${(h + 30) % 360} ${s}% ${l}%`);
+      // Set accent colors
+      root.style.setProperty('--accent', `${(h + 15) % 360} ${s}% ${l}%`);
       root.style.setProperty('--accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-      root.style.setProperty('--accent-muted', `${(h + 30) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+      root.style.setProperty('--accent-muted', `${(h + 15) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
       
-      // Update sidebar colors to match theme
+      // Set sidebar interactive colors
       root.style.setProperty('--sidebar-primary', hslString);
       root.style.setProperty('--sidebar-primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
-      root.style.setProperty('--sidebar-accent', `${(h + 15) % 360} ${s}% ${l}%`);
-    }
-
-    // Apply custom secondary color
-    if (prefs.customSecondaryColor) {
-      const [h, s, l] = hexToHsl(prefs.customSecondaryColor);
-      const hslString = `${h} ${s}% ${l}%`;
-      root.style.setProperty('--secondary', hslString);
-      root.style.setProperty('--secondary-foreground', l > 50 ? '0 0% 0%' : '0 0% 100%');
+      root.style.setProperty('--sidebar-accent', `${(h + 10) % 360} ${s}% ${l}%`);
+      root.style.setProperty('--sidebar-accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+      
+      // Set ring color for focus states
+      root.style.setProperty('--ring', hslString);
     }
   };
 
