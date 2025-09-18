@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -145,6 +145,8 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   const [schoolSearchQuery, setSchoolSearchQuery] = useState('');
   const [courseIcons_State, setCourseIcons_State] = useState<Record<string, string>>({});
   const [courses, setCourses] = useState<Array<{code: string, icon?: string}>>([]);
+  const [customPrimaryColor, setCustomPrimaryColor] = useState('#3b82f6');
+  const [isChangingColor, setIsChangingColor] = useState(false);
   
   // Get all public universities sorted alphabetically by name
   const getAllPublicUniversities = () => {
@@ -208,6 +210,13 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  // Load custom color from preferences
+  useEffect(() => {
+    if (preferences.customPrimaryColor) {
+      setCustomPrimaryColor(preferences.customPrimaryColor);
+    }
+  }, [preferences.customPrimaryColor]);
 
   // Load course icons and courses
   useEffect(() => {
@@ -293,6 +302,73 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
         console.error('Error saving course icon:', error);
       }
     }
+  };
+
+  // Convert hex to HSL
+  const hexToHsl = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+  };
+
+  const handleApplyCustomColor = async () => {
+    setIsChangingColor(true);
+    try {
+      const [h, s, l] = hexToHsl(customPrimaryColor);
+      const hslString = `${h} ${s}% ${l}%`;
+      
+      // Apply the color to CSS variables
+      const root = document.documentElement;
+      root.style.setProperty('--primary', hslString);
+      
+      // Save to preferences
+      await updatePreference('customPrimaryColor', customPrimaryColor);
+      
+      toast({
+        title: "Color applied!",
+        description: "Your custom primary color has been set.",
+      });
+    } catch (error) {
+      console.error('Error applying custom color:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply custom color. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingColor(false);
+    }
+  };
+
+  const handleResetColors = () => {
+    const defaultColor = '#3b82f6';
+    setCustomPrimaryColor(defaultColor);
+    const root = document.documentElement;
+    root.style.removeProperty('--primary');
+    
+    toast({
+      title: "Colors reset",
+      description: "Theme colors have been reset to default.",
+    });
   };
 
   // Auto-save notification changes
@@ -607,6 +683,128 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                 </span>
               </Button>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Custom Theme Colors */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Custom Colors
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium text-foreground mb-2">Primary Color</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                Customize your primary theme color with a hex code
+              </p>
+            </div>
+            
+            {/* Color Picker */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-16 h-16 rounded-lg border-2 border-border/20 cursor-pointer hover:border-border/40 transition-colors"
+                  style={{ backgroundColor: customPrimaryColor }}
+                  onClick={() => document.getElementById('color-input')?.click()}
+                />
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="hex-input"
+                      value={customPrimaryColor}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
+                          setCustomPrimaryColor(value);
+                        }
+                      }}
+                      placeholder="#3b82f6"
+                      className="w-32 font-mono text-sm"
+                      maxLength={7}
+                    />
+                    <input
+                      id="color-input"
+                      type="color"
+                      value={customPrimaryColor}
+                      onChange={(e) => setCustomPrimaryColor(e.target.value)}
+                      className="sr-only"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleApplyCustomColor}
+                      disabled={isChangingColor}
+                      className="flex items-center gap-2"
+                    >
+                      {isChangingColor ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Palette className="h-4 w-4" />
+                      )}
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Color Intensity Slider */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Color Intensity</label>
+                  <span className="text-sm text-muted-foreground">100%</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    defaultValue="100"
+                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
+                    style={{
+                      background: `linear-gradient(90deg, transparent 0%, ${customPrimaryColor} 100%)`
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Color Presets */}
+              <div className="space-y-2">
+                <h5 className="text-sm font-medium text-foreground">Quick Presets</h5>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { name: 'Blue', color: '#3b82f6' },
+                    { name: 'Purple', color: '#8b5cf6' },
+                    { name: 'Green', color: '#10b981' },
+                    { name: 'Orange', color: '#f59e0b' },
+                    { name: 'Red', color: '#ef4444' },
+                    { name: 'Pink', color: '#ec4899' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.name}
+                      className="w-8 h-8 rounded-md border-2 border-border/20 hover:border-border/40 transition-colors"
+                      style={{ backgroundColor: preset.color }}
+                      onClick={() => setCustomPrimaryColor(preset.color)}
+                      title={preset.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetColors}
+                className="w-full"
+              >
+                Reset to Default
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
