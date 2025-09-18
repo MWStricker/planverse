@@ -183,13 +183,6 @@ export const Navigation = ({
               <>
                 <h1 className="text-lg font-bold text-foreground">Planverse</h1>
                 <p className="text-xs text-muted-foreground">Smart Scheduling</p>
-                <div className="mt-2 flex items-center justify-center gap-2">
-                  <NotificationCenter />
-                  <AnalogClock />
-                </div>
-                <Badge variant="secondary" className="text-xs mt-1">
-                  {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
-                </Badge>
               </>
             )}
           </div>
@@ -311,9 +304,13 @@ export const Navigation = ({
           </Button>
         </div>
         
-        {/* Digital Clock */}
+        {/* Bottom Panel */}
         {!isCollapsed && (
           <div className="mt-3 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <NotificationCenter />
+              <AnalogClock />
+            </div>
             <div className="text-xs text-muted-foreground text-center">
               {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
