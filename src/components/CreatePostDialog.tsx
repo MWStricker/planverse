@@ -24,6 +24,7 @@ import { universities } from '@/data/universities';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
+import { fileToDataURL } from '@/lib/utils';
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -111,15 +112,16 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const dataURL = await fileToDataURL(file);
+        setImagePreview(dataURL);
+      } catch (error) {
+        console.error('Error reading file:', error);
+      }
     }
   };
 

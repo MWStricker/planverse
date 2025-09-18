@@ -5,6 +5,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Simple file to data URL reader
+export async function fileToDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Simple file to base64 (without data URL prefix)
+export async function fileToBase64(file: File): Promise<string> {
+  const dataURL = await fileToDataURL(file);
+  return dataURL.split(',')[1] || '';
+}
+
 // Compress an image file on the client and return base64 (no data URL prefix)
 export async function imageFileToBase64Compressed(
   file: File,

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { fileToDataURL } from "@/lib/utils";
 
 interface ScheduleEvent {
   course: string;
@@ -72,58 +73,41 @@ export const ScheduleScanner = () => {
     setScheduleAnalysis(null);
     
     try {
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const imageData = reader.result as string;
+      // Convert file to data URL
+      const imageData = await fileToDataURL(file);
           
-          console.log('Calling schedule scanner function...');
-          const { data, error } = await supabase.functions.invoke('ai-schedule-scanner', {
-            body: { imageData }
-          });
+      console.log('Calling schedule scanner function...');
+      const { data, error } = await supabase.functions.invoke('ai-schedule-scanner', {
+        body: { imageData }
+      });
 
-          if (error) {
-            console.error('Schedule scanner error:', error);
-            toast({
-              title: "Error",
-              description: error.message || "Failed to process the schedule image. Please try again.",
-              variant: "destructive",
-            });
-            setIsProcessing(false);
-            return;
-          }
+      if (error) {
+        console.error('Schedule scanner error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to process the schedule image. Please try again.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
 
-          if (data.error) {
-            toast({
-              title: "Processing Error",
-              description: data.error,
-              variant: "destructive",
-            });
-            setIsProcessing(false);
-            return;
-          }
+      if (data.error) {
+        toast({
+          title: "Processing Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
 
-          setScheduleAnalysis(data);
-          setSelectedEvents(new Set()); // Reset selected events
-          toast({
-            title: "Schedule analyzed successfully",
-            description: `Detected ${data.format} with ${data.events.length} events (${Math.round(data.confidence * 100)}% confidence)`,
-          });
-          
-        } catch (error) {
-          console.error('Error processing schedule:', error);
-          toast({
-            title: "Error",
-            description: "Failed to process the schedule image. Please try again.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsProcessing(false);
-        }
-      };
-      
-      reader.readAsDataURL(file);
+      setScheduleAnalysis(data);
+      setSelectedEvents(new Set()); // Reset selected events
+      toast({
+        title: "Schedule analyzed successfully",
+        description: `Detected ${data.format} with ${data.events.length} events (${Math.round(data.confidence * 100)}% confidence)`,
+      });
       
     } catch (error) {
       console.error('Error uploading file:', error);

@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { imageFileToBase64Compressed, cn } from "@/lib/utils";
+import { imageFileToBase64Compressed, cn, fileToBase64 } from "@/lib/utils";
 import { ocrExtractText } from "@/lib/ocr";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
@@ -1011,15 +1011,7 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (we
       let base64: string;
       let mimeType: string;
       if (file.type === 'image/png') {
-        base64 = await new Promise<string>((resolve, reject) => {
-          const fr = new FileReader();
-          fr.onload = () => {
-            const s = String(fr.result || '');
-            resolve(s.split(',')[1] || '');
-          };
-          fr.onerror = reject;
-          fr.readAsDataURL(file);
-        });
+        base64 = await fileToBase64(file);
         mimeType = 'image/png';
       } else {
         const res = await imageFileToBase64Compressed(file, 1200, 'image/jpeg', 0.75);
