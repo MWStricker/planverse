@@ -992,25 +992,6 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
       </Card>
       )}
 
-      {/* Help text when custom theme is not selected */}
-      {preferences.theme !== 'custom' && (
-        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Palette className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <div>
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  Want to customize colors?
-                </p>
-                <p className="text-xs text-blue-600 dark:text-blue-300">
-                  Select the "Custom" theme above to access color customization options.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Text Preferences */}
       <Card>
         <CardHeader>
