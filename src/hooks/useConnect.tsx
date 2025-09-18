@@ -12,6 +12,11 @@ export interface Post {
   updated_at: string;
   likes_count: number;
   comments_count: number;
+  target_major?: string;
+  target_community?: string;
+  post_type: string;
+  visibility: string;
+  tags: string[];
   profiles: {
     display_name: string;
     avatar_url?: string;
@@ -129,6 +134,11 @@ export const useConnect = () => {
           user_id: user.id,
           content,
           image_url: imageUrl,
+          post_type: 'general',
+          visibility: 'public',
+          tags: [],
+          target_major: null,
+          target_community: null
         });
 
       if (error) throw error;

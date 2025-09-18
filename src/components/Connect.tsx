@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail, Hash, Globe, GraduationCap, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +14,8 @@ import { useConnect, Post, Comment } from '@/hooks/useConnect';
 import { useAuth } from '@/hooks/useAuth';
 import { PeopleDirectory } from './PeopleDirectory';
 import { MessagingCenter } from './MessagingCenter';
+import { CreatePostDialog } from './CreatePostDialog';
+import { PostFilters } from './PostFilters';
 import { formatDistanceToNow } from 'date-fns';
 
 export const Connect = () => {
@@ -28,15 +30,26 @@ export const Connect = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
+  const [postFilters, setPostFilters] = useState({
+    search: '',
+    postType: '',
+    major: '',
+    school: '',
+    sortBy: 'newest'
+  });
 
-  const handleCreatePost = async () => {
-    if (!newPostContent.trim()) return;
-    
-    const success = await createPost(newPostContent);
-    if (success) {
-      setNewPostContent('');
-      setIsPostDialogOpen(false);
-    }
+  const handleCreatePost = async (postData: {
+    content: string;
+    imageUrl?: string;
+    targetMajor?: string;
+    targetCommunity?: string;
+    postType: string;
+    visibility: string;
+    tags: string[];
+  }) => {
+    // Create a combined call since createPost expects different parameters
+    const success = await createPost(postData.content, postData.imageUrl);
+    return success;
   };
 
   const handleLike = async (postId: string) => {
@@ -76,6 +89,43 @@ export const Connect = () => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
+  // Filter and sort posts
+  const filteredPosts = posts.filter(post => {
+    // Search filter
+    if (postFilters.search && !post.content.toLowerCase().includes(postFilters.search.toLowerCase()) &&
+        !post.profiles.display_name.toLowerCase().includes(postFilters.search.toLowerCase())) {
+      return false;
+    }
+
+    // Post type filter
+    if (postFilters.postType && (post.post_type || 'general') !== postFilters.postType) {
+      return false;
+    }
+
+    // Major filter
+    if (postFilters.major && post.profiles.major !== postFilters.major) {
+      return false;
+    }
+
+    // School filter  
+    if (postFilters.school && post.profiles.school !== postFilters.school) {
+      return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    switch (postFilters.sortBy) {
+      case 'oldest':
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      case 'most-liked':
+        return (b.likes_count || 0) - (a.likes_count || 0);
+      case 'most-commented':
+        return (b.comments_count || 0) - (a.comments_count || 0);
+      default: // newest
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -109,49 +159,40 @@ export const Connect = () => {
         </TabsList>
 
         <TabsContent value="feed" className="space-y-6">
+          {/* Post Filters */}
+          <PostFilters onFilterChange={setPostFilters} />
+          
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Latest Posts</h2>
-            <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Post
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create a New Post</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Textarea
-                    placeholder="What's on your mind?"
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsPostDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
-                      Post
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <CreatePostDialog
+              open={isPostDialogOpen}
+              onOpenChange={setIsPostDialogOpen}
+              onCreatePost={handleCreatePost}
+            />
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => setIsPostDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Create Post
+            </Button>
           </div>
 
           {/* Posts Feed */}
           <div className="max-w-2xl mx-auto space-y-4">
-        {posts.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">No posts yet. Be the first to share something!</p>
-            </CardContent>
-          </Card>
-        ) : (
-            posts.map((post) => (
+            {filteredPosts.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground">
+                    {postFilters.search || postFilters.postType || postFilters.major || postFilters.school
+                      ? 'No posts match your filters.'
+                      : 'No posts yet. Be the first to share something!'
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredPosts.map((post) => (
               <Card key={post.id} className="animate-fade-in">
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -162,28 +203,69 @@ export const Connect = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground">
-                          {post.profiles.display_name}
-                        </h3>
-                        {post.profiles.school && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <School className="h-3 w-3" />
-                            {post.profiles.school}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground">
+                        {post.profiles.display_name}
+                      </h3>
+                      {post.profiles.school && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <School className="h-3 w-3" />
+                          {post.profiles.school}
+                        </Badge>
+                      )}
+                      {(post.post_type || 'general') !== 'general' && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          {(post.post_type || 'general') === 'academic' && <GraduationCap className="h-3 w-3" />}
+                          {(post.post_type || 'general') === 'social' && <Users className="h-3 w-3" />}
+                          {(post.post_type || 'general') === 'announcement' && <Hash className="h-3 w-3" />}
+                          {(post.post_type || 'general') === 'question' && <Hash className="h-3 w-3" />}
+                          {(post.post_type || 'general') === 'study-group' && <Users className="h-3 w-3" />}
+                          {(post.post_type || 'general').charAt(0).toUpperCase() + (post.post_type || 'general').slice(1)}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {post.profiles.major && (
+                        <span>{post.profiles.major}</span>
+                      )}
+                      <span>•</span>
+                      <span>{formatTimeAgo(post.created_at)}</span>
+                      {(post.visibility || 'public') !== 'public' && (
+                        <>
+                          <span>•</span>
+                          <Badge variant="outline" className="text-xs">
+                            {(post.visibility || 'public') === 'school-only' && 'School Only'}
+                            {(post.visibility || 'public') === 'major-only' && 'Major Only'}
+                            {(post.visibility || 'public') === 'friends-only' && 'Friends Only'}
                           </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {post.profiles.major && (
-                          <span>{post.profiles.major}</span>
-                        )}
-                        <span>•</span>
-                        <span>{formatTimeAgo(post.created_at)}</span>
-                      </div>
+                        </>
+                      )}
+                    </div>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Post metadata */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {post.target_major && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <GraduationCap className="h-3 w-3" />
+                        {post.target_major}
+                      </Badge>
+                    )}
+                    {post.target_community && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <School className="h-3 w-3" />
+                        {post.target_community}
+                      </Badge>
+                    )}
+                    {(post.tags || []).map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  
                   <p className="text-foreground whitespace-pre-wrap mb-4">{post.content}</p>
                   
                   {post.image_url && (

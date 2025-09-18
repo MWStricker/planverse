@@ -349,8 +349,13 @@ export type Database = {
           id: string
           image_url: string | null
           likes_count: number | null
+          post_type: string | null
+          tags: string[] | null
+          target_community: string | null
+          target_major: string | null
           updated_at: string
           user_id: string
+          visibility: string | null
         }
         Insert: {
           comments_count?: number | null
@@ -359,8 +364,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          post_type?: string | null
+          tags?: string[] | null
+          target_community?: string | null
+          target_major?: string | null
           updated_at?: string
           user_id: string
+          visibility?: string | null
         }
         Update: {
           comments_count?: number | null
@@ -369,8 +379,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          post_type?: string | null
+          tags?: string[] | null
+          target_community?: string | null
+          target_major?: string | null
           updated_at?: string
           user_id?: string
+          visibility?: string | null
         }
         Relationships: []
       }
