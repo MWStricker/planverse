@@ -2137,8 +2137,8 @@ export const Dashboard = () => {
                      ])
                    );
 
-                    return (
-                      <div className="space-y-4">
+                     return (
+                       <div className="max-h-96 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">{/* max-h-96 = 384px, making it much more compact */}
                         {Object.values(sortedGroups).map((group: any, groupIndex: number) => (
                          <div key={groupIndex} className="space-y-2">
                            <div className="flex items-center gap-2">
