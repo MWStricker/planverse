@@ -2571,8 +2571,6 @@ export const Dashboard = () => {
       <div className="mt-8 space-y-6">
         <h2 className="text-2xl font-bold">Weekly Progress Overview</h2>
         
-        {/* DEBUG: Show exact incomplete assignments */}
-        <DebugWeeklyProgress userTasks={userTasks} userEvents={userEvents} />
         
         {/* Current Week - Detailed View */}
         <WeeklyProgressCard 
