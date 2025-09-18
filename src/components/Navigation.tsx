@@ -16,6 +16,7 @@ import { SortableTabItem } from "@/components/SortableTabItem";
 import { NotificationCenter } from "./NotificationCenter";
 import { useRealtime } from "@/hooks/useRealtime";
 import { UserStatusIndicator } from "./UserStatusIndicator";
+import { ProfilePage } from "./ProfilePage";
 
 interface NavigationProps {
   currentPage: string;
@@ -38,6 +39,7 @@ export const Navigation = ({
 }: NavigationProps) => {
   const [notifications] = useState(0);
   const [courses, setCourses] = useState<any[]>([]);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { liveEditedProfile } = useProfileEditing();
@@ -269,9 +271,13 @@ export const Navigation = ({
 
       {/* User Section */}
       <div className="p-4 border-t border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
-        <div className={`flex items-center gap-3 mb-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
-          isCollapsed ? 'justify-center' : ''
-        }`}>
+        <div 
+          className={`flex items-center gap-3 mb-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 ${
+            isCollapsed ? 'justify-center' : ''
+          }`}
+          onClick={() => setIsProfileOpen(true)}
+          title="View Profile"
+        >
           <Avatar className="h-10 w-10">
             <AvatarImage src={profile?.avatar_url} />
             <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white">
@@ -339,6 +345,12 @@ export const Navigation = ({
           </div>
         )}
       </div>
+
+      {/* Profile Page Modal */}
+      <ProfilePage 
+        open={isProfileOpen} 
+        onOpenChange={setIsProfileOpen} 
+      />
     </div>
   );
 };

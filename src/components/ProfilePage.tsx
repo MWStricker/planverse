@@ -1,0 +1,395 @@
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { 
+  User, 
+  GraduationCap, 
+  School, 
+  Calendar, 
+  MapPin, 
+  Edit2, 
+  Save, 
+  X,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { universities } from '@/data/universities';
+import { collegeMajors } from '@/data/collegeMajors';
+
+interface ProfilePageProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
+  const { user } = useAuth();
+  const { profile, refetch } = useProfile();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    display_name: profile?.display_name || '',
+    school: profile?.school || '',
+    major: profile?.major || '',
+    graduation_year: profile?.graduation_year || new Date().getFullYear() + 4,
+    bio: profile?.bio || '',
+    campus_location: profile?.campus_location || '',
+    is_public: profile?.is_public ?? true
+  });
+
+  // Update form data when profile changes
+  React.useEffect(() => {
+    if (profile) {
+      setFormData({
+        display_name: profile.display_name || '',
+        school: profile.school || '',
+        major: profile.major || '',
+        graduation_year: profile.graduation_year || new Date().getFullYear() + 4,
+        bio: profile.bio || '',
+        campus_location: profile.campus_location || '',
+        is_public: profile.is_public ?? true
+      });
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          ...formData,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+
+      setIsEditing(false);
+      refetch();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset form data to original profile data
+    if (profile) {
+      setFormData({
+        display_name: profile.display_name || '',
+        school: profile.school || '',
+        major: profile.major || '',
+        graduation_year: profile.graduation_year || new Date().getFullYear() + 4,
+        bio: profile.bio || '',
+        campus_location: profile.campus_location || '',
+        is_public: profile.is_public ?? true
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const currentYear = new Date().getFullYear();
+  const graduationYears = Array.from({ length: 10 }, (_, i) => currentYear + i);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-3">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              My Profile
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              {!isEditing ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Edit
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    className="flex items-center gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isLoading ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {formData.is_public ? (
+              <>
+                <Eye className="h-4 w-4" />
+                This is how other users see your profile
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-4 w-4" />
+                Your profile is private
+              </>
+            )}
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Profile Header */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-xl">
+                    {formData.display_name?.charAt(0)?.toUpperCase() || 
+                     user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 space-y-3">
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="display_name">Display Name</Label>
+                        <Input
+                          id="display_name"
+                          value={formData.display_name}
+                          onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                          placeholder="Enter your display name"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="is_public"
+                          checked={formData.is_public}
+                          onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
+                        />
+                        <Label htmlFor="is_public">Make profile public</Label>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">
+                        {formData.display_name || user?.email?.split('@')[0] || 'User'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Academic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5" />
+                Academic Information
+              </CardTitle>
+              <CardDescription>
+                Your academic details visible to other students
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isEditing ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="school">School</Label>
+                    <Select
+                      value={formData.school}
+                      onValueChange={(value) => setFormData({ ...formData, school: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your school" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {universities.map((university) => (
+                          <SelectItem key={university.id} value={university.name}>
+                            {university.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="major">Major</Label>
+                    <Select
+                      value={formData.major}
+                      onValueChange={(value) => setFormData({ ...formData, major: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your major" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {collegeMajors.map((major) => (
+                          <SelectItem key={major} value={major}>
+                            {major}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="graduation_year">Graduation Year</Label>
+                    <Select
+                      value={formData.graduation_year?.toString()}
+                      onValueChange={(value) => setFormData({ ...formData, graduation_year: parseInt(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select graduation year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {graduationYears.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="campus_location">Campus Location</Label>
+                    <Input
+                      id="campus_location"
+                      value={formData.campus_location}
+                      onChange={(e) => setFormData({ ...formData, campus_location: e.target.value })}
+                      placeholder="e.g., Main Campus, Downtown"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <School className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {formData.school ? (
+                        <Badge variant="secondary">{formData.school}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">No school selected</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {formData.major ? (
+                        <Badge variant="outline">{formData.major}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">No major selected</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {formData.graduation_year ? (
+                        <Badge variant="secondary">Class of {formData.graduation_year}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">No graduation year</span>
+                      )}
+                    </span>
+                  </div>
+
+                  {formData.campus_location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{formData.campus_location}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Bio Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>About Me</CardTitle>
+              <CardDescription>
+                Tell other students about yourself
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <div>
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder="Write a short bio about yourself..."
+                    className="min-h-[100px]"
+                  />
+                </div>
+              ) : (
+                <div className="text-sm">
+                  {formData.bio ? (
+                    <p className="text-foreground whitespace-pre-wrap">{formData.bio}</p>
+                  ) : (
+                    <p className="text-muted-foreground italic">No bio added yet</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
