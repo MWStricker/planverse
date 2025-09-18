@@ -299,6 +299,8 @@ serve(async (req) => {
       try {
         // Get all task lists
         console.log('🔍 Requesting task lists from Google Tasks API...');
+        console.log('🔑 Access token (first 50 chars):', currentAccessToken?.substring(0, 50) + '...');
+        
         const taskListsResponse = await fetch(
           'https://tasks.googleapis.com/tasks/v1/users/@me/lists',
           {
@@ -322,17 +324,17 @@ serve(async (req) => {
 
           // Fetch tasks from each task list
           for (const taskList of taskLists) {
-            console.log(`📝 Fetching tasks from list: ${taskList.title}`);
+            console.log(`📝 Fetching tasks from list: ${taskList.title} (ID: ${taskList.id})`);
             
-            const tasksResponse = await fetch(
-              `https://tasks.googleapis.com/tasks/v1/lists/${taskList.id}/tasks?showCompleted=true&showHidden=true`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${currentAccessToken}`,
-                  'Content-Type': 'application/json',
-                },
-              }
-            );
+            const tasksUrl = `https://tasks.googleapis.com/tasks/v1/lists/${taskList.id}/tasks?showCompleted=true&showHidden=false&maxResults=100`;
+            console.log(`🔗 Tasks API URL: ${tasksUrl}`);
+            
+            const tasksResponse = await fetch(tasksUrl, {
+              headers: {
+                'Authorization': `Bearer ${currentAccessToken}`,
+                'Content-Type': 'application/json',
+              },
+            });
 
             if (tasksResponse.ok) {
               const tasksData = await tasksResponse.json();
@@ -349,11 +351,19 @@ serve(async (req) => {
               tasks = tasks.concat(listTasks);
               console.log(`✅ Fetched ${listTasks.length} tasks from ${taskList.title}`);
             } else {
+              const errorText = await tasksResponse.text();
               console.error(`❌ Failed to fetch tasks from list ${taskList.title}: ${tasksResponse.status}`);
+              console.error(`❌ Tasks API error details: ${errorText}`);
             }
           }
           
           console.log(`🎯 TOTAL TASKS FETCHED: ${tasks.length}`);
+          if (tasks.length === 0) {
+            console.log('⚠️  No tasks found. This could mean:');
+            console.log('   1. You have no tasks in Google Tasks');
+            console.log('   2. All your tasks are completed and hidden');
+            console.log('   3. There\'s a scope/permission issue');
+          }
         }
       } catch (taskError) {
         console.error('❌ Error fetching Google Tasks:', taskError);
