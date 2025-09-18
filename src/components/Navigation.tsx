@@ -124,14 +124,14 @@ export const Navigation = ({
     if (!forCanvas) return 'bg-muted/50';
     
     const colors = [
-      'bg-gradient-to-br from-blue-500/10 to-blue-600/15 border-blue-500/20',
-      'bg-gradient-to-br from-green-500/10 to-green-600/15 border-green-500/20',
-      'bg-gradient-to-br from-purple-500/10 to-purple-600/15 border-purple-500/20',
-      'bg-gradient-to-br from-orange-500/10 to-orange-600/15 border-orange-500/20',
-      'bg-gradient-to-br from-red-500/10 to-red-600/15 border-red-500/20',
-      'bg-gradient-to-br from-pink-500/10 to-pink-600/15 border-pink-500/20',
-      'bg-gradient-to-br from-indigo-500/10 to-indigo-600/15 border-indigo-500/20',
-      'bg-gradient-to-br from-teal-500/10 to-teal-600/15 border-teal-500/20'
+      'bg-blue-100 border-blue-300 text-blue-800',
+      'bg-green-100 border-green-300 text-green-800',
+      'bg-purple-100 border-purple-300 text-purple-800',
+      'bg-orange-100 border-orange-300 text-orange-800',
+      'bg-red-100 border-red-300 text-red-800',
+      'bg-pink-100 border-pink-300 text-pink-800',
+      'bg-indigo-100 border-indigo-300 text-indigo-800',
+      'bg-teal-100 border-teal-300 text-teal-800'
     ];
     
     let hash = 0;
