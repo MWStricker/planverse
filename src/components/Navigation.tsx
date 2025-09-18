@@ -281,37 +281,27 @@ export const Navigation = ({
           )}
         </div>
         
-        <div className={`flex gap-2 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${isCollapsed ? 'flex-col items-center' : ''}`}>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group ${
-              isCollapsed ? 'w-10 h-10 p-0' : 'flex-1'
-            }`}
-          >
-            <Bell className="h-4 w-4 transition-all duration-200 ease-out" />
-            {!isCollapsed && <span className="ml-2 transition-all duration-150 ease-out">Alerts</span>}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => onPageChange('settings')}
-            className={`hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group ${
-              isCollapsed ? 'w-10 h-10 p-0' : ''
-            }`}
-          >
-            <Settings className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 ease-out" />
-          </Button>
-        </div>
         
-        {/* Clock Section */}
+        {/* Clock and Controls Section */}
         {!isCollapsed && (
           <div className="mt-3 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]">
-            <div className="flex justify-center mb-2">
+            <div className="flex items-center justify-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-10 h-10 p-0"
+              >
+                <Bell className="h-4 w-4 transition-all duration-200 ease-out" />
+              </Button>
               <AnalogClock />
-            </div>
-            <div className="text-xs text-muted-foreground text-center">
-              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onPageChange('settings')}
+                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-10 h-10 p-0"
+              >
+                <Settings className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 ease-out" />
+              </Button>
             </div>
           </div>
         )}
