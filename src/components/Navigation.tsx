@@ -169,12 +169,12 @@ export const Navigation = ({
         variant="outline"
         size="sm"
         onClick={onToggleCollapse}
-        className={`absolute -right-3 top-4 z-10 h-8 w-8 p-0 bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 hover:border-primary/50 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+        className={`absolute -right-2.5 top-6 z-10 h-6 w-6 p-0 bg-background hover:bg-primary/10 border border-primary/40 hover:border-primary/70 rounded-full shadow-md hover:shadow-lg transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
           isCollapsed ? 'rotate-180' : ''
         }`}
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        <ChevronLeft className="h-4 w-4 text-primary" />
+        <ChevronLeft className="h-3 w-3 text-primary" />
       </Button>
 
       {/* Logo */}
