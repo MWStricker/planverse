@@ -146,6 +146,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   const [courseIcons_State, setCourseIcons_State] = useState<Record<string, string>>({});
   const [courses, setCourses] = useState<Array<{code: string, icon?: string}>>([]);
   const [customPrimaryColor, setCustomPrimaryColor] = useState('#3b82f6');
+  const [customSecondaryColor, setCustomSecondaryColor] = useState('#8b5cf6');
   const [isChangingColor, setIsChangingColor] = useState(false);
   
   // Get all public universities sorted alphabetically by name
@@ -211,12 +212,15 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
     };
   }, [user]);
 
-  // Load custom color from preferences
+  // Load custom colors from preferences
   useEffect(() => {
     if (preferences.customPrimaryColor) {
       setCustomPrimaryColor(preferences.customPrimaryColor);
     }
-  }, [preferences.customPrimaryColor]);
+    if (preferences.customSecondaryColor) {
+      setCustomSecondaryColor(preferences.customSecondaryColor);
+    }
+  }, [preferences.customPrimaryColor, preferences.customSecondaryColor]);
 
   // Load course icons and courses
   useEffect(() => {
@@ -330,22 +334,47 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
     return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
   };
 
-  const handleApplyCustomColor = async () => {
+  const handleApplyCustomColor = async (colorType: 'primary' | 'secondary') => {
     setIsChangingColor(true);
     try {
-      const [h, s, l] = hexToHsl(customPrimaryColor);
+      const color = colorType === 'primary' ? customPrimaryColor : customSecondaryColor;
+      const [h, s, l] = hexToHsl(color);
       const hslString = `${h} ${s}% ${l}%`;
       
       // Apply the color to CSS variables
       const root = document.documentElement;
-      root.style.setProperty('--primary', hslString);
       
-      // Save to preferences
-      await updatePreference('customPrimaryColor', customPrimaryColor);
+      if (colorType === 'primary') {
+        // Set primary color and its variants for complete theme change
+        root.style.setProperty('--primary', hslString);
+        root.style.setProperty('--primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+        root.style.setProperty('--primary-muted', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+        root.style.setProperty('--primary-dark', `${h} ${s}% ${Math.max(l - 15, 5)}%`);
+        
+        // Update accent to complement primary
+        root.style.setProperty('--accent', `${(h + 30) % 360} ${s}% ${l}%`);
+        root.style.setProperty('--accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+        root.style.setProperty('--accent-muted', `${(h + 30) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+        
+        // Update sidebar colors to match theme
+        root.style.setProperty('--sidebar-primary', hslString);
+        root.style.setProperty('--sidebar-primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+        root.style.setProperty('--sidebar-accent', `${(h + 15) % 360} ${s}% ${l}%`);
+        
+        // Save to preferences
+        await updatePreference('customPrimaryColor', color);
+      } else {
+        // Set secondary color
+        root.style.setProperty('--secondary', hslString);
+        root.style.setProperty('--secondary-foreground', l > 50 ? '0 0% 0%' : '0 0% 100%');
+        
+        // Save to preferences
+        await updatePreference('customSecondaryColor', color);
+      }
       
       toast({
         title: "Color applied!",
-        description: "Your custom primary color has been set.",
+        description: `Your custom ${colorType} color has been set.`,
       });
     } catch (error) {
       console.error('Error applying custom color:', error);
@@ -360,10 +389,25 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   };
 
   const handleResetColors = () => {
-    const defaultColor = '#3b82f6';
-    setCustomPrimaryColor(defaultColor);
+    const defaultPrimary = '#3b82f6';
+    const defaultSecondary = '#8b5cf6';
+    setCustomPrimaryColor(defaultPrimary);
+    setCustomSecondaryColor(defaultSecondary);
+    
     const root = document.documentElement;
+    // Remove all custom color properties to restore defaults
     root.style.removeProperty('--primary');
+    root.style.removeProperty('--primary-foreground');
+    root.style.removeProperty('--primary-muted');
+    root.style.removeProperty('--primary-dark');
+    root.style.removeProperty('--secondary');
+    root.style.removeProperty('--secondary-foreground');
+    root.style.removeProperty('--accent');
+    root.style.removeProperty('--accent-foreground');
+    root.style.removeProperty('--accent-muted');
+    root.style.removeProperty('--sidebar-primary');
+    root.style.removeProperty('--sidebar-primary-foreground');
+    root.style.removeProperty('--sidebar-accent');
     
     toast({
       title: "Colors reset",
@@ -696,26 +740,25 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium text-foreground mb-2">Primary Color</h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Customize your primary theme color with a hex code
-              </p>
-            </div>
-            
-            {/* Color Picker */}
+          <div className="space-y-6">
+            {/* Primary Color Section */}
             <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-foreground mb-2">Primary Color</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Changes the entire website theme including dark mode, accents, and sidebar
+                </p>
+              </div>
+              
               <div className="flex items-center gap-4">
                 <div 
                   className="w-16 h-16 rounded-lg border-2 border-border/20 cursor-pointer hover:border-border/40 transition-colors"
                   style={{ backgroundColor: customPrimaryColor }}
-                  onClick={() => document.getElementById('color-input')?.click()}
+                  onClick={() => document.getElementById('primary-color-input')?.click()}
                 />
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
                     <Input
-                      id="hex-input"
                       value={customPrimaryColor}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -728,7 +771,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                       maxLength={7}
                     />
                     <input
-                      id="color-input"
+                      id="primary-color-input"
                       type="color"
                       value={customPrimaryColor}
                       onChange={(e) => setCustomPrimaryColor(e.target.value)}
@@ -737,7 +780,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={handleApplyCustomColor}
+                      onClick={() => handleApplyCustomColor('primary')}
                       disabled={isChangingColor}
                       className="flex items-center gap-2"
                     >
@@ -751,30 +794,10 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   </div>
                 </div>
               </div>
-              
-              {/* Color Intensity Slider */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-foreground">Color Intensity</label>
-                  <span className="text-sm text-muted-foreground">100%</span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    defaultValue="100"
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
-                    style={{
-                      background: `linear-gradient(90deg, transparent 0%, ${customPrimaryColor} 100%)`
-                    }}
-                  />
-                </div>
-              </div>
 
-              {/* Quick Color Presets */}
+              {/* Quick Color Presets for Primary */}
               <div className="space-y-2">
-                <h5 className="text-sm font-medium text-foreground">Quick Presets</h5>
+                <h5 className="text-sm font-medium text-foreground">Primary Presets</h5>
                 <div className="flex gap-2 flex-wrap">
                   {[
                     { name: 'Blue', color: '#3b82f6' },
@@ -794,17 +817,117 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   ))}
                 </div>
               </div>
-
-              {/* Reset Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetColors}
-                className="w-full"
-              >
-                Reset to Default
-              </Button>
             </div>
+
+            <Separator />
+
+            {/* Secondary Color Section */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-foreground mb-2">Secondary Color</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Customize secondary elements and button variants
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-16 h-16 rounded-lg border-2 border-border/20 cursor-pointer hover:border-border/40 transition-colors"
+                  style={{ backgroundColor: customSecondaryColor }}
+                  onClick={() => document.getElementById('secondary-color-input')?.click()}
+                />
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={customSecondaryColor}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
+                          setCustomSecondaryColor(value);
+                        }
+                      }}
+                      placeholder="#8b5cf6"
+                      className="w-32 font-mono text-sm"
+                      maxLength={7}
+                    />
+                    <input
+                      id="secondary-color-input"
+                      type="color"
+                      value={customSecondaryColor}
+                      onChange={(e) => setCustomSecondaryColor(e.target.value)}
+                      className="sr-only"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleApplyCustomColor('secondary')}
+                      disabled={isChangingColor}
+                      className="flex items-center gap-2"
+                    >
+                      {isChangingColor ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Palette className="h-4 w-4" />
+                      )}
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Color Presets for Secondary */}
+              <div className="space-y-2">
+                <h5 className="text-sm font-medium text-foreground">Secondary Presets</h5>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { name: 'Purple', color: '#8b5cf6' },
+                    { name: 'Indigo', color: '#6366f1' },
+                    { name: 'Teal', color: '#14b8a6' },
+                    { name: 'Amber', color: '#f59e0b' },
+                    { name: 'Rose', color: '#f43f5e' },
+                    { name: 'Cyan', color: '#06b6d4' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.name}
+                      className="w-8 h-8 rounded-md border-2 border-border/20 hover:border-border/40 transition-colors"
+                      style={{ backgroundColor: preset.color }}
+                      onClick={() => setCustomSecondaryColor(preset.color)}
+                      title={preset.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Color Intensity Slider */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-foreground">Color Intensity</label>
+                <span className="text-sm text-muted-foreground">100%</span>
+              </div>
+              <div className="relative">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  defaultValue="100"
+                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(90deg, ${customSecondaryColor} 0%, ${customPrimaryColor} 100%)`
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Reset Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetColors}
+              className="w-full"
+            >
+              Reset to Default
+            </Button>
           </div>
         </CardContent>
       </Card>

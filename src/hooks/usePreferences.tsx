@@ -9,6 +9,7 @@ export interface UserPreferences {
   wakeUpTime: string; // Format: "HH:MM" (24-hour)
   bedTime: string; // Format: "HH:MM" (24-hour)
   customPrimaryColor?: string;
+  customSecondaryColor?: string;
 }
 
 const defaultPreferences: UserPreferences = {
@@ -18,6 +19,7 @@ const defaultPreferences: UserPreferences = {
   wakeUpTime: '07:00', // Default: 7 AM
   bedTime: '23:00', // Default: 11 PM
   customPrimaryColor: '#3b82f6',
+  customSecondaryColor: '#8b5cf6',
 };
 
 export const usePreferences = () => {
@@ -181,36 +183,60 @@ export const usePreferences = () => {
     };
     root.style.setProperty('--base-font-size', sizeMap[prefs.textSize]);
 
-    // Apply custom primary color
-    if (prefs.customPrimaryColor) {
-      const hexToHsl = (hex: string) => {
-        const r = parseInt(hex.slice(1, 3), 16) / 255;
-        const g = parseInt(hex.slice(3, 5), 16) / 255;
-        const b = parseInt(hex.slice(5, 7), 16) / 255;
+    // Helper function to convert hex to HSL
+    const hexToHsl = (hex: string) => {
+      const r = parseInt(hex.slice(1, 3), 16) / 255;
+      const g = parseInt(hex.slice(3, 5), 16) / 255;
+      const b = parseInt(hex.slice(5, 7), 16) / 255;
 
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        let h = 0, s = 0, l = (max + min) / 2;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
 
-        if (max === min) {
-          h = s = 0;
-        } else {
-          const d = max - min;
-          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-          switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-          }
-          h /= 6;
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
         }
+        h /= 6;
+      }
 
-        return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
-      };
+      return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+    };
 
+    // Apply custom primary color (affects entire theme)
+    if (prefs.customPrimaryColor) {
       const [h, s, l] = hexToHsl(prefs.customPrimaryColor);
       const hslString = `${h} ${s}% ${l}%`;
+      
+      // Set primary color and its variants
       root.style.setProperty('--primary', hslString);
+      root.style.setProperty('--primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+      root.style.setProperty('--primary-muted', `${h} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+      root.style.setProperty('--primary-dark', `${h} ${s}% ${Math.max(l - 15, 5)}%`);
+      
+      // Update accent to complement primary
+      root.style.setProperty('--accent', `${(h + 30) % 360} ${s}% ${l}%`);
+      root.style.setProperty('--accent-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+      root.style.setProperty('--accent-muted', `${(h + 30) % 360} ${Math.max(s - 20, 0)}% ${Math.min(l + 40, 95)}%`);
+      
+      // Update sidebar colors to match theme
+      root.style.setProperty('--sidebar-primary', hslString);
+      root.style.setProperty('--sidebar-primary-foreground', l > 50 ? '0 0% 100%' : '0 0% 0%');
+      root.style.setProperty('--sidebar-accent', `${(h + 15) % 360} ${s}% ${l}%`);
+    }
+
+    // Apply custom secondary color
+    if (prefs.customSecondaryColor) {
+      const [h, s, l] = hexToHsl(prefs.customSecondaryColor);
+      const hslString = `${h} ${s}% ${l}%`;
+      root.style.setProperty('--secondary', hslString);
+      root.style.setProperty('--secondary-foreground', l > 50 ? '0 0% 0%' : '0 0% 100%');
     }
   };
 
