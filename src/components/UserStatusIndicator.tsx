@@ -107,8 +107,9 @@ export const UserStatusIndicator = ({
         <Button
           variant="ghost"
           size="sm"
-          className="p-1 h-auto hover:bg-muted/30 rounded transition-all duration-200"
+          className="p-1.5 h-auto bg-muted/20 hover:bg-muted/50 rounded-md border border-border/20 hover:border-border/40 transition-all duration-200"
           disabled={isUpdating}
+          title={isUpdating ? 'Updating status...' : `Click to change status (Currently: ${getStatusLabel(status)})`}
         >
           {statusDot}
         </Button>
