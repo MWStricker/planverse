@@ -9,6 +9,8 @@ import { RealtimeProvider } from "@/hooks/useRealtime";
 import { useThemeLoader } from "@/hooks/useThemeLoader";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import { TermsOfService } from "./pages/TermsOfService";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => {
               <BrowserRouter>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/" element={<Index />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

@@ -462,7 +462,26 @@ const Auth = () => {
         
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-muted-foreground">
-          <p>By signing up, you agree to our Terms of Service and Privacy Policy</p>
+          <p>
+            By signing up, you agree to our{' '}
+            <a 
+              href="/terms" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Terms of Service
+            </a>
+            {' '}and{' '}
+            <a 
+              href="/privacy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Privacy Policy
+            </a>
+          </p>
         </div>
       </div>
     </div>
