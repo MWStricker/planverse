@@ -28,9 +28,19 @@ export const useProfile = () => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
+    let cleanupSubscription: (() => void) | null = null;
+    
     if (user) {
       fetchProfile();
+      cleanupSubscription = setupRealtimeSubscription();
     }
+    
+    return () => {
+      // Cleanup subscription when component unmounts or user changes
+      if (cleanupSubscription) {
+        cleanupSubscription();
+      }
+    };
   }, [user]);
 
   const fetchProfile = async () => {
@@ -74,6 +84,35 @@ export const useProfile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const setupRealtimeSubscription = () => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Profile changed:', payload);
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setProfile(payload.new as UserProfile);
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            setProfile(payload.new as UserProfile);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
