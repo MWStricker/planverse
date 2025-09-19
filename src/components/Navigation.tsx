@@ -165,7 +165,14 @@ export const Navigation = ({
   const orderedNavItems = getOrderedNavItems();
 
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border relative transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+    <div 
+      className="flex flex-col bg-card border-r border-border relative transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform"
+      style={{ 
+        height: 'var(--app-height, 100vh)', 
+        minHeight: 'var(--app-height, 100vh)',
+        maxHeight: 'var(--app-height, 100vh)'
+      }}
+    >
       {/* Collapse button - positioned way inside when collapsed with smaller size */}
       <Button
         variant="ghost"
@@ -246,7 +253,8 @@ export const Navigation = ({
       {!isCollapsed && <div className="border-b border-border"></div>}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+      <nav className="flex-1 min-h-0 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+        <div className="h-full overflow-y-auto p-4 space-y-3">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -272,11 +280,12 @@ export const Navigation = ({
             </div>
           </SortableContext>
         </DndContext>
+        </div>
       </nav>
 
 
       {/* User Section */}
-      <div className="p-4 border-t border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      <div className="flex-shrink-0 p-4 border-t border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
         <div 
           className={`flex items-center gap-3 mb-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 ${
             isCollapsed ? 'justify-center' : ''
