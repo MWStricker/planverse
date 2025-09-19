@@ -43,16 +43,25 @@ serve(async (req) => {
         break;
 
       case 'priority_analysis':
-        prompt = `Analyze these academic tasks and assignments to determine priority levels:
+        prompt = `Analyze these academic tasks and assignments to determine priority levels. 
+        
+        PRIORITY RULES:
+        1. AUTOMATIC HIGH PRIORITY for items containing these keywords: test, exam, essay, quiz, midterm, final, presentation, project, assignment, paper, thesis, dissertation, lab report, due, deadline, submit, submission, grade, graded
+        2. MEDIUM PRIORITY for: homework, reading, study, review, practice
+        3. LOW PRIORITY for everything else
+        4. Consider due dates - items due sooner get higher priority
+        5. Consider complexity and time required
+        
         Tasks: ${JSON.stringify(data.tasks || [])}
         Upcoming Events: ${JSON.stringify(data.events || [])}
         
         Return a JSON object with tasks ranked by priority, including:
         - id: task identifier
-        - priority: high/medium/low
-        - reasoning: why this priority was assigned
+        - priority: high/medium/low (follow the keyword rules above)
+        - reasoning: why this priority was assigned (mention keywords found)
         - suggestedTimeSlot: when to work on this
-        - estimatedHours: time needed`;
+        - estimatedHours: time needed
+        - detectedKeywords: list of priority keywords found in title/description`;
         break;
 
       case 'image_ocr':

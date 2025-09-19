@@ -78,3 +78,42 @@ export const getPriorityIconComponent = (priority: number) => {
 export const getPriorityEmoji = (priority: number): string => {
   return getPriorityConfig(priority).emoji;
 };
+
+// High priority keywords for automatic priority detection
+const HIGH_PRIORITY_KEYWORDS = [
+  'test', 'exam', 'essay', 'quiz', 'midterm', 'final', 'presentation', 
+  'project', 'assignment', 'paper', 'thesis', 'dissertation', 'lab report',
+  'due', 'deadline', 'submit', 'submission', 'grade', 'graded'
+];
+
+/**
+ * Analyzes text content and automatically determines priority based on keywords
+ * @param title - The title of the task/event
+ * @param description - Optional description text
+ * @returns Priority level (0-3, where 3 is highest)
+ */
+export const analyzeTextForPriority = (title: string, description?: string): number => {
+  const combinedText = `${title} ${description || ''}`.toLowerCase();
+  
+  // Check for high priority keywords
+  const hasHighPriorityKeyword = HIGH_PRIORITY_KEYWORDS.some(keyword => 
+    combinedText.includes(keyword)
+  );
+  
+  if (hasHighPriorityKeyword) {
+    return 3; // High priority
+  }
+  
+  // Check for medium priority indicators
+  const mediumPriorityKeywords = ['homework', 'reading', 'study', 'review', 'practice'];
+  const hasMediumPriorityKeyword = mediumPriorityKeywords.some(keyword =>
+    combinedText.includes(keyword)
+  );
+  
+  if (hasMediumPriorityKeyword) {
+    return 2; // Medium priority
+  }
+  
+  // Default to low priority
+  return 1;
+};
