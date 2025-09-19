@@ -172,7 +172,7 @@ export const Navigation = ({
         size="sm"
         onClick={onToggleCollapse}
         className={`absolute z-10 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all ${
-          isCollapsed ? 'left-1/2 -translate-x-1/2 top-2' : 'left-2 top-2'
+          isCollapsed ? 'left-1/2 -translate-x-1/2 top-4' : 'left-2 top-2'
         }`}
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
