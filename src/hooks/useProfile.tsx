@@ -47,6 +47,8 @@ export const useProfile = () => {
     if (!user) return;
     
     try {
+      console.log('Fetching profile for user:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -54,12 +56,15 @@ export const useProfile = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        console.error('Profile fetch error:', error);
         throw error;
       }
 
       if (data) {
+        console.log('Profile fetched:', data);
         setProfile(data);
       } else {
+        console.log('No profile found, creating new one');
         // Create profile if it doesn't exist
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
@@ -72,6 +77,7 @@ export const useProfile = () => {
           .single();
 
         if (createError) throw createError;
+        console.log('New profile created:', newProfile);
         setProfile(newProfile);
       }
     } catch (error) {

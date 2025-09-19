@@ -72,15 +72,24 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      console.log('Saving profile data:', formData);
+      
+      const { data, error } = await supabase
         .from('profiles')
         .upsert({
           user_id: user.id,
           ...formData,
           updated_at: new Date().toISOString()
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      console.log('Profile saved successfully:', data);
 
       toast({
         title: "Profile updated",
