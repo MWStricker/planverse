@@ -171,9 +171,7 @@ export const Navigation = ({
         variant="ghost"
         size="sm"
         onClick={onToggleCollapse}
-        className={`absolute top-1/3 -translate-y-1/2 z-50 h-6 w-6 p-0 hover:bg-muted/50 rounded-md transition-all bg-background border border-border shadow-sm ${
-          isCollapsed ? 'left-12' : '-right-2'
-        }`}
+        className="absolute top-1/2 -translate-y-1/2 -right-3 z-50 h-6 w-6 p-0 hover:bg-muted/50 rounded-md bg-background border border-border shadow-sm"
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? (
