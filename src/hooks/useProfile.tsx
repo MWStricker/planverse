@@ -130,10 +130,15 @@ export const useProfile = () => {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user || !profile) return;
+    if (!user || !profile) {
+      console.error('Missing user or profile:', { user: !!user, profile: !!profile });
+      return;
+    }
 
     try {
-      console.log('Updating profile with:', updates);
+      console.log('Starting profile update with:', updates);
+      console.log('Current user ID:', user.id);
+      console.log('Current profile:', profile);
       
       const { data, error } = await supabase
         .from('profiles')

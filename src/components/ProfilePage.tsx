@@ -69,17 +69,22 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
   }, [profile, isEditing]);
 
   const handleSave = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error('No user ID available for save');
+      return;
+    }
 
     setIsLoading(true);
     try {
-      console.log('Saving profile data:', formData);
+      console.log('ProfilePage: Starting save with form data:', formData);
+      console.log('ProfilePage: User ID:', user.id);
+      console.log('ProfilePage: Current profile:', profile);
       
       // Use the updateProfile method from the hook instead of direct database call
       const updatedProfile = await updateProfile(formData);
       
       if (updatedProfile) {
-        console.log('Profile saved successfully via hook:', updatedProfile);
+        console.log('ProfilePage: Profile saved successfully via hook:', updatedProfile);
         
         toast({
           title: "Profile updated",
@@ -87,10 +92,12 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
         });
 
         setIsEditing(false);
+      } else {
+        console.error('ProfilePage: No updated profile returned');
       }
       
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('ProfilePage: Error updating profile:', error);
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",
