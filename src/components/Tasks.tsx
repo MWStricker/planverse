@@ -41,6 +41,7 @@ interface Task {
   priority_score?: number;
   source_provider?: string;
   created_at: string;
+  completed_at?: string;
   event_type?: string;
   is_recurring?: boolean;
   recurrence_type?: string;
@@ -225,7 +226,11 @@ export const Tasks = () => {
     setTasks(prevTasks => 
       prevTasks.map(task => 
         task.id === taskId 
-          ? { ...task, completion_status: newStatus }
+          ? { 
+              ...task, 
+              completion_status: newStatus,
+              completed_at: newStatus === 'completed' ? new Date().toISOString() : null
+            }
           : task
       )
     );
@@ -248,7 +253,11 @@ export const Tasks = () => {
         setTasks(prevTasks => 
           prevTasks.map(task => 
             task.id === taskId 
-              ? { ...task, completion_status: currentStatus }
+              ? { 
+                  ...task, 
+                  completion_status: currentStatus,
+                  completed_at: currentStatus === 'completed' ? task.completed_at : null
+                }
               : task
           )
         );
@@ -894,10 +903,29 @@ export const Tasks = () => {
               item.completion_status === 'completed'
             );
 
+            // Debug: Log the completed tasks to see their structure
+            console.log('DEBUG - Completed tasks:', completedTasks.map(t => ({
+              title: t.title,
+              completed_at: t.completed_at,
+              due_date: t.due_date,
+              created_at: t.created_at,
+              completion_status: t.completion_status
+            })));
+
             // Group tasks by completion date (or due date if no completion date)
             const groupedByDate = completedTasks.reduce((groups, task) => {
-              // Use completed_at if available, otherwise fall back to due_date or created_at
-              const dateToUse = task.completed_at || task.due_date || task.created_at;
+              let dateToUse;
+              
+              // For completed tasks, prioritize completed_at, then due_date, then created_at
+              if (task.completed_at) {
+                dateToUse = task.completed_at;
+              } else if (task.due_date) {
+                dateToUse = task.due_date;
+              } else {
+                dateToUse = task.created_at;
+              }
+              
+              // Extract just the date part (YYYY-MM-DD) to group by day
               const dateStr = dateToUse ? format(new Date(dateToUse), 'yyyy-MM-dd') : 'no-date';
               
               if (!groups[dateStr]) {
