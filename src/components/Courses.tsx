@@ -180,6 +180,8 @@ export const Courses = ({}: CoursesProps = {}) => {
     if (!user?.id) return;
 
     try {
+      console.log('Updating course color:', { courseCode, color });
+      
       const { error } = await supabase
         .from('course_colors')
         .upsert({
@@ -203,11 +205,11 @@ export const Courses = ({}: CoursesProps = {}) => {
       const newColors = { ...storedColors, [courseCode]: color };
       setStoredColors(newColors);
       
-      // Update courses with new color
+      // Update courses with new color - use inline styles instead of Tailwind classes
       setCourses(prevCourses => 
         prevCourses.map(course => 
           course.code === courseCode 
-            ? { ...course, color: `bg-[${color}] border-[${color}] text-white` }
+            ? { ...course, color: color }
             : course
         )
       );
@@ -567,29 +569,28 @@ export const Courses = ({}: CoursesProps = {}) => {
 
   // Use the exact same color logic as Calendar component
   const getCourseColor = (title: string, forCanvas = false, courseCode?: string) => {
-    if (!forCanvas) return 'bg-muted/50 border-muted';
+    if (!forCanvas) return '#6b7280'; // Default gray color for non-canvas courses
     
     const extractedCourseCode = courseCode || extractCourseCode(title, true);
     
-    // First, try to use stored Canvas color
+    // First, try to use stored Canvas color (return the hex value directly)
     if (storedColors && extractedCourseCode && storedColors[extractedCourseCode]) {
-      const color = storedColors[extractedCourseCode];
-      return `bg-[${color}] border-[${color}] text-white dark:bg-[${color}] dark:border-[${color}] dark:text-white`;
+      return storedColors[extractedCourseCode];
     }
     
-    // Fallback color mapping based on course type - solid colors for better readability
+    // Fallback color mapping based on course type - return hex colors
     const colorMappings: Record<string, string> = {
-      'HES': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
-      'HES-145': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
-      'PSY': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
-      'PSY-100': 'bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600 dark:text-white',
-      'LIFE': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
-      'LIFE-102': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
-      'LIFE-102-L': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
-      'MU': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
-      'MU-100': 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600 dark:text-white',
-      'MATH': 'bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-600 dark:text-white',
-      'MATH-118': 'bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-600 dark:text-white',
+      'HES': '#ef4444',      // red-500
+      'HES-145': '#ef4444',  // red-500
+      'PSY': '#f59e0b',      // amber-500
+      'PSY-100': '#f59e0b',  // amber-500
+      'LIFE': '#10b981',     // emerald-500
+      'LIFE-102': '#10b981', // emerald-500
+      'LIFE-102-L': '#10b981', // emerald-500
+      'MU': '#8b5cf6',       // violet-500
+      'MU-100': '#8b5cf6',   // violet-500
+      'MATH': '#06b6d4',     // cyan-500
+      'MATH-118': '#06b6d4', // cyan-500
     };
     
     // Direct match first
@@ -607,12 +608,12 @@ export const Courses = ({}: CoursesProps = {}) => {
     
     // Generate consistent color for unknown courses using hash
     const courseColors = [
-      'bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-100',
-      'bg-purple-100 dark:bg-purple-900 border-purple-200 dark:border-purple-700 text-purple-800 dark:text-purple-100',
-      'bg-teal-100 dark:bg-teal-900 border-teal-200 dark:border-teal-700 text-teal-800 dark:text-teal-100',
-      'bg-orange-100 dark:bg-orange-900 border-orange-200 dark:border-orange-700 text-orange-800 dark:text-orange-100',
-      'bg-emerald-100 dark:bg-emerald-900 border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-100',
-      'bg-pink-100 dark:bg-pink-900 border-pink-200 dark:border-pink-700 text-pink-800 dark:text-pink-100',
+      '#3b82f6', // blue-500
+      '#8b5cf6', // violet-500
+      '#06b6d4', // cyan-500
+      '#f97316', // orange-500
+      '#10b981', // emerald-500
+      '#ec4899', // pink-500
     ];
     
     // Simple hash function
@@ -704,9 +705,24 @@ export const Courses = ({}: CoursesProps = {}) => {
   }
 
   const predefinedColors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
-    '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#D7BDE2'
+    '#ef4444', // red-500
+    '#f97316', // orange-500  
+    '#f59e0b', // amber-500
+    '#eab308', // yellow-500
+    '#84cc16', // lime-500
+    '#22c55e', // green-500
+    '#10b981', // emerald-500
+    '#14b8a6', // teal-500
+    '#06b6d4', // cyan-500
+    '#0ea5e9', // sky-500
+    '#3b82f6', // blue-500
+    '#6366f1', // indigo-500
+    '#8b5cf6', // violet-500
+    '#a855f7', // purple-500
+    '#d946ef', // fuchsia-500
+    '#ec4899', // pink-500
+    '#f43f5e', // rose-500
+    '#6b7280', // gray-500
   ];
 
   const renderColorEditTab = () => (
@@ -1004,8 +1020,13 @@ const SortableCourseCard = ({
   return (
     <Card 
       ref={setNodeRef} 
-      style={style} 
-      className={`${course.color} border-2 transition-opacity duration-150 ${
+      style={{
+        ...style,
+        backgroundColor: typeof course.color === 'string' ? course.color : '#6b7280',
+        borderColor: typeof course.color === 'string' ? course.color : '#6b7280',
+        color: 'white'
+      }} 
+      className={`border-2 transition-opacity duration-150 ${
         isDragging ? 'shadow-lg' : ''
       } ${
         isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''
