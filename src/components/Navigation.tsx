@@ -171,7 +171,9 @@ export const Navigation = ({
         variant="ghost"
         size="sm"
         onClick={onToggleCollapse}
-        className="absolute left-2 top-2 z-10 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all"
+        className={`absolute z-10 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all ${
+          isCollapsed ? 'left-1/2 -translate-x-1/2 top-2' : 'left-2 top-2'
+        }`}
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? (
@@ -182,7 +184,9 @@ export const Navigation = ({
       </Button>
 
       {/* Logo */}
-      <div className="p-4 pt-1 border-b border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      <div className={`p-4 pt-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+        isCollapsed ? '' : 'border-b border-border'
+      }`}>
         <div className="flex items-center justify-between">
           <div className={`text-center flex-1 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
             isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
