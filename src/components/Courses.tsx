@@ -738,10 +738,18 @@ export const Courses = ({}: CoursesProps = {}) => {
         {courses.map((course) => (
           <Card 
             key={course.code}
-            className={`${course.color} border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+            className={`border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
               selectedCourseForColor === course.code ? 'ring-2 ring-primary ring-offset-2' : ''
             }`}
-            onClick={() => setSelectedCourseForColor(course.code)}
+            style={{ 
+              backgroundColor: typeof course.color === 'string' ? course.color : '#6b7280',
+              borderColor: typeof course.color === 'string' ? course.color : '#6b7280',
+              color: 'white'
+            }}
+            onClick={() => {
+              console.log('Course clicked:', course.code);
+              setSelectedCourseForColor(course.code);
+            }}
           >
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -783,7 +791,10 @@ export const Courses = ({}: CoursesProps = {}) => {
                       key={color}
                       className="w-12 h-12 rounded-lg border-2 border-border hover:border-primary transition-colors duration-200 hover:scale-105 transform"
                       style={{ backgroundColor: color }}
-                      onClick={() => handleCourseColorChange(selectedCourseForColor, color)}
+                      onClick={() => {
+                        console.log('Color selected:', color, 'for course:', selectedCourseForColor);
+                        handleCourseColorChange(selectedCourseForColor, color);
+                      }}
                       title={color}
                     />
                   ))}
@@ -796,7 +807,10 @@ export const Courses = ({}: CoursesProps = {}) => {
                   <input
                     type="color"
                     className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
-                    onChange={(e) => handleCourseColorChange(selectedCourseForColor, e.target.value)}
+                    onChange={(e) => {
+                      console.log('Custom color selected:', e.target.value, 'for course:', selectedCourseForColor);
+                      handleCourseColorChange(selectedCourseForColor, e.target.value);
+                    }}
                     title="Pick a custom color"
                   />
                   <p className="text-sm text-muted-foreground">
