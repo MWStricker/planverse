@@ -102,7 +102,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
       const currentHour = getHours(new Date());
       const hourElement = scrollContainerRef.current.querySelector(`[data-hour="${currentHour}"]`);
       if (hourElement) {
-        hourElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        hourElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   };
