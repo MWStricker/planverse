@@ -320,7 +320,6 @@ export const Navigation = ({
               }`}>
                  {(() => {
                    const currentMajor = profile?.major;
-                   console.log('Navigation: Current major from profile:', currentMajor);
                    if (!currentMajor) return 'Student';
                    
                    // Format predefined majors with proper capitalization

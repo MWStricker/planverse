@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
@@ -20,7 +20,19 @@ export interface UserProfile {
   updated_at: string;
 }
 
-export const useProfile = () => {
+// Create a context for global profile state
+interface ProfileContextType {
+  profile: UserProfile | null;
+  loading: boolean;
+  uploading: boolean;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | undefined>;
+  uploadAvatar: (file: File) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
+
+export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -33,10 +45,12 @@ export const useProfile = () => {
     if (user) {
       fetchProfile();
       cleanupSubscription = setupRealtimeSubscription();
+    } else {
+      setProfile(null);
+      setLoading(false);
     }
     
     return () => {
-      // Cleanup subscription when component unmounts or user changes
       if (cleanupSubscription) {
         cleanupSubscription();
       }
@@ -53,7 +67,7 @@ export const useProfile = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle(); // Use maybeSingle instead of single to avoid errors
+        .maybeSingle();
 
       if (error) {
         console.error('Profile fetch error:', error);
@@ -65,7 +79,6 @@ export const useProfile = () => {
         setProfile(data);
       } else {
         console.log('No profile found, creating new one');
-        // Create profile if it doesn't exist
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert({
@@ -113,17 +126,12 @@ export const useProfile = () => {
         (payload) => {
           console.log('Profile realtime update received:', payload);
           
-          // Only apply updates when not actively loading
-          if (!loading) {
-            if (payload.eventType === 'UPDATE' && payload.new) {
-              console.log('Applying realtime profile update:', payload.new);
-              setProfile(payload.new as UserProfile);
-            } else if (payload.eventType === 'INSERT' && payload.new) {
-              console.log('Applying realtime profile insert:', payload.new);
-              setProfile(payload.new as UserProfile);
-            }
-          } else {
-            console.log('Skipping realtime update due to loading state');
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            console.log('Applying realtime profile update:', payload.new);
+            setProfile(payload.new as UserProfile);
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            console.log('Applying realtime profile insert:', payload.new);
+            setProfile(payload.new as UserProfile);
           }
         }
       )
@@ -146,7 +154,6 @@ export const useProfile = () => {
     try {
       console.log('Starting profile update with:', updates);
       console.log('Current user ID:', user.id);
-      console.log('Current profile:', profile);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -162,14 +169,8 @@ export const useProfile = () => {
 
       console.log('Profile update successful:', data);
       
-      // Immediately update the local state
+      // Immediately update the local state for all consumers
       setProfile(data);
-      
-      // Force a refresh to ensure all components get the update
-      setTimeout(() => {
-        console.log('Force refreshing profile data...');
-        fetchProfile();
-      }, 100);
       
       toast({
         title: "Success",
@@ -193,7 +194,6 @@ export const useProfile = () => {
 
     setUploading(true);
     try {
-      // Delete old avatar if exists
       if (profile?.avatar_url) {
         const oldPath = profile.avatar_url.split('/').pop();
         if (oldPath) {
@@ -203,7 +203,6 @@ export const useProfile = () => {
         }
       }
 
-      // Upload new avatar
       const fileExt = file.name.split('.').pop();
       const fileName = `avatar-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
@@ -214,12 +213,10 @@ export const useProfile = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update profile with new avatar URL
       await updateProfile({ avatar_url: publicUrl });
 
       toast({
@@ -238,12 +235,24 @@ export const useProfile = () => {
     }
   };
 
-  return {
-    profile,
-    loading,
-    uploading,
-    updateProfile,
-    uploadAvatar,
-    refetch: fetchProfile,
-  };
+  return (
+    <ProfileContext.Provider value={{
+      profile,
+      loading,
+      uploading,
+      updateProfile,
+      uploadAvatar,
+      refetch: fetchProfile,
+    }}>
+      {children}
+    </ProfileContext.Provider>
+  );
+};
+
+export const useProfile = () => {
+  const context = useContext(ProfileContext);
+  if (context === undefined) {
+    throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
 };

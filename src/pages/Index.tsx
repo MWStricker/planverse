@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useTabReorder } from "@/hooks/useTabReorder";
 import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
+import { ProfileProvider } from "@/hooks/useProfile";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -152,7 +153,8 @@ const Index = () => {
   };
 
   return (
-    <ProfileEditingProvider>
+    <ProfileProvider>
+      <ProfileEditingProvider>
       <div 
         className="flex bg-background overflow-hidden" 
         style={{ 
@@ -191,7 +193,8 @@ const Index = () => {
           {renderPage()}
         </div>
       </div>
-    </ProfileEditingProvider>
+      </ProfileEditingProvider>
+    </ProfileProvider>
   );
 };
 
