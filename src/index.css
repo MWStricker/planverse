@@ -81,6 +81,9 @@ img, video, canvas {
 
 @layer base {
   :root {
+    /* Fix viewport height for Mac/Safari browsers */
+    --app-height: 100vh;
+    
     /* Academic Blues - Primary palette */
     --primary: 213 94% 68%;  /* Bright academic blue */
     --primary-foreground: 0 0% 100%;

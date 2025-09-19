@@ -153,7 +153,7 @@ const Index = () => {
 
   return (
     <ProfileEditingProvider>
-      <div className="flex h-full min-h-full bg-background" style={{ height: '100vh', minHeight: '100vh' }}>
+      <div className="flex bg-background" style={{ height: 'var(--app-height)', minHeight: 'var(--app-height)' }}>
         <div 
           className={`flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
             isCollapsed ? 'w-16' : 'w-64'
@@ -174,7 +174,7 @@ const Index = () => {
             onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
         </div>
-        <div className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform" style={{ height: '100vh' }}>
+        <div className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform" style={{ height: 'var(--app-height)' }}>
           {renderPage()}
         </div>
       </div>

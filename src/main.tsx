@@ -3,6 +3,12 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Fix viewport height for Mac/Safari browsers
+const setAppHeight = () => {
+  const doc = document.documentElement;
+  doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+};
+
 // Simple autofill prevention - just make sure no input looks like an email field
 const preventEmailAutofill = () => {
   const observer = new MutationObserver(() => {
@@ -26,6 +32,11 @@ const preventEmailAutofill = () => {
   
   observer.observe(document.body, { childList: true, subtree: true });
 };
+
+// Set initial height and listen for resize events
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', setAppHeight);
 
 // Run after DOM loads
 document.addEventListener('DOMContentLoaded', preventEmailAutofill);
