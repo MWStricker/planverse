@@ -149,6 +149,11 @@ export const Tasks = () => {
           variant: "destructive",
         });
       } else {
+        console.log('📋 DEBUG: All fetched tasks:', tasksData);
+        console.log('📋 DEBUG: Google tasks count:', tasksData?.filter(t => t.source_provider === 'google').length || 0);
+        console.log('📋 DEBUG: Manual tasks count:', tasksData?.filter(t => t.source_provider === 'manual').length || 0);
+        console.log('📋 DEBUG: Canvas tasks count:', tasksData?.filter(t => t.source_provider === 'canvas').length || 0);
+        
         setTasks(tasksData || []);
       }
 
