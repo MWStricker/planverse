@@ -223,7 +223,7 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth', willChange: 'scroll-position' }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />

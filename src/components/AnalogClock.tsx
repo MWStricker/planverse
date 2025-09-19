@@ -145,7 +145,6 @@ export const AnalogClock = () => {
       </div>
 
       <ClockSettings
-        key={`clock-settings-${JSON.stringify(settings)}`}
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         currentSettings={settings}
