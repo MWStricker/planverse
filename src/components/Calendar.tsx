@@ -1503,9 +1503,6 @@ const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
     <div className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold text-foreground">
-            {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : viewMode === 'week' ? 'Weekly View' : 'Daily Planner'}
-          </h1>
         </div>
         <div className="flex gap-2 items-center">
           <AlertDialog>
