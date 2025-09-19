@@ -520,7 +520,7 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (we
     
     return canvasAssignments
       .filter(event => {
-        const eventDate = new Date(event.start_time || event.end_time || '');
+        const eventDate = new Date(event.event_date || event.start_time || event.end_time || '');
         eventDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
         
         // Include all assignments due from start of this week onwards (including overdue this week)
@@ -540,7 +540,7 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (we
         return isThisWeekOrLater && isNotCompleted;
       })
       .map(event => {
-        const eventDate = new Date(event.start_time || event.end_time);
+        const eventDate = new Date(event.event_date || event.start_time || event.end_time);
         
         // Dynamic priority based on due date
         let dynamicPriority = 2; // Default medium priority
@@ -574,7 +574,7 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (we
         return {
           id: event.id,
           title: event.title,
-          due_date: event.start_time || event.end_time,
+          due_date: event.event_date || event.start_time || event.end_time,
           priority_score: dynamicPriority,
           completion_status: 'pending',
           source_provider: 'canvas',
