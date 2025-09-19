@@ -98,6 +98,8 @@ export const useProfile = () => {
   const setupRealtimeSubscription = () => {
     if (!user) return;
 
+    console.log('Setting up realtime subscription for user:', user.id);
+    
     const channel = supabase
       .channel(`profile-${user.id}`)
       .on(
@@ -109,8 +111,9 @@ export const useProfile = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('Profile realtime update:', payload);
-          // Only update if we're not currently loading to prevent conflicts
+          console.log('Profile realtime update received:', payload);
+          
+          // Only apply updates when not actively loading
           if (!loading) {
             if (payload.eventType === 'UPDATE' && payload.new) {
               console.log('Applying realtime profile update:', payload.new);
@@ -119,12 +122,17 @@ export const useProfile = () => {
               console.log('Applying realtime profile insert:', payload.new);
               setProfile(payload.new as UserProfile);
             }
+          } else {
+            console.log('Skipping realtime update due to loading state');
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   };

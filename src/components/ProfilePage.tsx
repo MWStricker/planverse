@@ -52,10 +52,10 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
     is_public: profile?.is_public ?? true
   });
 
-  // Update form data when profile changes - but only if not editing
+  // Update form data when profile changes - but NOT when editing
   React.useEffect(() => {
     if (profile && !isEditing) {
-      console.log('Updating form data from profile:', profile);
+      console.log('ProfilePage: Updating form data from profile (not editing):', profile);
       setFormData({
         display_name: profile.display_name || '',
         school: profile.school || '',
@@ -65,6 +65,8 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
         campus_location: profile.campus_location || '',
         is_public: profile.is_public ?? true
       });
+    } else if (profile && isEditing) {
+      console.log('ProfilePage: Profile changed while editing, NOT updating form data');
     }
   }, [profile, isEditing]);
 
@@ -85,6 +87,17 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
       
       if (updatedProfile) {
         console.log('ProfilePage: Profile saved successfully via hook:', updatedProfile);
+        
+        // Update form data to match the saved profile to prevent UI inconsistencies
+        setFormData({
+          display_name: updatedProfile.display_name || '',
+          school: updatedProfile.school || '',
+          major: updatedProfile.major || '',
+          graduation_year: updatedProfile.graduation_year || new Date().getFullYear() + 4,
+          bio: updatedProfile.bio || '',
+          campus_location: updatedProfile.campus_location || '',
+          is_public: updatedProfile.is_public ?? true
+        });
         
         toast({
           title: "Profile updated",
