@@ -464,10 +464,14 @@ export const Tasks = () => {
       </div>
 
       <Tabs defaultValue="current" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="current" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             Current Tasks
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Completed
           </TabsTrigger>
           <TabsTrigger value="past-due" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
@@ -881,6 +885,154 @@ export const Tasks = () => {
               </div>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="completed" className="space-y-6">
+          {(() => {
+            // Get all completed tasks
+            const completedTasks = allCurrentItems.filter(item => 
+              item.completion_status === 'completed'
+            );
+
+            // Group tasks by completion date (or due date if no completion date)
+            const groupedByDate = completedTasks.reduce((groups, task) => {
+              // Use completed_at if available, otherwise fall back to due_date or created_at
+              const dateToUse = task.completed_at || task.due_date || task.created_at;
+              const dateStr = dateToUse ? format(new Date(dateToUse), 'yyyy-MM-dd') : 'no-date';
+              
+              if (!groups[dateStr]) {
+                groups[dateStr] = [];
+              }
+              groups[dateStr].push(task);
+              return groups;
+            }, {} as Record<string, typeof completedTasks>);
+
+            // Sort dates with today first, then descending order
+            const today = format(new Date(), 'yyyy-MM-dd');
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+              if (a === today) return -1;
+              if (b === today) return 1;
+              return b.localeCompare(a); // Descending order
+            });
+
+            if (completedTasks.length === 0) {
+              return (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No completed tasks yet</h3>
+                  <p className="text-sm text-muted-foreground">Complete some tasks to see them here!</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-6">
+                {sortedDates.map(dateStr => {
+                  const tasksForDate = groupedByDate[dateStr];
+                  const isToday = dateStr === today;
+                  const displayDate = dateStr === 'no-date' ? 'No Date' : 
+                    isToday ? 'Today' : format(new Date(dateStr), 'EEEE, MMMM d, yyyy');
+
+                  return (
+                    <div key={dateStr} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4 text-primary" />
+                        <h3 className={`text-lg font-semibold ${isToday ? 'text-primary' : 'text-foreground'}`}>
+                          {displayDate}
+                        </h3>
+                        <Badge variant="secondary" className="text-xs">
+                          {tasksForDate.length} task{tasksForDate.length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid gap-3">
+                        {tasksForDate
+                          .sort((a, b) => {
+                            // Sort by completion time or due time within each day
+                            const timeA = a.completed_at || a.due_date || a.created_at;
+                            const timeB = b.completed_at || b.due_date || b.created_at;
+                            if (!timeA || !timeB) return 0;
+                            return new Date(timeB).getTime() - new Date(timeA).getTime();
+                          })
+                          .map((task) => {
+                            const PriorityIcon = getPriorityIconComponent(task.priority);
+                            
+                            return (
+                              <Card
+                                key={task.id}
+                                className={cn(
+                                  "transition-all duration-200 hover:shadow-md",
+                                  getTaskCourseColor(task),
+                                  "opacity-75"
+                                )}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 mt-0.5 flex-shrink-0">
+                                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                      </div>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                          <h4 className={cn(
+                                            "font-medium text-sm text-foreground leading-tight line-through decoration-2"
+                                          )}>
+                                            {task.title}
+                                          </h4>
+                                          <div className="flex items-center gap-1">
+                                            <PriorityIcon className="h-3 w-3" />
+                                            <Badge variant={getPriorityBadgeVariant(task.priority)} className="text-xs h-4 px-2">
+                                              {getPriorityLabel(task.priority)} {getPriorityEmoji(task.priority)}
+                                            </Badge>
+                                          </div>
+                                          {task.source_provider && (
+                                            <Badge variant="outline" className="text-xs h-4 px-2 capitalize">
+                                              {task.source_provider}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        
+                                        {task.description && (
+                                          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                                            {task.description}
+                                          </p>
+                                        )}
+                                        
+                                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                          {task.due_date && (
+                                            <div className="flex items-center gap-1">
+                                              <Clock className="h-3 w-3" />
+                                              <span>Due: {format(new Date(task.due_date), "MMM d, h:mm a")}</span>
+                                            </div>
+                                          )}
+                                          {task.completed_at && (
+                                            <div className="flex items-center gap-1">
+                                              <CheckCircle className="h-3 w-3" />
+                                              <span>Completed: {format(new Date(task.completed_at), "MMM d, h:mm a")}</span>
+                                            </div>
+                                          )}
+                                          {task.course_name && (
+                                            <div className="flex items-center gap-1">
+                                              <BookOpen className="h-3 w-3" />
+                                              <span className="truncate">{task.course_name}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="past-due">
