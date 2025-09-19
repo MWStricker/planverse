@@ -171,12 +171,14 @@ export const Navigation = ({
         variant="outline"
         size="sm"
         onClick={onToggleCollapse}
-        className={`absolute -right-2.5 top-6 z-10 h-6 w-6 p-0 bg-background hover:bg-primary/10 border border-primary/40 hover:border-primary/70 rounded-full shadow-md hover:shadow-lg transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
-          isCollapsed ? 'rotate-180' : 'rotate-0'
-        }`}
+        className={`absolute -right-2.5 top-6 z-10 h-6 w-6 p-0 bg-background hover:bg-primary/10 border border-primary/40 hover:border-primary/70 rounded-full shadow-md hover:shadow-lg transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform`}
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        <ChevronLeft className="h-3 w-3 text-primary transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+        {isCollapsed ? (
+          <ChevronRight className="h-3 w-3 text-primary transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+        ) : (
+          <ChevronLeft className="h-3 w-3 text-primary transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+        )}
       </Button>
 
       {/* Logo */}
