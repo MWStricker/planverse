@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Calendar, Clock, CheckCircle, AlertCircle, GraduationCap, FileText, ChevronDown, ChevronRight, Settings, Save, X, Palette } from "lucide-react";
 import { getCourseIconById, courseIcons } from "@/data/courseIcons";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CoursesProps {}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +55,8 @@ export const Courses = ({}: CoursesProps = {}) => {
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [courseOrder, setCourseOrder] = useState<string[]>([]);
   const [isEditIconsMode, setIsEditIconsMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("courses");
+  const [selectedCourseForColor, setSelectedCourseForColor] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -170,6 +173,51 @@ export const Courses = ({}: CoursesProps = {}) => {
       });
     } catch (error) {
       console.error('Error updating course icon:', error);
+    }
+  };
+
+  const handleCourseColorChange = async (courseCode: string, color: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('course_colors')
+        .upsert({
+          user_id: user.id,
+          course_code: courseCode,
+          canvas_color: color
+        }, {
+          onConflict: 'user_id,course_code'
+        });
+
+      if (error) {
+        console.error('Error saving course color:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save course color",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const newColors = { ...storedColors, [courseCode]: color };
+      setStoredColors(newColors);
+      
+      // Update courses with new color
+      setCourses(prevCourses => 
+        prevCourses.map(course => 
+          course.code === courseCode 
+            ? { ...course, color: `bg-[${color}] border-[${color}] text-white` }
+            : course
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `Color updated for ${courseCode}`,
+      });
+    } catch (error) {
+      console.error('Error updating course color:', error);
     }
   };
 
@@ -655,6 +703,98 @@ export const Courses = ({}: CoursesProps = {}) => {
     );
   }
 
+  const predefinedColors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#D7BDE2'
+  ];
+
+  const renderColorEditTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Edit Course Colors</h2>
+        <p className="text-muted-foreground">
+          Click on a course to customize its color, or select from predefined colors below
+        </p>
+      </div>
+
+      <div className="grid gap-4">
+        {courses.map((course) => (
+          <Card 
+            key={course.code}
+            className={`${course.color} border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+              selectedCourseForColor === course.code ? 'ring-2 ring-primary ring-offset-2' : ''
+            }`}
+            onClick={() => setSelectedCourseForColor(course.code)}
+          >
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <course.icon className="h-6 w-6" />
+                  <div>
+                    <CardTitle className="text-lg">{course.code}</CardTitle>
+                    <p className="text-sm opacity-80">
+                      {course.totalAssignments} assignments
+                    </p>
+                  </div>
+                </div>
+                {selectedCourseForColor === course.code && (
+                  <Badge variant="outline" className="bg-background/50">
+                    Selected
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
+
+      {selectedCourseForColor && (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" />
+              Choose Color for {selectedCourseForColor}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-3">Predefined Colors</h4>
+                <div className="grid grid-cols-5 gap-3">
+                  {predefinedColors.map((color) => (
+                    <button
+                      key={color}
+                      className="w-12 h-12 rounded-lg border-2 border-border hover:border-primary transition-colors duration-200 hover:scale-105 transform"
+                      style={{ backgroundColor: color }}
+                      onClick={() => handleCourseColorChange(selectedCourseForColor, color)}
+                      title={color}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium mb-3">Custom Color</h4>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
+                    onChange={(e) => handleCourseColorChange(selectedCourseForColor, e.target.value)}
+                    title="Pick a custom color"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Click to pick any color you want
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -665,7 +805,7 @@ export const Courses = ({}: CoursesProps = {}) => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {!isReorderMode ? (
+          {!isReorderMode && activeTab === "courses" && (
             <>
               <Badge variant="outline" className="bg-background">
                 {courses.reduce((sum, course) => sum + course.totalAssignments, 0)} Total Assignments
@@ -689,7 +829,8 @@ export const Courses = ({}: CoursesProps = {}) => {
                 Reorder Courses
               </Button>
             </>
-          ) : (
+          )}
+          {isReorderMode && (
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -713,43 +854,55 @@ export const Courses = ({}: CoursesProps = {}) => {
         </div>
       </div>
 
-      {isReorderMode && courses.length > 0 && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border-2 border-dashed border-primary/30 animate-fade-in">
-          <div className="flex items-center justify-center gap-2">
-            <p className="text-sm text-foreground font-medium">
-              Click and drag any course card to reorder them
-            </p>
-          </div>
-        </div>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="courses">My Courses</TabsTrigger>
+          <TabsTrigger value="colors">Edit Course Colors</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="courses" className="space-y-6">
+          {isReorderMode && courses.length > 0 && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border-2 border-dashed border-primary/30 animate-fade-in">
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-sm text-foreground font-medium">
+                  Click and drag any course card to reorder them
+                </p>
+              </div>
+            </div>
+          )}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-        autoScroll={false}
-      >
-        <SortableContext
-          items={courses.map(course => course.code)}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="grid gap-6">
-            {courses.map((course) => (
-              <SortableCourseCard
-                key={course.code}
-                course={course}
-                isReorderMode={isReorderMode}
-                isEditIconsMode={isEditIconsMode}
-                isCollapsed={collapsedCourses.has(course.code)}
-                onToggle={() => toggleCourse(course.code)}
-                onEventToggle={handleEventToggle}
-                onIconChange={handleCourseIconChange}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            autoScroll={false}
+          >
+            <SortableContext
+              items={courses.map(course => course.code)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid gap-6">
+                {courses.map((course) => (
+                  <SortableCourseCard
+                    key={course.code}
+                    course={course}
+                    isReorderMode={isReorderMode}
+                    isEditIconsMode={isEditIconsMode}
+                    isCollapsed={collapsedCourses.has(course.code)}
+                    onToggle={() => toggleCourse(course.code)}
+                    onEventToggle={handleEventToggle}
+                    onIconChange={handleCourseIconChange}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </TabsContent>
+
+        <TabsContent value="colors">
+          {renderColorEditTab()}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
