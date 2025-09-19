@@ -214,6 +214,9 @@ export const Courses = ({}: CoursesProps = {}) => {
         )
       );
 
+      // Close the color selection modal after saving
+      setSelectedCourseForColor(null);
+
       toast({
         title: "Success",
         description: `Color updated for ${courseCode}`,
@@ -346,7 +349,7 @@ export const Courses = ({}: CoursesProps = {}) => {
           if (!coursesMap.has(courseCode)) {
           coursesMap.set(courseCode, {
             code: courseCode,
-            color: getCourseColor(event.title, true, courseCode),
+            color: storedColors[courseCode] || getCourseColor(event.title, true, courseCode),
             icon: getCourseIconWithLoadedIcons(courseCode),
             events: [],
             tasks: []
@@ -364,7 +367,7 @@ export const Courses = ({}: CoursesProps = {}) => {
             const pseudoTitle = `[2025FA-${courseCode}]`;
           coursesMap.set(courseCode, {
             code: courseCode,
-            color: getCourseColor(pseudoTitle, true, courseCode),
+            color: storedColors[courseCode] || getCourseColor(pseudoTitle, true, courseCode),
             icon: getCourseIconWithLoadedIcons(courseCode),
             events: [],
             tasks: []
