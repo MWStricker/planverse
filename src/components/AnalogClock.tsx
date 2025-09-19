@@ -165,10 +165,7 @@ export const AnalogClock = () => {
         onOpenChange={setIsSettingsOpen}
         currentSettings={settings}
         onSettingsChange={(newSettings) => {
-          console.log('Updating clock with new settings:', newSettings);
           setSettings(newSettings);
-          // Force a re-render by updating the time to trigger style recalculation
-          setTime(new Date());
         }}
       />
     </>

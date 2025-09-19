@@ -96,22 +96,25 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     setSettings(currentSettings);
   }, [currentSettings]);
 
-  // Safe auto-save functionality (database only, no interference with other data)
+  // Auto-save to database when settings change (not triggered by style clicks)
   useEffect(() => {
-    if (!user?.id || !settings || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
+    if (!user?.id || !settings) return;
+    
+    // Only auto-save if settings are different from current AND not from a style click
+    const settingsChanged = JSON.stringify(settings) !== JSON.stringify(currentSettings);
+    if (!settingsChanged) return;
 
     const autoSave = async () => {
       try {
-        // Only update clock settings, never touch other user data
         const { error } = await supabase
           .from('user_settings')
           .upsert({
             user_id: user.id,
-            settings_type: 'clock', // Strictly scoped to clock settings only
+            settings_type: 'clock',
             settings_data: settings as any,
             updated_at: new Date().toISOString()
           }, {
-            onConflict: 'user_id,settings_type', // Ensure we only update clock settings
+            onConflict: 'user_id,settings_type',
             ignoreDuplicates: false
           });
 
@@ -123,10 +126,10 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
       }
     };
 
-    // Debounce to prevent excessive database calls
-    const debounceTimer = setTimeout(autoSave, 1000);
+    // Debounce auto-save for non-style changes
+    const debounceTimer = setTimeout(autoSave, 2000);
     return () => clearTimeout(debounceTimer);
-  }, [settings, user?.id, currentSettings]);
+  }, [settings.format, settings.showSeconds, settings.showDate, settings.dateFormat, settings.theme, user?.id]);
 
   // Create preview of current settings
   const getPreviewTime = () => {
@@ -291,10 +294,30 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
                       ? 'ring-2 ring-primary bg-primary/5 animate-scale-in' 
                       : 'hover:bg-muted/50 hover:shadow-md'
                   }`}
-                  onClick={() => {
+                  onClick={async () => {
                     const newSettings = { ...settings, style: style.value as any };
                     setSettings(newSettings);
-                    // Update parent immediately for live display
+                    
+                    // Immediately save style changes to database
+                    if (user?.id) {
+                      try {
+                        await supabase
+                          .from('user_settings')
+                          .upsert({
+                            user_id: user.id,
+                            settings_type: 'clock',
+                            settings_data: newSettings as any,
+                            updated_at: new Date().toISOString()
+                          }, {
+                            onConflict: 'user_id,settings_type',
+                            ignoreDuplicates: false
+                          });
+                      } catch (error) {
+                        console.error('Error saving style:', error);
+                      }
+                    }
+                    
+                    // Update parent for live display
                     onSettingsChange(newSettings);
                   }}
                 >
