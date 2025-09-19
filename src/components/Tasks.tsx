@@ -391,7 +391,7 @@ export const Tasks = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Sort current items by completion status first, then by priority, then by due date
+  // Sort current items: pending tasks first (sorted by recent due dates), then completed tasks
   const sortedCurrentItems = filteredCurrentItems.sort((a, b) => {
     // First sort by completion status (pending tasks first, completed tasks last)
     if (a.completion_status !== b.completion_status) {
@@ -399,20 +399,21 @@ export const Tasks = () => {
       if (a.completion_status === 'pending' && b.completion_status === 'completed') return -1;
     }
     
-    // Then sort by priority (higher priority first) - only for pending tasks
+    // For pending tasks, sort by due date (most recent/urgent first)
     if (a.completion_status === 'pending' && b.completion_status === 'pending') {
-      if (a.priority !== b.priority) {
-        return b.priority - a.priority;
+      if (a.due_date && b.due_date) {
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      }
+      if (a.due_date && !b.due_date) return -1;
+      if (!a.due_date && b.due_date) return 1;
+    }
+    
+    // For completed tasks, sort by completion date (most recently completed first)
+    if (a.completion_status === 'completed' && b.completion_status === 'completed') {
+      if (a.due_date && b.due_date) {
+        return new Date(b.due_date).getTime() - new Date(a.due_date).getTime();
       }
     }
-    
-    // Finally sort by due date (earlier dates first)
-    if (a.due_date && b.due_date) {
-      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-    }
-    
-    if (a.due_date && !b.due_date) return -1;
-    if (!a.due_date && b.due_date) return 1;
     
     return 0;
   });
@@ -696,88 +697,153 @@ export const Tasks = () => {
             </Card>
           </div>
 
-          {/* Current Task List */}
-          <div className="space-y-3">
-            {sortedCurrentItems.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">No current tasks found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    All tasks are completed or you haven't added any current tasks yet
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              sortedCurrentItems.map((item) => {
-                const taskCourseColor = item.type === 'task' ? getTaskCourseColor(item as Task) : '';
-                return (
-                  <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${
-                    item.completion_status === 'completed' ? 'opacity-60' : ''
-                  } ${
-                    completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
-                  } ${taskCourseColor}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => item.type === 'task' ? toggleTaskCompletion(item.id, item.completion_status) : convertEventToTask(item)}
-                          className="flex-shrink-0"
-                        >
-                          {item.completion_status === 'completed' ? (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                          ) : item.type === 'event' ? (
-                            <Plus className="h-5 w-5" />
-                          ) : (
-                            <div className="h-5 w-5 border-2 border-muted-foreground rounded" />
-                          )}
-                        </Button>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`font-medium ${item.completion_status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                              {item.title}
-                              {completingTasks.has(item.id) && (
-                                <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
-                              )}
-                            </h3>
-                            <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
-                              {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
-                              {getPriorityLabel(item.priority)}
-                            </Badge>
-                            {item.type === 'event' && (
-                              <Badge variant="outline">From Calendar</Badge>
-                            )}
-                          </div>
-                          
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                          )}
-                          
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            {item.course_name && (
-                              <span className="flex items-center gap-1">
-                                <BookOpen className="h-3 w-3" />
-                                {item.course_name}
-                              </span>
-                            )}
-                            {item.due_date && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                Due: {new Date(item.due_date).toLocaleDateString()}
-                              </span>
-                            )}
-                            {item.source_provider && (
-                              <span>Source: {item.source_provider}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+          {/* Pending Tasks */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground mb-3">Pending Tasks</h2>
+              <div className="space-y-3">
+                {sortedCurrentItems.filter(item => item.completion_status === 'pending').length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                      <p className="text-muted-foreground">All tasks completed! Great job!</p>
                     </CardContent>
                   </Card>
-                );
-              })
+                ) : (
+                  sortedCurrentItems
+                    .filter(item => item.completion_status === 'pending')
+                    .map((item) => {
+                      const taskCourseColor = item.type === 'task' ? getTaskCourseColor(item as Task) : '';
+                      return (
+                        <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md ${taskCourseColor}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => item.type === 'task' ? toggleTaskCompletion(item.id, item.completion_status) : convertEventToTask(item)}
+                                className="flex-shrink-0"
+                              >
+                                {item.type === 'event' ? (
+                                  <Plus className="h-5 w-5" />
+                                ) : (
+                                  <div className="h-5 w-5 border-2 border-muted-foreground rounded hover:border-primary transition-colors" />
+                                )}
+                              </Button>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-medium text-foreground">
+                                    {item.title}
+                                  </h3>
+                                  <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
+                                    {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
+                                    {getPriorityLabel(item.priority)}
+                                  </Badge>
+                                  {item.type === 'event' && (
+                                    <Badge variant="outline">From Calendar</Badge>
+                                  )}
+                                </div>
+                                
+                                {item.description && (
+                                  <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
+                                )}
+                                
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                  {item.course_name && (
+                                    <span className="flex items-center gap-1">
+                                      <BookOpen className="h-3 w-3" />
+                                      {item.course_name}
+                                    </span>
+                                  )}
+                                  {item.due_date && (
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      Due: {new Date(item.due_date).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                  {item.source_provider && (
+                                    <span>Source: {item.source_provider}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+
+            {/* Completed Tasks */}
+            {sortedCurrentItems.filter(item => item.completion_status === 'completed').length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-3">Completed Tasks</h2>
+                <div className="space-y-3">
+                  {sortedCurrentItems
+                    .filter(item => item.completion_status === 'completed')
+                    .map((item) => {
+                      const taskCourseColor = item.type === 'task' ? getTaskCourseColor(item as Task) : '';
+                      return (
+                        <Card key={`${item.type}-${item.id}`} className={`transition-all hover:shadow-md opacity-60 ${
+                          completingTasks.has(item.id) ? 'bg-green-50 border-green-200 animate-pulse' : ''
+                        } ${taskCourseColor}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleTaskCompletion(item.id, item.completion_status)}
+                                className="flex-shrink-0"
+                              >
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                              </Button>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-medium line-through text-muted-foreground">
+                                    {item.title}
+                                    {completingTasks.has(item.id) && (
+                                      <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completed!</span>
+                                    )}
+                                  </h3>
+                                  <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
+                                    {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
+                                    {getPriorityLabel(item.priority)}
+                                  </Badge>
+                                </div>
+                                
+                                {item.description && (
+                                  <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
+                                )}
+                                
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                  {item.course_name && (
+                                    <span className="flex items-center gap-1">
+                                      <BookOpen className="h-3 w-3" />
+                                      {item.course_name}
+                                    </span>
+                                  )}
+                                  {item.due_date && (
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      Due: {new Date(item.due_date).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                  {item.source_provider && (
+                                    <span>Source: {item.source_provider}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  }
+                </div>
+              </div>
             )}
           </div>
         </TabsContent>
