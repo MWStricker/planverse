@@ -303,7 +303,10 @@ serve(async (req) => {
       const scopeInfo = await scopeTestResponse.json();
       console.log('🔍 Current token scopes:', scopeInfo.scope);
       
-      const hasTasksScope = scopeInfo.scope && scopeInfo.scope.includes('https://www.googleapis.com/auth/tasks');
+      const hasTasksScope = scopeInfo.scope && (
+        scopeInfo.scope.includes('https://www.googleapis.com/auth/tasks') ||
+        scopeInfo.scope.includes('https://www.googleapis.com/auth/tasks.readonly')
+      );
       console.log('✅ Has Tasks scope:', hasTasksScope);
       
       if (!hasTasksScope) {

@@ -175,7 +175,7 @@ export const IntegrationSetup = () => {
         access_token: session?.provider_token || null,
         refresh_token: session?.provider_refresh_token || null,
         is_active: true,
-        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
         token_expires_at: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
         sync_settings: { 
           auto_sync: true, 
@@ -222,7 +222,7 @@ export const IntegrationSetup = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+          scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
           redirectTo: `${window.location.origin}/#integrations`,
           queryParams: {
             access_type: 'offline',
@@ -408,7 +408,7 @@ export const IntegrationSetup = () => {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+            scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
             redirectTo: `${window.location.origin}/#integrations`,
             queryParams: {
               access_type: 'offline',
@@ -468,7 +468,7 @@ export const IntegrationSetup = () => {
           await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+              scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
               redirectTo: `${window.location.origin}/#integrations`,
               queryParams: {
                 access_type: 'offline',
