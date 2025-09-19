@@ -306,12 +306,15 @@ export const Courses = ({}: CoursesProps = {}) => {
       ]);
 
       // Process course colors
+      let colorMap: Record<string, string> = {};
       if (colorsResult.data) {
-        const colorMap: Record<string, string> = {};
         colorsResult.data.forEach(item => {
           colorMap[item.course_code] = item.canvas_color;
         });
+        console.log('Loading saved course colors:', colorMap);
         setStoredColors(colorMap);
+      } else {
+        console.log('No saved course colors found');
       }
 
       // Process course icons - get the actual data, not set state yet
@@ -334,16 +337,16 @@ export const Courses = ({}: CoursesProps = {}) => {
         console.log('No saved course order found');
       }
 
-      // Now fetch courses data with the loaded icons passed directly
-      console.log('All settings loaded, now fetching courses with loaded icons:', loadedIcons);
-      await fetchCoursesDataWithIcons(savedOrder, loadedIcons);
+      // Now fetch courses data with the loaded icons and colors passed directly
+      console.log('All settings loaded, now fetching courses with loaded icons and colors:', loadedIcons, colorMap);
+      await fetchCoursesDataWithIcons(savedOrder, loadedIcons, colorMap);
     };
 
     loadAllSettingsAndData();
   }, [user?.id]);
 
-  // Modified function to accept icons directly instead of relying on state
-  const fetchCoursesDataWithIcons = async (savedOrder?: string[], loadedIcons: Record<string, string> = {}) => {
+  // Modified function to accept icons and colors directly instead of relying on state
+  const fetchCoursesDataWithIcons = async (savedOrder?: string[], loadedIcons: Record<string, string> = {}, loadedColors: Record<string, string> = {}) => {
     if (!user?.id) return;
     
     setLoading(true);
@@ -401,7 +404,7 @@ export const Courses = ({}: CoursesProps = {}) => {
           if (!coursesMap.has(courseCode)) {
           coursesMap.set(courseCode, {
             code: courseCode,
-            color: storedColors[courseCode] || getCourseColor(event.title, true, courseCode),
+            color: loadedColors[courseCode] || getCourseColor(event.title, true, courseCode),
             icon: getCourseIconWithLoadedIcons(courseCode),
             events: [],
             tasks: []
@@ -419,7 +422,7 @@ export const Courses = ({}: CoursesProps = {}) => {
             const pseudoTitle = `[2025FA-${courseCode}]`;
           coursesMap.set(courseCode, {
             code: courseCode,
-            color: storedColors[courseCode] || getCourseColor(pseudoTitle, true, courseCode),
+            color: loadedColors[courseCode] || getCourseColor(pseudoTitle, true, courseCode),
             icon: getCourseIconWithLoadedIcons(courseCode),
             events: [],
             tasks: []
