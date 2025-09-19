@@ -23,10 +23,11 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   getPriorityConfig, 
   getPriorityLabel, 
+  analyzeTextForPriority,
   getPriorityBadgeVariant, 
   getPriorityIconComponent,
   getPriorityEmoji,
-  PRIORITY_CONFIG 
+  PRIORITY_CONFIG
 } from "@/lib/priority-utils";
 import { PastDueAssignments } from "@/components/PastDueAssignments";
 
@@ -63,11 +64,6 @@ const taskFormSchema = z.object({
   recurrence_days: z.array(z.number()).optional(),
 });
 
-const PRIORITY_KEYWORDS = {
-  high: ['exam', 'test', 'quiz', 'midterm', 'final', 'assignment', 'project', 'presentation', 'paper', 'essay'],
-  medium: ['homework', 'reading', 'discussion', 'lab'],
-  low: ['optional', 'extra credit', 'review']
-};
 
 export const Tasks = () => {
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
@@ -101,33 +97,8 @@ export const Tasks = () => {
 
   // Function to calculate priority based on keywords and due date
   const calculatePriority = (title: string, description: string = '', dueDate?: string): number => {
-    const text = `${title} ${description}`.toLowerCase();
-    
-    // Check for high priority keywords (formerly critical keywords now become high)
-    if (PRIORITY_KEYWORDS.high.some(keyword => text.includes(keyword))) {
-      return 3; // High
-    }
-    
-    // Check for medium priority keywords
-    if (PRIORITY_KEYWORDS.medium.some(keyword => text.includes(keyword))) {
-      return 2; // Medium
-    }
-    
-    // Check for low priority keywords
-    if (PRIORITY_KEYWORDS.low.some(keyword => text.includes(keyword))) {
-      return 1; // Low
-    }
-    
-    // Only assign priority based on due date for urgent deadlines
-    if (dueDate) {
-      const now = new Date();
-      const due = new Date(dueDate);
-      const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysUntilDue <= 1) return 4; // Critical - due tomorrow or today
-    }
-    
-    return 0; // Default no priority
+    // Use the centralized priority analysis function
+    return analyzeTextForPriority(title, description);
   };
 
   const fetchTasks = async () => {

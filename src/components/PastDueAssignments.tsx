@@ -13,7 +13,8 @@ import {
   getPriorityConfig, 
   getPriorityLabel, 
   getPriorityBadgeVariant, 
-  getPriorityIconComponent 
+  getPriorityIconComponent,
+  analyzeTextForPriority
 } from "@/lib/priority-utils";
 
 interface Task {
@@ -96,30 +97,8 @@ export const PastDueAssignments = () => {
 
   // Function to calculate priority based on keywords and due date
   const calculatePriority = (title: string, description: string = '', dueDate?: string): number => {
-    const text = `${title} ${description}`.toLowerCase();
-    
-    const PRIORITY_KEYWORDS = {
-      high: ['exam', 'test', 'quiz', 'midterm', 'final', 'assignment', 'project', 'presentation', 'paper', 'essay'],
-      medium: ['homework', 'reading', 'discussion', 'lab'],
-      low: ['optional', 'extra credit', 'review']
-    };
-    
-    // Check for high priority keywords
-    if (PRIORITY_KEYWORDS.high.some(keyword => text.includes(keyword))) {
-      return 3; // High
-    }
-    
-    // Check for medium priority keywords
-    if (PRIORITY_KEYWORDS.medium.some(keyword => text.includes(keyword))) {
-      return 2; // Medium
-    }
-    
-    // Check for low priority keywords
-    if (PRIORITY_KEYWORDS.low.some(keyword => text.includes(keyword))) {
-      return 1; // Low
-    }
-    
-    return 2; // Default medium priority for past due items
+    // Use the centralized priority analysis function
+    return analyzeTextForPriority(title, description);
   };
 
   const toggleTaskCompletion = async (taskId: string, currentStatus: string) => {
