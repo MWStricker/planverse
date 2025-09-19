@@ -42,7 +42,6 @@ export const Navigation = ({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { liveEditedProfile } = useProfileEditing();
   const { unreadCount, currentUserStatus } = useRealtime();
 
   // Fetch courses data
@@ -308,7 +307,7 @@ export const Navigation = ({
                 <p className={`text-xs font-medium text-foreground truncate transition-all duration-300 ease-out ${
                   isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
                 }`}>
-                  {liveEditedProfile.display_name || profile?.display_name || user?.email?.split('@')[0] || 'User'}
+                  {profile?.display_name || user?.email?.split('@')[0] || 'User'}
                 </p>
                 <UserStatusIndicator 
                   status={currentUserStatus} 
@@ -319,15 +318,15 @@ export const Navigation = ({
               <p className={`text-xs text-muted-foreground truncate transition-all duration-300 ease-out ${
                 isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
               }`}>
-                {(() => {
-                  const currentMajor = liveEditedProfile.major || profile?.major;
-                  if (!currentMajor) return 'Student';
-                  
-                  // Format predefined majors with proper capitalization
-                  return currentMajor.includes('-') ? 
-                    currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-                    currentMajor;
-                })()}
+                 {(() => {
+                   const currentMajor = profile?.major;
+                   if (!currentMajor) return 'Student';
+                   
+                   // Format predefined majors with proper capitalization
+                   return currentMajor.includes('-') ? 
+                     currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                     currentMajor;
+                 })()}
               </p>
             </div>
           )}
