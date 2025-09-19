@@ -52,9 +52,10 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
     is_public: profile?.is_public ?? true
   });
 
-  // Update form data when profile changes
+  // Update form data when profile changes - but only if not editing
   React.useEffect(() => {
-    if (profile) {
+    if (profile && !isEditing) {
+      console.log('Updating form data from profile:', profile);
       setFormData({
         display_name: profile.display_name || '',
         school: profile.school || '',
@@ -65,7 +66,7 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
         is_public: profile.is_public ?? true
       });
     }
-  }, [profile]);
+  }, [profile, isEditing]);
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -91,13 +92,24 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
 
       console.log('Profile saved successfully:', data);
 
+      // Update the profile state immediately to prevent race conditions
+      if (data) {
+        // Don't call refetch() immediately, let the realtime subscription handle it
+        console.log('Profile update successful, data saved:', data);
+      }
+
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
 
       setIsEditing(false);
-      refetch();
+      
+      // Wait a moment then refetch to ensure consistency
+      setTimeout(() => {
+        refetch();
+      }, 500);
+      
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({

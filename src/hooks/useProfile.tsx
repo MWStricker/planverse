@@ -53,9 +53,9 @@ export const useProfile = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Profile fetch error:', error);
         throw error;
       }
@@ -76,7 +76,10 @@ export const useProfile = () => {
           .select()
           .single();
 
-        if (createError) throw createError;
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          throw createError;
+        }
         console.log('New profile created:', newProfile);
         setProfile(newProfile);
       }
