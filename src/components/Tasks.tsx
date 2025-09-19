@@ -216,6 +216,18 @@ export const Tasks = () => {
   const toggleTaskCompletion = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     
+    // Immediately update UI for instant feedback
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === taskId 
+          ? { ...task, completion_status: newStatus }
+          : task
+      )
+    );
+
+    // Add visual feedback
+    setCompletingTasks(prev => new Set(prev).add(taskId));
+    
     try {
       const { error } = await supabase
         .from('tasks')
@@ -227,30 +239,20 @@ export const Tasks = () => {
 
       if (error) {
         console.error('Error updating task:', error);
+        // Revert the optimistic update on error
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId 
+              ? { ...task, completion_status: currentStatus }
+              : task
+          )
+        );
         toast({
           title: "Error",
           description: "Failed to update task status",
           variant: "destructive",
         });
       } else {
-        // Update local state
-        setTasks(tasks.map(task => 
-          task.id === taskId 
-            ? { ...task, completion_status: newStatus }
-            : task
-        ));
-
-        // Briefly highlight the task that was just toggled
-        setCompletingTasks(prev => new Set(prev).add(taskId));
-        
-        setTimeout(() => {
-          setCompletingTasks(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(taskId);
-            return newSet;
-          });
-        }, 1000); // Remove highlight after 1 second
-        
         toast({
           title: "Task updated",
           description: `Task marked as ${newStatus}`,
@@ -261,6 +263,23 @@ export const Tasks = () => {
       }
     } catch (error) {
       console.error('Unexpected error:', error);
+      // Revert the optimistic update on error
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, completion_status: currentStatus }
+            : task
+        )
+      );
+    } finally {
+      // Remove visual feedback after a delay
+      setTimeout(() => {
+        setCompletingTasks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(taskId);
+          return newSet;
+        });
+      }, 1500);
     }
   };
 
@@ -722,19 +741,30 @@ export const Tasks = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => item.type === 'task' ? toggleTaskCompletion(item.id, item.completion_status) : convertEventToTask(item)}
-                                className="flex-shrink-0"
+                                className="flex-shrink-0 hover:bg-green-50 transition-all duration-200"
                               >
                                 {item.type === 'event' ? (
-                                  <Plus className="h-5 w-5" />
+                                  <Plus className="h-5 w-5 text-blue-500 hover:text-blue-600" />
                                 ) : (
-                                  <div className="h-5 w-5 border-2 border-muted-foreground rounded hover:border-primary transition-colors" />
+                                  <div className="h-5 w-5 border-2 border-muted-foreground rounded hover:border-green-500 hover:bg-green-100 transition-all duration-200 relative group">
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                      <CheckCircle className="h-5 w-5 text-green-500" />
+                                    </div>
+                                  </div>
                                 )}
                               </Button>
                               
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-medium text-foreground">
+                                  <h3 className={`font-medium transition-all duration-300 ${
+                                    completingTasks.has(item.id) 
+                                      ? 'text-green-600 animate-pulse' 
+                                      : 'text-foreground'
+                                  }`}>
                                     {item.title}
+                                    {completingTasks.has(item.id) && (
+                                      <span className="ml-2 text-green-600 font-semibold animate-bounce">✓ Completing...</span>
+                                    )}
                                   </h3>
                                   <Badge variant={getPriorityBadgeVariant(item.priority)} className={`flex items-center gap-1 ${getPriorityConfig(item.priority).bgColor} ${getPriorityConfig(item.priority).textColor} ${getPriorityConfig(item.priority).borderColor}`}>
                                     {React.createElement(getPriorityIconComponent(item.priority), { className: "h-4 w-4" })}
@@ -795,9 +825,10 @@ export const Tasks = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => toggleTaskCompletion(item.id, item.completion_status)}
-                                className="flex-shrink-0"
+                                className="flex-shrink-0 hover:bg-red-50 transition-all duration-200"
+                                title="Mark as pending"
                               >
-                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                <CheckCircle className="h-5 w-5 text-green-500 hover:text-green-600" />
                               </Button>
                               
                               <div className="flex-1 min-w-0">
