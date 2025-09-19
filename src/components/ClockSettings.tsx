@@ -91,9 +91,17 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Auto-save functionality
-  React.useEffect(() => {
+  // Sync local settings with prop changes
+  useEffect(() => {
+    setSettings(currentSettings);
+  }, [currentSettings]);
+
+  // Auto-save functionality with immediate callback
+  useEffect(() => {
     if (!user?.id || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
+
+    // Immediately update parent component
+    onSettingsChange(settings);
 
     const autoSave = async () => {
       try {
@@ -106,15 +114,15 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
             updated_at: new Date().toISOString()
           });
 
-        if (!error) {
-          onSettingsChange(settings);
+        if (error) {
+          console.error('Auto-save error:', error);
         }
       } catch (error) {
         console.error('Auto-save error:', error);
       }
     };
 
-    const debounceTimer = setTimeout(autoSave, 500);
+    const debounceTimer = setTimeout(autoSave, 300);
     return () => clearTimeout(debounceTimer);
   }, [settings, user?.id, currentSettings, onSettingsChange]);
 
