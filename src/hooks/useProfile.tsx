@@ -109,11 +109,16 @@ export const useProfile = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('Profile changed:', payload);
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            setProfile(payload.new as UserProfile);
-          } else if (payload.eventType === 'INSERT' && payload.new) {
-            setProfile(payload.new as UserProfile);
+          console.log('Profile realtime update:', payload);
+          // Only update if we're not currently loading to prevent conflicts
+          if (!loading) {
+            if (payload.eventType === 'UPDATE' && payload.new) {
+              console.log('Applying realtime profile update:', payload.new);
+              setProfile(payload.new as UserProfile);
+            } else if (payload.eventType === 'INSERT' && payload.new) {
+              console.log('Applying realtime profile insert:', payload.new);
+              setProfile(payload.new as UserProfile);
+            }
           }
         }
       )
@@ -128,6 +133,8 @@ export const useProfile = () => {
     if (!user || !profile) return;
 
     try {
+      console.log('Updating profile with:', updates);
+      
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
@@ -135,13 +142,22 @@ export const useProfile = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
 
+      console.log('Profile update successful:', data);
+      
+      // Immediately update the local state
       setProfile(data);
+      
       toast({
         title: "Success",
         description: "Profile updated successfully",
       });
+      
+      return data;
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -149,6 +165,7 @@ export const useProfile = () => {
         description: "Failed to update profile",
         variant: "destructive",
       });
+      throw error;
     }
   };
 

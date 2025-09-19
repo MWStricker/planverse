@@ -36,7 +36,7 @@ interface ProfilePageProps {
 
 export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
   const { user } = useAuth();
-  const { profile, refetch } = useProfile();
+  const { profile, refetch, updateProfile } = useProfile();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,40 +75,19 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
     try {
       console.log('Saving profile data:', formData);
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          ...formData,
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
-      }
-
-      console.log('Profile saved successfully:', data);
-
-      // Update the profile state immediately to prevent race conditions
-      if (data) {
-        // Don't call refetch() immediately, let the realtime subscription handle it
-        console.log('Profile update successful, data saved:', data);
-      }
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
-      });
-
-      setIsEditing(false);
+      // Use the updateProfile method from the hook instead of direct database call
+      const updatedProfile = await updateProfile(formData);
       
-      // Wait a moment then refetch to ensure consistency
-      setTimeout(() => {
-        refetch();
-      }, 500);
+      if (updatedProfile) {
+        console.log('Profile saved successfully via hook:', updatedProfile);
+        
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been successfully updated.",
+        });
+
+        setIsEditing(false);
+      }
       
     } catch (error) {
       console.error('Error updating profile:', error);
