@@ -166,6 +166,20 @@ export const Navigation = ({
 
   return (
     <div className="flex flex-col h-full bg-card border-r border-border relative transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+      {/* Collapse button - absolute center of sidebar */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onToggleCollapse}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all"
+        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {isCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+      </Button>
       {/* Collapse/Expand Button */}
 
       {/* Logo */}
@@ -232,23 +246,7 @@ export const Navigation = ({
       {!isCollapsed && <div className="border-b border-border"></div>}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform relative">
-        {/* Collapse button positioned above tabs */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleCollapse}
-          className={`absolute z-10 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all -top-2 ${
-            isCollapsed ? 'left-1/2 -translate-x-1/2' : 'right-0'
-          }`}
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
+      <nav className="flex-1 p-4 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
