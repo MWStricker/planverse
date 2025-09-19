@@ -299,7 +299,6 @@ export const Tasks = () => {
           source_provider: event.source_provider || 'calendar',
           source_assignment_id: event.source_event_id,
           priority_score: priority,
-          event_type: event.event_type,
           completion_status: 'pending'
         })
         .select()
