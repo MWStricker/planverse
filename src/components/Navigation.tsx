@@ -167,21 +167,6 @@ export const Navigation = ({
   return (
     <div className="flex flex-col h-full bg-card border-r border-border relative transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
       {/* Collapse/Expand Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onToggleCollapse}
-        className={`absolute z-10 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all ${
-          isCollapsed ? 'left-1/2 -translate-x-1/2 top-[4.5rem]' : 'left-2 top-2'
-        }`}
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="h-4 w-4" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
-      </Button>
 
       {/* Logo */}
       <div className="p-4 pt-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
@@ -247,7 +232,23 @@ export const Navigation = ({
       {!isCollapsed && <div className="border-b border-border"></div>}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+      <nav className="flex-1 p-4 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform relative">
+        {/* Collapse button positioned above tabs */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggleCollapse}
+          className={`absolute z-10 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all -top-2 ${
+            isCollapsed ? 'left-1/2 -translate-x-1/2' : 'right-0'
+          }`}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
