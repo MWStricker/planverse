@@ -96,40 +96,37 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     setSettings(currentSettings);
   }, [currentSettings]);
 
-  // Manual save function only - no auto-save to prevent unwanted changes
-  const handleManualSave = async () => {
-    if (!user?.id) return;
+  // Safe auto-save functionality (database only, no interference with other data)
+  useEffect(() => {
+    if (!user?.id || !settings || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
 
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          settings_type: 'clock',
-          settings_data: settings as any,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,settings_type'
-        });
+    const autoSave = async () => {
+      try {
+        // Only update clock settings, never touch other user data
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            settings_type: 'clock', // Strictly scoped to clock settings only
+            settings_data: settings as any,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,settings_type', // Ensure we only update clock settings
+            ignoreDuplicates: false
+          });
 
-      if (error) throw error;
+        if (error) {
+          console.error('Clock auto-save error:', error);
+        }
+      } catch (error) {
+        console.error('Clock auto-save error:', error);
+      }
+    };
 
-      toast({
-        title: "Clock settings saved",
-        description: "Your clock preferences have been saved.",
-      });
-    } catch (error) {
-      console.error('Error saving clock settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save clock settings.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    // Debounce to prevent excessive database calls
+    const debounceTimer = setTimeout(autoSave, 1000);
+    return () => clearTimeout(debounceTimer);
+  }, [settings, user?.id, currentSettings]);
 
   // Create preview of current settings
   const getPreviewTime = () => {
@@ -401,20 +398,15 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
             </Select>
           </div>
 
-          {/* Manual save button */}
+          {/* Auto-save indicator */}
           <div className="flex justify-between items-center pt-4 border-t">
-            <div className="text-sm text-muted-foreground">
-              Changes apply instantly. Click save to persist settings.
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              Auto-saving enabled
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button onClick={handleManualSave} disabled={isLoading}>
-                <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
           </div>
         </div>
       </DialogContent>
