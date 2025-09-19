@@ -184,9 +184,7 @@ export const Navigation = ({
       </Button>
 
       {/* Logo */}
-      <div className={`p-4 pt-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
-        isCollapsed ? '' : 'border-b border-border'
-      }`}>
+      <div className="p-4 pt-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
         <div className="flex items-center justify-between">
           <div className={`text-center flex-1 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
             isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
@@ -244,6 +242,9 @@ export const Navigation = ({
           </div>
         )}
       </div>
+      
+      {/* Instant border separator */}
+      {!isCollapsed && <div className="border-b border-border"></div>}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
