@@ -226,6 +226,49 @@ export const Courses = ({}: CoursesProps = {}) => {
     }
   };
 
+  const forceSaveAllCourseColors = async () => {
+    if (!user?.id || courses.length === 0) return;
+
+    try {
+      console.log('Force saving all course colors:', storedColors);
+      
+      // Save all course colors to database
+      const colorUpdates = courses.map(course => ({
+        user_id: user.id,
+        course_code: course.code,
+        canvas_color: typeof course.color === 'string' ? course.color : '#6b7280'
+      }));
+
+      const { error } = await supabase
+        .from('course_colors')
+        .upsert(colorUpdates, {
+          onConflict: 'user_id,course_code'
+        });
+
+      if (error) {
+        console.error('Error force saving course colors:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save course colors",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "All course colors saved successfully!",
+      });
+    } catch (error) {
+      console.error('Error force saving course colors:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to save course colors",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Load all settings first, then fetch courses data
   useEffect(() => {
     if (!user?.id) return;
@@ -730,11 +773,21 @@ export const Courses = ({}: CoursesProps = {}) => {
 
   const renderColorEditTab = () => (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Edit Course Colors</h2>
-        <p className="text-muted-foreground">
-          Click on a course to customize its color, or select from predefined colors below
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Edit Course Colors</h2>
+          <p className="text-muted-foreground">
+            Click on a course to customize its color, or select from predefined colors below
+          </p>
+        </div>
+        <Button 
+          onClick={forceSaveAllCourseColors}
+          className="flex items-center gap-2"
+          variant="default"
+        >
+          <Save className="h-4 w-4" />
+          Save All Colors
+        </Button>
       </div>
 
       <div className="grid gap-4">
