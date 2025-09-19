@@ -57,8 +57,17 @@ export const Courses = ({}: CoursesProps = {}) => {
   const [isEditIconsMode, setIsEditIconsMode] = useState(false);
   const [activeTab, setActiveTab] = useState("courses");
   const [selectedCourseForColor, setSelectedCourseForColor] = useState<string | null>(null);
+  const [previousSelectedCourse, setPreviousSelectedCourse] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Auto-save colors when clicking away from color picker
+  useEffect(() => {
+    if (previousSelectedCourse && previousSelectedCourse !== selectedCourseForColor) {
+      forceSaveAllCourseColors();
+    }
+    setPreviousSelectedCourse(selectedCourseForColor);
+  }, [selectedCourseForColor]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -773,21 +782,11 @@ export const Courses = ({}: CoursesProps = {}) => {
 
   const renderColorEditTab = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Edit Course Colors</h2>
-          <p className="text-muted-foreground">
-            Click on a course to customize its color, or select from predefined colors below
-          </p>
-        </div>
-        <Button 
-          onClick={forceSaveAllCourseColors}
-          className="flex items-center gap-2"
-          variant="default"
-        >
-          <Save className="h-4 w-4" />
-          Save All Colors
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Edit Course Colors</h2>
+        <p className="text-muted-foreground">
+          Click on a course to customize its color, or select from predefined colors below
+        </p>
       </div>
 
       <div className="grid gap-4">
