@@ -127,16 +127,31 @@ export const IntegrationSetup = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔍 Auth state change:', event, {
         hasSession: !!session,
-        hasProviderToken: !!session?.provider_token
+        hasProviderToken: !!session?.provider_token,
+        provider: session?.user?.app_metadata?.provider
       });
       
-      if (event === 'SIGNED_IN' && session?.provider_token && user) {
-        console.log('🔍 Signed in with provider token');
-        const success = await createCalendarConnection(session);
-        if (success) {
-          setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-          await refreshConnections();
-        }
+      // Auto-create connection and sync when user signs in with Google (including from auth page)
+      if (event === 'SIGNED_IN' && session?.provider_token && session?.user?.app_metadata?.provider === 'google' && user) {
+        console.log('🔍 User signed in with Google via auth page, auto-creating connection...');
+        
+        setTimeout(async () => {
+          const success = await createCalendarConnection(session);
+          if (success) {
+            setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+            await refreshConnections();
+            
+            toast({
+              title: "Google Calendar Connected!",
+              description: "Starting automatic sync of your calendar and tasks...",
+            });
+            
+            // Auto-trigger sync after connection is created
+            setTimeout(async () => {
+              await handleSyncCalendar();
+            }, 2000);
+          }
+        }, 1000);
       }
     });
 

@@ -143,14 +143,16 @@ const Auth = () => {
     setError("");
 
     try {
-      console.log('Starting Google OAuth flow...');
+      console.log('Starting Google OAuth flow with full calendar access...');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
           redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'select_account',
+            prompt: 'consent',
+            include_granted_scopes: 'true',
           },
         },
       });
@@ -161,7 +163,7 @@ const Auth = () => {
         console.error('Google OAuth error:', error);
         setError(`Google sign-in failed: ${error.message}`);
       } else {
-        console.log('Google OAuth initiated successfully');
+        console.log('Google OAuth initiated successfully with calendar scopes');
         // The redirect will happen automatically
       }
     } catch (err) {
