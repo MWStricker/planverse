@@ -148,7 +148,9 @@ export const AnalogClock = () => {
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         currentSettings={settings}
-        onSettingsChange={setSettings}
+        onSettingsChange={(newSettings) => {
+          setSettings(newSettings);
+        }}
       />
     </>
   );

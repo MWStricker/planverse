@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -90,6 +90,33 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Auto-save functionality
+  React.useEffect(() => {
+    if (!user?.id || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
+
+    const autoSave = async () => {
+      try {
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            settings_type: 'clock',
+            settings_data: settings as any,
+            updated_at: new Date().toISOString()
+          });
+
+        if (!error) {
+          onSettingsChange(settings);
+        }
+      } catch (error) {
+        console.error('Auto-save error:', error);
+      }
+    };
+
+    const debounceTimer = setTimeout(autoSave, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [settings, user?.id, currentSettings, onSettingsChange]);
 
   // Create preview of current settings
   const getPreviewTime = () => {
@@ -188,7 +215,7 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth', willChange: 'scroll-position' }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
@@ -196,18 +223,18 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 transform-gpu" style={{ backfaceVisibility: 'hidden' }}>
           {/* Preview Section */}
-          <Card>
+          <Card className="transition-all duration-200">
             <CardContent className="pt-4">
               <div className="text-center space-y-2">
-                <Label className="text-sm font-medium">Preview</Label>
-                <div className={`mx-auto w-fit p-4 rounded-lg border ${getThemeClasses(settings.theme)}`}>
-                  <div className={`${getStyleClasses(settings.style)} mb-1`}>
+                <Label className="text-sm font-medium">Live Preview</Label>
+                <div className={`mx-auto w-fit p-4 rounded-lg border transition-all duration-300 ${getThemeClasses(settings.theme)}`}>
+                  <div className={`${getStyleClasses(settings.style)} mb-1 transition-all duration-200`}>
                     {getPreviewTime()}
                   </div>
                   {settings.showDate && (
-                    <div className="text-xs opacity-70">
+                    <div className="text-xs opacity-70 transition-all duration-200">
                       {getPreviewDate()}
                     </div>
                   )}
@@ -245,14 +272,14 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
               <Palette className="h-4 w-4" />
               Clock Style
             </Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 transform-gpu">
               {clockStyles.map((style) => (
                 <Card 
                   key={style.value}
-                  className={`cursor-pointer transition-all ${
+                  className={`cursor-pointer transition-all duration-200 hover-scale ${
                     settings.style === style.value 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:bg-muted/50'
+                      ? 'ring-2 ring-primary bg-primary/5 animate-scale-in' 
+                      : 'hover:bg-muted/50 hover:shadow-md'
                   }`}
                   onClick={() => setSettings({ ...settings, style: style.value as any })}
                 >
@@ -260,11 +287,11 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-medium">{style.label}</h4>
                       {settings.style === style.value && (
-                        <Badge variant="default" className="text-xs">Selected</Badge>
+                        <Badge variant="default" className="text-xs animate-fade-in">Applied</Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">{style.description}</p>
-                    <div className={`text-xs p-2 bg-muted/30 rounded ${getStyleClasses(style.value)}`}>
+                    <div className={`text-xs p-2 bg-muted/30 rounded transition-all duration-200 ${getStyleClasses(style.value)}`}>
                       {style.preview}
                     </div>
                   </CardContent>
@@ -356,14 +383,14 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
             </Select>
           </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end gap-2 pt-4">
+          {/* Auto-save indicator */}
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              Auto-saving enabled
+            </div>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isLoading}>
-              <Save className="h-4 w-4 mr-2" />
-              {isLoading ? 'Saving...' : 'Save Settings'}
+              Close
             </Button>
           </div>
         </div>
