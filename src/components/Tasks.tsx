@@ -216,6 +216,11 @@ export const Tasks = () => {
   const toggleTaskCompletion = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     
+    // Prevent double clicks
+    if (completingTasks.has(taskId)) {
+      return;
+    }
+
     // Immediately update UI for instant feedback
     setTasks(prevTasks => 
       prevTasks.map(task => 
@@ -279,7 +284,7 @@ export const Tasks = () => {
           newSet.delete(taskId);
           return newSet;
         });
-      }, 1500);
+      }, 800);
     }
   };
 
