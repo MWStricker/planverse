@@ -2256,8 +2256,7 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (we
                 <div className="flex items-center justify-center py-8 text-center">
                   <div>
                     <Target className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No tasks due today</p>
-                    <p className="text-xs text-muted-foreground">Tasks and assignments will appear here when due today</p>
+                    <p className="text-sm text-muted-foreground">No items in the smart priority queue at the moment</p>
                   </div>
                 </div>
               )}
