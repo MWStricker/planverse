@@ -391,7 +391,7 @@ export const Tasks = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Sort current items prioritizing recent assignments that need doing
+  // Sort current items by completion status first, then by priority, then by due date
   const sortedCurrentItems = filteredCurrentItems.sort((a, b) => {
     // First sort by completion status (pending tasks first, completed tasks last)
     if (a.completion_status !== b.completion_status) {
@@ -399,20 +399,8 @@ export const Tasks = () => {
       if (a.completion_status === 'pending' && b.completion_status === 'completed') return -1;
     }
     
-    // For pending tasks, prioritize by recency of due date (most recent assignments first)
+    // Then sort by priority (higher priority first) - only for pending tasks
     if (a.completion_status === 'pending' && b.completion_status === 'pending') {
-      // Recent assignments (within next 7 days) get priority
-      const now = new Date();
-      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      const aIsRecent = a.due_date && new Date(a.due_date) <= sevenDaysFromNow && new Date(a.due_date) >= now;
-      const bIsRecent = b.due_date && new Date(b.due_date) <= sevenDaysFromNow && new Date(b.due_date) >= now;
-      
-      // If one is recent and the other isn't, recent comes first
-      if (aIsRecent && !bIsRecent) return -1;
-      if (!aIsRecent && bIsRecent) return 1;
-      
-      // If both are recent or both are not recent, sort by priority then due date
       if (a.priority !== b.priority) {
         return b.priority - a.priority;
       }
