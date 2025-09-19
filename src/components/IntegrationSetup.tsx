@@ -386,68 +386,25 @@ export const IntegrationSetup = () => {
     setIsConnecting(true);
 
     try {
-      // Check if user is already authenticated with Google
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if user has valid Google authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (session?.provider_token && session?.user?.app_metadata?.providers?.includes('google')) {
-        console.log('🔍 User already authenticated with Google, proceeding to sync...');
-        console.log('🔍 Session provider token present:', !!session.provider_token);
+      // Check for authentication errors or missing/expired tokens
+      if (sessionError || !session?.provider_token || !session?.user?.app_metadata?.providers?.includes('google')) {
+        console.log('🔍 Authentication issue detected, redirecting to Google...');
+        console.log('Session error:', sessionError);
+        console.log('Has provider token:', !!session?.provider_token);
+        console.log('Has Google provider:', session?.user?.app_metadata?.providers?.includes('google'));
         
+        // Clear any invalid session data and re-authenticate
         toast({
-          title: "Starting Sync",
-          description: "Connecting to your Google Calendar...",
-        });
-        const success = await createCalendarConnection(session);
-        if (!success) {
-          throw new Error('Failed to create calendar connection');
-        }
-
-        // Get the connection ID
-        const { data: connection } = await supabase
-          .from('calendar_connections')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('provider', 'google')
-          .single();
-
-        if (!connection) {
-          throw new Error('Calendar connection not found');
-        }
-
-        // Sync the calendar
-        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-google-calendar', {
-          body: {
-            connectionId: connection.id,
-            accessToken: session.provider_token,
-          },
+          title: "Reconnecting to Google",
+          description: "Your Google authentication has expired. Redirecting to re-authenticate...",
         });
 
-        if (syncError) {
-          throw new Error(`Sync error: ${syncError.message}`);
-        }
-
-        if (syncData?.success) {
-          setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-          await refreshConnections();
-          
-          console.log('✅ Sync successful:', syncData);
-          console.log('📊 Events synced:', syncData.syncedEvents);
-          console.log('📋 Tasks synced:', syncData.syncedTasks);
-          console.log('❌ Errors:', syncData.errors);
-          toast({
-            title: "Calendar Synced Successfully!",
-            description: `Imported ${syncData.syncedEvents || 0} events from your Google Calendar. Check your calendar views to see the events!`,
-          });
-          
-          // Refresh the page data to show new events
-          window.location.reload();
-        } else {
-          throw new Error(syncData?.error || 'Unknown sync error');
-        }
-      } else {
-        console.log('🔍 User not authenticated with Google, redirecting to sign in...');
+        // Sign out and re-authenticate with Google
+        await supabase.auth.signOut();
         
-        // Redirect to Google OAuth with calendar scopes
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -455,7 +412,7 @@ export const IntegrationSetup = () => {
             redirectTo: `${window.location.origin}/#integrations`,
             queryParams: {
               access_type: 'offline',
-              prompt: 'consent', // Force consent screen to get calendar permissions
+              prompt: 'consent',
               include_granted_scopes: 'true',
             },
           },
@@ -464,16 +421,89 @@ export const IntegrationSetup = () => {
         if (error) {
           throw new Error(`OAuth error: ${error.message}`);
         }
+        return;
+      }
 
+      console.log('🔍 Valid Google authentication found, proceeding to sync...');
+      
+      toast({
+        title: "Starting Sync",
+        description: "Connecting to your Google Calendar...",
+      });
+      
+      const success = await createCalendarConnection(session);
+      if (!success) {
+        throw new Error('Failed to create calendar connection');
+      }
+
+      // Get the connection ID
+      const { data: connection } = await supabase
+        .from('calendar_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('provider', 'google')
+        .single();
+
+      if (!connection) {
+        throw new Error('Calendar connection not found');
+      }
+
+      // Sync the calendar
+      const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-google-calendar', {
+        body: {
+          connectionId: connection.id,
+          accessToken: session.provider_token,
+        },
+      });
+
+      if (syncError) {
+        // If sync fails due to token issues, try re-authentication
+        if (syncError.message?.includes('403') || syncError.message?.includes('token') || syncError.message?.includes('auth')) {
+          console.log('🔍 Token-related sync error, redirecting to re-authenticate...');
+          toast({
+            title: "Re-authentication Required",
+            description: "Your Google permissions need to be renewed. Redirecting...",
+          });
+          
+          await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+              redirectTo: `${window.location.origin}/#integrations`,
+              queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+                include_granted_scopes: 'true',
+              },
+            },
+          });
+          return;
+        }
+        throw new Error(`Sync error: ${syncError.message}`);
+      }
+
+      if (syncData?.success) {
+        setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+        await refreshConnections();
+        
+        console.log('✅ Sync successful:', syncData);
+        console.log('📊 Events synced:', syncData.syncedEvents);
+        console.log('📋 Tasks synced:', syncData.syncedTasks);
+        console.log('❌ Errors:', syncData.errors);
         toast({
-          title: "Redirecting to Google",
-          description: "Please sign in with Google to sync your calendar.",
+          title: "Calendar Synced Successfully!",
+          description: `Imported ${syncData.syncedEvents || 0} events from your Google Calendar. Check your calendar views to see the events!`,
         });
+        
+        // Refresh the page data to show new events
+        window.location.reload();
+      } else {
+        throw new Error(syncData?.error || 'Unknown sync error');
       }
     } catch (error) {
       console.error('❌ Sync error:', error);
       toast({
-        title: "Sync Failed",
+        title: "Sync Failed", 
         description: error.message || "Failed to sync calendar. Please try again.",
         variant: "destructive",
       });
