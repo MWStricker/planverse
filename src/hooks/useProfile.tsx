@@ -165,6 +165,12 @@ export const useProfile = () => {
       // Immediately update the local state
       setProfile(data);
       
+      // Force a refresh to ensure all components get the update
+      setTimeout(() => {
+        console.log('Force refreshing profile data...');
+        fetchProfile();
+      }, 100);
+      
       toast({
         title: "Success",
         description: "Profile updated successfully",
