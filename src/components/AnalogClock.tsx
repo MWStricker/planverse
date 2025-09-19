@@ -26,24 +26,40 @@ export const AnalogClock = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Load user's clock settings
+  // Safely load user's clock settings without affecting other data
   useEffect(() => {
     if (!user?.id) return;
 
-    const loadSettings = async () => {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('settings_data')
-        .eq('user_id', user.id)
-        .eq('settings_type', 'clock')
-        .single();
+    let isMounted = true;
 
-      if (data && !error && data.settings_data) {
-        setSettings({ ...defaultSettings, ...(data.settings_data as unknown as ClockSettingsType) });
+    const loadSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('settings_data')
+          .eq('user_id', user.id)
+          .eq('settings_type', 'clock') // Only load clock settings
+          .single();
+
+        if (isMounted && data && !error && data.settings_data) {
+          // Safely merge with defaults to prevent data corruption
+          const loadedSettings = { ...defaultSettings, ...(data.settings_data as unknown as ClockSettingsType) };
+          setSettings(loadedSettings);
+        }
+      } catch (error) {
+        console.error('Error loading clock settings:', error);
+        // Fallback to defaults on error to prevent data loss
+        if (isMounted) {
+          setSettings(defaultSettings);
+        }
       }
     };
 
     loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id]);
 
   const formatTime = (date: Date) => {

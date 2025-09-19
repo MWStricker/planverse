@@ -96,32 +96,37 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     setSettings(currentSettings);
   }, [currentSettings]);
 
-  // Auto-save functionality (database only, no parent updates)
+  // Safe auto-save functionality (database only, no interference with other data)
   useEffect(() => {
-    if (!user?.id || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
+    if (!user?.id || !settings || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
 
     const autoSave = async () => {
       try {
+        // Only update clock settings, never touch other user data
         const { error } = await supabase
           .from('user_settings')
           .upsert({
             user_id: user.id,
-            settings_type: 'clock',
+            settings_type: 'clock', // Strictly scoped to clock settings only
             settings_data: settings as any,
             updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,settings_type', // Ensure we only update clock settings
+            ignoreDuplicates: false
           });
 
         if (error) {
-          console.error('Auto-save error:', error);
+          console.error('Clock auto-save error:', error);
         }
       } catch (error) {
-        console.error('Auto-save error:', error);
+        console.error('Clock auto-save error:', error);
       }
     };
 
-    const debounceTimer = setTimeout(autoSave, 500);
+    // Debounce to prevent excessive database calls
+    const debounceTimer = setTimeout(autoSave, 1000);
     return () => clearTimeout(debounceTimer);
-  }, [settings, user?.id]);
+  }, [settings, user?.id, currentSettings]);
 
   // Create preview of current settings
   const getPreviewTime = () => {
