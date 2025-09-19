@@ -153,9 +153,16 @@ const Index = () => {
 
   return (
     <ProfileEditingProvider>
-      <div className="flex bg-background" style={{ height: 'var(--app-height)', minHeight: 'var(--app-height)' }}>
+      <div 
+        className="flex bg-background overflow-hidden" 
+        style={{ 
+          height: 'var(--app-height, 100vh)', 
+          minHeight: 'var(--app-height, 100vh)',
+          maxHeight: 'var(--app-height, 100vh)'
+        }}
+      >
         <div 
-          className={`flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
+          className={`flex-shrink-0 h-full transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
           style={{ 
@@ -174,7 +181,13 @@ const Index = () => {
             onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
         </div>
-        <div className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform" style={{ height: 'var(--app-height)' }}>
+        <div 
+          className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform" 
+          style={{ 
+            height: 'var(--app-height, 100vh)',
+            maxHeight: 'var(--app-height, 100vh)'
+          }}
+        >
           {renderPage()}
         </div>
       </div>

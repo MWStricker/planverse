@@ -3,10 +3,13 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Fix viewport height for Mac/Safari browsers
+// Fix viewport height for all browsers
 const setAppHeight = () => {
   const doc = document.documentElement;
-  doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+  const height = window.innerHeight;
+  console.log('Setting app height to:', height);
+  doc.style.setProperty('--app-height', `${height}px`);
+  doc.style.setProperty('--vh', `${height * 0.01}px`);
 };
 
 // Simple autofill prevention - just make sure no input looks like an email field
@@ -34,9 +37,11 @@ const preventEmailAutofill = () => {
 };
 
 // Set initial height and listen for resize events
+console.log('Initializing viewport height fix');
 setAppHeight();
 window.addEventListener('resize', setAppHeight);
 window.addEventListener('orientationchange', setAppHeight);
+document.addEventListener('DOMContentLoaded', setAppHeight);
 
 // Run after DOM loads
 document.addEventListener('DOMContentLoaded', preventEmailAutofill);

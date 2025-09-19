@@ -13,9 +13,12 @@ html {
   /* Optimize scrolling */
   scroll-behavior: smooth;
   overflow-x: hidden;
-  /* Fix viewport height for mobile/Mac browsers */
+  /* Fix viewport height for all browsers */
   height: 100%;
   min-height: 100%;
+  /* Prevent any margin/padding issues */
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -28,7 +31,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
-  /* Fix viewport height for mobile/Mac browsers */
+  /* Fix viewport height for all browsers */
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  /* Prevent overflow issues */
+  overflow-x: hidden;
+}
+
+#root {
   height: 100%;
   min-height: 100%;
   margin: 0;
@@ -81,8 +93,9 @@ img, video, canvas {
 
 @layer base {
   :root {
-    /* Fix viewport height for Mac/Safari browsers */
+    /* Fix viewport height for all browsers */
     --app-height: 100vh;
+    --vh: 1vh;
     
     /* Academic Blues - Primary palette */
     --primary: 213 94% 68%;  /* Bright academic blue */
