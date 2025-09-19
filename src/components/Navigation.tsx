@@ -285,17 +285,17 @@ export const Navigation = ({
 
 
       {/* User Section */}
-      <div className="flex-shrink-0 p-2 border-t border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      <div className="flex-shrink-0 p-1 border-t border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
         <div 
-          className={`flex items-center gap-2 mb-2 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform cursor-pointer hover:bg-muted/50 rounded-lg p-1 -m-1 ${
+          className={`flex items-center gap-1 mb-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform cursor-pointer hover:bg-muted/50 rounded p-0.5 ${
             isCollapsed ? 'justify-center' : ''
           }`}
           onClick={() => setIsProfileOpen(true)}
           title="View Profile"
         >
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-6 w-6">
             <AvatarImage src={profile?.avatar_url} />
-            <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm">
+            <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-xs">
               {profile?.display_name?.charAt(0)?.toUpperCase() || 
                user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
@@ -316,19 +316,6 @@ export const Navigation = ({
                   size="sm"
                 />
               </div>
-              <p className={`text-xs text-muted-foreground truncate transition-all duration-300 ease-out ${
-                isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
-              }`}>
-                {(() => {
-                  const currentMajor = liveEditedProfile.major || profile?.major;
-                  if (!currentMajor) return 'Student';
-                  
-                  // Format predefined majors with proper capitalization
-                  return currentMajor.includes('-') ? 
-                    currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-                    currentMajor;
-                })()}
-              </p>
             </div>
           )}
         </div>
@@ -336,27 +323,27 @@ export const Navigation = ({
         
         {/* Clock and Controls Section */}
         {!isCollapsed && (
-          <div className={`mt-1 transition-all duration-300 ease-out ${
+          <div className={`transition-all duration-300 ease-out ${
             isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
           }`}>
             <div className="flex items-center justify-center gap-1">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 p-0"
+                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-6 h-6 p-0"
               >
-                <Bell className="h-3 w-3 transition-all duration-200 ease-out" />
+                <Bell className="h-2.5 w-2.5 transition-all duration-200 ease-out" />
               </Button>
-              <div className="scale-75">
+              <div className="scale-50">
                 <AnalogClock />
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => onPageChange('settings')}
-                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 p-0"
+                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-6 h-6 p-0"
               >
-                <Settings className="h-3 w-3 group-hover:rotate-90 transition-transform duration-300 ease-out" />
+                <Settings className="h-2.5 w-2.5 group-hover:rotate-90 transition-transform duration-300 ease-out" />
               </Button>
             </div>
           </div>
