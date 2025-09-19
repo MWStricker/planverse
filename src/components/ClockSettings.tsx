@@ -102,6 +102,9 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
 
     const autoSave = async () => {
       try {
+        // First update the parent immediately for live preview
+        onSettingsChange(settings);
+        
         const { error } = await supabase
           .from('user_settings')
           .upsert({
@@ -111,15 +114,15 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
             updated_at: new Date().toISOString()
           });
 
-        if (!error) {
-          onSettingsChange(settings);
+        if (error) {
+          console.error('Auto-save error:', error);
         }
       } catch (error) {
         console.error('Auto-save error:', error);
       }
     };
 
-    const debounceTimer = setTimeout(autoSave, 300);
+    const debounceTimer = setTimeout(autoSave, 100);
     return () => clearTimeout(debounceTimer);
   }, [settings, user?.id]);
 
