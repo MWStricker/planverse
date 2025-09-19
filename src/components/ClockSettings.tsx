@@ -96,12 +96,9 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     setSettings(currentSettings);
   }, [currentSettings]);
 
-  // Auto-save functionality with immediate callback
+  // Auto-save functionality
   useEffect(() => {
     if (!user?.id || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
-
-    // Immediately update parent component
-    onSettingsChange(settings);
 
     const autoSave = async () => {
       try {
@@ -114,8 +111,8 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
             updated_at: new Date().toISOString()
           });
 
-        if (error) {
-          console.error('Auto-save error:', error);
+        if (!error) {
+          onSettingsChange(settings);
         }
       } catch (error) {
         console.error('Auto-save error:', error);
@@ -124,7 +121,7 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
 
     const debounceTimer = setTimeout(autoSave, 300);
     return () => clearTimeout(debounceTimer);
-  }, [settings, user?.id, currentSettings, onSettingsChange]);
+  }, [settings, user?.id]);
 
   // Create preview of current settings
   const getPreviewTime = () => {
