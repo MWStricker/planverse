@@ -13,6 +13,7 @@ import { AnalogClock } from "@/components/AnalogClock";
 import { supabase } from "@/integrations/supabase/client";
 import { useTabReorder } from "@/hooks/useTabReorder";
 import { SortableTabItem } from "@/components/SortableTabItem";
+import { SidebarTaskWidget } from "@/components/SidebarTaskWidget";
 import { NotificationCenter } from "./NotificationCenter";
 import { useRealtime } from "@/hooks/useRealtime";
 import { UserStatusIndicator } from "./UserStatusIndicator";
@@ -333,6 +334,15 @@ export const Navigation = ({
         </div>
         
         
+        {/* Tasks Widget */}
+        {!isCollapsed && currentPage !== 'tasks' && (
+          <div className={`mt-2 transition-all duration-300 ease-out ${
+            isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
+          }`}>
+            <SidebarTaskWidget isCollapsed={isCollapsed} />
+          </div>
+        )}
+
         {/* Clock and Controls Section */}
         {!isCollapsed && (
           <div className={`mt-1 transition-all duration-300 ease-out ${
