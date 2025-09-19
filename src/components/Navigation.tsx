@@ -166,13 +166,13 @@ export const Navigation = ({
 
   return (
     <div className="flex flex-col h-full bg-card border-r border-border relative transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
-      {/* Collapse button - positioned to left when collapsed */}
+      {/* Collapse button - positioned outside sidebar when collapsed */}
       <Button
         variant="ghost"
         size="sm"
         onClick={onToggleCollapse}
         className={`absolute top-1/3 -translate-y-1/2 z-50 h-8 w-8 p-0 hover:bg-muted/50 rounded-md transition-all bg-background border border-border shadow-sm ${
-          isCollapsed ? 'left-2' : '-right-2'
+          isCollapsed ? '-left-4' : '-right-2'
         }`}
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
