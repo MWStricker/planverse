@@ -96,15 +96,12 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     setSettings(currentSettings);
   }, [currentSettings]);
 
-  // Auto-save functionality
+  // Auto-save functionality (database only, no parent updates)
   useEffect(() => {
     if (!user?.id || JSON.stringify(settings) === JSON.stringify(currentSettings)) return;
 
     const autoSave = async () => {
       try {
-        // First update the parent immediately for live preview
-        onSettingsChange(settings);
-        
         const { error } = await supabase
           .from('user_settings')
           .upsert({
@@ -122,7 +119,7 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
       }
     };
 
-    const debounceTimer = setTimeout(autoSave, 100);
+    const debounceTimer = setTimeout(autoSave, 500);
     return () => clearTimeout(debounceTimer);
   }, [settings, user?.id]);
 
@@ -289,7 +286,12 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
                       ? 'ring-2 ring-primary bg-primary/5 animate-scale-in' 
                       : 'hover:bg-muted/50 hover:shadow-md'
                   }`}
-                  onClick={() => setSettings({ ...settings, style: style.value as any })}
+                  onClick={() => {
+                    const newSettings = { ...settings, style: style.value as any };
+                    setSettings(newSettings);
+                    // Update parent immediately for live display
+                    onSettingsChange(newSettings);
+                  }}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
