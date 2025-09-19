@@ -168,16 +168,16 @@ export const Navigation = ({
     <div className="flex flex-col h-full bg-card border-r border-border relative transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
       {/* Collapse/Expand Button */}
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
         onClick={onToggleCollapse}
-        className={`absolute -right-4 top-6 z-10 h-7 w-8 p-0 bg-card hover:bg-muted border-r border-t border-b border-border rounded-l-none rounded-r-lg shadow-sm hover:shadow-md transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform`}
+        className="absolute -right-3 top-6 z-10 h-6 w-6 p-0 bg-background hover:bg-muted border shadow-sm hover:shadow transition-all"
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? (
-          <ChevronRight className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+          <ChevronRight className="h-3 w-3" />
         ) : (
-          <ChevronLeft className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+          <ChevronLeft className="h-3 w-3" />
         )}
       </Button>
 
