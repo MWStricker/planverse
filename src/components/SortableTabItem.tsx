@@ -50,8 +50,8 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-14 text-base transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
-        isCollapsed ? 'justify-center px-2' : 'justify-start'
+      className={`w-full h-20 text-lg transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
+        isCollapsed ? 'justify-center px-2' : 'justify-start px-6'
       } ${
         isDragging ? 'shadow-lg' : ''
       } ${

@@ -250,7 +250,7 @@ export const Navigation = ({
 
       {/* Navigation */}
       <nav className="flex-1 min-h-0 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
-        <div className="h-full overflow-y-auto p-4 space-y-3">
+        <div className="h-full overflow-y-auto p-4 space-y-6">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -261,7 +261,7 @@ export const Navigation = ({
             items={orderedNavItems.map(item => item.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-3">
+            <div className="space-y-6">
               {orderedNavItems.map((item) => (
                 <SortableTabItem
                   key={item.id}
