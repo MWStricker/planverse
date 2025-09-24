@@ -641,43 +641,40 @@ export const DashboardIntegratedView = () => {
                     open={!isCollapsed}
                     onOpenChange={() => toggleCourse(course.code)}
                   >
-                    <CollapsibleTrigger asChild>
-                      <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div 
-                              className="p-2 rounded-lg"
-                              style={{ 
-                                backgroundColor: typeof course.color === 'string' ? `${course.color}20` : undefined,
-                                border: typeof course.color === 'string' ? `1px solid ${course.color}40` : undefined
-                              }}
-                            >
-                              <IconComponent className="h-5 w-5" style={{ color: course.color }} />
-                            </div>
-                            <div>
-                              <CardTitle className="text-lg">{course.code}</CardTitle>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span>{course.totalAssignments} total assignments</span>
-                                <span>{course.completedAssignments} completed</span>
-                                <span>{course.upcomingAssignments} upcoming</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary">
-                              {Math.round((course.completedAssignments / Math.max(course.totalAssignments, 1)) * 100)}%
-                            </Badge>
-                            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </CollapsibleTrigger>
-                    
-                    <CollapsibleContent>
-                      <CardContent className="pt-0">
-                        {/* Recent Assignments */}
-                         <div className="space-y-2">
-                           {course.events.slice(0, 5).map(event => (
+                     <CollapsibleTrigger asChild>
+                       <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                         <div className="flex items-center justify-between">
+                           <div className="flex items-center space-x-3">
+                             <div 
+                               className="p-2 rounded-lg"
+                               style={{ 
+                                 backgroundColor: typeof course.color === 'string' ? `${course.color}20` : undefined,
+                                 border: typeof course.color === 'string' ? `1px solid ${course.color}40` : undefined
+                               }}
+                             >
+                               <IconComponent className="h-5 w-5" style={{ color: course.color }} />
+                             </div>
+                             <div>
+                               <CardTitle className="text-lg">{course.code}</CardTitle>
+                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                 <span>{course.totalAssignments} total assignments</span>
+                                 <span>{course.completedAssignments} completed</span>
+                                 <span>{course.upcomingAssignments} upcoming</span>
+                               </div>
+                             </div>
+                           </div>
+                           <div className="flex items-center gap-2">
+                             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                           </div>
+                         </div>
+                       </CardHeader>
+                     </CollapsibleTrigger>
+                     
+                     <CollapsibleContent>
+                       <CardContent className="pt-0">
+                         {/* All Assignments - Scrollable */}
+                         <div className="max-h-96 overflow-y-auto space-y-2">
+                           {course.events.map(event => (
                              <div 
                                key={event.id} 
                                className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
@@ -700,10 +697,33 @@ export const DashboardIntegratedView = () => {
                                  {event.end_time && format(new Date(event.end_time), 'MMM d')}
                                </span>
                              </div>
-                          ))}
-                          {course.events.length === 0 && (
-                            <p className="text-muted-foreground text-center py-4">No assignments found</p>
-                          )}
+                           ))}
+                           {course.tasks.map(task => (
+                             <div 
+                               key={task.id} 
+                               className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                               onClick={() => openTaskModal(task)}
+                             >
+                               <div className="flex items-center gap-2">
+                                 <Checkbox 
+                                   checked={task.completion_status === 'completed'}
+                                   onCheckedChange={(checked) => {
+                                     // Handle task toggle here if needed
+                                   }}
+                                   onClick={(e) => e.stopPropagation()}
+                                 />
+                                 <span className={task.completion_status === 'completed' ? 'line-through text-muted-foreground' : ''}>
+                                   {task.title}
+                                 </span>
+                               </div>
+                               <span className="text-sm text-muted-foreground">
+                                 {task.due_date && format(new Date(task.due_date), 'MMM d')}
+                               </span>
+                             </div>
+                           ))}
+                           {course.events.length === 0 && course.tasks.length === 0 && (
+                             <p className="text-muted-foreground text-center py-4">No assignments found</p>
+                           )}
                         </div>
                       </CardContent>
                     </CollapsibleContent>
