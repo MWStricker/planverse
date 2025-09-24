@@ -566,11 +566,22 @@ export const DashboardIntegratedView = () => {
             </Button>
           </div>
 
-          {/* Calendar Navigation - Date Display Only */}
-          <div className="flex items-center justify-center">
+          {/* Calendar Navigation - Today Button for Day View Only */}
+          <div className="flex items-center justify-between">
+            <div></div>
             <h2 className="text-xl font-semibold">
               {format(currentDate, viewMode === 'month' ? 'MMMM yyyy' : 'MMM d, yyyy')}
             </h2>
+            {viewMode === 'day' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentDate(new Date())}
+              >
+                Today
+              </Button>
+            )}
+            {viewMode !== 'day' && <div></div>}
           </div>
 
           {/* Calendar Component */}
