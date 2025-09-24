@@ -122,11 +122,32 @@ export const DashboardIntegratedView = () => {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Load data on component mount
+  // Load data on component mount and listen for updates
   useEffect(() => {
     if (user) {
       loadAllData();
     }
+  }, [user]);
+
+  // Listen for task creation events
+  useEffect(() => {
+    const handleTaskCreated = () => {
+      console.log('Dashboard: Task created event received, reloading data');
+      loadAllData();
+    };
+
+    const handleDataRefresh = () => {
+      console.log('Dashboard: Data refresh event received, reloading data');
+      loadAllData();
+    };
+
+    window.addEventListener('taskCreated', handleTaskCreated);
+    window.addEventListener('dataRefresh', handleDataRefresh);
+
+    return () => {
+      window.removeEventListener('taskCreated', handleTaskCreated);
+      window.removeEventListener('dataRefresh', handleDataRefresh);
+    };
   }, [user]);
 
   const loadAllData = async () => {
