@@ -675,6 +675,15 @@ export const DashboardIntegratedView = () => {
                          {/* All Assignments - Scrollable, Sorted by Date */}
                          <div className="max-h-96 overflow-y-auto space-y-2">
                            {[...course.events, ...course.tasks]
+                             .filter((item: any) => {
+                               // Filter out assignments that are more than 3 weeks past due
+                               const itemDate = new Date((item as any).end_time || (item as any).start_time || (item as any).due_date || '');
+                               const today = new Date();
+                               const threeWeeksAgo = new Date(today.getTime() - (21 * 24 * 60 * 60 * 1000)); // 3 weeks in milliseconds
+                               
+                               // Keep the assignment if it's not older than 3 weeks past due
+                               return itemDate >= threeWeeksAgo;
+                             })
                              .sort((a, b) => {
                                // Get dates for comparison - handle both events and tasks
                                const dateA = new Date((a as any).end_time || (a as any).start_time || (a as any).due_date || '');
