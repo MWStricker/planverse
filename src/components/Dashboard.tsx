@@ -1,4 +1,5 @@
 import { Calendar, Clock, BookOpen, Target, Upload, Plus, CheckCircle, AlertCircle, Brain, CalendarIcon, AlertTriangle, TrendingUp } from "lucide-react";
+import { DashboardIntegratedView } from "./DashboardIntegratedView";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +75,7 @@ const mockTasks: Task[] = [];
 
 const todaySchedule: ScheduleEvent[] = [];
 
-export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (weekStart?: Date) => void }) => {
+export const Dashboard = () => {
   const { user } = useAuth();
   const { preferences } = usePreferences();
   const { toast } = useToast();
@@ -2567,11 +2568,6 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (we
         <WeeklyProgressCard 
           weekGroup={weeklyProgressData.currentWeek} 
           showAssignments={true}
-          onWeekClick={(weekStart) => {
-            if (onNavigateToCalendar) {
-              onNavigateToCalendar(weekStart);
-            }
-          }}
         />
         
         {/* Previous Weeks */}
@@ -2583,11 +2579,6 @@ export const Dashboard = ({ onNavigateToCalendar }: { onNavigateToCalendar?: (we
                 <WeeklyProgressCard 
                   key={index} 
                   weekGroup={week} 
-                  onWeekClick={(weekStart) => {
-                    if (onNavigateToCalendar) {
-                      onNavigateToCalendar(weekStart);
-                    }
-                  }}
                 />
               ))}
             </div>

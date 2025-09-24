@@ -61,12 +61,9 @@ const Index = () => {
   // Tab reordering functionality
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
-    { id: 'integrations', label: 'Integrations', icon: Users },
     { id: 'connect', label: 'Connect', icon: Users },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'tasks', label: 'Tasks', icon: Target },
     { id: 'upload', label: 'Image Upload', icon: Upload },
+    { id: 'tasks', label: 'Tasks', icon: Target },
   ];
 
   const {
@@ -97,16 +94,7 @@ const Index = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        // Clear selected week when returning to dashboard
-        if (selectedWeekStart) {
-          setSelectedWeekStart(null);
-        }
-        return <Dashboard onNavigateToCalendar={(weekStart?: Date) => {
-          if (weekStart) {
-            setSelectedWeekStart(weekStart);
-          }
-          setCurrentPage('calendar');
-        }} />;
+        return <Dashboard />;
       case 'upload':
         return (
           <div className="p-6">
@@ -124,18 +112,10 @@ const Index = () => {
             </Tabs>
           </div>
         );
-      case 'integrations':
-        return <IntegrationSetup />;
-      case 'settings':
-        return <Settings defaultTab={settingsTab} />;
-      case 'calendar':
-        return <Calendar initialDate={selectedWeekStart || undefined} />;
       case 'connect':
         return <Connect />;
       case 'tasks':
         return <Tasks />;
-      case 'courses':
-        return <Courses />;
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">
