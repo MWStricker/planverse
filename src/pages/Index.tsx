@@ -113,6 +113,8 @@ const Index = () => {
         );
       case 'connect':
         return <Connect />;
+      case 'settings':
+        return <Settings defaultTab={settingsTab} />;
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">
