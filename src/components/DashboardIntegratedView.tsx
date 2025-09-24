@@ -11,6 +11,7 @@ import { MonthlyCalendarView } from "@/components/MonthlyCalendarView";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EventTaskModal } from "@/components/EventTaskModal";
+import { CanvasIntegration } from "@/components/CanvasIntegration";
 import { getCourseIconById, courseIcons } from "@/data/courseIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -631,6 +632,11 @@ export const DashboardIntegratedView = () => {
                 setCurrentMonth={setCurrentDate}
               />
             )}
+          </div>
+
+          {/* Canvas Integration */}
+          <div className="mt-6">
+            <CanvasIntegration />
           </div>
         </TabsContent>
 
