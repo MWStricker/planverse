@@ -106,6 +106,16 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
       }
     }
   };
+
+  // Auto-scroll to current time when component loads or day changes
+  useEffect(() => {
+    // Small delay to ensure the DOM is fully rendered
+    const timer = setTimeout(() => {
+      scrollToCurrentHour();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [currentDay]);
   
   const handlePrevDay = () => setCurrentDay(subDays(currentDay, 1));
   const handleNextDay = () => setCurrentDay(addDays(currentDay, 1));
