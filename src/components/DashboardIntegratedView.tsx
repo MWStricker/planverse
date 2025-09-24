@@ -672,56 +672,58 @@ export const DashboardIntegratedView = () => {
                      
                      <CollapsibleContent>
                        <CardContent className="pt-0">
-                         {/* All Assignments - Scrollable */}
+                         {/* All Assignments - Scrollable, Sorted by Date */}
                          <div className="max-h-96 overflow-y-auto space-y-2">
-                           {course.events.map(event => (
-                             <div 
-                               key={event.id} 
-                               className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
-                               onClick={() => openEventModal(event)}
-                             >
-                               <div className="flex items-center gap-2">
-                                 <Checkbox 
-                                   checked={event.is_completed || false}
-                                   onCheckedChange={(checked) => {
-                                     event.preventDefault?.();
-                                     handleEventToggle(event.id, checked as boolean);
-                                   }}
-                                   onClick={(e) => e.stopPropagation()}
-                                 />
-                                 <span className={event.is_completed ? 'line-through text-muted-foreground' : ''}>
-                                   {event.title}
-                                 </span>
-                               </div>
-                               <span className="text-sm text-muted-foreground">
-                                 {event.end_time && format(new Date(event.end_time), 'MMM d')}
-                               </span>
-                             </div>
-                           ))}
-                           {course.tasks.map(task => (
-                             <div 
-                               key={task.id} 
-                               className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
-                               onClick={() => openTaskModal(task)}
-                             >
-                               <div className="flex items-center gap-2">
-                                 <Checkbox 
-                                   checked={task.completion_status === 'completed'}
-                                   onCheckedChange={(checked) => {
-                                     // Handle task toggle here if needed
-                                   }}
-                                   onClick={(e) => e.stopPropagation()}
-                                 />
-                                 <span className={task.completion_status === 'completed' ? 'line-through text-muted-foreground' : ''}>
-                                   {task.title}
-                                 </span>
-                               </div>
-                               <span className="text-sm text-muted-foreground">
-                                 {task.due_date && format(new Date(task.due_date), 'MMM d')}
-                               </span>
-                             </div>
-                           ))}
-                           {course.events.length === 0 && course.tasks.length === 0 && (
+                           {[...course.events, ...course.tasks]
+                             .sort((a, b) => {
+                               // Get dates for comparison - handle both events and tasks
+                               const dateA = new Date((a as any).end_time || (a as any).start_time || (a as any).due_date || '');
+                               const dateB = new Date((b as any).end_time || (b as any).start_time || (b as any).due_date || '');
+                               
+                               // Sort by closest to today's date
+                               const today = new Date();
+                               const diffA = Math.abs(dateA.getTime() - today.getTime());
+                               const diffB = Math.abs(dateB.getTime() - today.getTime());
+                               
+                               return diffA - diffB;
+                             })
+                             .map((item: any) => {
+                               const isEvent = 'start_time' in item;
+                               return (
+                                 <div 
+                                   key={item.id} 
+                                   className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                                   onClick={() => isEvent ? openEventModal(item) : openTaskModal(item)}
+                                 >
+                                   <div className="flex items-center gap-2">
+                                     <Checkbox 
+                                       checked={isEvent ? (item.is_completed || false) : (item.completion_status === 'completed')}
+                                       onCheckedChange={(checked) => {
+                                         if (isEvent) {
+                                           handleEventToggle(item.id, checked as boolean);
+                                         }
+                                         // Handle task toggle here if needed for tasks
+                                       }}
+                                       onClick={(e) => e.stopPropagation()}
+                                     />
+                                     <span className={
+                                       (isEvent ? item.is_completed : item.completion_status === 'completed') 
+                                         ? 'line-through text-muted-foreground' 
+                                         : ''
+                                     }>
+                                       {item.title}
+                                     </span>
+                                   </div>
+                                   <span className="text-sm text-muted-foreground">
+                                     {(item.end_time || item.start_time || item.due_date) && 
+                                       format(new Date(item.end_time || item.start_time || item.due_date), 'MMM d')
+                                     }
+                                   </span>
+                                 </div>
+                               );
+                             })
+                           }
+                           {([...course.events, ...course.tasks]).length === 0 && (
                              <p className="text-muted-foreground text-center py-4">No assignments found</p>
                            )}
                         </div>
