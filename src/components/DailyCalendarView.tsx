@@ -307,7 +307,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
               }`}
             >
               {/* Time Label */}
-              <div className="w-20 flex-shrink-0 p-4 border-r border-border/40 bg-muted/10 flex items-start justify-center">
+              <div className="w-32 flex-shrink-0 p-4 border-r border-border/40 bg-muted/10 flex items-start justify-center">
                 <div className={`text-sm font-medium px-2 py-1 rounded-md ${
                   isCurrentHour 
                     ? "bg-primary/10 text-primary border border-primary/20" 
