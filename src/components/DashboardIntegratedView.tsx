@@ -10,6 +10,7 @@ import { DailyCalendarView } from "@/components/DailyCalendarView";
 import { MonthlyCalendarView } from "@/components/MonthlyCalendarView";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { EventTaskModal } from "@/components/EventTaskModal";
 import { getCourseIconById, courseIcons } from "@/data/courseIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -115,6 +116,11 @@ export const DashboardIntegratedView = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set());
   const [courseIcons_State, setCourseIcons_State] = useState<Record<string, string>>({});
+  
+  // Modal state for assignment details
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -346,9 +352,28 @@ export const DashboardIntegratedView = () => {
       totalCoursesActive: courses.length,
       totalItemsToday: totalToday,
       completedToday,
-      completionRate: totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0
+      progressPercentage: totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0
     };
   }, [events, tasks, courses]);
+
+  // Modal handlers
+  const openEventModal = (event: any) => {
+    setSelectedEvent(event);
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const openTaskModal = (task: any) => {
+    setSelectedTask(task);
+    setSelectedEvent(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
+    setSelectedTask(null);
+  };
 
   if (loading) {
     return (
@@ -371,7 +396,7 @@ export const DashboardIntegratedView = () => {
             {dashboardStats.totalCoursesActive} Courses Active
           </Badge>
           <Badge variant="outline" className="px-3 py-1">
-            {dashboardStats.completionRate}% Complete Today
+            {dashboardStats.progressPercentage}% Progress Today
           </Badge>
         </div>
       </div>
@@ -416,8 +441,8 @@ export const DashboardIntegratedView = () => {
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-5 w-5 text-emerald-500" />
               <div>
-                <p className="text-sm text-muted-foreground">Completion Rate</p>
-                <p className="text-2xl font-bold">{dashboardStats.completionRate}%</p>
+                 <p className="text-sm text-muted-foreground">Progress</p>
+                 <p className="text-2xl font-bold">{dashboardStats.progressPercentage}%</p>
               </div>
             </div>
           </CardContent>
@@ -453,7 +478,10 @@ export const DashboardIntegratedView = () => {
                           checked={event.is_completed || false}
                           onCheckedChange={(checked) => handleEventToggle(event.id, checked as boolean)}
                         />
-                        <span className={event.is_completed ? 'line-through text-muted-foreground' : ''}>
+                        <span 
+                          className={`cursor-pointer hover:text-primary ${event.is_completed ? 'line-through text-muted-foreground' : ''}`}
+                          onClick={() => openEventModal(event)}
+                        >
                           {event.title}
                         </span>
                       </div>
@@ -476,24 +504,28 @@ export const DashboardIntegratedView = () => {
                   Course Progress
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {courses.slice(0, 4).map(course => (
-                  <div key={course.code} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{course.code}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {course.completedAssignments}/{course.totalAssignments}
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ 
-                          width: `${course.totalAssignments > 0 ? (course.completedAssignments / course.totalAssignments) * 100 : 0}%` 
-                        }}
-                      />
-                    </div>
-                  </div>
+               <CardContent className="space-y-3">
+                 {courses.slice(0, 4).map(course => (
+                   <div 
+                     key={course.code} 
+                     className="space-y-2 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+                     onClick={() => setActiveTab("courses")}
+                   >
+                     <div className="flex justify-between items-center">
+                       <span className="font-medium">{course.code}</span>
+                       <span className="text-sm text-muted-foreground">
+                         {course.completedAssignments}/{course.totalAssignments}
+                       </span>
+                     </div>
+                     <div className="w-full bg-muted rounded-full h-2">
+                       <div 
+                         className="bg-primary h-2 rounded-full" 
+                         style={{ 
+                           width: `${course.totalAssignments > 0 ? (course.completedAssignments / course.totalAssignments) * 100 : 0}%` 
+                         }}
+                       />
+                     </div>
+                   </div>
                 ))}
               </CardContent>
             </Card>
@@ -644,22 +676,30 @@ export const DashboardIntegratedView = () => {
                     <CollapsibleContent>
                       <CardContent className="pt-0">
                         {/* Recent Assignments */}
-                        <div className="space-y-2">
-                          {course.events.slice(0, 5).map(event => (
-                            <div key={event.id} className="flex items-center justify-between p-2 border rounded">
-                              <div className="flex items-center gap-2">
-                                <Checkbox 
-                                  checked={event.is_completed || false}
-                                  onCheckedChange={(checked) => handleEventToggle(event.id, checked as boolean)}
-                                />
-                                <span className={event.is_completed ? 'line-through text-muted-foreground' : ''}>
-                                  {event.title}
-                                </span>
-                              </div>
-                              <span className="text-sm text-muted-foreground">
-                                {event.end_time && format(new Date(event.end_time), 'MMM d')}
-                              </span>
-                            </div>
+                         <div className="space-y-2">
+                           {course.events.slice(0, 5).map(event => (
+                             <div 
+                               key={event.id} 
+                               className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                               onClick={() => openEventModal(event)}
+                             >
+                               <div className="flex items-center gap-2">
+                                 <Checkbox 
+                                   checked={event.is_completed || false}
+                                   onCheckedChange={(checked) => {
+                                     event.preventDefault?.();
+                                     handleEventToggle(event.id, checked as boolean);
+                                   }}
+                                   onClick={(e) => e.stopPropagation()}
+                                 />
+                                 <span className={event.is_completed ? 'line-through text-muted-foreground' : ''}>
+                                   {event.title}
+                                 </span>
+                               </div>
+                               <span className="text-sm text-muted-foreground">
+                                 {event.end_time && format(new Date(event.end_time), 'MMM d')}
+                               </span>
+                             </div>
                           ))}
                           {course.events.length === 0 && (
                             <p className="text-muted-foreground text-center py-4">No assignments found</p>
@@ -685,6 +725,14 @@ export const DashboardIntegratedView = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Event/Task Modal */}
+      <EventTaskModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        event={selectedEvent || undefined}
+        task={selectedTask || undefined}
+      />
     </div>
   );
 };
