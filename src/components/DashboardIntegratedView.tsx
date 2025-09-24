@@ -566,36 +566,18 @@ export const DashboardIntegratedView = () => {
             </Button>
           </div>
 
-          {/* Calendar Navigation */}
+          {/* Calendar Navigation - Today Button Only */}
           <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (viewMode === 'month') {
-                  setCurrentDate(subMonths(currentDate, 1));
-                } else {
-                  setCurrentDate(subWeeks(currentDate, 1));
-                }
-              }}
-            >
-              Previous
-            </Button>
+            <div></div>
             <h2 className="text-xl font-semibold">
               {format(currentDate, viewMode === 'month' ? 'MMMM yyyy' : 'MMM d, yyyy')}
             </h2>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (viewMode === 'month') {
-                  setCurrentDate(addMonths(currentDate, 1));
-                } else {
-                  setCurrentDate(addWeeks(currentDate, 1));
-                }
-              }}
+              onClick={() => setCurrentDate(new Date())}
             >
-              Next
+              Today
             </Button>
           </div>
 
