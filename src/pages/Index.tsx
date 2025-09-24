@@ -63,7 +63,6 @@ const Index = () => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'connect', label: 'Connect', icon: Users },
     { id: 'upload', label: 'Image Upload', icon: Upload },
-    { id: 'tasks', label: 'Tasks', icon: Target },
   ];
 
   const {
@@ -114,8 +113,6 @@ const Index = () => {
         );
       case 'connect':
         return <Connect />;
-      case 'tasks':
-        return <Tasks />;
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">

@@ -144,10 +144,7 @@ export const Navigation = ({
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'connect', label: 'Connect', icon: Users },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'tasks', label: 'Tasks', icon: Target },
     { id: 'upload', label: 'Image Upload', icon: Upload },
   ];
 
