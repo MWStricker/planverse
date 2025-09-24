@@ -166,14 +166,14 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex flex-col">
+      <div className="relative flex items-center justify-center mb-6">
+        <div className="flex flex-col text-center">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             {format(weekStart, "MMMM d")} - {format(weekEnd, "d, yyyy")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">Weekly Schedule</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="absolute right-0 flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handlePrevWeek}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
