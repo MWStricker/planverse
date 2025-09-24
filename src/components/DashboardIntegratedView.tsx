@@ -556,14 +556,6 @@ export const DashboardIntegratedView = () => {
             >
               Month
             </Button>
-            <div className="flex-1" />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentDate(new Date())}
-            >
-              Today
-            </Button>
           </div>
 
           {/* Calendar Navigation - Today Button for Day View Only */}
