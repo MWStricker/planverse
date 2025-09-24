@@ -136,16 +136,34 @@ export const DashboardIntegratedView = () => {
       loadAllData();
     };
 
+    const handleTaskDeleted = (event: any) => {
+      console.log('Dashboard: Task deleted event received', event.detail);
+      const taskId = event.detail?.taskId;
+      if (taskId) {
+        // Immediately update local state to remove the task
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+        setCourses(prevCourses => 
+          prevCourses.map(course => ({
+            ...course,
+            tasks: course.tasks.filter(task => task.id !== taskId)
+          }))
+        );
+        console.log('Dashboard: Task removed from local state');
+      }
+    };
+
     const handleDataRefresh = () => {
       console.log('Dashboard: Data refresh event received, reloading data');
       loadAllData();
     };
 
     window.addEventListener('taskCreated', handleTaskCreated);
+    window.addEventListener('taskDeleted', handleTaskDeleted);
     window.addEventListener('dataRefresh', handleDataRefresh);
 
     return () => {
       window.removeEventListener('taskCreated', handleTaskCreated);
+      window.removeEventListener('taskDeleted', handleTaskDeleted);
       window.removeEventListener('dataRefresh', handleDataRefresh);
     };
   }, [user]);
