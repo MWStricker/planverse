@@ -173,8 +173,9 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
     if (!event.start_time) return false;
     const eventDate = new Date(event.start_time);
     return isSameDay(eventDate, currentDay) && (
-      event.start_time.includes('00:00:00') || 
-      event.start_time.includes('23:59:59')
+      // Only include Canvas events with 23:59:59 as all-day events
+      // Regular events created at 12:00 AM should appear in their time slot
+      (event.source_provider === 'canvas' && event.start_time.includes('23:59:59'))
     );
   });
 
@@ -182,8 +183,9 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
     if (!task.due_date) return false;
     const taskDate = new Date(task.due_date);
     return isSameDay(taskDate, currentDay) && (
-      task.due_date.includes('00:00:00') || 
-      task.due_date.includes('23:59:59')
+      // Only include Canvas tasks with 23:59:59 as all-day tasks
+      // Regular tasks created at 12:00 AM should appear in their time slot
+      (task.source_provider === 'canvas' && task.due_date.includes('23:59:59'))
     );
   });
 
