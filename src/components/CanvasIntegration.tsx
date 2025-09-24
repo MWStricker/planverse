@@ -417,19 +417,22 @@ export const CanvasIntegration = () => {
 
       fetchCalendarConnections();
       
-      // Dispatch multiple refresh events to ensure all components update
+      // Force immediate state refresh across all components
+      console.log('Dispatching Canvas removal refresh events...');
+      window.dispatchEvent(new CustomEvent('dataRefresh'));
+      window.dispatchEvent(new CustomEvent('eventsCleared'));
+      window.dispatchEvent(new CustomEvent('tasksCleared'));
+      window.dispatchEvent(new CustomEvent('canvasDataCleared'));
+      
+      // Clear data cache and force reload in all calendar components
       setTimeout(() => {
-        console.log('Dispatching Canvas removal refresh events...');
+        console.log('Sending second Canvas removal refresh wave...');
         window.dispatchEvent(new CustomEvent('dataRefresh'));
         window.dispatchEvent(new CustomEvent('eventsCleared'));
-        window.dispatchEvent(new CustomEvent('tasksCleared'));
-        window.dispatchEvent(new CustomEvent('canvasDataCleared'));
         
-        // Double refresh to ensure complete removal
+        // Force reload the page to ensure complete cleanup
         setTimeout(() => {
-          console.log('Sending second Canvas removal refresh wave...');
-          window.dispatchEvent(new CustomEvent('dataRefresh'));
-          window.dispatchEvent(new CustomEvent('eventsCleared'));
+          window.location.reload();
         }, 1000);
       }, 1000);
     } catch (error) {

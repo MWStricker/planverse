@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Calendar as CalendarIcon, Clock, BookOpen, Target, CheckCircle, AlertCircle, Brain, TrendingUp, Plus, ChevronDown, ChevronRight, Settings, FileText, GraduationCap, Palette } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, BookOpen, Target, CheckCircle, AlertCircle, Brain, TrendingUp, Plus, ChevronDown, ChevronRight, Settings, FileText, GraduationCap, Palette, Trash2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { WeeklyCalendarView } from "@/components/WeeklyCalendarView";
@@ -415,6 +416,118 @@ export const DashboardIntegratedView = () => {
     setSelectedTask(null);
   };
 
+  // Clear all data function
+  const clearAllData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+      console.log('Starting complete data clear for user:', user.id);
+
+      // Delete all events
+      const { error: eventsError } = await supabase
+        .from('events')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (eventsError) {
+        console.error('Error deleting events:', eventsError);
+      }
+
+      // Delete all tasks
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (tasksError) {
+        console.error('Error deleting tasks:', tasksError);
+      }
+
+      // Delete all course colors
+      const { error: colorsError } = await supabase
+        .from('course_colors')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (colorsError) {
+        console.error('Error deleting course colors:', colorsError);
+      }
+
+      // Delete all study sessions
+      const { error: sessionsError } = await supabase
+        .from('study_sessions')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (sessionsError) {
+        console.error('Error deleting study sessions:', sessionsError);
+      }
+
+      // Delete all OCR uploads
+      const { error: ocrError } = await supabase
+        .from('ocr_uploads')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (ocrError) {
+        console.error('Error deleting OCR uploads:', ocrError);
+      }
+
+      // Delete all calendar connections
+      const { error: connectionsError } = await supabase
+        .from('calendar_connections')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (connectionsError) {
+        console.error('Error deleting calendar connections:', connectionsError);
+      }
+
+      // Clear user settings
+      const { error: settingsError } = await supabase
+        .from('user_settings')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (settingsError) {
+        console.error('Error deleting user settings:', settingsError);
+      }
+
+      console.log('Complete data clear finished successfully');
+
+      // Clear local state immediately
+      setEvents([]);
+      setTasks([]);
+      setCourses([]);
+      setStoredColors({});
+      setCourseIcons_State({});
+
+      toast({
+        title: "All Data Cleared",
+        description: "All calendar data has been permanently deleted from your account.",
+      });
+
+      // Dispatch refresh events
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        window.dispatchEvent(new CustomEvent('eventsCleared'));
+        window.dispatchEvent(new CustomEvent('tasksCleared'));
+        window.dispatchEvent(new CustomEvent('canvasDataCleared'));
+      }, 500);
+
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear all data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -573,29 +686,70 @@ export const DashboardIntegratedView = () => {
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
-          {/* Calendar View Mode Toggle */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant={viewMode === 'day' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('day')}
-            >
-              Day
-            </Button>
-            <Button
-              variant={viewMode === 'week' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('week')}
-            >
-              Week
-            </Button>
-            <Button
-              variant={viewMode === 'month' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('month')}
-            >
-              Month
-            </Button>
+          {/* Calendar View Mode Toggle and Clear All Button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === 'day' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('day')}
+              >
+                Day
+              </Button>
+              <Button
+                variant={viewMode === 'week' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('week')}
+              >
+                Week
+              </Button>
+              <Button
+                variant={viewMode === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('month')}
+              >
+                Month
+              </Button>
+            </div>
+            
+            {/* Clear All Button */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Clear All Data
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Clear All Calendar Data
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete ALL calendar data including:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>All events (Canvas and manually added)</li>
+                      <li>All tasks and assignments</li>
+                      <li>All course colors and settings</li>
+                      <li>All study sessions</li>
+                      <li>All OCR uploads</li>
+                      <li>All calendar connections</li>
+                    </ul>
+                    <p className="mt-2 font-medium text-destructive">This action cannot be undone.</p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={clearAllData}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Clear All Data
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           {/* Calendar Navigation - Date Display Only */}
