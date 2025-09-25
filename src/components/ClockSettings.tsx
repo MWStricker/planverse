@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -102,11 +101,11 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     setSettings(currentSettings);
   }, [currentSettings]);
 
-  // Auto-save to database when settings change (debounced for performance)
+  // Auto-save to database when settings change (not triggered by style clicks)
   useEffect(() => {
     if (!user?.id || !settings) return;
     
-    // Only auto-save if settings are different from current
+    // Only auto-save if settings are different from current AND not from a style click
     const settingsChanged = JSON.stringify(settings) !== JSON.stringify(currentSettings);
     if (!settingsChanged) return;
 
@@ -132,13 +131,13 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
       }
     };
 
-    // Increased debounce to reduce scroll performance impact
-    const debounceTimer = setTimeout(autoSave, 1000);
+    // Debounce auto-save for non-style changes
+    const debounceTimer = setTimeout(autoSave, 2000);
     return () => clearTimeout(debounceTimer);
   }, [settings.format, settings.showSeconds, settings.showDate, settings.dateFormat, settings.theme, user?.id]);
 
-  // Memoized preview functions for performance
-  const previewTime = useMemo(() => {
+  // Create preview of current settings
+  const getPreviewTime = () => {
     const now = new Date();
     const options: Intl.DateTimeFormatOptions = {
       hour12: settings.format === '12h',
@@ -147,9 +146,9 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
       ...(settings.showSeconds && { second: '2-digit' })
     };
     return now.toLocaleTimeString('en-US', options);
-  }, [settings.format, settings.showSeconds]);
+  };
 
-  const previewDate = useMemo(() => {
+  const getPreviewDate = () => {
     const now = new Date();
     switch (settings.dateFormat) {
       case 'short':
@@ -165,7 +164,7 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
       default:
         return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
-  }, [settings.dateFormat]);
+  };
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -202,8 +201,7 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     }
   };
 
-  // Memoized style classes for performance
-  const getStyleClasses = useCallback((style: string) => {
+  const getStyleClasses = (style: string) => {
     switch (style) {
       case 'system':
         return 'text-lg font-system font-semibold tracking-normal';
@@ -218,9 +216,9 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
       default:
         return 'text-lg font-system font-medium tracking-normal';
     }
-  }, []);
+  };
 
-  const getThemeClasses = useCallback((theme: string) => {
+  const getThemeClasses = (theme: string) => {
     switch (theme) {
       case 'light':
         return 'bg-white text-black border-gray-200';
@@ -231,39 +229,11 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
       default:
         return 'bg-card text-foreground border-border';
     }
-  }, []);
-
-  // Optimized style change handler
-  const handleStyleChange = useCallback(async (styleValue: string) => {
-    const newSettings = { ...settings, style: styleValue as any };
-    setSettings(newSettings);
-    
-    // Immediately save style changes to database
-    if (user?.id) {
-      try {
-        await supabase
-          .from('user_settings')
-          .upsert({
-            user_id: user.id,
-            settings_type: 'clock',
-            settings_data: newSettings as any,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id,settings_type',
-            ignoreDuplicates: false
-          });
-      } catch (error) {
-        console.error('Error saving style:', error);
-      }
-    }
-    
-    // Update parent for live display
-    onSettingsChange(newSettings);
-  }, [settings, user?.id, onSettingsChange]);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden" style={{ contain: 'layout' }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
@@ -271,20 +241,19 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-8rem)]" style={{ overscrollBehavior: 'contain' }}>
-          <div className="space-y-6 pr-4" style={{ contain: 'layout style paint' }}>
+        <div className="space-y-6 transform-gpu" style={{ backfaceVisibility: 'hidden' }}>
           {/* Preview Section */}
-          <Card className="transition-transform duration-200">
+          <Card className="transition-all duration-200">
             <CardContent className="pt-4">
               <div className="text-center space-y-2">
                 <Label className="text-sm font-medium">Live Preview</Label>
-                <div className={`mx-auto w-fit p-4 rounded-lg border transition-colors duration-200 ${getThemeClasses(settings.theme)}`}>
-                  <div className={`${getStyleClasses(settings.style)} mb-1`}>
-                    {previewTime}
+                <div className={`mx-auto w-fit p-4 rounded-lg border transition-all duration-300 ${getThemeClasses(settings.theme)}`}>
+                  <div className={`${getStyleClasses(settings.style)} mb-1 transition-all duration-200`}>
+                    {getPreviewTime()}
                   </div>
                   {settings.showDate && (
-                    <div className="text-xs opacity-70">
-                      {previewDate}
+                    <div className="text-xs opacity-70 transition-all duration-200">
+                      {getPreviewDate()}
                     </div>
                   )}
                 </div>
@@ -321,17 +290,41 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
               <Palette className="h-4 w-4" />
               Clock Style
             </Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 transform-gpu">
               {clockStyles.map((style) => (
                 <Card 
                   key={style.value}
-                  className={`cursor-pointer transition-colors duration-200 hover:bg-muted/50 ${
+                  className={`cursor-pointer transition-all duration-200 hover-scale ${
                     settings.style === style.value 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:shadow-sm'
+                      ? 'ring-2 ring-primary bg-primary/5 animate-scale-in' 
+                      : 'hover:bg-muted/50 hover:shadow-md'
                   }`}
-                  style={{ contain: 'layout style paint', willChange: 'auto' }}
-                  onClick={() => handleStyleChange(style.value)}
+                  onClick={async () => {
+                    const newSettings = { ...settings, style: style.value as any };
+                    setSettings(newSettings);
+                    
+                    // Immediately save style changes to database
+                    if (user?.id) {
+                      try {
+                        await supabase
+                          .from('user_settings')
+                          .upsert({
+                            user_id: user.id,
+                            settings_type: 'clock',
+                            settings_data: newSettings as any,
+                            updated_at: new Date().toISOString()
+                          }, {
+                            onConflict: 'user_id,settings_type',
+                            ignoreDuplicates: false
+                          });
+                      } catch (error) {
+                        console.error('Error saving style:', error);
+                      }
+                    }
+                    
+                    // Update parent for live display
+                    onSettingsChange(newSettings);
+                  }}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
@@ -340,13 +333,13 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
                         <p className="text-xs text-muted-foreground font-mono">{style.font}</p>
                       </div>
                       {settings.style === style.value && (
-                        <Badge variant="default" className="text-xs">Applied</Badge>
+                        <Badge variant="default" className="text-xs animate-fade-in">Applied</Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">{style.description}</p>
-                    <div className={`text-sm p-3 bg-muted/30 rounded ${getStyleClasses(style.value)} text-center`}>
-                      {previewTime} 
-                      {settings.showDate && <div className="text-xs opacity-70 mt-1">{previewDate}</div>}
+                    <div className={`text-sm p-3 bg-muted/30 rounded transition-all duration-200 ${getStyleClasses(style.value)} text-center`}>
+                      {getPreviewTime()} 
+                      {settings.showDate && <div className="text-xs opacity-70 mt-1">{getPreviewDate()}</div>}
                     </div>
                   </CardContent>
                 </Card>
@@ -447,8 +440,7 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
               Close
             </Button>
           </div>
-          </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
