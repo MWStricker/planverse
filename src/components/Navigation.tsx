@@ -301,7 +301,7 @@ export const Navigation = ({
               isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
             }`}>
               <div className="flex items-center gap-1">
-                <p className={`text-xs font-medium text-foreground truncate transition-all duration-300 ease-out ${
+                <p className={`text-sm font-medium text-foreground truncate transition-all duration-300 ease-out ${
                   isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
                 }`}>
                   {profile?.display_name || user?.email?.split('@')[0] || 'User'}
