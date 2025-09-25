@@ -555,7 +555,7 @@ export const DashboardIntegratedView = () => {
       </div>
 
       {/* Quick Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -585,17 +585,6 @@ export const DashboardIntegratedView = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Active Courses</p>
                 <p className="text-2xl font-bold">{dashboardStats.totalCoursesActive}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-emerald-500" />
-              <div>
-                 <p className="text-sm text-muted-foreground">Progress</p>
-                 <p className="text-2xl font-bold">{dashboardStats.progressPercentage}%</p>
               </div>
             </div>
           </CardContent>
