@@ -343,7 +343,7 @@ export const Navigation = ({
               >
                 <Bell className="h-3 w-3 transition-all duration-200 ease-out" />
               </Button>
-              <div className="scale-75">
+              <div className="flex-1">
                 <AnalogClock />
               </div>
               <Button 

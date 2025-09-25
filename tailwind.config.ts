@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         'system': ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        'playfair': ['Playfair Display', 'serif'],
+        'lexend': ['Lexend', 'sans-serif'],
         'jetbrains': ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
         'poppins': ['Poppins', 'system-ui', 'sans-serif'],
         'oswald': ['Oswald', 'system-ui', 'sans-serif'],

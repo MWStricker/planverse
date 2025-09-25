@@ -27,7 +27,7 @@ interface ClockSettingsProps {
 
 export interface ClockSettings {
   format: '12h' | '24h';
-  style: 'system' | 'serif' | 'monospace' | 'geometric' | 'condensed';
+  style: 'system' | 'readable' | 'monospace' | 'geometric' | 'condensed';
   showSeconds: boolean;
   showDate: boolean;
   dateFormat: 'short' | 'long' | 'numeric';
@@ -48,11 +48,11 @@ const clockStyles = [
     font: 'System UI'
   },
   { 
-    value: 'serif', 
-    label: 'Elegant Serif', 
-    description: 'Playfair Display - sophisticated serif for classic elegance',
-    preview: 'Sophisticated, traditional',
-    font: 'Playfair Display'
+    value: 'readable', 
+    label: 'High Readability', 
+    description: 'Lexend - scientifically designed for maximum readability',
+    preview: 'Optimized for quick reading',
+    font: 'Lexend'
   },
   { 
     value: 'monospace', 
@@ -205,8 +205,8 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     switch (style) {
       case 'system':
         return 'text-lg font-system font-semibold tracking-normal';
-      case 'serif':
-        return 'text-lg font-playfair font-bold tracking-normal';
+      case 'readable':
+        return 'text-lg font-lexend font-medium tracking-normal';
       case 'monospace':
         return 'text-lg font-jetbrains font-medium tracking-wider';
       case 'geometric':

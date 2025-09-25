@@ -101,17 +101,17 @@ export const AnalogClock = () => {
   const getStyleClasses = () => {
     switch (settings.style) {
       case 'system':
-        return 'text-lg font-system font-semibold tracking-normal';
-      case 'serif':
-        return 'text-lg font-playfair font-bold tracking-normal';
+        return 'text-xl font-system font-semibold tracking-normal';
+      case 'readable':
+        return 'text-xl font-lexend font-medium tracking-normal';
       case 'monospace':
-        return 'text-lg font-jetbrains font-medium tracking-wider';
+        return 'text-xl font-jetbrains font-medium tracking-wider';
       case 'geometric':
-        return 'text-lg font-poppins font-medium tracking-normal';
+        return 'text-xl font-poppins font-medium tracking-normal';
       case 'condensed':
-        return 'text-lg font-oswald font-semibold tracking-wide uppercase';
+        return 'text-xl font-oswald font-semibold tracking-wide uppercase';
       default:
-        return 'text-lg font-system font-medium tracking-normal';
+        return 'text-xl font-system font-medium tracking-normal';
     }
   };
 
@@ -134,8 +134,8 @@ export const AnalogClock = () => {
     switch (settings.style) {
       case 'monospace':
         return 'p-4'; // Monospace needs more space for readability
-      case 'serif':
-        return 'p-4'; // Serif fonts benefit from more breathing room
+      case 'readable':
+        return 'p-4'; // Lexend benefits from more breathing room
       default:
         return 'p-3';
     }
