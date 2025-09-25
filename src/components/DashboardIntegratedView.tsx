@@ -554,52 +554,16 @@ export const DashboardIntegratedView = () => {
         </div>
       </div>
 
-      {/* Quick Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Today's Items</p>
-                <p className="text-2xl font-bold">{dashboardStats.totalItemsToday}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{dashboardStats.completedToday}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Active Courses</p>
-                <p className="text-2xl font-bold">{dashboardStats.totalCoursesActive}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-emerald-500" />
-              <div>
-                 <p className="text-sm text-muted-foreground">Progress</p>
-                 <p className="text-2xl font-bold">{dashboardStats.progressPercentage}%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Dashboard Stats */}
+      <div className="flex justify-between items-center mb-6 px-4">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-muted-foreground">Today's Items Completed</p>
+          <p className="text-3xl font-bold">{dashboardStats.completedToday}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-semibold text-muted-foreground">Active Courses</p>
+          <p className="text-3xl font-bold">{dashboardStats.totalCoursesActive}</p>
+        </div>
       </div>
 
       {/* Main Content Tabs */}
