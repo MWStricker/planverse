@@ -27,7 +27,7 @@ interface ClockSettingsProps {
 
 export interface ClockSettings {
   format: '12h' | '24h';
-  style: 'digital' | 'compact' | 'elegant' | 'minimal' | 'bold';
+  style: 'system' | 'modern' | 'monospace' | 'accessible' | 'traditional';
   showSeconds: boolean;
   showDate: boolean;
   dateFormat: 'short' | 'long' | 'numeric';
@@ -41,34 +41,39 @@ const timeFormats = [
 
 const clockStyles = [
   { 
-    value: 'digital', 
-    label: 'Digital', 
-    description: 'Classic digital display with seconds',
-    preview: 'Large, clear numbers'
+    value: 'system', 
+    label: 'System Default', 
+    description: 'Uses your device\'s native font (SF Pro, Segoe UI, Roboto)',
+    preview: 'Familiar, native feel',
+    font: 'System UI'
   },
   { 
-    value: 'compact', 
-    label: 'Compact', 
-    description: 'Space-saving minimal design',
-    preview: 'Small, efficient'
+    value: 'modern', 
+    label: 'Modern Sans', 
+    description: 'Clean Inter font - popular in modern apps and websites',
+    preview: 'Contemporary, readable',
+    font: 'Inter'
   },
   { 
-    value: 'elegant', 
-    label: 'Elegant', 
-    description: 'Stylish with decorative elements',
-    preview: 'Beautiful, refined'
+    value: 'monospace', 
+    label: 'Monospace Classic', 
+    description: 'Fixed-width Roboto Mono - perfect for precise time display',
+    preview: 'Precise, digital feel',
+    font: 'Roboto Mono'
   },
   { 
-    value: 'minimal', 
-    label: 'Minimal', 
-    description: 'Clean and simple',
-    preview: 'Just the essentials'
+    value: 'accessible', 
+    label: 'High Readability', 
+    description: 'Lexend font designed for improved reading proficiency',
+    preview: 'Easy to read quickly',
+    font: 'Lexend'
   },
   { 
-    value: 'bold', 
-    label: 'Bold', 
-    description: 'High contrast and prominent',
-    preview: 'Eye-catching display'
+    value: 'traditional', 
+    label: 'Traditional', 
+    description: 'Open Sans - widely used, comfortable for extended viewing',
+    preview: 'Classic, professional',
+    font: 'Open Sans'
   }
 ];
 
@@ -198,18 +203,18 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
 
   const getStyleClasses = (style: string) => {
     switch (style) {
-      case 'digital':
-        return 'text-lg font-mono font-bold tracking-wider';
-      case 'compact':
-        return 'text-sm font-medium';
-      case 'elegant':
-        return 'text-base font-light tracking-wide italic';
-      case 'minimal':
-        return 'text-base font-normal';
-      case 'bold':
-        return 'text-xl font-black tracking-tight';
+      case 'system':
+        return 'text-lg font-system font-semibold tracking-normal';
+      case 'modern':
+        return 'text-lg font-inter font-medium tracking-tight';
+      case 'monospace':
+        return 'text-lg font-roboto-mono font-medium tracking-wider';
+      case 'accessible':
+        return 'text-lg font-lexend font-medium tracking-normal';
+      case 'traditional':
+        return 'text-lg font-open-sans font-semibold tracking-normal';
       default:
-        return 'text-base font-medium';
+        return 'text-lg font-system font-medium tracking-normal';
     }
   };
 
@@ -323,14 +328,18 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium">{style.label}</h4>
+                      <div>
+                        <h4 className="font-medium">{style.label}</h4>
+                        <p className="text-xs text-muted-foreground font-mono">{style.font}</p>
+                      </div>
                       {settings.style === style.value && (
                         <Badge variant="default" className="text-xs animate-fade-in">Applied</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{style.description}</p>
-                    <div className={`text-xs p-2 bg-muted/30 rounded transition-all duration-200 ${getStyleClasses(style.value)}`}>
-                      {style.preview}
+                    <p className="text-sm text-muted-foreground mb-3">{style.description}</p>
+                    <div className={`text-sm p-3 bg-muted/30 rounded transition-all duration-200 ${getStyleClasses(style.value)} text-center`}>
+                      {getPreviewTime()} 
+                      {settings.showDate && <div className="text-xs opacity-70 mt-1">{getPreviewDate()}</div>}
                     </div>
                   </CardContent>
                 </Card>

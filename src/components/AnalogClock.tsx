@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const defaultSettings: ClockSettingsType = {
   format: '12h',
-  style: 'digital',
+  style: 'system',
   showSeconds: true,
   showDate: true,
   dateFormat: 'short',
@@ -100,18 +100,18 @@ export const AnalogClock = () => {
 
   const getStyleClasses = () => {
     switch (settings.style) {
-      case 'digital':
-        return 'text-lg font-mono font-bold tracking-wider';
-      case 'compact':
-        return 'text-sm font-medium';
-      case 'elegant':
-        return 'text-base font-light tracking-wide italic';
-      case 'minimal':
-        return 'text-base font-normal';
-      case 'bold':
-        return 'text-xl font-black tracking-tight';
+      case 'system':
+        return 'text-lg font-system font-semibold tracking-normal';
+      case 'modern':
+        return 'text-lg font-inter font-medium tracking-tight';
+      case 'monospace':
+        return 'text-lg font-roboto-mono font-medium tracking-wider';
+      case 'accessible':
+        return 'text-lg font-lexend font-medium tracking-normal';
+      case 'traditional':
+        return 'text-lg font-open-sans font-semibold tracking-normal';
       default:
-        return 'text-lg font-bold tracking-wide';
+        return 'text-lg font-system font-medium tracking-normal';
     }
   };
 
@@ -132,10 +132,10 @@ export const AnalogClock = () => {
 
   const getSizeClasses = () => {
     switch (settings.style) {
-      case 'compact':
-        return 'p-2';
-      case 'bold':
-        return 'p-4';
+      case 'monospace':
+        return 'p-4'; // Monospace needs more space for readability
+      case 'accessible':
+        return 'p-4'; // Lexend benefits from more breathing room
       default:
         return 'p-3';
     }
