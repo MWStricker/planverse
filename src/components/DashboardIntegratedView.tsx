@@ -416,13 +416,13 @@ export const DashboardIntegratedView = () => {
     setSelectedTask(null);
   };
 
-  // Clear all data function
+  // Clear calendar data function
   const clearAllData = async () => {
     if (!user?.id) return;
 
     try {
       setLoading(true);
-      console.log('Starting complete data clear for user:', user.id);
+      console.log('Starting calendar data clear for user:', user.id);
 
       // Delete all events
       const { error: eventsError } = await supabase
@@ -444,68 +444,16 @@ export const DashboardIntegratedView = () => {
         console.error('Error deleting tasks:', tasksError);
       }
 
-      // Delete all course colors
-      const { error: colorsError } = await supabase
-        .from('course_colors')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (colorsError) {
-        console.error('Error deleting course colors:', colorsError);
-      }
-
-      // Delete all study sessions
-      const { error: sessionsError } = await supabase
-        .from('study_sessions')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (sessionsError) {
-        console.error('Error deleting study sessions:', sessionsError);
-      }
-
-      // Delete all OCR uploads
-      const { error: ocrError } = await supabase
-        .from('ocr_uploads')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (ocrError) {
-        console.error('Error deleting OCR uploads:', ocrError);
-      }
-
-      // Delete all calendar connections
-      const { error: connectionsError } = await supabase
-        .from('calendar_connections')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (connectionsError) {
-        console.error('Error deleting calendar connections:', connectionsError);
-      }
-
-      // Clear user settings
-      const { error: settingsError } = await supabase
-        .from('user_settings')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (settingsError) {
-        console.error('Error deleting user settings:', settingsError);
-      }
-
-      console.log('Complete data clear finished successfully');
+      console.log('Calendar data clear finished successfully');
 
       // Clear local state immediately
       setEvents([]);
       setTasks([]);
       setCourses([]);
-      setStoredColors({});
-      setCourseIcons_State({});
 
       toast({
-        title: "All Data Cleared",
-        description: "All calendar data has been permanently deleted from your account.",
+        title: "Calendar Data Cleared",
+        description: "All events and tasks have been permanently deleted.",
       });
 
       // Dispatch refresh events
@@ -517,10 +465,10 @@ export const DashboardIntegratedView = () => {
       }, 500);
 
     } catch (error) {
-      console.error('Error clearing all data:', error);
+      console.error('Error clearing calendar data:', error);
       toast({
         title: "Error",
-        description: "Failed to clear all data. Please try again.",
+        description: "Failed to clear calendar data. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -713,18 +661,15 @@ export const DashboardIntegratedView = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-destructive" />
-                    Clear All Calendar Data
+                    Clear Calendar Data
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete ALL calendar data including:
+                    This will permanently delete:
                     <ul className="list-disc list-inside mt-2 space-y-1">
                       <li>All events (Canvas and manually added)</li>
                       <li>All tasks and assignments</li>
-                      <li>All course colors and settings</li>
-                      <li>All study sessions</li>
-                      <li>All OCR uploads</li>
-                      <li>All calendar connections</li>
                     </ul>
+                    <p className="mt-2 text-sm text-muted-foreground">Your preferences, color settings, and other configurations will be preserved.</p>
                     <p className="mt-2 font-medium text-destructive">This action cannot be undone.</p>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -734,7 +679,7 @@ export const DashboardIntegratedView = () => {
                     onClick={clearAllData}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    Clear All Data
+                    Clear Calendar Data
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
