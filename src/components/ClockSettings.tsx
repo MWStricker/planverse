@@ -27,7 +27,7 @@ interface ClockSettingsProps {
 
 export interface ClockSettings {
   format: '12h' | '24h';
-  style: 'system' | 'modern' | 'monospace' | 'accessible' | 'traditional';
+  style: 'system' | 'serif' | 'monospace' | 'geometric' | 'condensed';
   showSeconds: boolean;
   showDate: boolean;
   dateFormat: 'short' | 'long' | 'numeric';
@@ -42,38 +42,38 @@ const timeFormats = [
 const clockStyles = [
   { 
     value: 'system', 
-    label: 'System Default', 
+    label: 'System Native', 
     description: 'Uses your device\'s native font (SF Pro, Segoe UI, Roboto)',
-    preview: 'Familiar, native feel',
+    preview: 'Familiar, OS feel',
     font: 'System UI'
   },
   { 
-    value: 'modern', 
-    label: 'Modern Sans', 
-    description: 'Clean Inter font - popular in modern apps and websites',
-    preview: 'Contemporary, readable',
-    font: 'Inter'
+    value: 'serif', 
+    label: 'Elegant Serif', 
+    description: 'Playfair Display - sophisticated serif for classic elegance',
+    preview: 'Sophisticated, traditional',
+    font: 'Playfair Display'
   },
   { 
     value: 'monospace', 
-    label: 'Monospace Classic', 
-    description: 'Fixed-width Roboto Mono - perfect for precise time display',
-    preview: 'Precise, digital feel',
-    font: 'Roboto Mono'
+    label: 'Monospace Tech', 
+    description: 'JetBrains Mono - developer favorite for precise alignment',
+    preview: 'Precise, coding style',
+    font: 'JetBrains Mono'
   },
   { 
-    value: 'accessible', 
-    label: 'High Readability', 
-    description: 'Lexend font designed for improved reading proficiency',
-    preview: 'Easy to read quickly',
-    font: 'Lexend'
+    value: 'geometric', 
+    label: 'Modern Geometric', 
+    description: 'Poppins - friendly rounded geometry, very popular',
+    preview: 'Contemporary, friendly',
+    font: 'Poppins'
   },
   { 
-    value: 'traditional', 
-    label: 'Traditional', 
-    description: 'Open Sans - widely used, comfortable for extended viewing',
-    preview: 'Classic, professional',
-    font: 'Open Sans'
+    value: 'condensed', 
+    label: 'Condensed Display', 
+    description: 'Oswald - bold condensed for high-impact display',
+    preview: 'Bold, space-efficient',
+    font: 'Oswald'
   }
 ];
 
@@ -205,14 +205,14 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
     switch (style) {
       case 'system':
         return 'text-lg font-system font-semibold tracking-normal';
-      case 'modern':
-        return 'text-lg font-inter font-medium tracking-tight';
+      case 'serif':
+        return 'text-lg font-playfair font-bold tracking-normal';
       case 'monospace':
-        return 'text-lg font-roboto-mono font-medium tracking-wider';
-      case 'accessible':
-        return 'text-lg font-lexend font-medium tracking-normal';
-      case 'traditional':
-        return 'text-lg font-open-sans font-semibold tracking-normal';
+        return 'text-lg font-jetbrains font-medium tracking-wider';
+      case 'geometric':
+        return 'text-lg font-poppins font-medium tracking-normal';
+      case 'condensed':
+        return 'text-lg font-oswald font-semibold tracking-wide uppercase';
       default:
         return 'text-lg font-system font-medium tracking-normal';
     }

@@ -15,11 +15,10 @@ export default {
     extend: {
       fontFamily: {
         'system': ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        'inter': ['Inter', 'system-ui', 'sans-serif'],
-        'roboto-mono': ['Roboto Mono', 'Monaco', 'Consolas', 'monospace'],
-        'open-sans': ['Open Sans', 'system-ui', 'sans-serif'],
-        'lexend': ['Lexend', 'system-ui', 'sans-serif'],
-        'source': ['Source Sans Pro', 'system-ui', 'sans-serif'],
+        'playfair': ['Playfair Display', 'serif'],
+        'jetbrains': ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+        'poppins': ['Poppins', 'system-ui', 'sans-serif'],
+        'oswald': ['Oswald', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
