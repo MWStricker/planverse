@@ -492,12 +492,6 @@ export const DashboardIntegratedView = () => {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Your integrated calendar and courses overview</p>
         </div>
-        <div className="flex items-center">
-          <div className="flex items-center space-x-2 bg-muted/50 rounded-lg px-4 py-2">
-            <BookOpen className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">{dashboardStats.totalCoursesActive} Courses Active</span>
-          </div>
-        </div>
       </div>
 
       {/* Quick Stats Cards */}
