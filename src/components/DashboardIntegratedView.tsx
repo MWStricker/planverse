@@ -670,7 +670,6 @@ export const DashboardIntegratedView = () => {
                       <li>All tasks and assignments</li>
                     </ul>
                     <p className="mt-2 text-sm text-muted-foreground">Your preferences, color settings, and other configurations will be preserved.</p>
-                    <p className="mt-2 font-medium text-destructive">This action cannot be undone.</p>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
