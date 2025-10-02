@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
+import planverseLogo from "@/assets/planverse-logo-final.png";
 
 
 
@@ -211,7 +212,7 @@ const Auth = () => {
         {/* Header Section */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="mx-auto w-32 h-32 flex items-center justify-center mb-6">
-            <img src="/planverse-logo.png" alt="Planverse" className="w-28 h-28 object-contain" />
+            <img src={planverseLogo} alt="Planverse" className="w-28 h-28 object-contain" />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3">
             Welcome to Planverse
