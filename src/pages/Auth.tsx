@@ -183,7 +183,7 @@ const Auth = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
         options: {
-          scopes: 'email openid profile',
+          scopes: 'email',
           redirectTo: `${window.location.origin}/`,
         },
       });
