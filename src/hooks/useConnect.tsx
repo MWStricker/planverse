@@ -173,7 +173,21 @@ export const useConnect = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (existingLike) {
+      const isUnlike = !!existingLike;
+
+      // Optimistically update the UI
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            user_liked: !isUnlike,
+            likes_count: isUnlike ? post.likes_count - 1 : post.likes_count + 1
+          };
+        }
+        return post;
+      }));
+
+      if (isUnlike) {
         // Unlike
         await supabase
           .from('post_likes')
@@ -195,10 +209,10 @@ export const useConnect = () => {
         // Update likes count
         await supabase.rpc('increment_likes_count', { post_id: postId });
       }
-
-      await fetchPosts(); // Refresh posts
     } catch (error) {
       console.error('Error toggling like:', error);
+      // Revert optimistic update on error
+      await fetchPosts();
       toast({
         title: "Error",
         description: "Failed to update like",
@@ -255,6 +269,17 @@ export const useConnect = () => {
     if (!user) return false;
 
     try {
+      // Optimistically update comment count
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments_count: post.comments_count + 1
+          };
+        }
+        return post;
+      }));
+
       const { error } = await supabase
         .from('comments')
         .insert({
@@ -276,6 +301,16 @@ export const useConnect = () => {
       return true;
     } catch (error) {
       console.error('Error adding comment:', error);
+      // Revert optimistic update on error
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments_count: Math.max(0, post.comments_count - 1)
+          };
+        }
+        return post;
+      }));
       toast({
         title: "Error",
         description: "Failed to add comment",
