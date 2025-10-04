@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail, Hash, Globe, GraduationCap, Calendar, ZoomIn, ZoomOut, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail, Hash, Globe, GraduationCap, Calendar, ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -95,10 +95,6 @@ export const Connect = () => {
 
   const handleZoomOut = () => {
     setImageZoom(prev => Math.max(prev - 25, 50));
-  };
-
-  const handleResetZoom = () => {
-    setImageZoom(100);
   };
 
   const handleOpenImage = (imageUrl: string) => {
@@ -501,14 +497,6 @@ export const Connect = () => {
               title="Zoom Out"
             >
               <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetZoom}
-              title="Reset Zoom"
-            >
-              <RotateCcw className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
