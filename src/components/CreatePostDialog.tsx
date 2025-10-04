@@ -270,7 +270,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="All majors" />
                 </SelectTrigger>
-                 <SelectContent className="max-h-48 overflow-y-auto">
+                 <SelectContent position="popper" className="max-h-48 overflow-y-auto bg-popover z-[100]">
                   <SelectItem value="all-majors">All majors</SelectItem>
                   {collegeMajors.map((major) => (
                     <SelectItem key={major} value={major}>
@@ -288,7 +288,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="All schools" />
                 </SelectTrigger>
-                <SelectContent className="max-h-48 overflow-y-auto">
+                <SelectContent position="popper" className="max-h-48 overflow-y-auto bg-popover z-[100]">
                   <SelectItem value="all-schools">All schools</SelectItem>
                   {universities.map((university) => (
                     <SelectItem key={university.id} value={university.name}>
