@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail, Hash, Globe, GraduationCap, Calendar } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail, Hash, Globe, GraduationCap, Calendar, ZoomIn, ZoomOut, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,6 +32,8 @@ export const Connect = () => {
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
   const [imageZoomOpen, setImageZoomOpen] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [imageZoom, setImageZoom] = useState(100);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [postFilters, setPostFilters] = useState({
     search: '',
     postType: '',
@@ -85,6 +87,25 @@ export const Connect = () => {
       setDeleteDialogOpen(false);
       setPostToDelete(null);
     }
+  };
+
+  const handleZoomIn = () => {
+    setImageZoom(prev => Math.min(prev + 25, 300));
+  };
+
+  const handleZoomOut = () => {
+    setImageZoom(prev => Math.max(prev - 25, 50));
+  };
+
+  const handleResetZoom = () => {
+    setImageZoom(100);
+  };
+
+  const handleOpenImage = (imageUrl: string) => {
+    setZoomedImage(imageUrl);
+    setImageZoom(100);
+    setIsFullscreen(false);
+    setImageZoomOpen(true);
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -275,10 +296,7 @@ export const Connect = () => {
                       src={post.image_url} 
                       alt="Post image" 
                       className="w-full rounded-lg mb-4 max-h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => {
-                        setZoomedImage(post.image_url!);
-                        setImageZoomOpen(true);
-                      }}
+                      onClick={() => handleOpenImage(post.image_url!)}
                     />
                   )}
 
@@ -465,16 +483,74 @@ export const Connect = () => {
       </Dialog>
 
       {/* Image Zoom Dialog */}
-      <Dialog open={imageZoomOpen} onOpenChange={setImageZoomOpen}>
-        <DialogContent className="max-w-7xl w-full h-[90vh] p-2">
-          <div className="relative w-full h-full flex items-center justify-center">
-            {zoomedImage && (
-              <img 
-                src={zoomedImage} 
-                alt="Zoomed post image" 
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
+      <Dialog open={imageZoomOpen} onOpenChange={(open) => {
+        setImageZoomOpen(open);
+        if (!open) {
+          setImageZoom(100);
+          setIsFullscreen(false);
+        }
+      }}>
+        <DialogContent className={`${isFullscreen ? 'max-w-[98vw] h-[98vh]' : 'max-w-5xl h-[85vh]'} p-0 transition-all duration-300`}>
+          {/* Zoom Controls */}
+          <div className="absolute top-2 right-2 z-10 flex gap-2 bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleZoomOut}
+              disabled={imageZoom <= 50}
+              title="Zoom Out"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetZoom}
+              title="Reset Zoom"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleZoomIn}
+              disabled={imageZoom >= 300}
+              title="Zoom In"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <div className="w-px bg-border mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          {/* Zoom Level Indicator */}
+          <div className="absolute top-2 left-2 z-10 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1 shadow-lg">
+            <span className="text-sm font-medium">{imageZoom}%</span>
+          </div>
+
+          {/* Scrollable Image Container */}
+          <div className="relative w-full h-full overflow-auto bg-muted/30">
+            <div className="min-h-full flex items-center justify-center p-4">
+              {zoomedImage && (
+                <img 
+                  src={zoomedImage} 
+                  alt="Zoomed post image" 
+                  className="transition-transform duration-200 ease-out"
+                  style={{ 
+                    transform: `scale(${imageZoom / 100})`,
+                    maxWidth: imageZoom <= 100 ? '100%' : 'none',
+                    height: 'auto'
+                  }}
+                />
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
