@@ -490,7 +490,7 @@ export const Connect = () => {
           setIsFullscreen(false);
         }
       }}>
-        <DialogContent className={`${isFullscreen ? 'max-w-[98vw] h-[98vh]' : 'max-w-5xl h-[85vh]'} p-0 transition-all duration-300`}>
+        <DialogContent hideCloseButton className={`${isFullscreen ? 'max-w-[98vw] h-[98vh]' : 'max-w-5xl h-[85vh]'} p-0 transition-all duration-300`}>
           {/* Zoom Controls */}
           <div className="absolute top-2 right-2 z-10 flex gap-2 bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
             <Button
