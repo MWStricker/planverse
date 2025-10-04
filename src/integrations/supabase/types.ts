@@ -432,7 +432,6 @@ export type Database = {
           campus_location: string | null
           created_at: string
           display_name: string | null
-          email: string | null
           graduation_year: number | null
           id: string
           is_public: boolean | null
@@ -448,7 +447,6 @@ export type Database = {
           campus_location?: string | null
           created_at?: string
           display_name?: string | null
-          email?: string | null
           graduation_year?: number | null
           id?: string
           is_public?: boolean | null
@@ -464,7 +462,6 @@ export type Database = {
           campus_location?: string | null
           created_at?: string
           display_name?: string | null
-          email?: string | null
           graduation_year?: number | null
           id?: string
           is_public?: boolean | null
