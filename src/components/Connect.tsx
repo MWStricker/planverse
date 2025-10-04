@@ -30,6 +30,8 @@ export const Connect = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
+  const [imageZoomOpen, setImageZoomOpen] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [postFilters, setPostFilters] = useState({
     search: '',
     postType: '',
@@ -272,7 +274,11 @@ export const Connect = () => {
                     <img 
                       src={post.image_url} 
                       alt="Post image" 
-                      className="w-full rounded-lg mb-4 max-h-96 object-cover"
+                      className="w-full rounded-lg mb-4 max-h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        setZoomedImage(post.image_url!);
+                        setImageZoomOpen(true);
+                      }}
                     />
                   )}
 
@@ -300,14 +306,6 @@ export const Connect = () => {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-muted-foreground"
-                        onClick={() => setSelectedChatUserId(post.user_id)}
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
                       {user && post.user_id === user.id && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -463,6 +461,21 @@ export const Connect = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Zoom Dialog */}
+      <Dialog open={imageZoomOpen} onOpenChange={setImageZoomOpen}>
+        <DialogContent className="max-w-7xl w-full h-[90vh] p-2">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {zoomedImage && (
+              <img 
+                src={zoomedImage} 
+                alt="Zoomed post image" 
+                className="max-w-full max-h-full object-contain"
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
