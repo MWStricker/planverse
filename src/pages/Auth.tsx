@@ -8,18 +8,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle, Phone } from "lucide-react";
 import planverseLogo from "@/assets/planverse-logo-final.png";
 
 
 
 const Auth = () => {
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [emailValid, setEmailValid] = useState(true);
+  const [phoneValid, setPhoneValid] = useState(true);
   const [passwordStrength, setPasswordStrength] = useState(3);
   const [isTyping, setIsTyping] = useState(false);
   const navigate = useNavigate();
@@ -29,6 +32,12 @@ const Auth = () => {
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  // Phone validation (basic international format)
+  const validatePhone = (phone: string) => {
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    return phoneRegex.test(phone.replace(/[\s()-]/g, ''));
   };
 
   // Password strength calculation
@@ -47,6 +56,15 @@ const Auth = () => {
     const value = e.target.value;
     setEmail(value);
     setEmailValid(validateEmail(value));
+    setIsTyping(true);
+    setTimeout(() => setIsTyping(false), 1000);
+  };
+
+  // Handle phone change with validation
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPhone(value);
+    setPhoneValid(validatePhone(value));
     setIsTyping(true);
     setTimeout(() => setIsTyping(false), 1000);
   };
@@ -81,25 +99,41 @@ const Auth = () => {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
+      if (authMethod === 'email') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
 
-      if (error) {
-        if (error.message.includes("already registered")) {
-          setError("An account with this email already exists. Please sign in instead.");
+        if (error) {
+          if (error.message.includes("already registered")) {
+            setError("An account with this email already exists. Please sign in instead.");
+          } else {
+            setError(error.message);
+          }
         } else {
-          setError(error.message);
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account.",
+          });
         }
       } else {
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account.",
+        const { error } = await supabase.auth.signUp({
+          phone,
+          password,
         });
+
+        if (error) {
+          setError(error.message);
+        } else {
+          toast({
+            title: "Verification code sent!",
+            description: "Please check your phone for the verification code.",
+          });
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -114,23 +148,44 @@ const Auth = () => {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (authMethod === 'email') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          setError("Invalid email or password. Please check your credentials and try again.");
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            setError("Invalid email or password. Please check your credentials and try again.");
+          } else {
+            setError(error.message);
+          }
         } else {
-          setError(error.message);
+          toast({
+            title: "Welcome back!",
+            description: "You have been signed in successfully.",
+          });
+          navigate("/");
         }
       } else {
-        toast({
-          title: "Welcome back!",
-          description: "You have been signed in successfully.",
+        const { error } = await supabase.auth.signInWithPassword({
+          phone,
+          password,
         });
-        navigate("/");
+
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            setError("Invalid phone or password. Please check your credentials and try again.");
+          } else {
+            setError(error.message);
+          }
+        } else {
+          toast({
+            title: "Welcome back!",
+            description: "You have been signed in successfully.",
+          });
+          navigate("/");
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -240,38 +295,91 @@ const Auth = () => {
               </TabsList>
               
               <TabsContent value="signin" className="mt-0">
+                {/* Auth Method Toggle */}
+                <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-muted/30 rounded-xl">
+                  <Button
+                    type="button"
+                    variant={authMethod === 'email' ? 'default' : 'ghost'}
+                    onClick={() => setAuthMethod('email')}
+                    className="rounded-lg"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={authMethod === 'phone' ? 'default' : 'ghost'}
+                    onClick={() => setAuthMethod('phone')}
+                    className="rounded-lg"
+                  >
+                    <Phone className="mr-2 h-4 w-4" />
+                    Phone
+                  </Button>
+                </div>
+
                 <form onSubmit={handleSignIn} className="space-y-6" autoComplete="off">
                   <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
                   <input type="password" autoComplete="new-password" style={{display:'none'}} />
                   
-                  <div className="space-y-3">
-                    <Label htmlFor="signin-email" className="text-sm font-semibold text-foreground/90">
-                      Email Address
-                    </Label>
-                    <div className="relative group">
-                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
-                        emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
-                      }`} />
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={handleEmailChange}
-                        required
-                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
-                      />
-                      {email && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          {emailValid ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <AlertCircle className="h-5 w-5 text-orange-500" />
-                          )}
-                        </div>
-                      )}
+                  {authMethod === 'email' ? (
+                    <div className="space-y-3">
+                      <Label htmlFor="signin-email" className="text-sm font-semibold text-foreground/90">
+                        Email Address
+                      </Label>
+                      <div className="relative group">
+                        <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                          emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                        }`} />
+                        <Input
+                          id="signin-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={email}
+                          onChange={handleEmailChange}
+                          required
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                        />
+                        {email && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            {emailValid ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-5 w-5 text-orange-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label htmlFor="signin-phone" className="text-sm font-semibold text-foreground/90">
+                        Phone Number
+                      </Label>
+                      <div className="relative group">
+                        <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                          phoneValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                        }`} />
+                        <Input
+                          id="signin-phone"
+                          type="tel"
+                          placeholder="+1 (555) 000-0000"
+                          value={phone}
+                          onChange={handlePhoneChange}
+                          required
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                        />
+                        {phone && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            {phoneValid ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-5 w-5 text-orange-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="space-y-3">
                     <Label htmlFor="signin-password" className="text-sm font-semibold text-foreground/90">
@@ -310,7 +418,7 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group" 
-                    disabled={loading || !emailValid}
+                    disabled={loading || (authMethod === 'email' ? !emailValid : !phoneValid)}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     {loading ? (
@@ -329,38 +437,91 @@ const Auth = () => {
               </TabsContent>
               
               <TabsContent value="signup" className="mt-0">
+                {/* Auth Method Toggle */}
+                <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-muted/30 rounded-xl">
+                  <Button
+                    type="button"
+                    variant={authMethod === 'email' ? 'default' : 'ghost'}
+                    onClick={() => setAuthMethod('email')}
+                    className="rounded-lg"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={authMethod === 'phone' ? 'default' : 'ghost'}
+                    onClick={() => setAuthMethod('phone')}
+                    className="rounded-lg"
+                  >
+                    <Phone className="mr-2 h-4 w-4" />
+                    Phone
+                  </Button>
+                </div>
+
                 <form onSubmit={handleSignUp} className="space-y-6" autoComplete="off">
                   <input autoComplete="false" name="hidden" type="text" style={{display:'none'}} />
                   <input type="password" autoComplete="new-password" style={{display:'none'}} />
                   
-                  <div className="space-y-3">
-                    <Label htmlFor="signup-email" className="text-sm font-semibold text-foreground/90">
-                      Email Address
-                    </Label>
-                    <div className="relative group">
-                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
-                        emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
-                      }`} />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={handleEmailChange}
-                        required
-                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
-                      />
-                      {email && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          {emailValid ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <AlertCircle className="h-5 w-5 text-orange-500" />
-                          )}
-                        </div>
-                      )}
+                  {authMethod === 'email' ? (
+                    <div className="space-y-3">
+                      <Label htmlFor="signup-email" className="text-sm font-semibold text-foreground/90">
+                        Email Address
+                      </Label>
+                      <div className="relative group">
+                        <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                          emailValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                        }`} />
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={email}
+                          onChange={handleEmailChange}
+                          required
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                        />
+                        {email && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            {emailValid ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-5 w-5 text-orange-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label htmlFor="signup-phone" className="text-sm font-semibold text-foreground/90">
+                        Phone Number
+                      </Label>
+                      <div className="relative group">
+                        <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                          phoneValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                        }`} />
+                        <Input
+                          id="signup-phone"
+                          type="tel"
+                          placeholder="+1 (555) 000-0000"
+                          value={phone}
+                          onChange={handlePhoneChange}
+                          required
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                        />
+                        {phone && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            {phoneValid ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-5 w-5 text-orange-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="space-y-4">
                     <Label htmlFor="signup-password" className="text-sm font-semibold text-foreground/90">
@@ -430,7 +591,7 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-muted disabled:to-muted relative overflow-hidden group text-white" 
-                    disabled={loading || !emailValid || passwordStrength < 2}
+                    disabled={loading || (authMethod === 'email' ? !emailValid : !phoneValid) || passwordStrength < 2}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     {loading ? (
