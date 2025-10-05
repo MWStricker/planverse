@@ -191,14 +191,25 @@ export const Courses = ({}: CoursesProps = {}) => {
     try {
       console.log('Updating course color:', { courseCode, color });
       
+      // Get current colors
+      const { data: currentData } = await supabase
+        .from('user_settings')
+        .select('settings_data')
+        .eq('user_id', user.id)
+        .eq('settings_type', 'course_colors')
+        .maybeSingle();
+
+      const colors = (currentData?.settings_data as Record<string, string>) || {};
+      colors[courseCode] = color;
+
       const { error } = await supabase
-        .from('course_colors')
+        .from('user_settings')
         .upsert({
           user_id: user.id,
-          course_code: courseCode,
-          canvas_color: color
+          settings_type: 'course_colors',
+          settings_data: colors
         }, {
-          onConflict: 'user_id,course_code'
+          onConflict: 'user_id,settings_type'
         });
 
       if (error) {
@@ -242,16 +253,19 @@ export const Courses = ({}: CoursesProps = {}) => {
       console.log('Force saving all course colors:', storedColors);
       
       // Save all course colors to database
-      const colorUpdates = courses.map(course => ({
-        user_id: user.id,
-        course_code: course.code,
-        canvas_color: typeof course.color === 'string' ? course.color : '#6b7280'
-      }));
+      const colorMap = courses.reduce((acc, course) => {
+        acc[course.code] = typeof course.color === 'string' ? course.color : '#6b7280';
+        return acc;
+      }, {} as Record<string, string>);
 
       const { error } = await supabase
-        .from('course_colors')
-        .upsert(colorUpdates, {
-          onConflict: 'user_id,course_code'
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          settings_type: 'course_colors',
+          settings_data: colorMap
+        }, {
+          onConflict: 'user_id,settings_type'
         });
 
       if (error) {
@@ -288,9 +302,11 @@ export const Courses = ({}: CoursesProps = {}) => {
       // Load all settings in parallel
       const [colorsResult, iconsResult, orderResult] = await Promise.all([
         supabase
-          .from('course_colors')
-          .select('course_code, canvas_color')
-          .eq('user_id', user.id),
+          .from('user_settings')
+          .select('settings_data')
+          .eq('user_id', user.id)
+          .eq('settings_type', 'course_colors')
+          .maybeSingle(),
         supabase
           .from('user_settings')
           .select('settings_data')
@@ -307,10 +323,8 @@ export const Courses = ({}: CoursesProps = {}) => {
 
       // Process course colors
       let colorMap: Record<string, string> = {};
-      if (colorsResult.data) {
-        colorsResult.data.forEach(item => {
-          colorMap[item.course_code] = item.canvas_color;
-        });
+      if (colorsResult.data?.settings_data) {
+        colorMap = colorsResult.data.settings_data as Record<string, string>;
         console.log('Loading saved course colors:', colorMap);
         setStoredColors(colorMap);
       } else {

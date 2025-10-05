@@ -355,17 +355,15 @@ export const Tasks = () => {
     if (!user?.id) return;
 
     const fetchStoredColors = async () => {
-      const { data: colors } = await supabase
-        .from('course_colors')
-        .select('course_code, canvas_color')
-        .eq('user_id', user.id);
+      const { data } = await supabase
+        .from('user_settings')
+        .select('settings_data')
+        .eq('user_id', user.id)
+        .eq('settings_type', 'course_colors')
+        .maybeSingle();
 
-      if (colors) {
-        const colorMap: Record<string, string> = {};
-        colors.forEach(item => {
-          colorMap[item.course_code] = item.canvas_color;
-        });
-        setStoredColors(colorMap);
+      if (data?.settings_data) {
+        setStoredColors(data.settings_data as Record<string, string>);
       }
     };
 

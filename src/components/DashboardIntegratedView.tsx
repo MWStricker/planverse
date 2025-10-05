@@ -178,9 +178,11 @@ export const DashboardIntegratedView = () => {
       // Load settings first
       const [colorsResult, iconsResult] = await Promise.all([
         supabase
-          .from('course_colors')
-          .select('course_code, canvas_color')
-          .eq('user_id', user.id),
+          .from('user_settings')
+          .select('settings_data')
+          .eq('user_id', user.id)
+          .eq('settings_type', 'course_colors')
+          .maybeSingle(),
         supabase
           .from('user_settings')
           .select('settings_data')
@@ -191,10 +193,8 @@ export const DashboardIntegratedView = () => {
 
       // Process course colors
       let colorMap: Record<string, string> = {};
-      if (colorsResult.data) {
-        colorsResult.data.forEach(item => {
-          colorMap[item.course_code] = item.canvas_color;
-        });
+      if (colorsResult.data?.settings_data) {
+        colorMap = colorsResult.data.settings_data as Record<string, string>;
         setStoredColors(colorMap);
       }
 

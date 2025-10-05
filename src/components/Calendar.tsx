@@ -546,17 +546,15 @@ const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
     if (!user?.id) return;
 
     const fetchStoredColors = async () => {
-      const { data: colors } = await supabase
-        .from('course_colors')
-        .select('course_code, canvas_color')
-        .eq('user_id', user.id);
+      const { data } = await supabase
+        .from('user_settings')
+        .select('settings_data')
+        .eq('user_id', user.id)
+        .eq('settings_type', 'course_colors')
+        .maybeSingle();
 
-      if (colors) {
-        const colorMap: Record<string, string> = {};
-        colors.forEach(item => {
-          colorMap[item.course_code] = item.canvas_color;
-        });
-        setStoredColors(colorMap);
+      if (data?.settings_data) {
+        setStoredColors(data.settings_data as Record<string, string>);
       }
     };
 
@@ -1216,8 +1214,6 @@ const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
         supabase.from('tasks').delete().eq('user_id', user.id),
         supabase.from('events').delete().eq('user_id', user.id),
         supabase.from('study_sessions').delete().eq('user_id', user.id),
-        // Course and color data
-        supabase.from('course_colors').delete().eq('user_id', user.id),
         // OCR uploads
         supabase.from('ocr_uploads').delete().eq('user_id', user.id),
         // Calendar connections

@@ -279,12 +279,13 @@ export const CanvasIntegration = () => {
         console.log('Successfully deleted Canvas tasks');
       }
 
-      // Step 3: Delete Canvas course colors
+      // Step 3: Delete Canvas course colors from user_settings
       console.log('Deleting Canvas course colors...');
       const { error: colorsError } = await supabase
-        .from('course_colors')
+        .from('user_settings')
         .delete()
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('settings_type', 'course_colors');
 
       if (colorsError) {
         console.error('Error deleting Canvas course colors:', colorsError);
