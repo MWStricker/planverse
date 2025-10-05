@@ -642,6 +642,36 @@ export type Database = {
           },
         ]
       }
+      user_accounts: {
+        Row: {
+          account_status: string
+          created_at: string
+          email: string | null
+          id: string
+          last_sign_in_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_status?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_status?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           created_at: string
