@@ -185,20 +185,20 @@ export const Navigation = ({
       </Button>
       {/* Collapse/Expand Button */}
 
-      {/* Logo */}
-      <div className="p-4 pt-1 max-md:p-2 max-md:pt-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      {/* Logo - Hidden on mobile when sidebar open to save space */}
+      <div className="p-4 pt-1 max-md:hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
         <div className="flex items-center justify-between">
           <div className={`text-center flex-1 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
             isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
           }`}>
             {!isCollapsed && (
               <>
-                <h1 className={`text-lg max-md:text-base font-bold text-foreground transition-all duration-300 ease-out ${
+                <h1 className={`text-lg font-bold text-foreground transition-all duration-300 ease-out ${
                   isCollapsed ? '-translate-x-4 opacity-0' : 'translate-x-0 opacity-100'
                 }`}>
                   Planverse
                 </h1>
-                <p className={`text-xs max-md:text-[10px] text-muted-foreground transition-all duration-300 ease-out ${
+                <p className={`text-xs text-muted-foreground transition-all duration-300 ease-out ${
                   isCollapsed ? '-translate-x-4 opacity-0' : 'translate-x-0 opacity-100'
                 }`}>
                   Smart Scheduling
@@ -216,18 +216,18 @@ export const Navigation = ({
                   variant="ghost"
                   size="sm"
                   onClick={onToggleReorder}
-                  className="h-6 w-6 max-md:h-5 max-md:w-5 p-0 hover:bg-muted/30"
+                  className="h-6 w-6 p-0 hover:bg-muted/30"
                 >
-                  <MoreVertical className="h-3 w-3 max-md:h-2.5 max-md:w-2.5" />
+                  <MoreVertical className="h-3 w-3" />
                 </Button>
                ) : (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={onCancelReorder}
-                  className="h-6 w-6 max-md:h-5 max-md:w-5 p-0 hover:bg-muted/30"
+                  className="h-6 w-6 p-0 hover:bg-muted/30"
                 >
-                  <X className="h-3 w-3 max-md:h-2.5 max-md:w-2.5" />
+                  <X className="h-3 w-3" />
                 </Button>
                )}
             </div>
@@ -235,22 +235,25 @@ export const Navigation = ({
         </div>
         
         {isReorderMode && !isCollapsed && (
-          <div className={`mt-2 p-2 max-md:p-1.5 max-md:mt-1 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20 transition-all duration-300 ease-out ${
+          <div className={`mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20 transition-all duration-300 ease-out ${
             isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
           }`}>
-            <p className="text-xs max-md:text-[10px] text-foreground font-medium text-center">
+            <p className="text-xs text-foreground font-medium text-center">
               Drag tabs to reorder
             </p>
           </div>
         )}
       </div>
       
-      {/* Instant border separator */}
-      {!isCollapsed && <div className="border-b border-border"></div>}
+      {/* Instant border separator - desktop only */}
+      {!isCollapsed && <div className="border-b border-border max-md:hidden"></div>}
+
+      {/* Mobile: Top spacing for hamburger menu */}
+      <div className="md:hidden h-12"></div>
 
       {/* Navigation */}
       <nav className="flex-1 min-h-0 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
-        <div className="h-full overflow-y-auto p-4 max-md:p-2 space-y-6 max-md:space-y-3">
+        <div className="h-full overflow-y-auto p-4 max-md:px-2 max-md:py-0 space-y-6 max-md:space-y-2">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -261,7 +264,7 @@ export const Navigation = ({
             items={orderedNavItems.map(item => item.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-6 max-md:space-y-3">
+            <div className="space-y-6 max-md:space-y-2">
               {orderedNavItems.map((item) => (
                 <SortableTabItem
                   key={item.id}
@@ -283,15 +286,15 @@ export const Navigation = ({
       {/* User Section */}
       <div className="flex-shrink-0 p-2 max-md:p-1.5 border-t border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
         <div 
-          className={`flex items-center gap-2 max-md:gap-1.5 mb-2 max-md:mb-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform cursor-pointer hover:bg-muted/50 rounded-lg p-1 -m-1 ${
+          className={`flex items-center gap-2 max-md:gap-1 mb-2 max-md:mb-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform cursor-pointer hover:bg-muted/50 rounded-lg p-1 max-md:p-0.5 -m-1 ${
             isCollapsed ? 'justify-center' : ''
           }`}
           onClick={() => setIsProfileOpen(true)}
           title="View Profile"
         >
-          <Avatar className="h-8 w-8 max-md:h-7 max-md:w-7">
+          <Avatar className="h-8 w-8 max-md:h-6 max-md:w-6 flex-shrink-0">
             <AvatarImage src={profile?.avatar_url} />
-            <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm max-md:text-xs">
+            <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm max-md:text-[10px]">
               {profile?.display_name?.charAt(0)?.toUpperCase() || 
                user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
@@ -301,7 +304,7 @@ export const Navigation = ({
               isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
             }`}>
               <div className="flex items-center gap-1">
-                <p className={`text-sm max-md:text-xs font-medium text-foreground truncate transition-all duration-300 ease-out ${
+                <p className={`text-sm max-md:text-[11px] font-medium text-foreground truncate transition-all duration-300 ease-out leading-tight ${
                   isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
                 }`}>
                   {profile?.display_name || user?.email?.split('@')[0] || 'User'}
@@ -312,7 +315,7 @@ export const Navigation = ({
                   size="sm"
                 />
               </div>
-              <p className={`text-xs max-md:text-[10px] text-muted-foreground truncate transition-all duration-300 ease-out ${
+              <p className={`text-xs max-md:text-[9px] text-muted-foreground truncate transition-all duration-300 ease-out leading-tight ${
                 isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
               }`}>
                  {(() => {
@@ -332,25 +335,25 @@ export const Navigation = ({
         
         {/* Clock and Controls Section */}
         {!isCollapsed && (
-          <div className={`mt-1 transition-all duration-300 ease-out ${
+          <div className={`mt-1 max-md:mt-0.5 transition-all duration-300 ease-out ${
             isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
           }`}>
-            <div className="flex items-center justify-center gap-1 max-md:gap-0.5">
+            <div className="flex items-center justify-center gap-1 max-md:gap-0">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 max-md:w-7 max-md:h-7 p-0"
+                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 max-md:w-6 max-md:h-6 p-0 flex-shrink-0"
               >
                 <Bell className="h-3 w-3 max-md:h-2.5 max-md:w-2.5 transition-all duration-200 ease-out" />
               </Button>
-              <div className="flex-1 max-md:scale-90">
+              <div className="flex-1 max-md:scale-75 max-md:origin-center">
                 <AnalogClock />
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => onPageChange('settings')}
-                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 max-md:w-7 max-md:h-7 p-0"
+                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 max-md:w-6 max-md:h-6 p-0 flex-shrink-0"
               >
                 <Settings className="h-3 w-3 max-md:h-2.5 max-md:w-2.5 group-hover:rotate-90 transition-transform duration-300 ease-out" />
               </Button>
