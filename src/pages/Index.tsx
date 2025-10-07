@@ -144,11 +144,11 @@ const Index = () => {
           maxHeight: 'var(--app-height, 100vh)'
         }}
       >
-        {/* Mobile: Always collapsed sidebar that slides in/out */}
+        {/* Mobile: More compact sidebar */}
         <div 
           className={`
             md:flex-shrink-0 h-full transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform
-            ${isCollapsed ? 'w-16' : 'w-64'}
+            ${isCollapsed ? 'w-16' : 'md:w-64 max-md:w-52'}
             max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:shadow-lg
             ${!isCollapsed ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}
           `}
