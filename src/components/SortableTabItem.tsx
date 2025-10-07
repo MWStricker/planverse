@@ -50,8 +50,8 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-20 max-md:h-12 text-lg max-md:text-sm transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
-        isCollapsed ? 'justify-center px-2' : 'justify-start px-6 max-md:px-3'
+      className={`w-full h-20 max-md:h-10 text-lg max-md:text-xs transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
+        isCollapsed ? 'justify-center px-2' : 'justify-start px-6 max-md:px-2'
       } ${
         isDragging ? 'shadow-lg' : ''
       } ${
@@ -72,8 +72,8 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 max-md:h-4 max-md:w-4 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] flex-shrink-0 ${
-        isCollapsed ? '' : 'mr-3 max-md:mr-2'
+      <Icon className={`h-5 w-5 max-md:h-3 max-md:w-3 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] flex-shrink-0 ${
+        isCollapsed ? '' : 'mr-3 max-md:mr-1.5'
       } ${
         isActive 
           ? 'text-primary-foreground scale-110 max-md:scale-105' 
@@ -82,14 +82,14 @@ export const SortableTabItem = ({
       
       {!isCollapsed && (
         <div className="flex items-center transition-opacity duration-150 ease-out opacity-100 min-w-0 flex-1">
-          <span className={`font-medium truncate ${
+          <span className={`font-medium truncate max-md:text-[10px] ${
             isActive ? 'tracking-wide max-md:tracking-normal' : ''
           }`}>
             {item.label}
           </span>
           {item.id === 'tasks' && notifications > 0 && (
             <Badge 
-              className="ml-auto flex-shrink-0 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs max-md:text-[10px] animate-pulse shadow-sm max-md:px-1.5 max-md:py-0"
+              className="ml-auto flex-shrink-0 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs max-md:text-[8px] animate-pulse shadow-sm max-md:px-1 max-md:py-0"
               variant="secondary"
             >
               {notifications}

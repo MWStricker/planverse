@@ -148,7 +148,7 @@ const Index = () => {
         <div 
           className={`
             md:flex-shrink-0 h-full transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform
-            ${isCollapsed ? 'w-16' : 'md:w-64 max-md:w-48'}
+            ${isCollapsed ? 'w-16 max-md:w-0' : 'md:w-64 max-md:w-44'}
             max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:shadow-lg
             ${!isCollapsed ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}
           `}
@@ -191,13 +191,15 @@ const Index = () => {
         )}
         
         <div 
-          className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform w-full" 
+          className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform w-full max-md:pl-0" 
           style={{ 
             height: 'var(--app-height, 100vh)',
             maxHeight: 'var(--app-height, 100vh)'
           }}
         >
-          {renderPage()}
+          <div className="max-md:px-3 max-md:pt-14">
+            {renderPage()}
+          </div>
         </div>
       </div>
       </ProfileEditingProvider>
