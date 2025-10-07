@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Calendar as CalendarIcon, Home, Upload, Target, Users, BookOpen } from "lucide-react";
+import { Loader2, Home, Users, Upload } from "lucide-react";
 
 import { Dashboard } from "@/components/Dashboard";
 import { OCRUpload } from "@/components/OCRUpload";
 import { ScheduleScanner } from "@/components/ScheduleScanner";
 import { Navigation } from "@/components/Navigation";
+import { BottomNav } from "@/components/BottomNav";
 import { Settings } from "@/components/Settings";
-import { IntegrationSetup } from "@/components/IntegrationSetup";
 import Calendar from "@/components/Calendar";
 import { Connect } from "@/components/Connect";
-import { Tasks } from "@/components/Tasks";
-import { Courses } from "@/components/Courses";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -144,20 +142,8 @@ const Index = () => {
           maxHeight: 'var(--app-height, 100vh)'
         }}
       >
-        {/* Mobile: Optimized compact sidebar */}
-        <div 
-          className={`
-            md:flex-shrink-0 h-full transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform
-            ${isCollapsed ? 'w-16 max-md:w-0' : 'md:w-64 max-md:w-44'}
-            max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:shadow-lg
-            ${!isCollapsed ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}
-          `}
-          style={{ 
-            contain: 'layout style paint',
-            transform: 'translateZ(0)',
-            backfaceVisibility: 'hidden'
-          }}
-        >
+        {/* Desktop Sidebar - Hidden on mobile */}
+        <div className="hidden md:block md:flex-shrink-0 h-full transition-all duration-500">
           <Navigation 
             currentPage={currentPage} 
             onPageChange={setCurrentPage}
@@ -169,38 +155,22 @@ const Index = () => {
           />
         </div>
         
-        {/* Mobile: Backdrop when sidebar is open */}
-        {!isCollapsed && (
-          <div 
-            className="md:hidden fixed inset-0 bg-black/50 z-30"
-            onClick={() => setIsCollapsed(true)}
-          />
-        )}
-        
-        {/* Mobile: Menu button when sidebar is collapsed */}
-        {isCollapsed && (
-          <button
-            onClick={() => setIsCollapsed(false)}
-            className="md:hidden fixed top-4 left-4 z-50 p-2 bg-background border border-border rounded-lg shadow-lg hover:bg-muted transition-colors"
-            aria-label="Open menu"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        )}
-        
+        {/* Main Content - Full width on mobile */}
         <div 
-          className="flex-1 overflow-auto scroll-performance transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform w-full max-md:pl-0" 
+          className="flex-1 overflow-auto w-full" 
           style={{ 
             height: 'var(--app-height, 100vh)',
-            maxHeight: 'var(--app-height, 100vh)'
+            maxHeight: 'var(--app-height, 100vh)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)'
           }}
         >
-          <div className="max-md:px-3 max-md:pt-14">
+          <div className="h-full md:h-auto pb-20 md:pb-0">
             {renderPage()}
           </div>
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <BottomNav currentPage={currentPage} onPageChange={setCurrentPage} />
       </div>
       </ProfileEditingProvider>
     </ProfileProvider>
