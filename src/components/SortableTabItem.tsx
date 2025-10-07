@@ -50,14 +50,14 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-20 max-md:h-10 text-lg max-md:text-xs transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
-        isCollapsed ? 'justify-center px-2' : 'justify-start px-6 max-md:px-2'
+      className={`w-full h-20 text-lg transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
+        isCollapsed ? 'justify-center px-2' : 'justify-start px-6'
       } ${
         isDragging ? 'shadow-lg' : ''
       } ${
         isActive 
-          ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] max-md:scale-100 border-l-4 max-md:border-l-2 border-l-primary-foreground/20' 
-          : 'text-foreground hover:bg-muted/30 hover:scale-[1.01] max-md:hover:scale-100'
+          ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg scale-[1.02] border-l-4 border-l-primary-foreground/20' 
+          : 'text-foreground hover:bg-muted/30 hover:scale-[1.01]'
       } ${
         isReorderMode ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
@@ -72,24 +72,24 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 max-md:h-3 max-md:w-3 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] flex-shrink-0 ${
-        isCollapsed ? '' : 'mr-3 max-md:mr-1.5'
+      <Icon className={`h-5 w-5 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] flex-shrink-0 ${
+        isCollapsed ? '' : 'mr-3'
       } ${
         isActive 
-          ? 'text-primary-foreground scale-110 max-md:scale-105' 
+          ? 'text-primary-foreground scale-110' 
           : ''
       }`} />
       
       {!isCollapsed && (
         <div className="flex items-center transition-opacity duration-150 ease-out opacity-100 min-w-0 flex-1">
-          <span className={`font-medium truncate max-md:text-[10px] ${
-            isActive ? 'tracking-wide max-md:tracking-normal' : ''
+          <span className={`font-medium truncate ${
+            isActive ? 'tracking-wide' : ''
           }`}>
             {item.label}
           </span>
           {item.id === 'tasks' && notifications > 0 && (
             <Badge 
-              className="ml-auto flex-shrink-0 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs max-md:text-[8px] animate-pulse shadow-sm max-md:px-1 max-md:py-0"
+              className="ml-auto flex-shrink-0 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs animate-pulse shadow-sm"
               variant="secondary"
             >
               {notifications}
@@ -100,12 +100,12 @@ export const SortableTabItem = ({
       
       {/* Show notification as a dot when collapsed */}
       {isCollapsed && item.id === 'tasks' && notifications > 0 && (
-        <div className="absolute -top-1 -right-1 w-3 h-3 max-md:w-2 max-md:h-2 bg-accent rounded-full animate-pulse shadow-sm"></div>
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-pulse shadow-sm"></div>
       )}
       
-      {/* Glow effect for active items - hidden on mobile for performance */}
+      {/* Glow effect for active items */}
       {isActive && !isReorderMode && (
-        <div className="max-md:hidden absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-opacity duration-200 ease-out"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-opacity duration-200 ease-out"></div>
       )}
     </Button>
   );
