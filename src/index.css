@@ -421,14 +421,61 @@ div, span, button, a {
 /* Custom animations for text scrolling */
 @keyframes scroll-left-right {
   0%, 20% {
-    transform: translateX(0%);
+    transform: translateX(0%) translateZ(0);
   }
   50% {
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateZ(0);
   }
   80%, 100% {
-    transform: translateX(0%);
+    transform: translateX(0%) translateZ(0);
   }
+}
+
+/* GPU-accelerated animations - 60fps guaranteed */
+@keyframes optimized-fade-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes optimized-scale-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes optimized-slide-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-20px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Use only transform and opacity for animations */
+.animate-fade-in {
+  animation: optimized-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-scale-in {
+  animation: optimized-scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-in {
+  animation: optimized-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Force scrollbars to ALWAYS be visible when there are multiple items */
@@ -493,12 +540,21 @@ div, span, button, a {
 *, *::before, *::after {
   /* Hardware acceleration for everything */
   will-change: auto;
-  transform: translateZ(0);
   backface-visibility: hidden;
-  /* Smooth transitions on all interactions */
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   /* Optimize text rendering */
   text-rendering: optimizeSpeed;
+}
+
+/* Only apply transforms to elements that need them */
+button, a, [role="button"], .interactive {
+  transform: translateZ(0);
+}
+
+/* Optimize transitions - use transform and opacity only */
+* {
+  transition-property: transform, opacity, background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Daily Planner specific optimizations */

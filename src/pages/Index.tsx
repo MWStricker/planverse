@@ -1,22 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Home, Users, Upload } from "lucide-react";
 
-import { Dashboard } from "@/components/Dashboard";
-import { OCRUpload } from "@/components/OCRUpload";
-import { ScheduleScanner } from "@/components/ScheduleScanner";
 import { Navigation } from "@/components/Navigation";
 import { BottomNav } from "@/components/BottomNav";
-import { Settings } from "@/components/Settings";
-import Calendar from "@/components/Calendar";
-import { Connect } from "@/components/Connect";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useTabReorder } from "@/hooks/useTabReorder";
 import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
 import { ProfileProvider } from "@/hooks/useProfile";
+import { useDebouncedResize } from "@/lib/performance";
+
+// Lazy load heavy components for better initial load
+const Dashboard = lazy(() => import("@/components/Dashboard").then(m => ({ default: m.Dashboard })));
+const OCRUpload = lazy(() => import("@/components/OCRUpload").then(m => ({ default: m.OCRUpload })));
+const ScheduleScanner = lazy(() => import("@/components/ScheduleScanner").then(m => ({ default: m.ScheduleScanner })));
+const Settings = lazy(() => import("@/components/Settings").then(m => ({ default: m.Settings })));
+const Connect = lazy(() => import("@/components/Connect").then(m => ({ default: m.Connect })));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="p-6 space-y-4">
+    <Skeleton className="h-8 w-64" />
+    <Skeleton className="h-64 w-full" />
+    <Skeleton className="h-64 w-full" />
+  </div>
+);
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -30,16 +42,25 @@ const Index = () => {
   // Initialize user preferences on app load
   usePreferences();
 
-  // Auto-collapse sidebar when on calendar page with smooth transitions
-  // On mobile, always start collapsed
+  // Auto-collapse sidebar with debounced resize
   useEffect(() => {
-    const isMobile = window.innerWidth < 768;
-    if (currentPage === 'calendar' || isMobile) {
-      setIsCollapsed(true);
-    } else {
-      setIsCollapsed(false);
-    }
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (currentPage === 'calendar' || isMobile) {
+        setIsCollapsed(true);
+      } else {
+        setIsCollapsed(false);
+      }
+    };
+    
+    handleResize();
   }, [currentPage]);
+
+  // Debounced resize handler for performance
+  useDebouncedResize(() => {
+    const isMobile = window.innerWidth < 768;
+    setIsCollapsed(currentPage === 'calendar' || isMobile);
+  }, 150);
 
   // Handle hash navigation for integrations
   useEffect(() => {
@@ -93,28 +114,42 @@ const Index = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Dashboard />
+          </Suspense>
+        );
       case 'upload':
         return (
-          <div className="p-6">
-            <Tabs value={uploadTab} onValueChange={setUploadTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="note-digitizer">Note Digitizer</TabsTrigger>
-                <TabsTrigger value="schedule-scanner">Schedule Scanner</TabsTrigger>
-              </TabsList>
-              <TabsContent value="note-digitizer" className="mt-0">
-                <OCRUpload />
-              </TabsContent>
-              <TabsContent value="schedule-scanner" className="mt-0">
-                <ScheduleScanner />
-              </TabsContent>
-            </Tabs>
-          </div>
+          <Suspense fallback={<PageLoader />}>
+            <div className="p-6">
+              <Tabs value={uploadTab} onValueChange={setUploadTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="note-digitizer">Note Digitizer</TabsTrigger>
+                  <TabsTrigger value="schedule-scanner">Schedule Scanner</TabsTrigger>
+                </TabsList>
+                <TabsContent value="note-digitizer" className="mt-0">
+                  <OCRUpload />
+                </TabsContent>
+                <TabsContent value="schedule-scanner" className="mt-0">
+                  <ScheduleScanner />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </Suspense>
         );
       case 'connect':
-        return <Connect />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Connect />
+          </Suspense>
+        );
       case 'settings':
-        return <Settings defaultTab={settingsTab} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Settings defaultTab={settingsTab} />
+          </Suspense>
+        );
       case 'analytics':
         return (
           <div className="flex items-center justify-center h-full">
@@ -127,7 +162,11 @@ const Index = () => {
           </div>
         );
       default:
-        return <Dashboard />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Dashboard />
+          </Suspense>
+        );
     }
   };
 

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import { Calendar as CalendarIcon, Clock, BookOpen, Target, CheckCircle, AlertCircle, Brain, TrendingUp, Plus, ChevronDown, ChevronRight, Settings, FileText, GraduationCap, Palette, Trash2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -99,7 +100,10 @@ const getCourseColor = (title: string, isCanvas: boolean, courseCode?: string, s
   return 'bg-gray-100 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200';
 };
 
-export const DashboardIntegratedView = () => {
+export const DashboardIntegratedView = memo(() => {
+  // Performance monitoring in development
+  usePerformanceMonitor('DashboardIntegratedView', 16);
+  
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -856,4 +860,6 @@ export const DashboardIntegratedView = () => {
       />
     </div>
   );
-};
+});
+
+DashboardIntegratedView.displayName = 'DashboardIntegratedView';

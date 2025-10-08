@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, memo, useRef } from 'react';
+import { useIntersectionObserver } from '@/lib/performance';
+import { PostCard } from './PostCard';
 import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail, Hash, Globe, GraduationCap, Calendar, ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -108,42 +110,44 @@ export const Connect = () => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
-  // Filter and sort posts
-  const filteredPosts = posts.filter(post => {
-    // Search filter
-    if (postFilters.search && !post.content.toLowerCase().includes(postFilters.search.toLowerCase()) &&
-        !post.profiles.display_name.toLowerCase().includes(postFilters.search.toLowerCase())) {
-      return false;
-    }
+  // Memoize filtered posts to prevent unnecessary recalculations
+  const filteredPosts = useMemo(() => {
+    return posts.filter(post => {
+      // Search filter
+      if (postFilters.search && !post.content.toLowerCase().includes(postFilters.search.toLowerCase()) &&
+          !post.profiles.display_name.toLowerCase().includes(postFilters.search.toLowerCase())) {
+        return false;
+      }
 
-    // Post type filter
-    if (postFilters.postType && (post.post_type || 'general') !== postFilters.postType) {
-      return false;
-    }
+      // Post type filter
+      if (postFilters.postType && (post.post_type || 'general') !== postFilters.postType) {
+        return false;
+      }
 
-    // Major filter
-    if (postFilters.major && post.profiles.major !== postFilters.major) {
-      return false;
-    }
+      // Major filter
+      if (postFilters.major && post.profiles.major !== postFilters.major) {
+        return false;
+      }
 
-    // School filter  
-    if (postFilters.school && post.profiles.school !== postFilters.school) {
-      return false;
-    }
+      // School filter  
+      if (postFilters.school && post.profiles.school !== postFilters.school) {
+        return false;
+      }
 
-    return true;
-  }).sort((a, b) => {
-    switch (postFilters.sortBy) {
-      case 'oldest':
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      case 'most-liked':
-        return (b.likes_count || 0) - (a.likes_count || 0);
-      case 'most-commented':
-        return (b.comments_count || 0) - (a.comments_count || 0);
-      default: // newest
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    }
-  });
+      return true;
+    }).sort((a, b) => {
+      switch (postFilters.sortBy) {
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'most-liked':
+          return (b.likes_count || 0) - (a.likes_count || 0);
+        case 'most-commented':
+          return (b.comments_count || 0) - (a.comments_count || 0);
+        default: // newest
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+  }, [posts, postFilters]);
 
   if (loading) {
     return (
@@ -212,163 +216,17 @@ export const Connect = () => {
               </Card>
             ) : (
               filteredPosts.map((post) => (
-              <Card key={post.id} className="animate-fade-in">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={post.profiles.avatar_url} />
-                      <AvatarFallback>
-                        {post.profiles.display_name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">
-                        {post.profiles.display_name}
-                      </h3>
-                      {post.profiles.school && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <School className="h-3 w-3" />
-                          {post.profiles.school}
-                        </Badge>
-                      )}
-                      {(post.post_type || 'general') !== 'general' && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          {(post.post_type || 'general') === 'academic' && <GraduationCap className="h-3 w-3" />}
-                          {(post.post_type || 'general') === 'social' && <Users className="h-3 w-3" />}
-                          {(post.post_type || 'general') === 'announcement' && <Hash className="h-3 w-3" />}
-                          {(post.post_type || 'general') === 'question' && <Hash className="h-3 w-3" />}
-                          {(post.post_type || 'general') === 'study-group' && <Users className="h-3 w-3" />}
-                          {(post.post_type || 'general').charAt(0).toUpperCase() + (post.post_type || 'general').slice(1)}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {post.profiles.major && (
-                        <span>{post.profiles.major}</span>
-                      )}
-                      <span>•</span>
-                      <span>{formatTimeAgo(post.created_at)}</span>
-                      {(post.visibility || 'public') !== 'public' && (
-                        <>
-                          <span>•</span>
-                          <Badge variant="outline" className="text-xs">
-                            {(post.visibility || 'public') === 'school-only' && 'School Only'}
-                            {(post.visibility || 'public') === 'major-only' && 'Major Only'}
-                            {(post.visibility || 'public') === 'friends-only' && 'Friends Only'}
-                          </Badge>
-                        </>
-                      )}
-                    </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Post metadata */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {post.target_major && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <GraduationCap className="h-3 w-3" />
-                        {post.target_major}
-                      </Badge>
-                    )}
-                    {post.target_community && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <School className="h-3 w-3" />
-                        {post.target_community}
-                      </Badge>
-                    )}
-                    {(post.tags || []).map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  
-                  <p className="text-foreground whitespace-pre-wrap mb-4">{post.content}</p>
-                  
-                  {post.image_url && (
-                    <img 
-                      src={post.image_url} 
-                      alt="Post image" 
-                      className="w-full rounded-lg mb-4 max-h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => handleOpenImage(post.image_url!)}
-                    />
-                  )}
-
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="flex items-center gap-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleLike(post.id)}
-                        className={`flex items-center gap-2 ${
-                          post.user_liked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground'
-                        }`}
-                      >
-                        <Heart className={`h-4 w-4 ${post.user_liked ? 'fill-current' : ''}`} />
-                        {post.likes_count}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewComments(post)}
-                        className="flex items-center gap-2 text-muted-foreground"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                        {post.comments_count}
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {user && post.user_id === user.id && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-background border border-border shadow-lg z-50">
-                            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem 
-                                  onSelect={(e) => {
-                                    e.preventDefault();
-                                    setPostToDelete(post.id);
-                                    setDeleteDialogOpen(true);
-                                  }}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Post
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Post</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this post? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={handleDeletePost}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-        )}
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  isOwner={user?.id === post.user_id}
+                  onLike={handleLike}
+                  onComment={handleViewComments}
+                  onDelete={deletePost}
+                  onImageClick={handleOpenImage}
+                />
+              ))
+            )}
           </div>
         </TabsContent>
 
