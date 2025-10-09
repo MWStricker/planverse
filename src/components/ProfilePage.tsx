@@ -52,10 +52,10 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
     is_public: profile?.is_public ?? true
   });
 
-  // Update form data when profile changes - but NOT when editing
+  // Update form data when profile changes OR when dialog opens
   React.useEffect(() => {
-    if (profile && !isEditing) {
-      console.log('ProfilePage: Updating form data from profile (not editing):', profile);
+    if (profile) {
+      console.log('ProfilePage: Updating form data from profile:', profile);
       setFormData({
         display_name: profile.display_name || '',
         school: profile.school || '',
@@ -65,10 +65,8 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
         campus_location: profile.campus_location || '',
         is_public: profile.is_public ?? true
       });
-    } else if (profile && isEditing) {
-      console.log('ProfilePage: Profile changed while editing, NOT updating form data');
     }
-  }, [profile, isEditing]);
+  }, [profile, open]);
 
   const handleSave = async () => {
     if (!user?.id) {
