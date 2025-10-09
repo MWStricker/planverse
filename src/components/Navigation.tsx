@@ -169,21 +169,6 @@ export const Navigation = ({
         maxHeight: 'var(--app-height, 100vh)'
       }}
     >
-      {/* Collapse button - positioned way inside when collapsed with smaller size */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onToggleCollapse}
-        className="absolute top-1/2 -translate-y-1/2 -right-3 z-50 h-6 w-6 p-0 hover:bg-muted/50 rounded-md bg-background border border-border shadow-sm"
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="h-3 w-3" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
-      </Button>
-      {/* Collapse/Expand Button */}
 
       {/* Logo */}
       <div className="p-4 pt-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
