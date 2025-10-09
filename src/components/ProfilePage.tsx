@@ -105,6 +105,8 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
         });
 
         setIsEditing(false);
+        // Close the dialog after successful save
+        onOpenChange(false);
       } else {
         console.error('ProfilePage: No updated profile returned');
       }
