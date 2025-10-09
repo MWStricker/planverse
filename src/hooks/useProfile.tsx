@@ -147,13 +147,20 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user || !profile) {
-      console.error('Missing user or profile:', { user: !!user, profile: !!profile });
+      console.error('❌ UPDATE FAILED: Missing user or profile:', { user: !!user, profile: !!profile });
+      toast({
+        title: "Error",
+        description: "You must be logged in to update your profile",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
-      console.log('Starting profile update with:', updates);
-      console.log('Current user ID:', user.id);
+      console.log('🔄 STARTING PROFILE UPDATE');
+      console.log('📝 Updates to apply:', updates);
+      console.log('👤 User ID:', user.id);
+      console.log('📋 Current profile:', profile);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -163,11 +170,22 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error) {
-        console.error('Profile update error:', error);
+        console.error('❌ PROFILE UPDATE ERROR:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 
-      console.log('Profile update successful:', data);
+      if (!data) {
+        console.error('❌ UPDATE FAILED: No data returned');
+        throw new Error('No data returned from update');
+      }
+
+      console.log('✅ PROFILE UPDATE SUCCESSFUL:', data);
       
       // Immediately update the local state for all consumers
       setProfile(data);
@@ -179,10 +197,10 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       
       return data;
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('❌ ERROR UPDATING PROFILE:', error);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error instanceof Error ? error.message : "Failed to update profile",
         variant: "destructive",
       });
       throw error;
