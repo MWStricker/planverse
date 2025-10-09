@@ -361,15 +361,19 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         <h4 className="font-semibold text-foreground">
                           {friend.friend_profile?.display_name}
                         </h4>
-                        <UserStatusIndicator 
-                          status={getUserStatus(friend.friend_profile!.id)} 
-                          isCurrentUser={false}
-                          size="sm"
-                        />
+                        {friend.friend_profile?.id && (
+                          <UserStatusIndicator 
+                            status={getUserStatus(friend.friend_profile.id)} 
+                            isCurrentUser={false}
+                            size="sm"
+                          />
+                        )}
                       </div>
                       
                       <div className="flex flex-wrap gap-1 mt-1 mb-2">
-                        <OnlineStatus userId={friend.friend_profile!.id} />
+                        {friend.friend_profile?.id && (
+                          <OnlineStatus userId={friend.friend_profile.id} />
+                        )}
                         {friend.friend_profile?.school && (
                           <Badge variant="secondary" className="flex items-center gap-1 text-xs">
                             <School className="h-3 w-3" />
@@ -388,15 +392,17 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         Friends since {formatDistanceToNow(new Date(friend.created_at), { addSuffix: true })}
                       </p>
                       
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onStartChat?.(friend.friend_profile!.id)}
-                        className="flex items-center gap-1"
-                      >
-                        <MessageCircle className="h-3 w-3" />
-                        Message
-                      </Button>
+                      {friend.friend_profile?.id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onStartChat?.(friend.friend_profile!.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          Message
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
