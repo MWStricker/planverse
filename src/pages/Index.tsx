@@ -1,9 +1,10 @@
-import { useState, useEffect, lazy, Suspense, memo } from "react";
+import { useState, useEffect, lazy, Suspense, memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Home, Users, Upload } from "lucide-react";
 
 import { Navigation } from "@/components/Navigation";
 import { BottomNav } from "@/components/BottomNav";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OnboardingQuestionnaire } from "@/components/OnboardingQuestionnaire";
@@ -34,11 +35,11 @@ const PageLoader = () => (
 
 const IndexContent = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(20);
   const { user, loading } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -46,25 +47,30 @@ const IndexContent = () => {
   // Initialize user preferences on app load
   usePreferences();
 
-  // Auto-collapse sidebar with debounced resize
+  // Load saved sidebar width
   useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (currentPage === 'calendar' || isMobile) {
-        setIsCollapsed(true);
-      } else {
-        setIsCollapsed(false);
-      }
-    };
-    
-    handleResize();
-  }, [currentPage]);
+    const saved = localStorage.getItem('planverse-sidebar-width');
+    if (saved) {
+      setSidebarWidth(Number(saved));
+    }
+  }, []);
 
-  // Debounced resize handler for performance
-  useDebouncedResize(() => {
-    const isMobile = window.innerWidth < 768;
-    setIsCollapsed(currentPage === 'calendar' || isMobile);
-  }, 150);
+  // Debounced handler to save sidebar width
+  const handleLayoutChange = useMemo(
+    () => {
+      let timeout: NodeJS.Timeout;
+      return (sizes: number[]) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          if (sizes[0]) {
+            setSidebarWidth(sizes[0]);
+            localStorage.setItem('planverse-sidebar-width', String(sizes[0]));
+          }
+        }, 300);
+      };
+    },
+    []
+  );
 
   // Handle hash navigation for integrations
   useEffect(() => {
@@ -203,36 +209,56 @@ const IndexContent = () => {
       
       <ProfileEditingProvider>
         <div 
-          className="flex bg-background overflow-hidden" 
+          className="flex bg-background overflow-hidden w-full" 
           style={{ 
             height: 'var(--app-height, 100vh)', 
             minHeight: 'var(--app-height, 100vh)',
             maxHeight: 'var(--app-height, 100vh)'
           }}
         >
-          {/* Desktop Sidebar - Hidden on mobile */}
-          <div className="hidden md:block md:flex-shrink-0 h-full transition-all duration-500">
-            <Navigation 
-              currentPage={currentPage} 
-              onPageChange={setCurrentPage}
-              isReorderMode={isReorderMode}
-              onToggleReorder={() => setIsReorderMode(true)}
-              onCancelReorder={cancelReorder}
-              isCollapsed={isCollapsed}
-              onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-            />
+          {/* Desktop Resizable Layout - Hidden on mobile */}
+          <div className="hidden md:flex md:w-full h-full">
+            <ResizablePanelGroup 
+              direction="horizontal" 
+              onLayout={handleLayoutChange}
+              className="w-full"
+            >
+              <ResizablePanel 
+                defaultSize={sidebarWidth} 
+                minSize={15} 
+                maxSize={40}
+                className="h-full"
+              >
+                <Navigation 
+                  currentPage={currentPage} 
+                  onPageChange={setCurrentPage}
+                  isReorderMode={isReorderMode}
+                  onToggleReorder={() => setIsReorderMode(true)}
+                  onCancelReorder={cancelReorder}
+                />
+              </ResizablePanel>
+              
+              <ResizableHandle withHandle className="w-1 hover:w-2 transition-all" />
+              
+              <ResizablePanel 
+                defaultSize={100 - sidebarWidth}
+                className="h-full"
+              >
+                <div 
+                  className="overflow-auto w-full h-full" 
+                  style={{ 
+                    paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+                  }}
+                >
+                  {renderPage()}
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
-          
-          {/* Main Content - Full width on mobile */}
-          <div 
-            className="flex-1 overflow-auto w-full" 
-            style={{ 
-              height: 'var(--app-height, 100vh)',
-              maxHeight: 'var(--app-height, 100vh)',
-              paddingBottom: 'env(safe-area-inset-bottom, 0px)'
-            }}
-          >
-            <div className="h-full md:h-auto pb-20 md:pb-0">
+
+          {/* Mobile Layout - Full width */}
+          <div className="md:hidden flex-1 overflow-auto w-full">
+            <div className="h-full pb-20">
               {renderPage()}
             </div>
           </div>

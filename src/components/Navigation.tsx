@@ -24,8 +24,6 @@ interface NavigationProps {
   isReorderMode?: boolean;
   onToggleReorder?: () => void;
   onCancelReorder?: () => void;
-  isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
 }
 
 export const Navigation = ({ 
@@ -33,9 +31,7 @@ export const Navigation = ({
   onPageChange, 
   isReorderMode = false,
   onToggleReorder,
-  onCancelReorder,
-  isCollapsed = false,
-  onToggleCollapse
+  onCancelReorder
 }: NavigationProps) => {
   const [notifications] = useState(0);
   const [courses, setCourses] = useState<any[]>([]);
@@ -162,7 +158,7 @@ export const Navigation = ({
 
   return (
     <div 
-      className="flex flex-col bg-card border-r border-border relative transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform"
+      className="flex flex-col bg-card border-r border-border relative h-full w-full"
       style={{ 
         height: 'var(--app-height, 100vh)', 
         minHeight: 'var(--app-height, 100vh)',
@@ -171,58 +167,42 @@ export const Navigation = ({
     >
 
       {/* Logo */}
-      <div className="p-4 pt-1 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      <div className="p-4 pt-1">
         <div className="flex items-center justify-between">
-          <div className={`text-center flex-1 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
-            isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
-          }`}>
-            {!isCollapsed && (
-              <>
-                <h1 className={`text-lg font-bold text-foreground transition-all duration-300 ease-out ${
-                  isCollapsed ? '-translate-x-4 opacity-0' : 'translate-x-0 opacity-100'
-                }`}>
-                  Planverse
-                </h1>
-                <p className={`text-xs text-muted-foreground transition-all duration-300 ease-out ${
-                  isCollapsed ? '-translate-x-4 opacity-0' : 'translate-x-0 opacity-100'
-                }`}>
-                  Smart Scheduling
-                </p>
-              </>
-            )}
+          <div className="text-center flex-1">
+            <h1 className="text-lg font-bold text-foreground">
+              Planverse
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Smart Scheduling
+            </p>
           </div>
           {/* Reorder Button */}
-          {!isCollapsed && (
-            <div className={`flex flex-col gap-1 transition-all duration-300 ease-out ${
-              isCollapsed ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
-            }`}>
-              {!isReorderMode ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onToggleReorder}
-                  className="h-6 w-6 p-0 hover:bg-muted/30"
-                >
-                  <MoreVertical className="h-3 w-3" />
-                </Button>
-               ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onCancelReorder}
-                  className="h-6 w-6 p-0 hover:bg-muted/30"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-               )}
-            </div>
-          )}
+          <div className="flex flex-col gap-1">
+            {!isReorderMode ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleReorder}
+                className="h-6 w-6 p-0 hover:bg-muted/30"
+              >
+                <MoreVertical className="h-3 w-3" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancelReorder}
+                className="h-6 w-6 p-0 hover:bg-muted/30"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
         </div>
         
-        {isReorderMode && !isCollapsed && (
-          <div className={`mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20 transition-all duration-300 ease-out ${
-            isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
-          }`}>
+        {isReorderMode && (
+          <div className="mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20">
             <p className="text-xs text-foreground font-medium text-center">
               Drag tabs to reorder
             </p>
@@ -231,10 +211,10 @@ export const Navigation = ({
       </div>
       
       {/* Border separator */}
-      {!isCollapsed && <div className="border-b border-border"></div>}
+      <div className="border-b border-border"></div>
 
       {/* Navigation */}
-      <nav className="flex-1 min-h-0 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform">
+      <nav className="flex-1 min-h-0 overflow-hidden">
         <div className="h-full overflow-y-auto p-4 space-y-6">
         <DndContext
           sensors={sensors}
@@ -255,7 +235,7 @@ export const Navigation = ({
                   isReorderMode={isReorderMode}
                   notifications={item.id === 'tasks' ? notifications : 0}
                   onClick={() => onPageChange(item.id)}
-                  isCollapsed={isCollapsed}
+                  isCollapsed={false}
                 />
               ))}
             </div>
@@ -266,11 +246,9 @@ export const Navigation = ({
 
 
       {/* User Section */}
-      <div className="flex-shrink-0 p-2 border-t border-border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      <div className="flex-shrink-0 p-2 border-t border-border">
         <div 
-          className={`flex items-center gap-2 mb-2 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform cursor-pointer hover:bg-muted/50 rounded-lg p-1 -m-1 ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
+          className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-muted/50 rounded-lg p-1 -m-1"
           onClick={() => setIsProfileOpen(true)}
           title="View Profile"
         >
@@ -281,67 +259,55 @@ export const Navigation = ({
                user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          {!isCollapsed && (
-            <div className={`flex-1 min-w-0 transition-all duration-300 ease-out overflow-hidden ${
-              isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
-            }`}>
-              <div className="flex items-center gap-1">
-                <p className={`text-sm font-medium text-foreground truncate transition-all duration-300 ease-out leading-tight ${
-                  isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
-                }`}>
-                  {profile?.display_name || user?.email?.split('@')[0] || 'User'}
-                </p>
-                <UserStatusIndicator 
-                  status={currentUserStatus} 
-                  isCurrentUser={true}
-                  size="sm"
-                />
-              </div>
-              <p className={`text-xs text-muted-foreground truncate transition-all duration-300 ease-out leading-tight ${
-                isCollapsed ? 'opacity-0 -translate-x-4' : 'opacity-100 translate-x-0'
-              }`}>
-                 {(() => {
-                   const currentMajor = profile?.major;
-                   if (!currentMajor) return 'Student';
-                   
-                   // Format predefined majors with proper capitalization
-                   return currentMajor.includes('-') ? 
-                     currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-                     currentMajor;
-                 })()}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-medium text-foreground truncate leading-tight">
+                {profile?.display_name || user?.email?.split('@')[0] || 'User'}
               </p>
+              <UserStatusIndicator 
+                status={currentUserStatus} 
+                isCurrentUser={true}
+                size="sm"
+              />
             </div>
-          )}
+            <p className="text-xs text-muted-foreground truncate leading-tight">
+               {(() => {
+                 const currentMajor = profile?.major;
+                 if (!currentMajor) return 'Student';
+                 
+                 // Format predefined majors with proper capitalization
+                 return currentMajor.includes('-') ? 
+                   currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                   currentMajor;
+               })()}
+            </p>
+          </div>
         </div>
         
         
         {/* Clock and Controls Section */}
-        {!isCollapsed && (
-          <div className={`mt-1 transition-all duration-300 ease-out ${
-            isCollapsed ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
-          }`}>
-            <div className="flex items-center justify-center gap-1">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
-              >
-                <Bell className="h-3 w-3 transition-all duration-200 ease-out" />
-              </Button>
-              <div className="flex-1">
-                <AnalogClock />
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => onPageChange('settings')}
-                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
-              >
-                <Settings className="h-3 w-3 group-hover:rotate-90 transition-transform duration-300 ease-out" />
-              </Button>
+        <div className="mt-1">
+          <div className="flex items-center justify-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
+            >
+              <Bell className="h-3 w-3 transition-all duration-200 ease-out" />
+            </Button>
+            <div className="flex-1">
+              <AnalogClock />
             </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onPageChange('settings')}
+              className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
+            >
+              <Settings className="h-3 w-3 group-hover:rotate-90 transition-transform duration-300 ease-out" />
+            </Button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Profile Page Modal */}
