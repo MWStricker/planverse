@@ -98,28 +98,45 @@ export const IntegrationSetup = () => {
         // Wait a moment for Supabase to process the tokens
         setTimeout(async () => {
           const { data: { session } } = await supabase.auth.getSession();
+          const provider = session?.user?.app_metadata?.provider;
+          
           console.log('🔍 Post-OAuth session:', {
             hasSession: !!session,
             hasProviderToken: !!session?.provider_token,
-            tokenLength: session?.provider_token?.length || 0
+            tokenLength: session?.provider_token?.length || 0,
+            provider
           });
           
           if (session?.provider_token) {
-            console.log('✅ Found provider token, creating connection...');
-            const success = await createCalendarConnection(session);
-            if (success) {
-              setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-              await refreshConnections();
-              
-              toast({
-                title: "Connected Successfully!",
-                description: "Google Calendar connected. Starting sync...",
-              });
-              
-              // Auto-trigger real sync
-              setTimeout(() => {
-                handleSyncCalendar();
-              }, 1000);
+            console.log(`✅ Found provider token for ${provider}, creating connection...`);
+            
+            // Route to appropriate connection handler based on provider
+            if (provider === 'google') {
+              const success = await createCalendarConnection(session);
+              if (success) {
+                setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+                await refreshConnections();
+                
+                toast({
+                  title: "Connected Successfully!",
+                  description: "Google Calendar connected. Starting sync...",
+                });
+                
+                // Auto-trigger real sync
+                setTimeout(() => {
+                  handleSyncCalendar();
+                }, 1000);
+              }
+            } else if (provider === 'spotify') {
+              const success = await createSpotifyConnection(session);
+              if (success) {
+                setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
+                
+                toast({
+                  title: "Spotify Connected!",
+                  description: "Your currently playing music will now appear on your profile.",
+                });
+              }
             }
           } else {
             console.log('⚠️ No provider token found in session');
