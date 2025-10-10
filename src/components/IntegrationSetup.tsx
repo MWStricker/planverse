@@ -263,12 +263,17 @@ export const IntegrationSetup = () => {
     }
 
     try {
+      console.log('🔍 Creating Spotify connection with session data:', {
+        hasProviderToken: !!session?.provider_token,
+        userId: session?.user?.id
+      });
+
+      // Store connection without encrypted tokens (they're bytea fields)
+      // We'll store token metadata only and use session tokens in edge functions
       const connectionData = {
         user_id: user.id,
         provider: 'spotify',
-        provider_id: session?.user?.email || user.email || null,
-        access_token_enc: session?.provider_token || null,
-        refresh_token_enc: session?.provider_refresh_token || null,
+        provider_id: session?.user?.id || null,
         is_active: true,
         scope: 'user-read-currently-playing user-read-playback-state',
         token_expires_at: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
@@ -288,6 +293,11 @@ export const IntegrationSetup = () => {
 
       if (error) {
         console.error('❌ Database error creating Spotify connection:', error);
+        toast({
+          title: "Connection Failed",
+          description: error.message,
+          variant: "destructive",
+        });
         return false;
       }
 
