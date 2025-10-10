@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RealtimeProvider } from "@/hooks/useRealtime";
 import { useThemeLoader } from "@/hooks/useThemeLoader";
+import { useOAuthCallback } from "@/hooks/useOAuthCallback";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import { TermsOfService } from "./pages/TermsOfService";
@@ -18,6 +19,9 @@ const queryClient = new QueryClient();
 const App = () => {
   // Apply stored theme immediately on app load
   useThemeLoader();
+  
+  // Register OAuth callback handler at app root to capture provider tokens
+  useOAuthCallback();
 
   return (
     <React.Fragment>

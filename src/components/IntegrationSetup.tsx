@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock, RefreshCw, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,87 +76,8 @@ export const IntegrationSetup = () => {
   const { user } = useAuth();
   const { syncAllConnections, isProviderConnected, refreshConnections } = useIntegrationSync();
   
-  // Track processed sign-ins to prevent duplicate connection attempts
-  const processedSignIns = useRef<Set<string>>(new Set());
-  
   console.log('🔍 IntegrationSetup component rendered');
   console.log('🔍 Current user:', !!user);
-
-  // OAuth callback handler - captures provider tokens during SIGNED_IN event
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔍 Auth state change:', event, {
-        hasSession: !!session,
-        hasProviderToken: !!session?.provider_token,
-        hasRefreshToken: !!session?.provider_refresh_token,
-        provider: session?.user?.app_metadata?.provider,
-        userId: session?.user?.id
-      });
-      
-      // Only process SIGNED_IN events with provider tokens
-      if (event !== 'SIGNED_IN' || !session?.provider_token) {
-        return;
-      }
-      
-      const provider = session.user.app_metadata?.provider;
-      const userId = session.user.id;
-      const signInKey = `${userId}-${provider}-${Date.now()}`;
-      
-      // Prevent duplicate processing of the same sign-in
-      if (processedSignIns.current.has(signInKey)) {
-        console.log('⏭️ Already processed this sign-in, skipping...');
-        return;
-      }
-      
-      processedSignIns.current.add(signInKey);
-      
-      // Clean up old entries (keep only last 10)
-      if (processedSignIns.current.size > 10) {
-        const entries = Array.from(processedSignIns.current);
-        processedSignIns.current = new Set(entries.slice(-10));
-      }
-      
-      console.log(`✅ Processing OAuth callback for ${provider} - tokens available NOW`);
-      
-      // Handle Google Calendar OAuth
-      if (provider === 'google') {
-        console.log('🔍 Processing Google Calendar connection...');
-        const success = await createCalendarConnection(session);
-        
-        if (success) {
-          setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-          await refreshConnections();
-          
-          toast({
-            title: "Google Calendar Connected!",
-            description: "Starting automatic sync of your calendar and tasks...",
-          });
-          
-          // Auto-trigger sync after connection
-          setTimeout(async () => {
-            await handleSyncCalendar();
-          }, 1500);
-        }
-      }
-      
-      // Handle Spotify OAuth
-      if (provider === 'spotify') {
-        console.log('🔍 Processing Spotify connection...');
-        const success = await createSpotifyConnection(session);
-        
-        if (success) {
-          setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
-          
-          toast({
-            title: "Spotify Connected!",
-            description: "Your currently playing music will now appear on your profile.",
-          });
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [user]);
 
   // Update integration status based on connections
   useEffect(() => {
@@ -277,7 +198,7 @@ export const IntegrationSetup = () => {
         provider: 'google',
         options: {
           scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
-          redirectTo: `${window.location.origin}/#integrations`,
+          redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -315,13 +236,12 @@ export const IntegrationSetup = () => {
   const handleSpotifyConnect = async () => {
     try {
       setIsConnecting(true);
-      const redirectUrl = `${window.location.origin}/#integrations`;
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'spotify',
         options: {
           scopes: 'user-read-currently-playing user-read-playback-state',
-          redirectTo: redirectUrl,
+          redirectTo: `${window.location.origin}/`,
         },
       });
 
