@@ -29,6 +29,7 @@ export interface Friend {
   created_at: string;
   friend_profile?: {
     id: string;
+    user_id: string;
     display_name: string;
     avatar_url?: string;
     school?: string;
@@ -60,11 +61,18 @@ export const useFriends = () => {
         (data || []).map(async (friendship: any) => {
           const friendUserId = friendship.user1_id === user.id ? friendship.user2_id : friendship.user1_id;
           
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('id, display_name, avatar_url, school, major, bio')
+            .select('id, user_id, display_name, avatar_url, school, major, bio')
             .eq('user_id', friendUserId)
-            .single();
+            .maybeSingle();
+          
+          if (profileError) {
+            console.error('Error fetching friend profile:', profileError);
+          }
+          if (!profile) {
+            console.warn(`No profile found for user: ${friendUserId}`);
+          }
           
           return {
             ...friendship,

@@ -355,7 +355,20 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
         <TabsContent value="friends" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {friends.map((friend) => (
-              <Card key={friend.id} className="hover:shadow-md transition-shadow">
+              <Card 
+                key={friend.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => friend.friend_profile?.user_id && handleViewProfile({
+                  id: friend.friend_profile.id,
+                  user_id: friend.friend_profile.user_id,
+                  display_name: friend.friend_profile.display_name,
+                  avatar_url: friend.friend_profile.avatar_url,
+                  school: friend.friend_profile.school,
+                  major: friend.friend_profile.major,
+                  bio: friend.friend_profile.bio,
+                  created_at: friend.created_at
+                } as Person)}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <Avatar className="h-12 w-12">
@@ -367,12 +380,29 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-foreground">
-                          {friend.friend_profile?.display_name}
+                        <h4 
+                          className="font-semibold text-foreground cursor-pointer hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (friend.friend_profile?.user_id) {
+                              handleViewProfile({
+                                id: friend.friend_profile.id,
+                                user_id: friend.friend_profile.user_id,
+                                display_name: friend.friend_profile.display_name,
+                                avatar_url: friend.friend_profile.avatar_url,
+                                school: friend.friend_profile.school,
+                                major: friend.friend_profile.major,
+                                bio: friend.friend_profile.bio,
+                                created_at: friend.created_at
+                              } as Person);
+                            }
+                          }}
+                        >
+                          {friend.friend_profile?.display_name || 'Unknown User'}
                         </h4>
-                        {friend.friend_profile?.id && (
+                        {friend.friend_profile?.user_id && (
                           <UserStatusIndicator 
-                            status={getUserStatus(friend.friend_profile.id)} 
+                            status={getUserStatus(friend.friend_profile.user_id)} 
                             isCurrentUser={false}
                             size="sm"
                           />
@@ -380,8 +410,8 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                       </div>
                       
                       <div className="flex flex-wrap gap-1 mt-1 mb-2">
-                        {friend.friend_profile?.id && (
-                          <OnlineStatus userId={friend.friend_profile.id} />
+                        {friend.friend_profile?.user_id && (
+                          <OnlineStatus userId={friend.friend_profile.user_id} />
                         )}
                         {friend.friend_profile?.school && (
                           <Badge variant="secondary" className="flex items-center gap-1 text-xs">
@@ -401,11 +431,14 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         Friends since {formatDistanceToNow(new Date(friend.created_at), { addSuffix: true })}
                       </p>
                       
-                      {friend.friend_profile?.id && (
+                      {friend.friend_profile?.user_id && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onStartChat?.(friend.friend_profile!.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStartChat?.(friend.friend_profile!.user_id);
+                          }}
                           className="flex items-center gap-1"
                         >
                           <MessageCircle className="h-3 w-3" />
