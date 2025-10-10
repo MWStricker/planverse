@@ -168,6 +168,60 @@ export default {
             transform: "translateY(0) translateZ(0)",
           },
         },
+        "float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { 
+            boxShadow: "0 0 20px rgba(56, 145, 245, 0.3)"
+          },
+          "50%": { 
+            boxShadow: "0 0 40px rgba(56, 145, 245, 0.6)"
+          }
+        },
+        "slide-up-bounce": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(40px)"
+          },
+          "60%": {
+            opacity: "1",
+            transform: "translateY(-5px)"
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0)"
+          }
+        },
+        "fade-in": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px)"
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0)"
+          }
+        },
+        "scale-in": {
+          "0%": {
+            transform: "scale(0.95)",
+            opacity: "0"
+          },
+          "100%": {
+            transform: "scale(1)",
+            opacity: "1"
+          }
+        },
+        "icon-bounce": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.2)" }
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -177,6 +231,13 @@ export default {
         "smooth-fade-in": "smooth-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         "smooth-scale": "smooth-scale 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         "smooth-slide-up": "smooth-slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        "float": "float 4s ease-in-out infinite",
+        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
+        "slide-up-bounce": "slide-up-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "fade-in": "fade-in 0.3s ease-out",
+        "scale-in": "scale-in 0.2s ease-out",
+        "icon-bounce": "icon-bounce 0.5s ease-in-out",
+        "shimmer": "shimmer 3s linear infinite",
       },
       // Enhanced transitions for ultra smooth interactions
       transitionTimingFunction: {

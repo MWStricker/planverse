@@ -262,39 +262,45 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Subtle background particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+      </div>
+
+      <div className="w-full max-w-lg relative z-10">
         {/* Header Section */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="mx-auto w-32 h-32 flex items-center justify-center mb-6">
-            <img src={planverseLogo} alt="Planverse" className="w-28 h-28 object-contain" />
+            <img src={planverseLogo} alt="Planverse" className="w-28 h-28 object-contain animate-float" style={{ animationDelay: '0.2s' }} />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             Welcome to Planverse
           </h1>
-          <p className="text-muted-foreground text-lg">All your resources in one place!</p>
+          <p className="text-muted-foreground text-lg animate-fade-in" style={{ animationDelay: '0.4s' }}>All your resources in one place!</p>
         </div>
 
         {/* Main Card */}
-        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm animate-scale-in">
+        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm animate-slide-up-bounce" style={{ animationDelay: '0.5s' }}>
           <CardContent className="p-8">
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl mb-8">
                 <TabsTrigger 
                   value="signin" 
-                  className="rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground"
+                  className="rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground data-[state=active]:scale-105"
                 >
                   Sign In
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup" 
-                  className="rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground"
+                  className="rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground data-[state=active]:scale-105"
                 >
                   Sign Up
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="signin" className="mt-0">
+              <TabsContent value="signin" className="mt-0 animate-fade-in">
                 {/* Auth Method Toggle */}
                 <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-muted/30 rounded-xl">
                   <Button
@@ -337,7 +343,7 @@ const Auth = () => {
                           value={email}
                           onChange={handleEmailChange}
                           required
-                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
                         />
                         {email && (
                           <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -366,7 +372,7 @@ const Auth = () => {
                           value={phone}
                           onChange={handlePhoneChange}
                           required
-                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
                         />
                         {phone && (
                           <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -396,7 +402,7 @@ const Auth = () => {
                         value={password}
                         onChange={handlePasswordChange}
                         required
-                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
                       />
                       <button
                         type="button"
@@ -436,7 +442,7 @@ const Auth = () => {
                 </form>
               </TabsContent>
               
-              <TabsContent value="signup" className="mt-0">
+              <TabsContent value="signup" className="mt-0 animate-fade-in">
                 {/* Auth Method Toggle */}
                 <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-muted/30 rounded-xl">
                   <Button
@@ -479,7 +485,7 @@ const Auth = () => {
                           value={email}
                           onChange={handleEmailChange}
                           required
-                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
                         />
                         {email && (
                           <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -508,7 +514,7 @@ const Auth = () => {
                           value={phone}
                           onChange={handlePhoneChange}
                           required
-                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
                         />
                         {phone && (
                           <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -539,7 +545,7 @@ const Auth = () => {
                         onChange={handlePasswordChange}
                         required
                         minLength={6}
-                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl"
+                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
                       />
                       <button
                         type="button"
@@ -678,14 +684,14 @@ const Auth = () => {
         </Card>
         
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-muted-foreground">
+        <div className="text-center mt-8 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '0.9s' }}>
           <p>
             By signing up, you agree to our{' '}
             <a 
               href="/terms" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary hover:underline transition-colors duration-200"
             >
               Terms of Service
             </a>
@@ -694,7 +700,7 @@ const Auth = () => {
               href="/privacy" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary hover:underline transition-colors duration-200"
             >
               Privacy Policy
             </a>
