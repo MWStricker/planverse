@@ -172,7 +172,7 @@ export const Navigation = ({
 
       {/* Logo */}
       <div className="p-4 pt-1">
-        <div className="flex items-center justify-between">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
             <div className="text-center flex-1 transition-all duration-200">
               <h1 className="text-lg font-bold text-foreground transition-opacity duration-200">
@@ -254,26 +254,30 @@ export const Navigation = ({
       {/* User Section */}
       <div className="flex-shrink-0 p-2 border-t border-border">
         {isCollapsed ? (
-          <div className="flex flex-row items-center justify-center gap-1.5 mb-2 px-1">
-            <div 
-              className="cursor-pointer hover:bg-muted/50 rounded-lg p-1 transition-all duration-200"
-              onClick={() => setIsProfileOpen(true)}
-              title="View Profile"
-            >
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm">
-                  {profile?.display_name?.charAt(0)?.toUpperCase() || 
-                   user?.email?.charAt(0)?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
+          <div className="flex justify-center mb-2 px-1">
+            <div className="relative">
+              <div 
+                className="cursor-pointer hover:bg-muted/50 rounded-lg p-1 transition-all duration-200"
+                onClick={() => setIsProfileOpen(true)}
+                title="View Profile"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm">
+                    {profile?.display_name?.charAt(0)?.toUpperCase() || 
+                     user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="absolute -right-1 top-1/2 -translate-y-1/2">
+                <UserStatusIndicator 
+                  status={currentUserStatus} 
+                  isCurrentUser={true}
+                  size="sm"
+                  compact={true}
+                />
+              </div>
             </div>
-            <UserStatusIndicator 
-              status={currentUserStatus} 
-              isCurrentUser={true}
-              size="sm"
-              compact={true}
-            />
           </div>
         ) : (
           <div 
