@@ -56,11 +56,19 @@ interface Event {
 const extractCourseCode = (title: string, isCanvas: boolean = false) => {
   if (!isCanvas) return null;
   
-  // For Canvas events, extract from format like [2025FA-PSY-100-007]
-  const courseMatch = title.match(/\[([A-Z0-9]+-)?([A-Z]+-\d+)/);
-  if (courseMatch) {
-    return courseMatch[2]; // Return just the PSY-100 part
-  }
+  // Match [BRACKETS] content
+  const bracketMatch = title.match(/\[([^\]]+)\]/);
+  if (!bracketMatch) return null;
+  
+  const bracketContent = bracketMatch[1];
+  
+  // Pattern 1: [2025FA-PSY-100-007] → Extract PSY-100
+  const standardMatch = bracketContent.match(/[A-Z0-9]+-([A-Z]+-\d+)/);
+  if (standardMatch) return standardMatch[1];
+  
+  // Pattern 2: [MAC2311C_CMB-25Fall 00279] or [CHS1440C-25Fall 0002] → Extract MAC2311C or CHS1440C
+  const courseCodeMatch = bracketContent.match(/^([A-Z]+\d+[A-Z]*)/);
+  if (courseCodeMatch) return courseCodeMatch[1];
   
   return null;
 };
@@ -597,20 +605,12 @@ export const DashboardIntegratedView = memo(() => {
                      className="space-y-2 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
                      onClick={() => setActiveTab("courses")}
                    >
-                     <div className="flex justify-between items-center">
-                       <span className="font-medium">{course.code}</span>
-                       <span className="text-sm text-muted-foreground">
-                         {course.completedAssignments}/{course.totalAssignments}
-                       </span>
-                     </div>
-                     <div className="w-full bg-muted rounded-full h-2">
-                       <div 
-                         className="bg-primary h-2 rounded-full" 
-                         style={{ 
-                           width: `${course.totalAssignments > 0 ? (course.completedAssignments / course.totalAssignments) * 100 : 0}%` 
-                         }}
-                       />
-                     </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{course.code}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {course.completedAssignments}/{course.totalAssignments}
+                        </span>
+                      </div>
                    </div>
                 ))}
               </CardContent>
