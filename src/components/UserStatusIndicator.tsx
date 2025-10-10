@@ -13,12 +13,14 @@ interface UserStatusIndicatorProps {
   status: 'online' | 'idle' | 'dnd' | 'offline';
   isCurrentUser?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  compact?: boolean;
 }
 
 export const UserStatusIndicator = ({ 
   status, 
   isCurrentUser = false, 
-  size = 'md' 
+  size = 'md',
+  compact = false
 }: UserStatusIndicatorProps) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { user } = useAuth();
@@ -107,7 +109,10 @@ export const UserStatusIndicator = ({
         <Button
           variant="ghost"
           size="sm"
-          className="p-1.5 h-auto bg-muted/20 hover:bg-muted/50 rounded-md border border-border/20 hover:border-border/40 transition-all duration-200"
+          className={compact 
+            ? "p-0.5 h-auto bg-transparent hover:bg-muted/30 rounded-full border-0 transition-all duration-200"
+            : "p-1.5 h-auto bg-muted/20 hover:bg-muted/50 rounded-md border border-border/20 hover:border-border/40 transition-all duration-200"
+          }
           disabled={isUpdating}
           title={isUpdating ? 'Updating status...' : `Click to change status (Currently: ${getStatusLabel(status)})`}
         >
