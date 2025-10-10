@@ -15,11 +15,14 @@ export const useOAuthCallback = () => {
         hasProviderToken: !!session?.provider_token,
         hasRefreshToken: !!session?.provider_refresh_token,
         provider: session?.user?.app_metadata?.provider,
-        userId: session?.user?.id
+        userId: session?.user?.id,
+        timestamp: new Date().toISOString()
       });
 
       // Only process SIGNED_IN events with provider tokens
+      // CRITICAL: provider_token is ONLY available during SIGNED_IN event immediately after OAuth redirect
       if (event !== 'SIGNED_IN' || !session?.provider_token) {
+        console.log('⏭️ Skipping auth event - either not SIGNED_IN or no provider_token available');
         return;
       }
 
@@ -27,7 +30,7 @@ export const useOAuthCallback = () => {
       const userId = session.user.id;
       const signInKey = `${userId}-${provider}-${Date.now()}`;
 
-      // Prevent duplicate processing
+      // Prevent duplicate processing with time-based deduplication
       if (processedSignIns.current.has(signInKey)) {
         console.log('⏭️ Already processed this sign-in, skipping...');
         return;
@@ -129,4 +132,3 @@ export const useOAuthCallback = () => {
     };
   }, [toast]);
 };
-
