@@ -38,20 +38,33 @@ const Auth = () => {
     return emailRegex.test(email);
   };
 
-  // Phone validation (E.164 format)
+  // Phone validation - accept 10-digit US numbers
   const validatePhone = (phone: string) => {
-    const cleaned = phone.replace(/[\s()-]/g, '');
-    const phoneRegex = /^\+[1-9]\d{1,14}$/;
-    return phoneRegex.test(cleaned);
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length === 10 || (cleaned.length === 11 && cleaned.startsWith('1'));
   };
 
-  // Format phone to E.164 format
+  // Format phone to E.164 format - auto-add +1 for US numbers
   const formatPhoneE164 = (phone: string) => {
-    let cleaned = phone.replace(/[\s()-]/g, '');
-    if (!cleaned.startsWith('+')) {
-      cleaned = '+' + cleaned;
+    let cleaned = phone.replace(/\D/g, '');
+    
+    // If it's a 10-digit number, assume US and add +1
+    if (cleaned.length === 10) {
+      return '+1' + cleaned;
     }
-    return cleaned;
+    
+    // If it's 11 digits starting with 1, add +
+    if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      return '+' + cleaned;
+    }
+    
+    // If already has +, return cleaned with +
+    if (phone.startsWith('+')) {
+      return '+' + cleaned;
+    }
+    
+    // Default: add +1
+    return '+1' + cleaned;
   };
 
   // Password strength calculation
@@ -78,7 +91,12 @@ const Auth = () => {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPhone(value);
-    setPhoneValid(validatePhone(value));
+    
+    // Validate for ANY 10-digit US number format
+    const cleaned = value.replace(/\D/g, '');
+    const isValid = cleaned.length === 10 || (cleaned.length === 11 && cleaned.startsWith('1'));
+    setPhoneValid(isValid);
+    
     setIsTyping(true);
     setTimeout(() => setIsTyping(false), 1000);
   };
@@ -429,7 +447,7 @@ const Auth = () => {
                           <Input
                             id="signin-phone"
                             type="tel"
-                            placeholder="+1 (555) 000-0000"
+                            placeholder="(555) 123-4567"
                             value={phone}
                             onChange={handlePhoneChange}
                             required
@@ -446,6 +464,9 @@ const Auth = () => {
                             </div>
                           )}
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter your 10-digit US phone number (e.g., 555-123-4567)
+                        </p>
                       </div>
 
                       {otpSent && (
@@ -610,7 +631,7 @@ const Auth = () => {
                           <Input
                             id="signup-phone"
                             type="tel"
-                            placeholder="+1 (555) 000-0000"
+                            placeholder="(555) 123-4567"
                             value={phone}
                             onChange={handlePhoneChange}
                             required
@@ -627,6 +648,9 @@ const Auth = () => {
                             </div>
                           )}
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter your 10-digit US phone number (e.g., 555-123-4567)
+                        </p>
                       </div>
 
                       {otpSent && (
