@@ -269,7 +269,7 @@ export const Navigation = ({
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <div className="absolute -right-1 top-1/2 -translate-y-1/2">
+              <div className="absolute right-0 bottom-0">
                 <UserStatusIndicator 
                   status={currentUserStatus} 
                   isCurrentUser={true}
