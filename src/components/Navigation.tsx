@@ -42,7 +42,7 @@ export const Navigation = ({
   const { profile } = useProfile();
   const { unreadCount, currentUserStatus } = useRealtime();
   
-  const isCollapsed = sidebarWidth !== undefined && sidebarWidth < 200;
+  const isCollapsed = sidebarWidth !== undefined && sidebarWidth < 100;
 
   // Fetch courses data
   useEffect(() => {
