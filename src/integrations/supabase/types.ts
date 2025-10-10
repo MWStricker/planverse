@@ -592,6 +592,7 @@ export type Database = {
           email: string | null
           id: string
           last_sign_in_at: string | null
+          phone: string | null
           updated_at: string
           user_id: string
         }
@@ -601,6 +602,7 @@ export type Database = {
           email?: string | null
           id?: string
           last_sign_in_at?: string | null
+          phone?: string | null
           updated_at?: string
           user_id: string
         }
@@ -610,6 +612,7 @@ export type Database = {
           email?: string | null
           id?: string
           last_sign_in_at?: string | null
+          phone?: string | null
           updated_at?: string
           user_id?: string
         }

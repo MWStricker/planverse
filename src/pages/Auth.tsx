@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle, Phone } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import planverseLogo from "@/assets/planverse-logo-final.png";
 
 
@@ -18,6 +19,9 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,10 +38,20 @@ const Auth = () => {
     return emailRegex.test(email);
   };
 
-  // Phone validation (basic international format)
+  // Phone validation (E.164 format)
   const validatePhone = (phone: string) => {
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    return phoneRegex.test(phone.replace(/[\s()-]/g, ''));
+    const cleaned = phone.replace(/[\s()-]/g, '');
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    return phoneRegex.test(cleaned);
+  };
+
+  // Format phone to E.164 format
+  const formatPhoneE164 = (phone: string) => {
+    let cleaned = phone.replace(/[\s()-]/g, '');
+    if (!cleaned.startsWith('+')) {
+      cleaned = '+' + cleaned;
+    }
+    return cleaned;
   };
 
   // Password strength calculation
@@ -93,47 +107,104 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const sendPhoneOTP = async () => {
     setLoading(true);
     setError("");
 
     try {
-      if (authMethod === 'email') {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
+      const formattedPhone = formatPhoneE164(phone);
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
 
-        if (error) {
-          if (error.message.includes("already registered")) {
-            setError("An account with this email already exists. Please sign in instead.");
-          } else {
-            setError(error.message);
-          }
+      if (error) {
+        setError(error.message);
+      } else {
+        setOtpSent(true);
+        setResendCooldown(60);
+        toast({
+          title: "Code sent!",
+          description: "Please check your phone for the verification code.",
+        });
+      }
+    } catch (err) {
+      setError("Failed to send verification code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyPhoneOTP = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const formattedPhone = formatPhoneE164(phone);
+      const { error } = await supabase.auth.verifyOtp({
+        phone: formattedPhone,
+        token: otp,
+        type: 'sms',
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        toast({
+          title: "Success!",
+          description: "You have been signed in successfully.",
+        });
+        navigate("/");
+      }
+    } catch (err) {
+      setError("Invalid verification code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (authMethod === 'phone') {
+      if (!otpSent) {
+        await sendPhoneOTP();
+      } else {
+        await verifyPhoneOTP();
+      }
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        if (error.message.includes("already registered")) {
+          setError("An account with this email already exists. Please sign in instead.");
         } else {
-          toast({
-            title: "Account created!",
-            description: "Please check your email to verify your account.",
-          });
+          setError(error.message);
         }
       } else {
-        const { error } = await supabase.auth.signUp({
-          phone,
-          password,
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
         });
-
-        if (error) {
-          setError(error.message);
-        } else {
-          toast({
-            title: "Verification code sent!",
-            description: "Please check your phone for the verification code.",
-          });
-        }
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -144,48 +215,37 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (authMethod === 'phone') {
+      if (!otpSent) {
+        await sendPhoneOTP();
+      } else {
+        await verifyPhoneOTP();
+      }
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      if (authMethod === 'email') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-            setError("Invalid email or password. Please check your credentials and try again.");
-          } else {
-            setError(error.message);
-          }
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          setError("Invalid email or password. Please check your credentials and try again.");
         } else {
-          toast({
-            title: "Welcome back!",
-            description: "You have been signed in successfully.",
-          });
-          navigate("/");
+          setError(error.message);
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          phone,
-          password,
+        toast({
+          title: "Welcome back!",
+          description: "You have been signed in successfully.",
         });
-
-        if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-            setError("Invalid phone or password. Please check your credentials and try again.");
-          } else {
-            setError(error.message);
-          }
-        } else {
-          toast({
-            title: "Welcome back!",
-            description: "You have been signed in successfully.",
-          });
-          navigate("/");
-        }
+        navigate("/");
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -357,62 +417,101 @@ const Auth = () => {
                       </div>
                     </div>
                   ) : (
+                    <>
+                      <div className="space-y-3">
+                        <Label htmlFor="signin-phone" className="text-sm font-semibold text-foreground/90">
+                          Phone Number
+                        </Label>
+                        <div className="relative group">
+                          <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                            phoneValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                          }`} />
+                          <Input
+                            id="signin-phone"
+                            type="tel"
+                            placeholder="+1 (555) 000-0000"
+                            value={phone}
+                            onChange={handlePhoneChange}
+                            required
+                            disabled={otpSent}
+                            className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
+                          />
+                          {phone && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                              {phoneValid ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <AlertCircle className="h-5 w-5 text-orange-500" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {otpSent && (
+                        <div className="space-y-3 animate-fade-in">
+                          <Label htmlFor="signin-otp" className="text-sm font-semibold text-foreground/90">
+                            Verification Code
+                          </Label>
+                          <div className="flex flex-col items-center gap-4">
+                            <InputOTP
+                              maxLength={6}
+                              value={otp}
+                              onChange={(value) => setOtp(value)}
+                            >
+                              <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={4} />
+                                <InputOTPSlot index={5} />
+                              </InputOTPGroup>
+                            </InputOTP>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={sendPhoneOTP}
+                              disabled={resendCooldown > 0 || loading}
+                              className="text-sm"
+                            >
+                              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {authMethod === 'email' && (
                     <div className="space-y-3">
-                      <Label htmlFor="signin-phone" className="text-sm font-semibold text-foreground/90">
-                        Phone Number
+                      <Label htmlFor="signin-password" className="text-sm font-semibold text-foreground/90">
+                        Password
                       </Label>
                       <div className="relative group">
-                        <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
-                          phoneValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                        <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                          isTyping ? 'text-primary' : 'text-muted-foreground'
                         }`} />
                         <Input
-                          id="signin-phone"
-                          type="tel"
-                          placeholder="+1 (555) 000-0000"
-                          value={phone}
-                          onChange={handlePhoneChange}
+                          id="signin-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={handlePasswordChange}
                           required
                           className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
                         />
-                        {phone && (
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                            {phoneValid ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            ) : (
-                              <AlertCircle className="h-5 w-5 text-orange-500" />
-                            )}
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
                     </div>
                   )}
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="signin-password" className="text-sm font-semibold text-foreground/90">
-                      Password
-                    </Label>
-                    <div className="relative group">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
-                        isTyping ? 'text-primary' : 'text-muted-foreground'
-                      }`} />
-                      <Input
-                        id="signin-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={handlePasswordChange}
-                        required
-                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
                   
                   {error && (
                     <Alert variant="destructive" className="animate-fade-in rounded-xl border-2">
@@ -424,18 +523,18 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group" 
-                    disabled={loading || (authMethod === 'email' ? !emailValid : !phoneValid)}
+                    disabled={loading || (authMethod === 'email' ? !emailValid : (!phoneValid || (otpSent && otp.length !== 6)))}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     {loading ? (
                       <>
                         <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                        <span className="animate-pulse">Signing In...</span>
+                        <span className="animate-pulse">{otpSent && authMethod === 'phone' ? 'Verifying...' : 'Signing In...'}</span>
                       </>
                     ) : (
                       <>
                         <User className="mr-3 h-5 w-5 transition-transform group-hover:scale-110" />
-                        <span>Sign In</span>
+                        <span>{otpSent && authMethod === 'phone' ? 'Verify Code' : 'Sign In'}</span>
                       </>
                     )}
                   </Button>
@@ -499,93 +598,132 @@ const Auth = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <Label htmlFor="signup-phone" className="text-sm font-semibold text-foreground/90">
-                        Phone Number
-                      </Label>
-                      <div className="relative group">
-                        <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
-                          phoneValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
-                        }`} />
-                        <Input
-                          id="signup-phone"
-                          type="tel"
-                          placeholder="+1 (555) 000-0000"
-                          value={phone}
-                          onChange={handlePhoneChange}
-                          required
-                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
-                        />
-                        {phone && (
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                            {phoneValid ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            ) : (
-                              <AlertCircle className="h-5 w-5 text-orange-500" />
-                            )}
-                          </div>
-                        )}
+                    <>
+                      <div className="space-y-3">
+                        <Label htmlFor="signup-phone" className="text-sm font-semibold text-foreground/90">
+                          Phone Number
+                        </Label>
+                        <div className="relative group">
+                          <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                            phoneValid ? 'text-green-500' : isTyping ? 'text-primary' : 'text-muted-foreground'
+                          }`} />
+                          <Input
+                            id="signup-phone"
+                            type="tel"
+                            placeholder="+1 (555) 000-0000"
+                            value={phone}
+                            onChange={handlePhoneChange}
+                            required
+                            disabled={otpSent}
+                            className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
+                          />
+                          {phone && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                              {phoneValid ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <AlertCircle className="h-5 w-5 text-orange-500" />
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+
+                      {otpSent && (
+                        <div className="space-y-3 animate-fade-in">
+                          <Label htmlFor="signup-otp" className="text-sm font-semibold text-foreground/90">
+                            Verification Code
+                          </Label>
+                          <div className="flex flex-col items-center gap-4">
+                            <InputOTP
+                              maxLength={6}
+                              value={otp}
+                              onChange={(value) => setOtp(value)}
+                            >
+                              <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={4} />
+                                <InputOTPSlot index={5} />
+                              </InputOTPGroup>
+                            </InputOTP>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={sendPhoneOTP}
+                              disabled={resendCooldown > 0 || loading}
+                              className="text-sm"
+                            >
+                              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                   
-                  <div className="space-y-4">
-                    <Label htmlFor="signup-password" className="text-sm font-semibold text-foreground/90">
-                      Password
-                    </Label>
-                    <div className="relative group">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
-                        isTyping ? 'text-primary' : 'text-muted-foreground'
-                      }`} />
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a strong password"
-                        value={password}
-                        onChange={handlePasswordChange}
-                        required
-                        minLength={6}
-                        className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {password && (
-                      <div className="space-y-3 animate-fade-in p-4 bg-muted/30 rounded-xl">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-foreground/80">Password strength</span>
-                          <span className={`font-semibold ${
-                            passwordStrength >= 4 ? 'text-green-600' : 
-                            passwordStrength >= 3 ? 'text-yellow-600' : 
-                            passwordStrength >= 2 ? 'text-orange-600' : 'text-red-600'
-                          }`}>
-                            {passwordStrength >= 4 ? 'Strong' : 
-                             passwordStrength >= 3 ? 'Good' : 
-                             passwordStrength >= 2 ? 'Fair' : 'Weak'}
-                          </span>
-                        </div>
-                        <div className="flex space-x-2">
-                          {[...Array(5)].map((_, i) => (
-                            <div
-                              key={i}
-                              className={`h-2 flex-1 rounded-full transition-all duration-300 ${
-                                i < passwordStrength
-                                  ? passwordStrength >= 4 ? 'bg-green-500' : 
-                                    passwordStrength >= 3 ? 'bg-yellow-500' : 
-                                    passwordStrength >= 2 ? 'bg-orange-500' : 'bg-red-500'
-                                  : 'bg-muted'
-                              }`}
-                            />
-                          ))}
-                        </div>
+                  {authMethod === 'email' && (
+                    <div className="space-y-4">
+                      <Label htmlFor="signup-password" className="text-sm font-semibold text-foreground/90">
+                        Password
+                      </Label>
+                      <div className="relative group">
+                        <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-200 ${
+                          isTyping ? 'text-primary' : 'text-muted-foreground'
+                        }`} />
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Create a strong password"
+                          value={password}
+                          onChange={handlePasswordChange}
+                          required
+                          minLength={6}
+                          className="pl-12 pr-12 h-12 text-base border-2 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-primary/30 rounded-xl focus:scale-[1.01]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
-                    )}
-                  </div>
+                      {password && (
+                        <div className="space-y-3 animate-fade-in p-4 bg-muted/30 rounded-xl">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-foreground/80">Password strength</span>
+                            <span className={`font-semibold ${
+                              passwordStrength >= 4 ? 'text-green-600' : 
+                              passwordStrength >= 3 ? 'text-yellow-600' : 
+                              passwordStrength >= 2 ? 'text-orange-600' : 'text-red-600'
+                            }`}>
+                              {passwordStrength >= 4 ? 'Strong' : 
+                               passwordStrength >= 3 ? 'Good' : 
+                               passwordStrength >= 2 ? 'Fair' : 'Weak'}
+                            </span>
+                          </div>
+                          <div className="flex space-x-2">
+                            {[...Array(5)].map((_, i) => (
+                              <div
+                                key={i}
+                                className={`h-2 flex-1 rounded-full transition-all duration-300 ${
+                                  i < passwordStrength
+                                    ? passwordStrength >= 4 ? 'bg-green-500' : 
+                                      passwordStrength >= 3 ? 'bg-yellow-500' : 
+                                      passwordStrength >= 2 ? 'bg-orange-500' : 'bg-red-500'
+                                    : 'bg-muted'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   {error && (
                     <Alert variant="destructive" className="animate-fade-in rounded-xl border-2">
@@ -597,18 +735,18 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-muted disabled:to-muted relative overflow-hidden group text-white" 
-                    disabled={loading || (authMethod === 'email' ? !emailValid : !phoneValid) || passwordStrength < 2}
+                    disabled={loading || (authMethod === 'email' ? (!emailValid || passwordStrength < 2) : (!phoneValid || (otpSent && otp.length !== 6)))}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     {loading ? (
                       <>
                         <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                        <span className="animate-pulse">Creating Account...</span>
+                        <span className="animate-pulse">{otpSent && authMethod === 'phone' ? 'Verifying...' : 'Creating Account...'}</span>
                       </>
                     ) : (
                       <>
                         <User className="mr-3 h-5 w-5 transition-transform group-hover:scale-110" />
-                        <span>Create Account</span>
+                        <span>{otpSent && authMethod === 'phone' ? 'Verify Code' : (authMethod === 'phone' ? 'Send Code' : 'Create Account')}</span>
                       </>
                     )}
                   </Button>
