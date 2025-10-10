@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock, RefreshCw, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,124 +76,82 @@ export const IntegrationSetup = () => {
   const { user } = useAuth();
   const { syncAllConnections, isProviderConnected, refreshConnections } = useIntegrationSync();
   
+  // Track processed sign-ins to prevent duplicate connection attempts
+  const processedSignIns = useRef<Set<string>>(new Set());
+  
   console.log('🔍 IntegrationSetup component rendered');
   console.log('🔍 Current user:', !!user);
 
-  // Enhanced OAuth callback detection
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      if (!user) return;
-      
-      // Check URL for OAuth return indicators
-      const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
-      const hasOAuthReturn = urlParams.has('access_token') || urlParams.has('code') || window.location.hash.includes('access_token');
-      
-      console.log('🔍 OAuth callback check:', { 
-        hasOAuthReturn, 
-        hash: window.location.hash,
-        user: user.email 
-      });
-      
-      if (hasOAuthReturn) {
-        // Wait a moment for Supabase to process the tokens
-        setTimeout(async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          const provider = session?.user?.app_metadata?.provider;
-          
-          console.log('🔍 Post-OAuth session:', {
-            hasSession: !!session,
-            hasProviderToken: !!session?.provider_token,
-            tokenLength: session?.provider_token?.length || 0,
-            provider
-          });
-          
-          if (session?.provider_token) {
-            console.log(`✅ Found provider token for ${provider}, creating connection...`);
-            
-            // Route to appropriate connection handler based on provider
-            if (provider === 'google') {
-              const success = await createCalendarConnection(session);
-              if (success) {
-                setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-                await refreshConnections();
-                
-                toast({
-                  title: "Connected Successfully!",
-                  description: "Google Calendar connected. Starting sync...",
-                });
-                
-                // Auto-trigger real sync
-                setTimeout(() => {
-                  handleSyncCalendar();
-                }, 1000);
-              }
-            } else if (provider === 'spotify') {
-              const success = await createSpotifyConnection(session);
-              if (success) {
-                setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
-                
-                toast({
-                  title: "Spotify Connected!",
-                  description: "Your currently playing music will now appear on your profile.",
-                });
-              }
-            }
-          } else {
-            console.log('⚠️ No provider token found in session');
-          }
-        }, 2000);
-      }
-    };
-
-    handleOAuthCallback();
-  }, [user]);
-
-  // Auth state change listener
+  // OAuth callback handler - captures provider tokens during SIGNED_IN event
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔍 Auth state change:', event, {
         hasSession: !!session,
         hasProviderToken: !!session?.provider_token,
-        provider: session?.user?.app_metadata?.provider
+        hasRefreshToken: !!session?.provider_refresh_token,
+        provider: session?.user?.app_metadata?.provider,
+        userId: session?.user?.id
       });
       
-      // Auto-create connection and sync when user signs in with Google
-      if (event === 'SIGNED_IN' && session?.provider_token && session?.user?.app_metadata?.provider === 'google' && user) {
-        console.log('🔍 User signed in with Google, auto-creating connection...');
-        
-        setTimeout(async () => {
-          const success = await createCalendarConnection(session);
-          if (success) {
-            setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
-            await refreshConnections();
-            
-            toast({
-              title: "Google Calendar Connected!",
-              description: "Starting automatic sync of your calendar and tasks...",
-            });
-            
-            setTimeout(async () => {
-              await handleSyncCalendar();
-            }, 2000);
-          }
-        }, 1000);
+      // Only process SIGNED_IN events with provider tokens
+      if (event !== 'SIGNED_IN' || !session?.provider_token) {
+        return;
       }
       
-      // Auto-create connection when user signs in with Spotify
-      if (event === 'SIGNED_IN' && session?.provider_token && session?.user?.app_metadata?.provider === 'spotify' && user) {
-        console.log('🔍 User signed in with Spotify, auto-creating connection...');
+      const provider = session.user.app_metadata?.provider;
+      const userId = session.user.id;
+      const signInKey = `${userId}-${provider}-${Date.now()}`;
+      
+      // Prevent duplicate processing of the same sign-in
+      if (processedSignIns.current.has(signInKey)) {
+        console.log('⏭️ Already processed this sign-in, skipping...');
+        return;
+      }
+      
+      processedSignIns.current.add(signInKey);
+      
+      // Clean up old entries (keep only last 10)
+      if (processedSignIns.current.size > 10) {
+        const entries = Array.from(processedSignIns.current);
+        processedSignIns.current = new Set(entries.slice(-10));
+      }
+      
+      console.log(`✅ Processing OAuth callback for ${provider} - tokens available NOW`);
+      
+      // Handle Google Calendar OAuth
+      if (provider === 'google') {
+        console.log('🔍 Processing Google Calendar connection...');
+        const success = await createCalendarConnection(session);
         
-        setTimeout(async () => {
-          const success = await createSpotifyConnection(session);
-          if (success) {
-            setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
-            
-            toast({
-              title: "Spotify Connected!",
-              description: "Your currently playing music will now appear on your profile.",
-            });
-          }
-        }, 1000);
+        if (success) {
+          setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
+          await refreshConnections();
+          
+          toast({
+            title: "Google Calendar Connected!",
+            description: "Starting automatic sync of your calendar and tasks...",
+          });
+          
+          // Auto-trigger sync after connection
+          setTimeout(async () => {
+            await handleSyncCalendar();
+          }, 1500);
+        }
+      }
+      
+      // Handle Spotify OAuth
+      if (provider === 'spotify') {
+        console.log('🔍 Processing Spotify connection...');
+        const success = await createSpotifyConnection(session);
+        
+        if (success) {
+          setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
+          
+          toast({
+            title: "Spotify Connected!",
+            description: "Your currently playing music will now appear on your profile.",
+          });
+        }
       }
     });
 
