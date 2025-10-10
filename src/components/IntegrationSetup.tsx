@@ -14,7 +14,7 @@ interface Integration {
   name: string;
   description: string;
   icon: string;
-  status: 'connected' | 'disconnected' | 'error';
+  status: 'connected' | 'disconnected' | 'error' | 'coming_soon';
   lastSync?: string;
   features: string[];
   requiresBackend: boolean;
@@ -22,39 +22,48 @@ interface Integration {
 
 const integrations: Integration[] = [
   {
-    id: 'google-calendar',
+    id: 'google_calendar',
     name: 'Google Calendar',
-    description: 'Sync your Google Calendar events and create study blocks',
+    description: 'Sync your Google Calendar events and assignments',
     icon: '📅',
     status: 'disconnected',
-    features: ['Bi-directional sync', 'Event creation', 'Free time detection'],
-    requiresBackend: false,
-  },
-  {
-    id: 'apple-calendar',
-    name: 'Apple Calendar',
-    description: 'Import and sync Apple Calendar via iCloud',
-    icon: '🍎',
-    status: 'disconnected',
-    features: ['iCloud sync', 'CalDAV support', 'Event import'],
+    features: ['Event sync', 'Two-way sync', 'Real-time updates'],
     requiresBackend: true,
   },
   {
-    id: 'canvas-lms',
-    name: 'Canvas LMS',
-    description: 'Import assignments, due dates, and course information',
-    icon: '🎓',
+    id: 'spotify',
+    name: 'Spotify',
+    description: 'Show what you\'re listening to on your profile',
+    icon: '🎵',
     status: 'disconnected',
-    features: ['Assignment sync', 'Grade weights', 'Course schedules', 'Announcement alerts'],
+    features: ['Now playing display', 'Real-time updates', 'Profile integration'],
+    requiresBackend: true,
+  },
+  {
+    id: 'apple_calendar',
+    name: 'Apple Calendar',
+    description: 'Connect your Apple Calendar',
+    icon: '🍎',
+    status: 'coming_soon',
+    features: ['Event sync', 'Reminders', 'Multiple calendars'],
+    requiresBackend: false,
+  },
+  {
+    id: 'canvas_lms',
+    name: 'Canvas LMS',
+    description: 'Automatically import assignments and deadlines',
+    icon: '🎓',
+    status: 'coming_soon',
+    features: ['Assignment sync', 'Grade tracking', 'Due date reminders'],
     requiresBackend: true,
   },
   {
     id: 'blackboard',
-    name: 'Blackboard Learn',
-    description: 'Sync with Blackboard Learn assignments and schedules',
+    name: 'Blackboard',
+    description: 'Import your Blackboard assignments',
     icon: '📚',
-    status: 'disconnected',
-    features: ['Assignment tracking', 'Grade sync', 'Course materials'],
+    status: 'coming_soon',
+    features: ['Assignment import', 'Deadline tracking'],
     requiresBackend: true,
   },
 ];
@@ -131,9 +140,9 @@ export const IntegrationSetup = () => {
         provider: session?.user?.app_metadata?.provider
       });
       
-      // Auto-create connection and sync when user signs in with Google (including from auth page)
+      // Auto-create connection and sync when user signs in with Google
       if (event === 'SIGNED_IN' && session?.provider_token && session?.user?.app_metadata?.provider === 'google' && user) {
-        console.log('🔍 User signed in with Google via auth page, auto-creating connection...');
+        console.log('🔍 User signed in with Google, auto-creating connection...');
         
         setTimeout(async () => {
           const success = await createCalendarConnection(session);
@@ -146,10 +155,26 @@ export const IntegrationSetup = () => {
               description: "Starting automatic sync of your calendar and tasks...",
             });
             
-            // Auto-trigger sync after connection is created
             setTimeout(async () => {
               await handleSyncCalendar();
             }, 2000);
+          }
+        }, 1000);
+      }
+      
+      // Auto-create connection when user signs in with Spotify
+      if (event === 'SIGNED_IN' && session?.provider_token && session?.user?.app_metadata?.provider === 'spotify' && user) {
+        console.log('🔍 User signed in with Spotify, auto-creating connection...');
+        
+        setTimeout(async () => {
+          const success = await createSpotifyConnection(session);
+          if (success) {
+            setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
+            
+            toast({
+              title: "Spotify Connected!",
+              description: "Your currently playing music will now appear on your profile.",
+            });
           }
         }, 1000);
       }
@@ -227,13 +252,55 @@ export const IntegrationSetup = () => {
     }
   };
 
+  const createSpotifyConnection = async (session: any) => {
+    console.log('🔍 Creating Spotify connection...');
+    if (!user) {
+      console.error('❌ No user available');
+      return false;
+    }
+
+    try {
+      const connectionData = {
+        user_id: user.id,
+        provider: 'spotify',
+        provider_id: session?.user?.email || user.email || null,
+        access_token_enc: session?.provider_token || null,
+        refresh_token_enc: session?.provider_refresh_token || null,
+        is_active: true,
+        scope: 'user-read-currently-playing user-read-playback-state',
+        token_expires_at: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+        sync_settings: { 
+          auto_sync: false,
+          last_sync: null,
+        },
+      };
+
+      const { data, error } = await supabase
+        .from('calendar_connections')
+        .upsert(connectionData, {
+          onConflict: 'user_id,provider'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Database error creating Spotify connection:', error);
+        return false;
+      }
+
+      console.log('✅ Spotify connection created/updated:', data);
+      return true;
+    } catch (error) {
+      console.error('❌ Error in createSpotifyConnection:', error);
+      return false;
+    }
+  };
+
   const handleGoogleCalendarConnect = async () => {
     try {
       setIsConnecting(true);
       console.log('🔍 Starting Google Calendar connection and sync...');
       
-      // Always force re-authentication with calendar scopes to ensure we have the right permissions
-      console.log('🔍 Starting OAuth flow with calendar scopes...');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -241,7 +308,7 @@ export const IntegrationSetup = () => {
           redirectTo: `${window.location.origin}/#integrations`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent', // Always prompt for consent to get new scopes
+            prompt: 'consent',
             include_granted_scopes: 'true',
           },
         },
@@ -266,6 +333,33 @@ export const IntegrationSetup = () => {
       toast({
         title: "Connection Failed",
         description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleSpotifyConnect = async () => {
+    try {
+      setIsConnecting(true);
+      const redirectUrl = `${window.location.origin}/#integrations`;
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'spotify',
+        options: {
+          scopes: 'user-read-currently-playing user-read-playback-state',
+          redirectTo: redirectUrl,
+        },
+      });
+
+      if (error) throw error;
+      toast({ title: "Redirecting to Spotify..." });
+    } catch (error) {
+      console.error('Error connecting to Spotify:', error);
+      toast({
+        title: "Connection failed",
+        description: "Failed to connect to Spotify",
         variant: "destructive",
       });
     } finally {
