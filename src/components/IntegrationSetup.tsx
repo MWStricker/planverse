@@ -263,39 +263,23 @@ export const IntegrationSetup = () => {
     }
 
     try {
-      console.log('🔍 Creating Spotify connection with session data:', {
-        hasProviderToken: !!session?.provider_token,
-        userId: session?.user?.id
+      console.log('🔍 Storing Spotify connection with encrypted tokens');
+
+      // Call edge function to securely store encrypted tokens in vault
+      const { data, error } = await supabase.functions.invoke('store-spotify-connection', {
+        body: {
+          provider_token: session?.provider_token,
+          provider_refresh_token: session?.provider_refresh_token,
+          expires_at: session?.expires_at,
+          provider_id: session?.user?.id,
+        },
       });
 
-      // Store connection without encrypted tokens (they're bytea fields)
-      // We'll store token metadata only and use session tokens in edge functions
-      const connectionData = {
-        user_id: user.id,
-        provider: 'spotify',
-        provider_id: session?.user?.id || null,
-        is_active: true,
-        scope: 'user-read-currently-playing user-read-playback-state',
-        token_expires_at: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
-        sync_settings: { 
-          auto_sync: false,
-          last_sync: null,
-        },
-      };
-
-      const { data, error } = await supabase
-        .from('calendar_connections')
-        .upsert(connectionData, {
-          onConflict: 'user_id,provider'
-        })
-        .select()
-        .single();
-
       if (error) {
-        console.error('❌ Database error creating Spotify connection:', error);
+        console.error('❌ Error storing Spotify connection:', error);
         toast({
           title: "Connection Failed",
-          description: error.message,
+          description: error.message || "Failed to store Spotify connection",
           variant: "destructive",
         });
         return false;

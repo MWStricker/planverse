@@ -44,14 +44,44 @@ serve(async (req) => {
       );
     }
 
-    let accessToken = connection.access_token_enc?.toString();
+    // Get vault keys from sync_settings
+    const vaultAccessKey = connection.sync_settings?.vault_access_key;
+    const vaultRefreshKey = connection.sync_settings?.vault_refresh_key;
+
+    if (!vaultAccessKey || !vaultRefreshKey) {
+      console.error('No vault keys found in connection');
+      throw new Error('Spotify connection not properly configured');
+    }
+
+    // Retrieve encrypted tokens from vault
+    const { data: accessTokenData, error: accessError } = await supabase.rpc(
+      'vault.decrypted_secrets'
+    ).eq('name', vaultAccessKey);
+
+    if (accessError || !accessTokenData || accessTokenData.length === 0) {
+      console.error('Error retrieving access token:', accessError);
+      throw new Error('Failed to retrieve access token');
+    }
+
+    let accessToken = accessTokenData[0].decrypted_secret;
 
     // Check if token is expired and refresh if needed
     const tokenExpiresAt = new Date(connection.token_expires_at);
     if (tokenExpiresAt <= new Date()) {
       console.log('Token expired, refreshing...');
       
-      const refreshToken = connection.refresh_token_enc?.toString();
+      // Get refresh token from vault
+      const { data: refreshTokenData, error: refreshError } = await supabase.rpc(
+        'vault.decrypted_secrets'
+      ).eq('name', vaultRefreshKey);
+
+      if (refreshError || !refreshTokenData || refreshTokenData.length === 0) {
+        console.error('Error retrieving refresh token:', refreshError);
+        throw new Error('Failed to retrieve refresh token');
+      }
+
+      const refreshToken = refreshTokenData[0].decrypted_secret;
+
       const refreshResponse = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
@@ -71,11 +101,21 @@ serve(async (req) => {
       const refreshData = await refreshResponse.json();
       accessToken = refreshData.access_token;
 
-      // Update connection with new token
+      // Update vault with new access token
+      const { data: updatedSecrets } = await supabase.rpc('vault.decrypted_secrets')
+        .eq('name', vaultAccessKey);
+      
+      if (updatedSecrets && updatedSecrets.length > 0) {
+        await supabase.rpc('vault.update_secret', {
+          secret_id: updatedSecrets[0].id,
+          new_secret: accessToken,
+        });
+      }
+
+      // Update connection with new token expiry
       await supabase
         .from('calendar_connections')
         .update({
-          access_token_enc: accessToken,
           token_expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
         })
         .eq('id', connection.id);
