@@ -3,8 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,50 +13,45 @@ interface Question {
   id: string;
   text: string;
   field: string;
-  type: 'radio' | 'checkbox' | 'text' | 'textarea';
-  options?: string[];
+  type: 'text' | 'textarea';
+  placeholder?: string;
 }
-
-const MUSIC_GENRES = [
-  'Pop', 'Rock', 'Hip Hop', 'R&B', 'Country', 'Electronic', 'Jazz', 
-  'Classical', 'Indie', 'Metal', 'Folk', 'Latin', 'K-Pop', 'Other'
-];
 
 const QUESTION_POOL: Question[] = [
   {
     id: 'year',
-    text: 'What year are you in?',
+    text: 'What year are you in school?',
     field: 'year_in_school',
-    type: 'radio',
-    options: ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate', 'Other']
+    type: 'text',
+    placeholder: 'e.g., Freshman, Sophomore, Junior, Senior, Graduate...'
   },
   {
     id: 'hangout',
     text: 'Where do you usually hang out or study on campus?',
     field: 'campus_hangout_spots',
-    type: 'checkbox',
-    options: ['Library', 'Student Union', 'Coffee Shop', 'Dorm', 'Outdoor Spaces', 'Study Rooms', 'Gym', 'Other']
+    type: 'text',
+    placeholder: 'e.g., Library, Student Union, Coffee Shop...'
   },
   {
     id: 'clubs',
-    text: 'Do you go to any campus clubs or events?',
+    text: 'What campus clubs or events do you attend?',
     field: 'clubs_and_events',
-    type: 'checkbox',
-    options: ['Sports Clubs', 'Academic Clubs', 'Cultural Orgs', 'Greek Life', 'Volunteer Groups', 'Arts/Music', 'Gaming/Tech', 'Other']
+    type: 'text',
+    placeholder: 'e.g., Sports Clubs, Academic Clubs, Greek Life...'
   },
   {
     id: 'passion',
     text: "What's something you're passionate about outside school?",
     field: 'passion_outside_school',
     type: 'textarea',
-    options: []
+    placeholder: 'Share your interests and hobbies...'
   },
   {
     id: 'school_decision',
     text: 'How did you decide to come here for school?',
     field: 'reason_for_school',
     type: 'textarea',
-    options: []
+    placeholder: 'Tell us what brought you here...'
   }
 ];
 
@@ -70,11 +63,10 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({
-    music_preference: '',
-    music_genres: [],
+    favorite_artist: '',
     year_in_school: '',
-    campus_hangout_spots: [],
-    clubs_and_events: [],
+    campus_hangout_spots: '',
+    clubs_and_events: '',
     passion_outside_school: '',
     reason_for_school: ''
   });
@@ -91,8 +83,8 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const progress = ((currentStep + 1) / totalSteps) * 100;
 
   const handleNext = () => {
-    if (currentStep === 0 && !answers.music_preference) {
-      toast.error('Please select a music preference');
+    if (currentStep === 0 && !answers.favorite_artist?.trim()) {
+      toast.error('Please enter your favorite artist');
       return;
     }
 
@@ -119,17 +111,22 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
       const questionsAsked = selectedQuestions.map(q => q.id);
       const interestData: any = {
         user_id: user.id,
-        music_preference: answers.music_preference,
-        music_genres: answers.music_genres,
+        music_preference: answers.favorite_artist,
+        music_genres: [],
         questions_asked: questionsAsked,
         onboarding_completed: true,
         completed_at: new Date().toISOString()
       };
 
-      // Add answers for the selected questions
+      // Add answers for the selected questions (convert to arrays for multi-value fields)
       selectedQuestions.forEach(q => {
         if (answers[q.field]) {
-          interestData[q.field] = answers[q.field];
+          // For hangout spots and clubs, convert comma-separated string to array
+          if (q.field === 'campus_hangout_spots' || q.field === 'clubs_and_events') {
+            interestData[q.field] = answers[q.field].split(',').map((item: string) => item.trim()).filter(Boolean);
+          } else {
+            interestData[q.field] = answers[q.field];
+          }
         }
       });
 
@@ -161,119 +158,52 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
     }
   };
 
-  const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
-    setAnswers(prev => {
-      const currentValues = prev[field] || [];
-      if (checked) {
-        return { ...prev, [field]: [...currentValues, value] };
-      } else {
-        return { ...prev, [field]: currentValues.filter((v: string) => v !== value) };
-      }
-    });
-  };
-
   const renderMusicQuestion = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Music className="h-6 w-6 text-primary" />
-        <h3 className="text-xl font-semibold">What kind of music are you into?</h3>
+        <h3 className="text-xl font-semibold">Who is your favorite artist?</h3>
       </div>
       
-      <div className="space-y-4">
-        <div>
-          <Label>Your favorite genre</Label>
-          <RadioGroup
-            value={answers.music_preference}
-            onValueChange={(value) => setAnswers(prev => ({ ...prev, music_preference: value }))}
-            className="grid grid-cols-2 gap-3 mt-2"
-          >
-            {MUSIC_GENRES.map(genre => (
-              <div key={genre} className="flex items-center space-x-2">
-                <RadioGroupItem value={genre} id={`music-${genre}`} />
-                <Label htmlFor={`music-${genre}`} className="cursor-pointer">{genre}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
-
-        {answers.music_preference && (
-          <div>
-            <Label>Select all genres you enjoy (optional)</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              {MUSIC_GENRES.filter(g => g !== answers.music_preference).map(genre => (
-                <div key={genre} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`genre-${genre}`}
-                    checked={answers.music_genres?.includes(genre)}
-                    onCheckedChange={(checked) => handleCheckboxChange('music_genres', genre, checked as boolean)}
-                  />
-                  <Label htmlFor={`genre-${genre}`} className="cursor-pointer">{genre}</Label>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="space-y-2">
+        <Label htmlFor="favorite-artist">Artist Name</Label>
+        <Input
+          id="favorite-artist"
+          value={answers.favorite_artist || ''}
+          onChange={(e) => setAnswers(prev => ({ ...prev, favorite_artist: e.target.value }))}
+          placeholder="e.g., Taylor Swift, Drake, The Beatles..."
+          className="text-lg"
+          maxLength={100}
+        />
+        <p className="text-sm text-muted-foreground">
+          Tell us who you love listening to! This helps us connect you with people who share your music taste.
+        </p>
       </div>
     </div>
   );
 
   const renderQuestion = (question: Question) => {
-    switch (question.type) {
-      case 'radio':
-        return (
-          <RadioGroup
-            value={answers[question.field]}
-            onValueChange={(value) => setAnswers(prev => ({ ...prev, [question.field]: value }))}
-            className="grid grid-cols-2 gap-3"
-          >
-            {question.options?.map(option => (
-              <div key={option} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                <Label htmlFor={`${question.id}-${option}`} className="cursor-pointer">{option}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        );
-
-      case 'checkbox':
-        return (
-          <div className="grid grid-cols-2 gap-3">
-            {question.options?.map(option => (
-              <div key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`${question.id}-${option}`}
-                  checked={answers[question.field]?.includes(option)}
-                  onCheckedChange={(checked) => handleCheckboxChange(question.field, option, checked as boolean)}
-                />
-                <Label htmlFor={`${question.id}-${option}`} className="cursor-pointer">{option}</Label>
-              </div>
-            ))}
-          </div>
-        );
-
-      case 'textarea':
-        return (
-          <Textarea
-            value={answers[question.field] || ''}
-            onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
-            placeholder="Share your thoughts..."
-            className="min-h-[120px]"
-            maxLength={200}
-          />
-        );
-
-      case 'text':
-        return (
-          <Input
-            value={answers[question.field] || ''}
-            onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
-            placeholder="Your answer..."
-          />
-        );
-
-      default:
-        return null;
+    if (question.type === 'textarea') {
+      return (
+        <Textarea
+          value={answers[question.field] || ''}
+          onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
+          placeholder={question.placeholder || 'Your answer...'}
+          className="min-h-[120px]"
+          maxLength={500}
+        />
+      );
     }
+
+    return (
+      <Input
+        value={answers[question.field] || ''}
+        onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
+        placeholder={question.placeholder || 'Your answer...'}
+        className="text-lg"
+        maxLength={200}
+      />
+    );
   };
 
   if (selectedQuestions.length === 0) {
