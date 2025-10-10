@@ -6,7 +6,6 @@ import { useToast } from '@/components/ui/use-toast';
 export interface UserProfile {
   id: string;
   user_id: string;
-  email?: string;
   display_name?: string;
   avatar_url?: string;
   major?: string;
@@ -85,7 +84,6 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
           .from('profiles')
           .insert({
             user_id: user.id,
-            email: user.email,
             display_name: user.user_metadata?.full_name || user.email?.split('@')[0]
           })
           .select()
