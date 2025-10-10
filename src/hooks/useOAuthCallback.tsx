@@ -46,7 +46,7 @@ export const useOAuthCallback = () => {
 
       console.log(`✅ Processing OAuth callback for ${provider} - tokens available NOW`);
 
-      // Handle Google Calendar OAuth
+      // Only handle Google here - Spotify is handled by IntegrationSetup polling mechanism
       if (provider === 'google') {
         console.log('🔍 Processing Google Calendar connection...');
         
@@ -89,39 +89,6 @@ export const useOAuthCallback = () => {
           }
         } catch (error) {
           console.error('❌ Error in Google Calendar connection:', error);
-        }
-      }
-
-      // Handle Spotify OAuth
-      if (provider === 'spotify') {
-        console.log('🔍 Processing Spotify connection...');
-        
-        try {
-          const { data, error } = await supabase.functions.invoke('store-spotify-connection', {
-            body: {
-              provider_token: session.provider_token,
-              provider_refresh_token: session.provider_refresh_token,
-              expires_at: session.expires_at,
-              provider_id: session.user.id,
-            },
-          });
-
-          if (error) {
-            console.error('❌ Error storing Spotify connection:', error);
-            toast({
-              title: "Connection Failed",
-              description: error.message || "Failed to store Spotify connection",
-              variant: "destructive",
-            });
-          } else {
-            console.log('✅ Spotify connection stored:', data);
-            toast({
-              title: "Spotify Connected!",
-              description: "Your currently playing music will now appear on your profile.",
-            });
-          }
-        } catch (error) {
-          console.error('❌ Error in Spotify connection:', error);
         }
       }
     });

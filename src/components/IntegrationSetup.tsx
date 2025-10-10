@@ -95,6 +95,90 @@ export const IntegrationSetup = () => {
     updateIntegrationStatus();
   }, []); // Remove dependency to fix infinite loop
 
+  // Check if we just returned from Spotify OAuth and link the account
+  useEffect(() => {
+    const checkSpotifyReturn = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasOAuthParams = urlParams.has('code') || urlParams.has('state');
+      
+      if (!hasOAuthParams) return;
+
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return;
+
+      console.log('🔍 Checking for Spotify identity after OAuth redirect...');
+      
+      // Poll for Spotify identity (it might take a moment to appear)
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        
+        try {
+          // Call the new edge function to link Spotify
+          const { data, error } = await supabase.functions.invoke('link-spotify-connection');
+          
+          if (error) {
+            if (error.message?.includes('No Spotify account linked') && attempts < maxAttempts) {
+              console.log(`⏳ Attempt ${attempts}/${maxAttempts}: Spotify identity not yet available, retrying...`);
+              return; // Keep polling
+            }
+            
+            console.error('❌ Error linking Spotify:', error);
+            clearInterval(pollInterval);
+            toast({
+              title: "Connection Failed",
+              description: error.message || "Failed to link Spotify account",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          console.log('✅ Spotify linked successfully:', data);
+          clearInterval(pollInterval);
+          
+          toast({
+            title: "Spotify Connected!",
+            description: "Your Spotify account has been linked successfully",
+          });
+
+          // Clean URL
+          window.history.replaceState({}, '', window.location.pathname);
+          
+          // Refresh connections
+          await refreshConnections();
+          
+          // Update UI state
+          setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
+          
+        } catch (error) {
+          console.error('💥 Unexpected error:', error);
+          clearInterval(pollInterval);
+          toast({
+            title: "Connection Failed",
+            description: "An unexpected error occurred",
+            variant: "destructive",
+          });
+        }
+      }, 1000); // Poll every second
+
+      // Stop polling after 10 seconds
+      setTimeout(() => {
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          toast({
+            title: "Connection Timeout",
+            description: "Please try connecting again",
+            variant: "destructive",
+          });
+        }
+      }, 10000);
+    };
+
+    checkSpotifyReturn();
+  }, [toast, refreshConnections]);
+
   const createCalendarConnection = async (session: any) => {
     console.log('🔍 Creating calendar connection...');
     if (!user) {
@@ -237,7 +321,7 @@ export const IntegrationSetup = () => {
     try {
       setIsConnecting(true);
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'spotify',
         options: {
           scopes: 'user-read-currently-playing user-read-playback-state',
@@ -245,16 +329,32 @@ export const IntegrationSetup = () => {
         },
       });
 
-      if (error) throw error;
-      toast({ title: "Redirecting to Spotify..." });
-    } catch (error) {
-      console.error('Error connecting to Spotify:', error);
+      if (error) {
+        console.error('Spotify OAuth error:', error);
+        toast({
+          title: "Connection Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        setIsConnecting(false);
+        return;
+      }
+
       toast({
-        title: "Connection failed",
-        description: "Failed to connect to Spotify",
+        title: "Redirecting to Spotify",
+        description: "Please authorize the connection",
+      });
+
+      // After OAuth redirect completes, page will reload with OAuth params
+      // The useEffect below will handle the token capture
+      
+    } catch (error) {
+      console.error('Error connecting Spotify:', error);
+      toast({
+        title: "Connection Failed",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
-    } finally {
       setIsConnecting(false);
     }
   };
