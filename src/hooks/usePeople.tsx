@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { fetchSuggestedMatches, MatchedUser } from '@/lib/matching-utils';
 
 export interface Person {
   id: string;
@@ -17,6 +18,7 @@ export interface Person {
 export const usePeople = () => {
   const { user } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
+  const [suggestedMatches, setSuggestedMatches] = useState<MatchedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -124,20 +126,30 @@ export const usePeople = () => {
     }
   };
 
+  const loadSuggestedMatches = async () => {
+    setLoading(true);
+    const matches = await fetchSuggestedMatches(20);
+    setSuggestedMatches(matches);
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (user) {
       fetchPeople();
+      loadSuggestedMatches();
     }
   }, [user]);
 
   return {
     people,
+    suggestedMatches,
     loading,
     searchQuery,
     fetchPeople,
     searchPeople,
     fetchPeopleBySchool,
     fetchPeopleByMajor,
-    getPersonByUserId
+    getPersonByUserId,
+    loadSuggestedMatches
   };
 };

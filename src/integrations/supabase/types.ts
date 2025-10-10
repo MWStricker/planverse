@@ -403,6 +403,8 @@ export type Database = {
           id: string
           is_public: boolean | null
           major: string | null
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
           school: string | null
           timezone: string | null
           updated_at: string
@@ -418,6 +420,8 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           major?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           school?: string | null
           timezone?: string | null
           updated_at?: string
@@ -433,6 +437,8 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           major?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           school?: string | null
           timezone?: string | null
           updated_at?: string
@@ -609,6 +615,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_interests: {
+        Row: {
+          campus_hangout_spots: string[] | null
+          clubs_and_events: string[] | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          music_genres: Json | null
+          music_preference: string
+          onboarding_completed: boolean | null
+          passion_outside_school: string | null
+          questions_asked: Json
+          reason_for_school: string | null
+          updated_at: string | null
+          user_id: string
+          year_in_school: string | null
+        }
+        Insert: {
+          campus_hangout_spots?: string[] | null
+          clubs_and_events?: string[] | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          music_genres?: Json | null
+          music_preference: string
+          onboarding_completed?: boolean | null
+          passion_outside_school?: string | null
+          questions_asked: Json
+          reason_for_school?: string | null
+          updated_at?: string | null
+          user_id: string
+          year_in_school?: string | null
+        }
+        Update: {
+          campus_hangout_spots?: string[] | null
+          clubs_and_events?: string[] | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          music_genres?: Json | null
+          music_preference?: string
+          onboarding_completed?: boolean | null
+          passion_outside_school?: string | null
+          questions_asked?: Json
+          reason_for_school?: string | null
+          updated_at?: string | null
+          user_id?: string
+          year_in_school?: string | null
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           created_at: string
@@ -668,6 +725,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_interest_match_score: {
+        Args: { user1_id: string; user2_id: string }
+        Returns: number
+      }
       decrement_likes_count: {
         Args: { post_id: string }
         Returns: undefined
@@ -675,6 +736,18 @@ export type Database = {
       get_or_create_conversation: {
         Args: { other_user_id: string }
         Returns: string
+      }
+      get_suggested_matches: {
+        Args: { match_limit?: number; target_user_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          major: string
+          match_score: number
+          school: string
+          shared_interests: Json
+          user_id: string
+        }[]
       }
       increment_comments_count: {
         Args: { post_id: string }

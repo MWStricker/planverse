@@ -6,12 +6,14 @@ import { Navigation } from "@/components/Navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OnboardingQuestionnaire } from "@/components/OnboardingQuestionnaire";
 
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useTabReorder } from "@/hooks/useTabReorder";
 import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
-import { ProfileProvider } from "@/hooks/useProfile";
+import { ProfileProvider, useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
 import { useDebouncedResize } from "@/lib/performance";
 
 // Lazy load heavy components for better initial load
@@ -30,13 +32,15 @@ const PageLoader = () => (
   </div>
 );
 
-const Index = () => {
+const IndexContent = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { user, loading } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   
   // Initialize user preferences on app load
@@ -93,11 +97,34 @@ const Index = () => {
     cancelReorder,
   } = useTabReorder(navItems);
 
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (!loading && user && profile) {
+      setShowOnboarding(!profile.onboarding_completed);
+    }
+  }, [user, loading, profile]);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  const handleOnboardingComplete = async () => {
+    setShowOnboarding(false);
+    // Refresh profile
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      if (data) {
+        // Profile will be refreshed through the ProfileProvider
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -171,47 +198,57 @@ const Index = () => {
   };
 
   return (
-    <ProfileProvider>
+    <>
+      {showOnboarding && <OnboardingQuestionnaire onComplete={handleOnboardingComplete} />}
+      
       <ProfileEditingProvider>
-      <div 
-        className="flex bg-background overflow-hidden" 
-        style={{ 
-          height: 'var(--app-height, 100vh)', 
-          minHeight: 'var(--app-height, 100vh)',
-          maxHeight: 'var(--app-height, 100vh)'
-        }}
-      >
-        {/* Desktop Sidebar - Hidden on mobile */}
-        <div className="hidden md:block md:flex-shrink-0 h-full transition-all duration-500">
-          <Navigation 
-            currentPage={currentPage} 
-            onPageChange={setCurrentPage}
-            isReorderMode={isReorderMode}
-            onToggleReorder={() => setIsReorderMode(true)}
-            onCancelReorder={cancelReorder}
-            isCollapsed={isCollapsed}
-            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-          />
-        </div>
-        
-        {/* Main Content - Full width on mobile */}
         <div 
-          className="flex-1 overflow-auto w-full" 
+          className="flex bg-background overflow-hidden" 
           style={{ 
-            height: 'var(--app-height, 100vh)',
-            maxHeight: 'var(--app-height, 100vh)',
-            paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+            height: 'var(--app-height, 100vh)', 
+            minHeight: 'var(--app-height, 100vh)',
+            maxHeight: 'var(--app-height, 100vh)'
           }}
         >
-          <div className="h-full md:h-auto pb-20 md:pb-0">
-            {renderPage()}
+          {/* Desktop Sidebar - Hidden on mobile */}
+          <div className="hidden md:block md:flex-shrink-0 h-full transition-all duration-500">
+            <Navigation 
+              currentPage={currentPage} 
+              onPageChange={setCurrentPage}
+              isReorderMode={isReorderMode}
+              onToggleReorder={() => setIsReorderMode(true)}
+              onCancelReorder={cancelReorder}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+            />
           </div>
-        </div>
+          
+          {/* Main Content - Full width on mobile */}
+          <div 
+            className="flex-1 overflow-auto w-full" 
+            style={{ 
+              height: 'var(--app-height, 100vh)',
+              maxHeight: 'var(--app-height, 100vh)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+            }}
+          >
+            <div className="h-full md:h-auto pb-20 md:pb-0">
+              {renderPage()}
+            </div>
+          </div>
 
-        {/* Mobile Bottom Navigation */}
-        <BottomNav currentPage={currentPage} onPageChange={setCurrentPage} />
-      </div>
+          {/* Mobile Bottom Navigation */}
+          <BottomNav currentPage={currentPage} onPageChange={setCurrentPage} />
+        </div>
       </ProfileEditingProvider>
+    </>
+  );
+};
+
+const Index = () => {
+  return (
+    <ProfileProvider>
+      <IndexContent />
     </ProfileProvider>
   );
 };

@@ -20,6 +20,7 @@ import {
 import { usePeople, Person } from '@/hooks/usePeople';
 import { useFriends } from '@/hooks/useFriends';
 import { PublicProfile } from './PublicProfile';
+import { SuggestedConnections } from './SuggestedConnections';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
@@ -235,8 +236,12 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="discover" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="suggested" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="suggested" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Suggested
+          </TabsTrigger>
           <TabsTrigger value="discover" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             Discover
@@ -250,6 +255,10 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
             Requests ({friendRequests.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="suggested" className="space-y-4">
+          <SuggestedConnections />
+        </TabsContent>
 
         <TabsContent value="discover" className="space-y-4">
           {/* Search and Filters */}

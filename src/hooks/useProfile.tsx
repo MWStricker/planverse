@@ -16,6 +16,8 @@ export interface UserProfile {
   bio?: string;
   graduation_year?: number;
   is_public?: boolean;
+  onboarding_completed?: boolean;
+  onboarding_completed_at?: string;
   created_at: string;
   updated_at: string;
 }
