@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense, memo, useMemo } from "react";
+import { useState, useEffect, lazy, Suspense, memo, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Home, Users, Upload } from "lucide-react";
 
@@ -40,6 +40,8 @@ const IndexContent = () => {
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(20);
+  const [sidebarWidthPx, setSidebarWidthPx] = useState(240);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, loading } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -71,6 +73,20 @@ const IndexContent = () => {
     },
     []
   );
+
+  // Track pixel width changes
+  useEffect(() => {
+    if (!sidebarRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setSidebarWidthPx(entries[0].contentRect.width);
+      }
+    });
+    
+    observer.observe(sidebarRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Handle hash navigation for integrations
   useEffect(() => {
@@ -229,16 +245,19 @@ const IndexContent = () => {
                 maxSize={40}
                 className="h-full"
               >
-                <Navigation 
-                  currentPage={currentPage} 
-                  onPageChange={setCurrentPage}
-                  isReorderMode={isReorderMode}
-                  onToggleReorder={() => setIsReorderMode(true)}
-                  onCancelReorder={cancelReorder}
-                />
+                <div ref={sidebarRef} className="h-full">
+                  <Navigation 
+                    currentPage={currentPage} 
+                    onPageChange={setCurrentPage}
+                    isReorderMode={isReorderMode}
+                    onToggleReorder={() => setIsReorderMode(true)}
+                    onCancelReorder={cancelReorder}
+                    sidebarWidth={sidebarWidthPx}
+                  />
+                </div>
               </ResizablePanel>
               
-              <ResizableHandle withHandle className="w-1 hover:w-2 transition-all" />
+              <ResizableHandle className="w-px bg-transparent hover:bg-border hover:w-1 transition-all cursor-col-resize" />
               
               <ResizablePanel 
                 defaultSize={100 - sidebarWidth}

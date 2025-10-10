@@ -24,6 +24,7 @@ interface NavigationProps {
   isReorderMode?: boolean;
   onToggleReorder?: () => void;
   onCancelReorder?: () => void;
+  sidebarWidth?: number;
 }
 
 export const Navigation = ({ 
@@ -31,7 +32,8 @@ export const Navigation = ({
   onPageChange, 
   isReorderMode = false,
   onToggleReorder,
-  onCancelReorder
+  onCancelReorder,
+  sidebarWidth
 }: NavigationProps) => {
   const [notifications] = useState(0);
   const [courses, setCourses] = useState<any[]>([]);
@@ -39,6 +41,8 @@ export const Navigation = ({
   const { user } = useAuth();
   const { profile } = useProfile();
   const { unreadCount, currentUserStatus } = useRealtime();
+  
+  const isCollapsed = sidebarWidth !== undefined && sidebarWidth < 200;
 
   // Fetch courses data
   useEffect(() => {
@@ -169,13 +173,21 @@ export const Navigation = ({
       {/* Logo */}
       <div className="p-4 pt-1">
         <div className="flex items-center justify-between">
-          <div className="text-center flex-1">
-            <h1 className="text-lg font-bold text-foreground">
-              Planverse
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Smart Scheduling
-            </p>
+          <div className={`text-center flex-1 transition-all duration-200 ${isCollapsed ? 'px-0' : ''}`}>
+            {!isCollapsed ? (
+              <>
+                <h1 className="text-lg font-bold text-foreground transition-opacity duration-200">
+                  Planverse
+                </h1>
+                <p className="text-xs text-muted-foreground transition-opacity duration-200">
+                  Smart Scheduling
+                </p>
+              </>
+            ) : (
+              <h1 className="text-xl font-bold text-foreground transition-opacity duration-200">
+                P
+              </h1>
+            )}
           </div>
           {/* Reorder Button */}
           <div className="flex flex-col gap-1">
@@ -235,7 +247,7 @@ export const Navigation = ({
                   isReorderMode={isReorderMode}
                   notifications={item.id === 'tasks' ? notifications : 0}
                   onClick={() => onPageChange(item.id)}
-                  isCollapsed={false}
+                  isCollapsed={isCollapsed}
                 />
               ))}
             </div>
@@ -247,66 +259,114 @@ export const Navigation = ({
 
       {/* User Section */}
       <div className="flex-shrink-0 p-2 border-t border-border">
-        <div 
-          className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-muted/50 rounded-lg p-1 -m-1"
-          onClick={() => setIsProfileOpen(true)}
-          title="View Profile"
-        >
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarImage src={profile?.avatar_url} />
-            <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm">
-              {profile?.display_name?.charAt(0)?.toUpperCase() || 
-               user?.email?.charAt(0)?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <div className="flex items-center gap-1">
-              <p className="text-sm font-medium text-foreground truncate leading-tight">
-                {profile?.display_name || user?.email?.split('@')[0] || 'User'}
-              </p>
-              <UserStatusIndicator 
-                status={currentUserStatus} 
-                isCurrentUser={true}
-                size="sm"
-              />
+        {isCollapsed ? (
+          <div 
+            className="flex justify-center mb-2 cursor-pointer hover:bg-muted/50 rounded-lg p-1"
+            onClick={() => setIsProfileOpen(true)}
+            title="View Profile"
+          >
+            <div className="relative">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={profile?.avatar_url} />
+                <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm">
+                  {profile?.display_name?.charAt(0)?.toUpperCase() || 
+                   user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-0.5 -right-0.5">
+                <UserStatusIndicator 
+                  status={currentUserStatus} 
+                  isCurrentUser={true}
+                  size="sm"
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground truncate leading-tight">
-               {(() => {
-                 const currentMajor = profile?.major;
-                 if (!currentMajor) return 'Student';
-                 
-                 // Format predefined majors with proper capitalization
-                 return currentMajor.includes('-') ? 
-                   currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-                   currentMajor;
-               })()}
-            </p>
           </div>
-        </div>
+        ) : (
+          <div 
+            className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-muted/50 rounded-lg p-1 -m-1 transition-all duration-200"
+            onClick={() => setIsProfileOpen(true)}
+            title="View Profile"
+          >
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              <AvatarImage src={profile?.avatar_url} />
+              <AvatarFallback className="bg-gradient-to-br from-accent to-primary text-white text-sm">
+                {profile?.display_name?.charAt(0)?.toUpperCase() || 
+                 user?.email?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0 overflow-hidden transition-all duration-200">
+              <div className="flex items-center gap-1">
+                <p className="text-sm font-medium text-foreground truncate leading-tight">
+                  {profile?.display_name || user?.email?.split('@')[0] || 'User'}
+                </p>
+                <UserStatusIndicator 
+                  status={currentUserStatus} 
+                  isCurrentUser={true}
+                  size="sm"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground truncate leading-tight">
+                 {(() => {
+                   const currentMajor = profile?.major;
+                   if (!currentMajor) return 'Student';
+                   
+                   // Format predefined majors with proper capitalization
+                   return currentMajor.includes('-') ? 
+                     currentMajor.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                     currentMajor;
+                 })()}
+              </p>
+            </div>
+          </div>
+        )}
         
         
         {/* Clock and Controls Section */}
         <div className="mt-1">
-          <div className="flex items-center justify-center gap-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
-            >
-              <Bell className="h-3 w-3 transition-all duration-200 ease-out" />
-            </Button>
-            <div className="flex-1">
-              <AnalogClock />
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-1.5">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hover:bg-muted/30 transition-all duration-200 ease-out w-8 h-8 p-0"
+              >
+                <Bell className="h-3.5 w-3.5" />
+              </Button>
+              <div className="scale-90">
+                <AnalogClock />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onPageChange('settings')}
+                className="hover:bg-muted/30 transition-all duration-200 ease-out group w-8 h-8 p-0"
+              >
+                <Settings className="h-3.5 w-3.5 group-hover:rotate-90 transition-transform duration-300 ease-out" />
+              </Button>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onPageChange('settings')}
-              className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
-            >
-              <Settings className="h-3 w-3 group-hover:rotate-90 transition-transform duration-300 ease-out" />
-            </Button>
-          </div>
+          ) : (
+            <div className="flex items-center justify-center gap-1 transition-all duration-200">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
+              >
+                <Bell className="h-3 w-3 transition-all duration-200 ease-out" />
+              </Button>
+              <div className="flex-1">
+                <AnalogClock />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onPageChange('settings')}
+                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
+              >
+                <Settings className="h-3 w-3 group-hover:rotate-90 transition-transform duration-300 ease-out" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
