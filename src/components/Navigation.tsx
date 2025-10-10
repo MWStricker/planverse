@@ -178,9 +178,6 @@ export const Navigation = ({
               <h1 className="text-lg font-bold text-foreground transition-opacity duration-200">
                 Planverse
               </h1>
-              <p className="text-xs text-muted-foreground transition-opacity duration-200">
-                Smart Scheduling
-              </p>
             </div>
           )}
           {/* Reorder Button */}
