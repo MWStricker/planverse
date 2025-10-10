@@ -172,7 +172,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           value={answers.favorite_artist || ''}
           onChange={(e) => setAnswers(prev => ({ ...prev, favorite_artist: e.target.value }))}
           placeholder="e.g., Taylor Swift, Drake, The Beatles..."
-          className="text-lg"
+          className="text-lg transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:scale-[1.02]"
           maxLength={100}
         />
         <p className="text-sm text-muted-foreground">
@@ -189,7 +189,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           value={answers[question.field] || ''}
           onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
           placeholder={question.placeholder || 'Your answer...'}
-          className="min-h-[120px]"
+          className="min-h-[120px] transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:scale-[1.01]"
           maxLength={500}
         />
       );
@@ -200,7 +200,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
         value={answers[question.field] || ''}
         onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
         placeholder={question.placeholder || 'Your answer...'}
-        className="text-lg"
+        className="text-lg transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:scale-[1.02]"
         maxLength={200}
       />
     );
