@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle, Phone } from "lucide-react";
 import planverseLogo from "@/assets/planverse-logo-final.png";
+import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
 
 
 
@@ -262,8 +263,19 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
+    <BackgroundGradientAnimation
+      gradientBackgroundStart="rgb(108, 0, 162)"
+      gradientBackgroundEnd="rgb(0, 17, 82)"
+      firstColor="18, 113, 255"
+      secondColor="221, 74, 255"
+      thirdColor="100, 220, 255"
+      fourthColor="200, 50, 50"
+      fifthColor="180, 180, 50"
+      pointerColor="140, 100, 255"
+      interactive={true}
+      containerClassName="flex items-center justify-center p-4"
+    >
+      <div className="w-full max-w-lg relative z-10">
         {/* Header Section */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="mx-auto w-32 h-32 flex items-center justify-center mb-6">
@@ -701,7 +713,7 @@ const Auth = () => {
           </p>
         </div>
       </div>
-    </div>
+    </BackgroundGradientAnimation>
   );
 };
 
