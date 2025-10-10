@@ -264,14 +264,16 @@ const Auth = () => {
 
   return (
     <BackgroundGradientAnimation
-      gradientBackgroundStart="rgb(30, 58, 138)"
-      gradientBackgroundEnd="rgb(7, 89, 133)"
-      firstColor="66, 153, 225"
-      secondColor="251, 146, 60"
+      gradientBackgroundStart="rgb(45, 100, 200)"
+      gradientBackgroundEnd="rgb(20, 50, 120)"
+      firstColor="56, 145, 245"
+      secondColor="247, 127, 32"
       thirdColor="96, 165, 250"
-      fourthColor="252, 211, 77"
+      fourthColor="251, 191, 36"
       fifthColor="59, 130, 246"
       pointerColor="147, 197, 253"
+      size="70%"
+      blendingValue="soft-light"
       interactive={true}
       containerClassName="min-h-screen flex items-center justify-center p-4"
     >
