@@ -208,7 +208,7 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col">
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent ml-2">
             {format(currentDay, "EEEE")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">Daily Planner</p>
