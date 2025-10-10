@@ -37,7 +37,7 @@ const integrations: Integration[] = [
     icon: '🎵',
     status: 'disconnected',
     features: ['Now playing display', 'Real-time updates', 'Profile integration'],
-    requiresBackend: true,
+    requiresBackend: false,
   },
   {
     id: 'apple_calendar',
@@ -188,7 +188,10 @@ export const IntegrationSetup = () => {
     const updateIntegrationStatus = () => {
       const connected = new Set<string>();
       if (isProviderConnected('google')) {
-        connected.add('google-calendar');
+        connected.add('google_calendar');
+      }
+      if (isProviderConnected('spotify')) {
+        connected.add('spotify');
       }
       setConnectedIntegrations(connected);
     };
@@ -621,12 +624,43 @@ export const IntegrationSetup = () => {
     }
   };
 
+  const handleSpotifyDisconnect = async () => {
+    try {
+      await supabase
+        .from('calendar_connections')
+        .delete()
+        .eq('user_id', user?.id)
+        .eq('provider', 'spotify');
+      
+      setConnectedIntegrations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete('spotify');
+        return newSet;
+      });
+      
+      toast({
+        title: "Disconnected",
+        description: "Spotify has been disconnected from your profile.",
+      });
+    } catch (error) {
+      console.error('Error disconnecting Spotify:', error);
+      toast({
+        title: "Error",
+        description: "Failed to disconnect Spotify.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleConnect = (integrationId: string) => {
     console.log('🔍 handleConnect called with:', integrationId);
     
-    if (integrationId === 'google-calendar') {
+    if (integrationId === 'google_calendar') {
       console.log('🔍 Calling handleGoogleCalendarConnect...');
       handleGoogleCalendarConnect();
+    } else if (integrationId === 'spotify') {
+      console.log('🔍 Calling handleSpotifyConnect...');
+      handleSpotifyConnect();
     } else {
       console.log('🔍 Integration not implemented:', integrationId);
       toast({
@@ -716,7 +750,7 @@ export const IntegrationSetup = () => {
                     ))}
                   </div>
                 </div>
-                
+                 
                  {integration.requiresBackend ? (
                    <Button 
                      className="w-full" 
@@ -726,7 +760,38 @@ export const IntegrationSetup = () => {
                      <Lock className="h-4 w-4 mr-2" />
                      Requires Backend Setup
                    </Button>
-                  ) : (
+                  ) : integration.id === 'spotify' ? (
+                    // Spotify-specific buttons
+                    <div className="space-y-2">
+                      {currentStatus === 'connected' ? (
+                        <Button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSpotifyDisconnect();
+                          }} 
+                          variant="outline" 
+                          className="w-full"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Disconnect Spotify
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSpotifyConnect();
+                          }} 
+                          className="w-full bg-gradient-to-r from-primary to-accent text-white border-0 hover:shadow-lg transition-all"
+                          disabled={isConnecting}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {isConnecting ? 'Connecting...' : 'Connect Spotify'}
+                        </Button>
+                      )}
+                    </div>
+                  ) : integration.id === 'google_calendar' ? (
                       <div className="space-y-2">
                         {currentStatus === 'connected' ? (
                           <>
@@ -813,7 +878,7 @@ export const IntegrationSetup = () => {
                           }
                         </p>
                       </div>
-                   )}
+                   ) : null}
 
                 {integration.lastSync && (
                   <p className="text-xs text-muted-foreground">
