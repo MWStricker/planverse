@@ -344,57 +344,12 @@ export const IntegrationSetup = () => {
       console.log('✅ OAuth initiated, user will be redirected to Spotify');
       toast({
         title: "Redirecting to Spotify",
-        description: "Please authorize the connection",
+        description: "Please authorize the connection. You'll be redirected back automatically.",
       });
 
-      // Start polling immediately - don't wait for redirect
-      // This ensures we capture the tokens as soon as they're available
-      let attempts = 0;
-      const maxAttempts = 15;
-      
-      const pollInterval = setInterval(async () => {
-        attempts++;
-        console.log(`🔍 Polling for Spotify connection (attempt ${attempts}/${maxAttempts})...`);
-        
-        try {
-          const { data, error: linkError } = await supabase.functions.invoke('link-spotify-connection');
-          
-          if (data?.success) {
-            console.log('✅ Spotify linked successfully!');
-            clearInterval(pollInterval);
-            
-            toast({
-              title: "Spotify Connected!",
-              description: "Your Spotify account has been linked successfully",
-            });
-            
-            setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
-            await refreshConnections();
-            setIsConnecting(false);
-          } else if (attempts >= maxAttempts) {
-            // Stop polling after max attempts
-            console.warn('⏱️ Polling timeout - max attempts reached');
-            clearInterval(pollInterval);
-            setIsConnecting(false);
-          } else if (linkError && !linkError.message?.includes('No Spotify account linked')) {
-            // Only stop on real errors, not "not linked yet" errors
-            console.error('❌ Error linking Spotify:', linkError);
-            clearInterval(pollInterval);
-            toast({
-              title: "Connection Failed",
-              description: linkError.message || "Failed to link Spotify account",
-              variant: "destructive",
-            });
-            setIsConnecting(false);
-          }
-        } catch (error) {
-          console.error('💥 Unexpected polling error:', error);
-          if (attempts >= maxAttempts) {
-            clearInterval(pollInterval);
-            setIsConnecting(false);
-          }
-        }
-      }, 2000); // Poll every 2 seconds
+      // OAuth callback will be handled by useOAuthCallback hook
+      // which captures tokens during SIGNED_IN event
+      setIsConnecting(false);
       
     } catch (error) {
       console.error('Error connecting Spotify:', error);
