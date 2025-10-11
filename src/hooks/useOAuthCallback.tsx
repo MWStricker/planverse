@@ -44,16 +44,9 @@ export const useOAuthCallback = () => {
         processedSignIns.current = new Set(entries.slice(-10));
       }
 
-      console.log(`✅ Processing OAuth callback for ${provider} - tokens available NOW`);
-      console.log('🔍 Full session object:', JSON.stringify({
-        provider_token: session.provider_token ? 'EXISTS' : 'NULL',
-        provider_refresh_token: session.provider_refresh_token ? 'EXISTS' : 'NULL',
-        expires_at: session.expires_at,
-        provider: provider,
-        user_id: userId,
-        email: session.user.email
-      }, null, 2));
+      console.log(`✅ Processing OAuth callback for ${provider}`);
 
+      // Only handle Google Calendar - Spotify is handled by IntegrationSetup polling
       if (provider === 'google') {
         console.log('🔍 Processing Google Calendar connection...');
         
@@ -97,42 +90,9 @@ export const useOAuthCallback = () => {
         } catch (error) {
           console.error('❌ Error in Google Calendar connection:', error);
         }
-      } else if (provider === 'spotify') {
-        console.log('🎵 Processing Spotify connection via edge function...');
-        console.log('🔍 Provider tokens in session:', {
-          has_provider_token: !!session.provider_token,
-          has_refresh_token: !!session.provider_refresh_token
-        });
-        
-        try {
-          // Call the edge function to link Spotify account
-          const { data, error } = await supabase.functions.invoke('link-spotify-connection');
-          
-          if (error) {
-            console.error('❌ Error linking Spotify:', error);
-            toast({
-              title: "Spotify Connection Failed",
-              description: error.message || "Failed to link Spotify account",
-              variant: "destructive",
-            });
-          } else if (data?.success) {
-            console.log('✅ Spotify connection successful');
-            toast({
-              title: "Spotify Connected!",
-              description: "Your Spotify account has been linked.",
-            });
-          } else {
-            console.warn('⚠️ Unexpected response from Spotify link:', data);
-          }
-        } catch (error) {
-          console.error('❌ Error in Spotify connection:', error);
-          toast({
-            title: "Connection Error",
-            description: "An unexpected error occurred while linking Spotify",
-            variant: "destructive",
-          });
-        }
       }
+      // Note: Spotify OAuth is handled by polling in IntegrationSetup.tsx
+      // This prevents conflicts with the redirect-based token capture
     });
 
     return () => {
