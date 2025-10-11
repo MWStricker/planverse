@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
-import { Calendar as CalendarIcon, Clock, BookOpen, Target, CheckCircle, AlertCircle, Brain, TrendingUp, Plus, ChevronDown, ChevronRight, Settings, FileText, GraduationCap, Palette, Trash2, AlertTriangle } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, BookOpen, Target, CheckCircle, AlertCircle, Brain, TrendingUp, Plus, ChevronDown, ChevronRight, Settings, FileText, GraduationCap, Palette, Trash2, AlertTriangle, Flame } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,11 +16,17 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EventTaskModal } from "@/components/EventTaskModal";
 import { CanvasIntegration } from "@/components/CanvasIntegration";
+import { CountUpAnimation } from "@/components/animations/CountUpAnimation";
+import { CircularProgress } from "@/components/animations/CircularProgress";
+import { TrendIndicator } from "@/components/animations/TrendIndicator";
+import { SparklineChart } from "@/components/animations/SparklineChart";
+import { ConfettiEffect } from "@/components/animations/ConfettiEffect";
+import { TimelineView } from "@/components/animations/TimelineView";
 import { getCourseIconById, courseIcons } from "@/data/courseIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { format, isPast, isToday, isTomorrow, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
+import { format, isPast, isToday, isTomorrow, addWeeks, subWeeks, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 
 interface Course {
   code: string;
@@ -135,6 +143,14 @@ export const DashboardIntegratedView = memo(() => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Animation state
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [previousStats, setPreviousStats] = useState({
+    totalItemsToday: 0,
+    completedToday: 0,
+    totalCoursesActive: 0
+  });
 
   // Load data on component mount and listen for updates
   useEffect(() => {
@@ -326,7 +342,7 @@ export const DashboardIntegratedView = memo(() => {
     return BookOpen;
   };
 
-  const handleEventToggle = async (eventId: string, isCompleted: boolean) => {
+  const handleEventToggle = useCallback(async (eventId: string, isCompleted: boolean) => {
     try {
       const { error } = await supabase
         .from('events')
@@ -342,6 +358,14 @@ export const DashboardIntegratedView = memo(() => {
           variant: "destructive",
         });
         return;
+      }
+
+      // Check if this completes the last assignment
+      const todayEvents = events.filter(e => isToday(new Date(e.start_time)));
+      const incompleteTodayEvents = todayEvents.filter(e => !e.is_completed && e.id !== eventId);
+      
+      if (isCompleted && incompleteTodayEvents.length === 0) {
+        setShowConfetti(true);
       }
 
       // Update local state
@@ -361,16 +385,16 @@ export const DashboardIntegratedView = memo(() => {
       );
 
       toast({
-        title: isCompleted ? "Assignment completed" : "Assignment uncompleted",
-        description: "Status updated successfully",
+        title: isCompleted ? "Assignment completed! 🎉" : "Assignment uncompleted",
+        description: isCompleted ? "Great work!" : "Status updated successfully",
       });
       
     } catch (error) {
       console.error('Error toggling event completion:', error);
     }
-  };
+  }, [user?.id, toast, events]);
 
-  const toggleCourse = (courseCode: string) => {
+  const toggleCourse = useCallback((courseCode: string) => {
     setCollapsedCourses(prev => {
       const newSet = new Set(prev);
       if (newSet.has(courseCode)) {
@@ -380,9 +404,9 @@ export const DashboardIntegratedView = memo(() => {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  // Quick stats calculations
+  // Quick stats calculations with historical data
   const dashboardStats = useMemo(() => {
     const today = new Date();
     const todayEvents = events.filter(event => {
@@ -401,12 +425,42 @@ export const DashboardIntegratedView = memo(() => {
 
     const totalToday = todayEvents.length + todayTasks.length;
 
-    return {
+    // Calculate weekly stats for gamification
+    const weekStart = startOfWeek(today);
+    const weekEnd = endOfWeek(today);
+    
+    const weekEvents = events.filter(event => {
+      const eventDate = new Date(event.start_time);
+      return eventDate >= weekStart && eventDate <= weekEnd;
+    });
+    
+    const weekTasks = tasks.filter(task => {
+      if (!task.due_date) return false;
+      const dueDate = new Date(task.due_date);
+      return dueDate >= weekStart && dueDate <= weekEnd;
+    });
+    
+    const weeklyCompleted = weekEvents.filter(e => e.is_completed).length + 
+                           weekTasks.filter(t => t.completion_status === 'completed').length;
+    const weeklyTotal = weekEvents.length + weekTasks.length;
+
+    const stats = {
       totalCoursesActive: courses.length,
       totalItemsToday: totalToday,
       completedToday,
-      progressPercentage: totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0
+      progressPercentage: totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0,
+      weeklyCompleted,
+      weeklyTotal
     };
+
+    // Update previous stats for trend indicators
+    setPreviousStats(prev => ({
+      totalItemsToday: prev.totalItemsToday || stats.totalItemsToday,
+      completedToday: prev.completedToday || stats.completedToday,
+      totalCoursesActive: prev.totalCoursesActive || stats.totalCoursesActive
+    }));
+
+    return stats;
   }, [events, tasks, courses]);
 
   // Modal handlers
@@ -490,8 +544,32 @@ export const DashboardIntegratedView = memo(() => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        {/* Skeleton Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="animate-fade-in" style={{ animationDelay: `${i * 100}ms` }}>
+              <CardContent className="p-4">
+                <Skeleton className="h-5 w-24 mb-2" />
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        {/* Skeleton Content Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-64" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-64" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -506,38 +584,66 @@ export const DashboardIntegratedView = memo(() => {
         </div>
       </div>
 
-      {/* Quick Stats Cards */}
+      {/* Quick Stats Cards - Enhanced with Animations */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="animate-fade-in hover:shadow-lg hover:scale-105 transition-all duration-200 bg-gradient-to-br from-primary/5 to-primary/10" style={{ animationDelay: '0ms' }}>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Today's Items</p>
-                <p className="text-2xl font-bold">{dashboardStats.totalItemsToday}</p>
+                <p className="text-sm text-muted-foreground mb-1">Today's Items</p>
+                <p className="text-2xl font-bold">
+                  <CountUpAnimation end={dashboardStats.totalItemsToday} />
+                </p>
+                <TrendIndicator 
+                  value={dashboardStats.totalItemsToday} 
+                  previousValue={previousStats.totalItemsToday}
+                  label="from yesterday"
+                  className="mt-1"
+                />
               </div>
+              <CalendarIcon className="h-8 w-8 text-primary" />
             </div>
+            <Progress value={dashboardStats.progressPercentage} className="h-1 mt-3" />
           </CardContent>
         </Card>
-        <Card>
+        
+        <Card className="animate-fade-in hover:shadow-lg hover:scale-105 transition-all duration-200 bg-gradient-to-br from-green-500/5 to-green-500/10" style={{ animationDelay: '100ms' }}>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{dashboardStats.completedToday}</p>
+                <p className="text-sm text-muted-foreground mb-1">Completed</p>
+                <p className="text-2xl font-bold">
+                  <CountUpAnimation end={dashboardStats.completedToday} />
+                </p>
+                <TrendIndicator 
+                  value={dashboardStats.completedToday} 
+                  previousValue={previousStats.completedToday}
+                  label="from yesterday"
+                  className="mt-1"
+                />
               </div>
+              <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
+            <Progress value={dashboardStats.progressPercentage} className="h-1 mt-3" />
           </CardContent>
         </Card>
-        <Card>
+        
+        <Card className="animate-fade-in hover:shadow-lg hover:scale-105 transition-all duration-200 bg-gradient-to-br from-blue-500/5 to-blue-500/10" style={{ animationDelay: '200ms' }}>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="h-5 w-5 text-blue-500" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active Courses</p>
-                <p className="text-2xl font-bold">{dashboardStats.totalCoursesActive}</p>
+                <p className="text-sm text-muted-foreground mb-1">Active Courses</p>
+                <p className="text-2xl font-bold">
+                  <CountUpAnimation end={dashboardStats.totalCoursesActive} />
+                </p>
+                <TrendIndicator 
+                  value={dashboardStats.totalCoursesActive} 
+                  previousValue={previousStats.totalCoursesActive}
+                  label="from last week"
+                  className="mt-1"
+                />
               </div>
+              <BookOpen className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -551,9 +657,9 @@ export const DashboardIntegratedView = memo(() => {
           <TabsTrigger value="courses">Courses</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-6 animate-fade-in">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Today's Schedule */}
+            {/* Today's Schedule - Enhanced with Timeline */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -561,64 +667,149 @@ export const DashboardIntegratedView = memo(() => {
                   Today's Schedule
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {events
-                  .filter(event => isToday(new Date(event.start_time)))
-                  .slice(0, 5)
-                  .map(event => (
-                    <div key={event.id} className="flex items-center justify-between p-2 border rounded">
-                      <div className="flex items-center gap-2">
-                        <Checkbox 
-                          checked={event.is_completed || false}
-                          onCheckedChange={(checked) => handleEventToggle(event.id, checked as boolean)}
-                        />
-                        <span 
-                          className={`cursor-pointer hover:text-primary ${event.is_completed ? 'line-through text-muted-foreground' : ''}`}
-                          onClick={() => openEventModal(event)}
-                        >
-                          {event.title}
-                        </span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {format(new Date(event.start_time), 'h:mm a')}
-                      </span>
-                    </div>
-                  ))}
-                {events.filter(event => isToday(new Date(event.start_time))).length === 0 && (
-                  <p className="text-muted-foreground text-center py-4">No events scheduled for today</p>
+              <CardContent>
+                {events.filter(event => isToday(new Date(event.start_time))).length > 0 ? (
+                  <TimelineView
+                    events={events.filter(event => isToday(new Date(event.start_time)))}
+                    onEventClick={openEventModal}
+                    onToggle={handleEventToggle}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Clock className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                    <p className="text-muted-foreground text-center">No events scheduled for today</p>
+                    <p className="text-sm text-muted-foreground mt-2">Time to relax or plan ahead!</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Course Progress */}
+            {/* Course Progress - Enhanced with Visual Indicators */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
+                  <Target className="h-5 w-5" />
                   Course Progress
                 </CardTitle>
               </CardHeader>
-               <CardContent className="space-y-3">
-                 {courses.slice(0, 4).map(course => (
-                   <div 
-                     key={course.code} 
-                     className="space-y-2 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
-                     onClick={() => setActiveTab("courses")}
-                   >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{course.code}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {course.completedAssignments}/{course.totalAssignments}
-                        </span>
+              <CardContent className="space-y-4">
+                {courses.slice(0, 4).map((course, index) => {
+                  const completionRate = course.totalAssignments > 0 
+                    ? (course.completedAssignments / course.totalAssignments) * 100 
+                    : 0;
+                  const statusColor = completionRate > 70 ? 'text-green-600' : completionRate > 40 ? 'text-yellow-600' : 'text-red-600';
+                  
+                  return (
+                    <div 
+                      key={course.code} 
+                      className="space-y-2 cursor-pointer hover:bg-muted/50 p-3 rounded-lg transition-all hover:shadow-md animate-fade-in"
+                      onClick={() => setActiveTab("courses")}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <CircularProgress 
+                            value={course.completedAssignments} 
+                            max={course.totalAssignments}
+                            size={40}
+                          >
+                            {React.createElement(course.icon, { className: "h-4 w-4" })}
+                          </CircularProgress>
+                          <div>
+                            <span className="font-medium">{course.code}</span>
+                            <p className="text-xs text-muted-foreground">
+                              {course.completedAssignments} of {course.totalAssignments} completed
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={statusColor}>
+                          {Math.round(completionRate)}%
+                        </Badge>
                       </div>
-                   </div>
-                ))}
+                      <Progress value={completionRate} className="h-2" />
+                    </div>
+                  );
+                })}
+                {courses.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <BookOpen className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                    <p className="text-muted-foreground">No courses yet</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setActiveTab("calendar")}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Connect Canvas
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Gamification Section */}
+          {courses.length > 0 && (
+            <Card className="lg:col-span-2 animate-fade-in" style={{ animationDelay: '300ms' }}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Your Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Weekly Completion */}
+                <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 hover:shadow-md transition-shadow">
+                  <div className="flex justify-center mb-3">
+                    <CircularProgress 
+                      value={dashboardStats.weeklyCompleted} 
+                      max={dashboardStats.weeklyTotal}
+                      size={80}
+                    >
+                      <Target className="h-6 w-6 text-primary" />
+                    </CircularProgress>
+                  </div>
+                  <div className="text-2xl font-bold">
+                    <CountUpAnimation end={dashboardStats.weeklyCompleted} />
+                    <span className="text-muted-foreground">/{dashboardStats.weeklyTotal}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">This Week</div>
+                </div>
+                
+                {/* Completion Rate */}
+                <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-green-500/5 to-green-500/10 hover:shadow-md transition-shadow">
+                  <div className="text-3xl mb-2">📊</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    <CountUpAnimation 
+                      end={dashboardStats.weeklyTotal > 0 ? Math.round((dashboardStats.weeklyCompleted / dashboardStats.weeklyTotal) * 100) : 0} 
+                      suffix="%"
+                    />
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">Completion Rate</div>
+                </div>
+                
+                {/* Daily Motivation */}
+                <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-500/5 to-yellow-500/10 hover:shadow-md transition-shadow">
+                  <div className="text-3xl mb-2 animate-float">
+                    {dashboardStats.completedToday >= dashboardStats.totalItemsToday && dashboardStats.totalItemsToday > 0 ? '🎉' : '💪'}
+                  </div>
+                  <Badge variant="outline" className="mb-2">
+                    {dashboardStats.completedToday >= dashboardStats.totalItemsToday && dashboardStats.totalItemsToday > 0 
+                      ? 'All Done!' 
+                      : 'Keep Going!'}
+                  </Badge>
+                  <div className="text-sm text-muted-foreground">
+                    {dashboardStats.completedToday >= dashboardStats.totalItemsToday && dashboardStats.totalItemsToday > 0
+                      ? 'Amazing work today!'
+                      : `${dashboardStats.totalItemsToday - dashboardStats.completedToday} tasks remaining`}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="calendar" className="space-y-4">
+        <TabsContent value="calendar" className="space-y-4 animate-fade-in">
           {/* Calendar View Mode Toggle and Clear All Button */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -723,7 +914,7 @@ export const DashboardIntegratedView = memo(() => {
           </div>
         </TabsContent>
 
-        <TabsContent value="courses" className="space-y-4">
+        <TabsContent value="courses" className="space-y-4 animate-fade-in">
           <div className="grid gap-4">
             {courses.map(course => {
               const IconComponent = course.icon;
@@ -736,28 +927,47 @@ export const DashboardIntegratedView = memo(() => {
                     onOpenChange={() => toggleCourse(course.code)}
                   >
                      <CollapsibleTrigger asChild>
-                       <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                       <CardHeader className="cursor-pointer hover:bg-muted/50 hover:shadow-md transition-all duration-200">
                          <div className="flex items-center justify-between">
                            <div className="flex items-center space-x-3">
-                             <div 
-                               className="p-2 rounded-lg"
-                               style={{ 
-                                 backgroundColor: typeof course.color === 'string' ? `${course.color}20` : undefined,
-                                 border: typeof course.color === 'string' ? `1px solid ${course.color}40` : undefined
-                               }}
+                             <CircularProgress
+                               value={course.completedAssignments}
+                               max={course.totalAssignments}
+                               size={56}
                              >
-                               <IconComponent className="h-5 w-5" style={{ color: course.color }} />
-                             </div>
+                               <div 
+                                 className="p-2 rounded-lg"
+                                 style={{ 
+                                   backgroundColor: typeof course.color === 'string' ? `${course.color}20` : undefined,
+                                 }}
+                               >
+                                 <IconComponent className="h-5 w-5" style={{ color: course.color }} />
+                               </div>
+                             </CircularProgress>
                              <div>
                                <CardTitle className="text-lg">{course.code}</CardTitle>
                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                 <span>{course.totalAssignments} total assignments</span>
-                                 <span>{course.completedAssignments} completed</span>
-                                 <span>{course.upcomingAssignments} upcoming</span>
+                                 <span className="flex items-center gap-1">
+                                   <CheckCircle className="h-3 w-3" />
+                                   {course.completedAssignments}/{course.totalAssignments}
+                                 </span>
+                                 <Badge variant="outline" className="text-xs">
+                                   {course.upcomingAssignments} upcoming
+                                 </Badge>
                                </div>
                              </div>
                            </div>
-                           <div className="flex items-center gap-2">
+                           <div className="flex items-center gap-3">
+                             <Badge 
+                               variant="outline"
+                               className={
+                                 course.totalAssignments > 0 && (course.completedAssignments / course.totalAssignments) > 0.7 
+                                   ? 'text-green-600 border-green-600' 
+                                   : 'text-muted-foreground'
+                               }
+                             >
+                               {course.totalAssignments > 0 ? Math.round((course.completedAssignments / course.totalAssignments) * 100) : 0}%
+                             </Badge>
                              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                            </div>
                          </div>
@@ -766,68 +976,70 @@ export const DashboardIntegratedView = memo(() => {
                      
                      <CollapsibleContent>
                        <CardContent className="pt-0">
-                         {/* All Assignments - Scrollable, Sorted by Date */}
+                         {/* All Assignments - Scrollable, Sorted by Date with Staggered Animation */}
                          <div className="max-h-96 overflow-y-auto space-y-2">
                            {[...course.events, ...course.tasks]
                              .filter((item: any) => {
                                // Filter out assignments that are more than 3 weeks past due
                                const itemDate = new Date((item as any).end_time || (item as any).start_time || (item as any).due_date || '');
                                const today = new Date();
-                               const threeWeeksAgo = new Date(today.getTime() - (21 * 24 * 60 * 60 * 1000)); // 3 weeks in milliseconds
-                               
-                               // Keep the assignment if it's not older than 3 weeks past due
+                               const threeWeeksAgo = new Date(today.getTime() - (21 * 24 * 60 * 60 * 1000));
                                return itemDate >= threeWeeksAgo;
                              })
                              .sort((a, b) => {
-                               // Get dates for comparison - handle both events and tasks
                                const dateA = new Date((a as any).end_time || (a as any).start_time || (a as any).due_date || '');
                                const dateB = new Date((b as any).end_time || (b as any).start_time || (b as any).due_date || '');
-                               
-                               // Sort by closest to today's date
                                const today = new Date();
                                const diffA = Math.abs(dateA.getTime() - today.getTime());
                                const diffB = Math.abs(dateB.getTime() - today.getTime());
-                               
                                return diffA - diffB;
                              })
-                             .map((item: any) => {
+                             .map((item: any, index: number) => {
                                const isEvent = 'start_time' in item;
+                               const isCompleted = isEvent ? (item.is_completed || false) : (item.completion_status === 'completed');
+                               
                                return (
                                  <div 
                                    key={item.id} 
-                                   className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                                   className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 hover:shadow-sm transition-all animate-fade-in"
                                    onClick={() => isEvent ? openEventModal(item) : openTaskModal(item)}
+                                   style={{ animationDelay: `${index * 20}ms` }}
                                  >
-                                   <div className="flex items-center gap-2">
+                                   <div className="flex items-center gap-3 flex-1">
                                      <Checkbox 
-                                       checked={isEvent ? (item.is_completed || false) : (item.completion_status === 'completed')}
+                                       checked={isCompleted}
                                        onCheckedChange={(checked) => {
                                          if (isEvent) {
                                            handleEventToggle(item.id, checked as boolean);
                                          }
-                                         // Handle task toggle here if needed for tasks
                                        }}
                                        onClick={(e) => e.stopPropagation()}
                                      />
-                                     <span className={
-                                       (isEvent ? item.is_completed : item.completion_status === 'completed') 
-                                         ? 'line-through text-muted-foreground' 
-                                         : ''
-                                     }>
-                                       {item.title}
-                                     </span>
+                                     <div className="flex-1 min-w-0">
+                                       <span className={isCompleted ? 'line-through text-muted-foreground' : ''}>
+                                         {item.title}
+                                       </span>
+                                       {item.description && (
+                                         <p className="text-xs text-muted-foreground truncate mt-1">
+                                           {item.description}
+                                         </p>
+                                       )}
+                                     </div>
                                    </div>
-                                   <span className="text-sm text-muted-foreground">
-                                     {(item.end_time || item.start_time || item.due_date) && 
-                                       format(new Date(item.end_time || item.start_time || item.due_date), 'MMM d')
-                                     }
-                                   </span>
+                                   <div className="flex items-center gap-2 flex-shrink-0">
+                                     <span className="text-sm text-muted-foreground">
+                                       {(item.end_time || item.start_time || item.due_date) && 
+                                         format(new Date(item.end_time || item.start_time || item.due_date), 'MMM d')
+                                       }
+                                     </span>
+                                     {isCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
+                                   </div>
                                  </div>
                                );
                              })
                            }
                            {([...course.events, ...course.tasks]).length === 0 && (
-                             <p className="text-muted-foreground text-center py-4">No assignments found</p>
+                             <p className="text-muted-foreground text-center py-8">No assignments found</p>
                            )}
                         </div>
                       </CardContent>
@@ -857,6 +1069,12 @@ export const DashboardIntegratedView = memo(() => {
         onClose={closeModal}
         event={selectedEvent || undefined}
         task={selectedTask || undefined}
+      />
+
+      {/* Confetti Effect */}
+      <ConfettiEffect 
+        active={showConfetti} 
+        onComplete={() => setShowConfetti(false)} 
       />
     </div>
   );
