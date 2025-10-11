@@ -241,7 +241,7 @@ const IndexContent = () => {
             >
               <ResizablePanel 
                 defaultSize={sidebarWidth} 
-                minSize={10} 
+                minSize={8} 
                 maxSize={40}
                 className="h-full"
               >
