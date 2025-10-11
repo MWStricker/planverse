@@ -49,12 +49,9 @@ const IndexContent = () => {
   // Initialize user preferences on app load
   usePreferences();
 
-  // Load saved sidebar width
+  // Clear any saved sidebar width to ensure consistency
   useEffect(() => {
-    const saved = localStorage.getItem('planverse-sidebar-width');
-    if (saved) {
-      setSidebarWidth(Number(saved));
-    }
+    localStorage.removeItem('planverse-sidebar-width');
   }, []);
 
   // Debounced handler to save sidebar width
