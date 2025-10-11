@@ -282,7 +282,7 @@ export const IntegrationSetup = () => {
         provider: 'google',
         options: {
           scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
-          redirectTo: `${window.location.origin}/integrations`,
+          redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -325,7 +325,7 @@ export const IntegrationSetup = () => {
         provider: 'spotify',
         options: {
           scopes: 'user-read-currently-playing user-read-playback-state',
-          redirectTo: `${window.location.origin}/integrations`,
+          redirectTo: `${window.location.origin}/`,
         },
       });
 
@@ -510,7 +510,7 @@ export const IntegrationSetup = () => {
           provider: 'google',
           options: {
             scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
-            redirectTo: `${window.location.origin}/integrations`,
+            redirectTo: `${window.location.origin}/`,
             queryParams: {
               access_type: 'offline',
               prompt: 'consent',
@@ -570,7 +570,7 @@ export const IntegrationSetup = () => {
             provider: 'google',
             options: {
               scopes: 'email profile openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly',
-              redirectTo: `${window.location.origin}/integrations`,
+              redirectTo: `${window.location.origin}/`,
               queryParams: {
                 access_type: 'offline',
                 prompt: 'consent',
