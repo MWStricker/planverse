@@ -39,7 +39,7 @@ const IndexContent = () => {
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(12);
+  const [sidebarWidth, setSidebarWidth] = useState(20);
   const [sidebarWidthPx, setSidebarWidthPx] = useState(240);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, loading } = useAuth();
