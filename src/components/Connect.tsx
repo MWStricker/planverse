@@ -12,17 +12,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useConnect, Post, Comment } from '@/hooks/useConnect';
+import { useConnect, Post, Comment, PublicProfile } from '@/hooks/useConnect';
 import { useAuth } from '@/hooks/useAuth';
+import { useFriends } from '@/hooks/useFriends';
+import { useToast } from '@/hooks/use-toast';
 import { PeopleDirectory } from './PeopleDirectory';
 import { MessagingCenter } from './MessagingCenter';
 import { CreatePostDialog } from './CreatePostDialog';
 import { PostFilters } from './PostFilters';
+import { PublicProfile as PublicProfileComponent } from './PublicProfile';
 import { formatDistanceToNow } from 'date-fns';
 
 export const Connect = () => {
   const { user } = useAuth();
-  const { posts, loading, createPost, deletePost, toggleLike, fetchComments, addComment } = useConnect();
+  const { posts, loading, createPost, deletePost, toggleLike, fetchComments, addComment, fetchPublicProfile } = useConnect();
+  const { sendFriendRequest, checkFriendshipStatus } = useFriends();
+  const { toast } = useToast();
   const [newPostContent, setNewPostContent] = useState('');
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -43,6 +48,8 @@ export const Connect = () => {
     school: '',
     sortBy: 'newest'
   });
+  const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicProfile | null>(null);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
   const handleCreatePost = async (postData: {
     content: string;
@@ -108,6 +115,20 @@ export const Connect = () => {
 
   const formatTimeAgo = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  };
+
+  const handleViewProfile = async (userId: string) => {
+    const profile = await fetchPublicProfile(userId);
+    if (profile) {
+      setSelectedPublicProfile(profile);
+      setProfileDialogOpen(true);
+    } else {
+      toast({
+        title: "Profile Not Found",
+        description: "This user's profile is not public or doesn't exist.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Memoize filtered posts to prevent unnecessary recalculations
@@ -224,6 +245,7 @@ export const Connect = () => {
                   onComment={handleViewComments}
                   onDelete={deletePost}
                   onImageClick={handleOpenImage}
+                  onProfileClick={handleViewProfile}
                 />
               ))
             )}
@@ -279,7 +301,10 @@ export const Connect = () => {
                 ) : (
                   comments.map((comment) => (
                     <div key={comment.id} className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
+                      <Avatar 
+                        className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => handleViewProfile(comment.user_id)}
+                      >
                         <AvatarImage src={comment.profiles.avatar_url} />
                         <AvatarFallback>
                           {comment.profiles.display_name.charAt(0).toUpperCase()}
@@ -288,7 +313,10 @@ export const Connect = () => {
                       <div className="flex-1">
                         <div className="bg-muted rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm">
+                            <span 
+                              className="font-semibold text-sm cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleViewProfile(comment.user_id)}
+                            >
                               {comment.profiles.display_name}
                             </span>
                             <span className="text-xs text-muted-foreground">
@@ -398,6 +426,42 @@ export const Connect = () => {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Dialog */}
+      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {selectedPublicProfile && (
+            <PublicProfileComponent
+              profile={selectedPublicProfile}
+              onSendMessage={() => {
+                setProfileDialogOpen(false);
+                setSelectedChatUserId(selectedPublicProfile.user_id!);
+                // Switch to messages tab
+                const messagesButton = document.querySelector('[value="messages"]') as HTMLButtonElement;
+                messagesButton?.click();
+              }}
+              onAddFriend={async () => {
+                if (!selectedPublicProfile.user_id) return;
+                const status = await checkFriendshipStatus(selectedPublicProfile.user_id);
+                if (status === 'none') {
+                  const success = await sendFriendRequest(selectedPublicProfile.user_id);
+                  if (success) {
+                    toast({
+                      title: "Friend Request Sent",
+                      description: `Friend request sent to ${selectedPublicProfile.display_name}!`,
+                    });
+                    setProfileDialogOpen(false);
+                  }
+                } else if (status === 'friends') {
+                  toast({ title: "Already Friends", description: "You're already friends with this user!" });
+                } else if (status === 'sent') {
+                  toast({ title: "Request Pending", description: "You already sent a friend request." });
+                }
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

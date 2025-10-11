@@ -17,10 +17,11 @@ interface PostCardProps {
   onComment: (post: Post) => void;
   onDelete: (postId: string) => void;
   onImageClick: (imageUrl: string) => void;
+  onProfileClick?: (userId: string) => void;
 }
 
 // Memoized PostCard for better performance
-export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onImageClick }: PostCardProps) => {
+export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onImageClick, onProfileClick }: PostCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const { hasIntersected } = useIntersectionObserver(cardRef, { rootMargin: '100px' });
   
@@ -43,7 +44,10 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
     <Card ref={cardRef} className="animate-fade-in will-change-transform">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
+          <Avatar 
+            className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => onProfileClick?.(post.user_id)}
+          >
             <AvatarImage src={post.profiles.avatar_url} loading="lazy" />
             <AvatarFallback>
               {post.profiles.display_name.charAt(0).toUpperCase()}
@@ -51,7 +55,10 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
           </Avatar>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-foreground">
+              <h3 
+                className="font-semibold text-foreground cursor-pointer hover:text-primary transition-colors"
+                onClick={() => onProfileClick?.(post.user_id)}
+              >
                 {post.profiles.display_name}
               </h3>
               {post.profiles.school && (
