@@ -43,7 +43,7 @@ serve(async (req) => {
 - end_time: ISO 8601 timestamp
 - description: Any additional details
 - location: If mentioned
-- event_type: One of: meeting, class, study, personal, other
+- event_type: One of: event, class, assignment, exam, work
 
 Current date/time context: ${new Date().toISOString()}
 
@@ -78,8 +78,8 @@ Respond ONLY with valid JSON in this exact format:
                   location: { type: "string", description: "Event location" },
                   event_type: { 
                     type: "string", 
-                    enum: ["meeting", "class", "study", "personal", "other"],
-                    description: "Type of event" 
+                    enum: ["event", "class", "assignment", "exam", "work"],
+                    description: "Type of event (event=general event, class=class session, assignment=homework/project, exam=test/quiz, work=job-related)" 
                   }
                 },
                 required: ["title", "start_time", "end_time", "event_type"],
