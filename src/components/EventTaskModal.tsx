@@ -376,88 +376,54 @@ export const EventTaskModal = ({
                 <span className="font-medium">Task Information</span>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Due Date</Label>
-                  <div className="text-sm">
-                    {task.due_date && (
-                      <>
-                        <div>{formatDateTime(task.due_date).date}</div>
-                        <div className="text-muted-foreground">{formatDateTime(task.due_date).time}</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-xs text-muted-foreground">Priority</Label>
-                  {isCreatingNew || isEditing ? (
-                    <Select value={editedPriority} onValueChange={setEditedPriority}>
-                      <SelectTrigger className="w-full mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">High (10)</SelectItem>
-                        <SelectItem value="7">Medium (7)</SelectItem>
-                        <SelectItem value="5">Normal (5)</SelectItem>
-                        <SelectItem value="3">Low (3)</SelectItem>
-                        <SelectItem value="1">Very Low (1)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge 
-                      variant={
-                        (task.priority_score || 0) >= 8 ? "destructive" : 
-                        (task.priority_score || 0) >= 6 ? "default" : 
-                        "secondary"
-                      }
-                      className="mt-1"
-                    >
-                      {task.priority_score || "Not set"}
-                    </Badge>
+              <div>
+                <Label className="text-xs text-muted-foreground">Due Date</Label>
+                <div className="text-sm">
+                  {task.due_date && (
+                    <>
+                      <div>{formatDateTime(task.due_date).date}</div>
+                      <div className="text-muted-foreground">{formatDateTime(task.due_date).time}</div>
+                    </>
                   )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Status</Label>
-                  {isEditing ? (
-                    <Select value={editedStatus} onValueChange={setEditedStatus}>
-                      <SelectTrigger className="w-full mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge 
-                      variant={
-                        task.completion_status === "completed" ? "default" :
-                        task.completion_status === "in_progress" ? "secondary" :
-                        "outline"
-                      }
-                      className="mt-1"
-                    >
-                      {task.completion_status || "Pending"}
-                    </Badge>
-                  )}
-                </div>
-
-                {task.course_name && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Course</Label>
-                    <div className="text-sm flex items-center gap-1 mt-1">
-                      <BookOpen className="h-3 w-3" />
-                      {task.course_name}
-                    </div>
-                  </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Status</Label>
+                {isEditing ? (
+                  <Select value={editedStatus} onValueChange={setEditedStatus}>
+                    <SelectTrigger className="w-full max-w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge 
+                    variant={
+                      task.completion_status === "completed" ? "default" :
+                      task.completion_status === "in_progress" ? "secondary" :
+                      "outline"
+                    }
+                  >
+                    {task.completion_status || "Pending"}
+                  </Badge>
                 )}
               </div>
+
+              {task.course_name && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Course</Label>
+                  <div className="text-sm flex items-center gap-1 mt-1">
+                    <BookOpen className="h-3 w-3" />
+                    {task.course_name}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
