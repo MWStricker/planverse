@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { formatSourceProvider } from "@/lib/utils";
 
 interface Event {
   id: string;
@@ -414,7 +415,7 @@ export const EventTaskModal = ({
                   <Label className="text-xs text-muted-foreground">Source</Label>
                   <div className="text-sm flex items-center gap-1 mt-1">
                     <BookOpen className="h-3 w-3" />
-                    {event.source_provider}
+                    {formatSourceProvider(event.source_provider)}
                   </div>
                 </div>
               )}

@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, formatSourceProvider } from "@/lib/utils";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -808,7 +808,7 @@ export const Tasks = () => {
                                     </span>
                                   )}
                                   {item.source_provider && (
-                                    <span>Source: {item.source_provider}</span>
+                                    <span>Source: {formatSourceProvider(item.source_provider)}</span>
                                   )}
                                 </div>
                               </div>
@@ -878,7 +878,7 @@ export const Tasks = () => {
                                     </span>
                                   )}
                                   {item.source_provider && (
-                                    <span>Source: {item.source_provider}</span>
+                                    <span>Source: {formatSourceProvider(item.source_provider)}</span>
                                   )}
                                 </div>
                               </div>
@@ -1014,7 +1014,7 @@ export const Tasks = () => {
                                           </div>
                                           {task.source_provider && (
                                             <Badge variant="outline" className="text-xs h-4 px-2 capitalize">
-                                              {task.source_provider}
+                                              {formatSourceProvider(task.source_provider)}
                                             </Badge>
                                           )}
                                         </div>

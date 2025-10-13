@@ -21,6 +21,17 @@ export async function fileToBase64(file: File): Promise<string> {
   return dataURL.split(',')[1] || '';
 }
 
+// Format source provider for display
+export function formatSourceProvider(provider: string | undefined): string {
+  if (!provider) return '';
+  
+  // Replace underscores with spaces and capitalize each word
+  return provider
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 // Compress an image file on the client and return base64 (no data URL prefix)
 export async function imageFileToBase64Compressed(
   file: File,

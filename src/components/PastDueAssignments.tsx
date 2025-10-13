@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, formatSourceProvider } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -414,7 +414,7 @@ export const PastDueAssignments = () => {
                           </span>
                         )}
                         {item.source_provider && (
-                          <span>Source: {item.source_provider}</span>
+                          <span>Source: {formatSourceProvider(item.source_provider)}</span>
                         )}
                       </div>
                     </div>
