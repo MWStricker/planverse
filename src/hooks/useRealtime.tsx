@@ -19,13 +19,18 @@ interface RealtimeContextType {
   getUserStatus: (userId: string) => 'online' | 'idle' | 'dnd' | 'offline';
 }
 
-const RealtimeContext = createContext<RealtimeContextType | null>(null);
+const RealtimeContext = createContext<RealtimeContextType>({
+  onlineUsers: [],
+  unreadCount: 0,
+  userStatuses: {},
+  currentUserStatus: 'offline',
+  markNotificationAsRead: () => {},
+  updatePresence: () => {},
+  getUserStatus: () => 'offline'
+});
 
 export const useRealtime = () => {
   const context = useContext(RealtimeContext);
-  if (!context) {
-    throw new Error('useRealtime must be used within a RealtimeProvider');
-  }
   return context;
 };
 
