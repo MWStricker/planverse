@@ -36,8 +36,12 @@ export const Connect = () => {
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
-  const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('feed');
+  const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(() => 
+    localStorage.getItem('connect-selected-chat') || null
+  );
+  const [activeTab, setActiveTab] = useState(() => 
+    localStorage.getItem('connect-active-tab') || 'feed'
+  );
   const [imageZoomOpen, setImageZoomOpen] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [imageZoom, setImageZoom] = useState(100);
@@ -51,6 +55,20 @@ export const Connect = () => {
   });
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicProfile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+
+  // Persist active tab to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('connect-active-tab', activeTab);
+  }, [activeTab]);
+
+  // Persist selected chat to localStorage
+  React.useEffect(() => {
+    if (selectedChatUserId) {
+      localStorage.setItem('connect-selected-chat', selectedChatUserId);
+    } else {
+      localStorage.removeItem('connect-selected-chat');
+    }
+  }, [selectedChatUserId]);
 
   const handleCreatePost = async (postData: {
     content: string;
