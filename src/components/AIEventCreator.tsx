@@ -166,35 +166,57 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="description">Event Description</Label>
-            <div className="relative">
-              <Textarea
-                id="description"
-                placeholder="E.g., 'Team meeting tomorrow at 2pm for 1 hour to discuss project updates' or 'Study session for Psychology exam next Friday from 3pm to 5pm in the library'"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={5}
-                disabled={isProcessing || isRecording || isTranscribing}
-                className="pr-14"
-              />
-              <Button
-                type="button"
-                size="icon"
-                variant={isRecording ? "destructive" : "secondary"}
-                className="absolute right-2 top-2"
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={isProcessing || isTranscribing}
-              >
-                {isTranscribing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isRecording ? (
-                  <MicOff className="h-4 w-4" />
-                ) : (
-                  <Mic className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+            
+            <Button
+              type="button"
+              size="lg"
+              variant={isRecording ? "destructive" : "outline"}
+              className={`w-full ${isRecording ? 'animate-pulse' : ''}`}
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isProcessing || isTranscribing}
+            >
+              {isTranscribing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Transcribing...
+                </>
+              ) : isRecording ? (
+                <>
+                  <MicOff className="mr-2 h-4 w-4" />
+                  Stop Recording
+                </>
+              ) : (
+                <>
+                  <Mic className="mr-2 h-4 w-4" />
+                  Start Voice Recording
+                </>
+              )}
+            </Button>
+
+            {isRecording && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-md animate-pulse">
+                <div className="h-3 w-3 bg-red-500 rounded-full" />
+                <span className="text-sm font-medium text-red-700 dark:text-red-400">
+                  Recording... Speak your event details clearly
+                </span>
+              </div>
+            )}
+            
+            <Textarea
+              id="description"
+              placeholder="Describe your event... (e.g., 'Math exam tomorrow at 2pm')"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              disabled={isProcessing || isRecording || isTranscribing}
+            />
+            
             <p className="text-sm text-muted-foreground">
-              Include details like title, date, time, duration, and location. Click the microphone to use voice dictation.
+              {isRecording 
+                ? "🎤 Listening... Speak clearly" 
+                : isTranscribing 
+                ? "✍️ Converting speech to text..." 
+                : "Type or use voice recording to describe your event"}
             </p>
           </div>
         </div>
