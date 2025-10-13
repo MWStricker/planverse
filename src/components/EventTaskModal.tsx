@@ -148,14 +148,67 @@ export const EventTaskModal = ({
         
         setIsEditing(false);
         onClose();
-      } else {
-        // Update existing item
+      } else if (task) {
+        // Update existing task
+        console.log('Updating existing task...');
+        
+        const updateData = {
+          title: editedTitle,
+          description: editedNotes,
+          priority_score: parseInt(editedPriority),
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('Update data:', updateData);
+
+        const { error } = await supabase
+          .from('tasks')
+          .update(updateData)
+          .eq('id', task.id)
+          .eq('user_id', user.id);
+
+        console.log('Update result:', { error });
+
+        if (error) throw error;
+
         toast({
-          title: "Changes saved",
-          description: `Successfully updated ${event ? "event" : "task"}: ${editedTitle}`,
+          title: "Task Updated",
+          description: `Successfully updated task: ${editedTitle}`,
         });
         
-        // Dispatch general refresh for updates
+        // Dispatch general refresh
+        window.dispatchEvent(new CustomEvent('dataRefresh'));
+        
+        setIsEditing(false);
+        onClose();
+      } else if (event) {
+        // Update existing event
+        console.log('Updating existing event...');
+        
+        const updateData = {
+          title: editedTitle,
+          description: editedNotes,
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('Update data:', updateData);
+
+        const { error } = await supabase
+          .from('events')
+          .update(updateData)
+          .eq('id', event.id)
+          .eq('user_id', user.id);
+
+        console.log('Update result:', { error });
+
+        if (error) throw error;
+
+        toast({
+          title: "Event Updated",
+          description: `Successfully updated event: ${editedTitle}`,
+        });
+        
+        // Dispatch general refresh
         window.dispatchEvent(new CustomEvent('dataRefresh'));
         
         setIsEditing(false);
@@ -388,32 +441,37 @@ export const EventTaskModal = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Status</Label>
-                {isEditing ? (
-                  <Select value={editedStatus} onValueChange={setEditedStatus}>
-                    <SelectTrigger className="w-full max-w-[200px]">
+              {isCreatingNew || isEditing ? (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Priority</Label>
+                  <Select value={editedPriority} onValueChange={setEditedPriority}>
+                    <SelectTrigger className="w-full mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="10">High (10)</SelectItem>
+                      <SelectItem value="7">Medium (7)</SelectItem>
+                      <SelectItem value="5">Normal (5)</SelectItem>
+                      <SelectItem value="3">Low (3)</SelectItem>
+                      <SelectItem value="1">Very Low (1)</SelectItem>
                     </SelectContent>
                   </Select>
-                ) : (
-                  <Badge 
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Priority</Label>
+                  <Badge
                     variant={
-                      task.completion_status === "completed" ? "default" :
-                      task.completion_status === "in_progress" ? "secondary" :
-                      "outline"
+                      (task.priority_score || 0) >= 8 ? "destructive" : 
+                      (task.priority_score || 0) >= 6 ? "default" : 
+                      "secondary"
                     }
+                    className="mt-1"
                   >
-                    {task.completion_status || "Pending"}
+                    {task.priority_score || "Not set"}
                   </Badge>
-                )}
-              </div>
+                </div>
+              )}
 
               {task.course_name && (
                 <div>
