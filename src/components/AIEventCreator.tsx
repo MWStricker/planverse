@@ -130,9 +130,12 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
         throw new Error(data.error);
       }
 
+      const count = data.count || 1;
       toast({
-        title: "Event created!",
-        description: `"${data.event.title}" has been added to your calendar.`,
+        title: "Success!",
+        description: count === 1 
+          ? `"${data.events[0].title}" has been added to your calendar.`
+          : `${count} events created successfully!`,
       });
 
       setDescription("");

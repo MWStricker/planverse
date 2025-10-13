@@ -25,6 +25,20 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    // Initialize Supabase client to get user timezone
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get user's timezone from profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('timezone')
+      .eq('user_id', userId)
+      .single();
+
+    const userTimezone = profile?.timezone || 'America/New_York';
+
     // Call Lovable AI to parse the event description
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -39,13 +53,19 @@ serve(async (req) => {
             role: 'system',
             content: `You are an event creation assistant. Parse the user's event description and extract:
 - title: A clear, concise event title
-- start_time: ISO 8601 timestamp (use current timezone context, default to next occurrence if date is relative)
-- end_time: ISO 8601 timestamp
+- start_time: ISO 8601 timestamp in UTC (ending with Z)
+- end_time: ISO 8601 timestamp in UTC (ending with Z)
 - description: Any additional details
 - location: If mentioned
 - event_type: One of: event, class, assignment, exam, work
 
-Current date/time context: ${new Date().toISOString()}
+Current date/time: ${new Date().toLocaleString('en-US', { timeZone: userTimezone })} (${userTimezone})
+User timezone: ${userTimezone}
+
+**IMPORTANT**: When parsing times, interpret them in the user's timezone (${userTimezone}). 
+- "5pm tomorrow" means 5pm ${userTimezone}, convert to UTC for start_time/end_time
+- Return timestamps in ISO 8601 UTC format (ending with Z)
+- If multiple events are mentioned, create MULTIPLE tool calls, one for each event
 
 Respond ONLY with valid JSON in this exact format:
 {
@@ -101,52 +121,74 @@ Respond ONLY with valid JSON in this exact format:
     const aiData = await aiResponse.json();
     console.log('AI Response:', JSON.stringify(aiData, null, 2));
 
-    // Extract the parsed event data from tool call
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall || toolCall.function?.name !== 'create_event') {
-      throw new Error('Failed to parse event details from AI');
+    // Extract ALL tool calls (AI may return multiple events)
+    const toolCalls = aiData.choices?.[0]?.message?.tool_calls || [];
+    if (toolCalls.length === 0) {
+      throw new Error('No events were parsed from the description');
     }
 
-    const eventData = JSON.parse(toolCall.function.arguments);
-    console.log('Parsed event data:', eventData);
+    // Process each tool call and create events
+    const createdEvents = [];
+    const errors = [];
 
-    // Validate required fields
-    if (!eventData.title || !eventData.start_time || !eventData.end_time) {
-      throw new Error('Missing required event fields');
+    for (const toolCall of toolCalls) {
+      try {
+        if (toolCall.function?.name !== 'create_event') {
+          console.warn('Skipping non-event tool call:', toolCall);
+          continue;
+        }
+
+        const eventData = JSON.parse(toolCall.function.arguments);
+        console.log('Parsed event data:', eventData);
+
+        // Validate required fields
+        if (!eventData.title || !eventData.start_time || !eventData.end_time) {
+          throw new Error(`Missing required fields for event: ${eventData.title || 'Unknown'}`);
+        }
+
+        // Insert the event into the database
+        const { data: event, error: dbError } = await supabase
+          .from('events')
+          .insert({
+            user_id: userId,
+            title: eventData.title,
+            start_time: eventData.start_time,
+            end_time: eventData.end_time,
+            description: eventData.description || null,
+            location: eventData.location || null,
+            event_type: eventData.event_type,
+            source_provider: 'ai_generated',
+            is_completed: false,
+            is_all_day: false,
+          })
+          .select()
+          .single();
+
+        if (dbError) {
+          console.error('Database error for event:', eventData.title, dbError);
+          errors.push({ title: eventData.title, error: dbError.message });
+        } else {
+          console.log('Event created successfully:', event);
+          createdEvents.push(event);
+        }
+      } catch (error) {
+        console.error('Error processing tool call:', error);
+        errors.push({ error: error instanceof Error ? error.message : 'Unknown error' });
+      }
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Insert the event into the database
-    const { data: event, error: dbError } = await supabase
-      .from('events')
-      .insert({
-        user_id: userId,
-        title: eventData.title,
-        start_time: eventData.start_time,
-        end_time: eventData.end_time,
-        description: eventData.description || null,
-        location: eventData.location || null,
-        event_type: eventData.event_type,
-        source_provider: 'ai_generated',
-        is_completed: false,
-        is_all_day: false,
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error('Database error:', dbError);
-      throw new Error(`Failed to save event: ${dbError.message}`);
+    // Return response with all created events
+    if (createdEvents.length === 0) {
+      throw new Error(`Failed to create any events. Errors: ${JSON.stringify(errors)}`);
     }
-
-    console.log('Event created successfully:', event);
 
     return new Response(
-      JSON.stringify({ success: true, event }),
+      JSON.stringify({ 
+        success: true, 
+        events: createdEvents,
+        count: createdEvents.length,
+        errors: errors.length > 0 ? errors : undefined
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
