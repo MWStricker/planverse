@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
+import { useModeration } from '@/hooks/useModeration';
 
 export interface Post {
   id: string;
@@ -56,6 +57,7 @@ export interface PublicProfile {
 export const useConnect = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { moderateContent } = useModeration();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -131,7 +133,7 @@ export const useConnect = () => {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('posts')
         .insert({
           user_id: user.id,
@@ -142,9 +144,16 @@ export const useConnect = () => {
           tags: [],
           target_major: null,
           target_community: null
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Moderate the post content
+      if (data?.id) {
+        await moderateContent(content, 'post', data.id);
+      }
 
       toast({
         title: "Success",
@@ -283,15 +292,22 @@ export const useConnect = () => {
         return post;
       }));
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('comments')
         .insert({
           post_id: postId,
           user_id: user.id,
           content,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Moderate the comment content
+      if (data?.id) {
+        await moderateContent(content, 'comment', data.id);
+      }
 
       // Update comments count
       await supabase.rpc('increment_comments_count', { post_id: postId });
