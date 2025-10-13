@@ -159,14 +159,18 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   };
 
   const renderMusicQuestion = () => (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Music className="h-6 w-6 text-primary" />
-        <h3 className="text-xl font-semibold">Who is your favorite artist?</h3>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl">
+          <Music className="h-7 w-7 text-primary animate-pulse" />
+        </div>
+        <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          Who is your favorite artist?
+        </h3>
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="favorite-artist">Artist Name</Label>
+      <div className="space-y-3">
+        <Label htmlFor="favorite-artist" className="text-base font-semibold">Artist Name</Label>
         <Input
           id="favorite-artist"
           value={answers.favorite_artist || ''}
@@ -178,10 +182,11 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
             }
           }}
           placeholder="e.g., Taylor Swift, Drake, The Beatles..."
-          className="text-lg transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:scale-[1.02]"
+          className="text-lg h-14 transition-all duration-300 hover:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-[1.01] shadow-sm hover:shadow-md"
           maxLength={100}
         />
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground flex items-start gap-2">
+          <Sparkles className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
           Tell us who you love listening to! This helps us connect you with people who share your music taste.
         </p>
       </div>
@@ -191,7 +196,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const renderQuestion = (question: Question) => {
     if (question.type === 'textarea') {
       return (
-        <div className="space-y-1">
+        <div className="space-y-2 animate-fade-in">
           <Textarea
             value={answers[question.field] || ''}
             onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
@@ -202,10 +207,10 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
               }
             }}
             placeholder={question.placeholder || 'Your answer...'}
-            className="min-h-[120px] transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:scale-[1.01]"
+            className="min-h-[140px] text-base transition-all duration-300 hover:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-[1.01] shadow-sm hover:shadow-md resize-none"
             maxLength={500}
           />
-          <p className="text-xs text-muted-foreground">Press Ctrl+Enter (or Cmd+Enter) to continue</p>
+          <p className="text-xs text-muted-foreground italic">💡 Press Ctrl+Enter (or Cmd+Enter) to continue</p>
         </div>
       );
     }
@@ -221,7 +226,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           }
         }}
         placeholder={question.placeholder || 'Your answer...'}
-        className="text-lg transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:scale-[1.02]"
+        className="text-lg h-14 transition-all duration-300 hover:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-[1.01] shadow-sm hover:shadow-md animate-fade-in"
         maxLength={200}
       />
     );
@@ -238,32 +243,45 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const currentQuestion = currentStep === 0 ? null : selectedQuestions[currentStep - 1];
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <CardTitle>Welcome to PlanVerse!</CardTitle>
+    <div className="fixed inset-0 bg-gradient-to-br from-background via-primary/5 to-accent/5 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl shadow-2xl border-2 animate-scale-in hover:shadow-primary/10 transition-shadow duration-300">
+        <CardHeader className="space-y-4 pb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-lg shadow-lg">
+              <Sparkles className="h-6 w-6 text-white" />
+            </div>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+              Welcome to PlanVerse!
+            </CardTitle>
           </div>
-          <CardDescription>
+          <CardDescription className="text-base">
             Help us connect you with people who share your interests ({currentStep + 1} of {totalSteps})
           </CardDescription>
-          <Progress value={progress} className="mt-4" />
+          <div className="relative">
+            <Progress value={progress} className="mt-2 h-3 bg-muted/50" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-sm -z-10" />
+          </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pb-8">
           {currentStep === 0 ? renderMusicQuestion() : (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">{currentQuestion?.text}</h3>
+            <div className="space-y-5 animate-fade-in">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg mt-1">
+                  <Music className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold leading-tight">{currentQuestion?.text}</h3>
+              </div>
               {currentQuestion && renderQuestion(currentQuestion)}
             </div>
           )}
 
-          <div className="flex justify-between pt-4">
+          <div className="flex justify-between pt-6 border-t">
             <Button
               variant="outline"
               onClick={handleBack}
               disabled={currentStep === 0}
+              className="transition-all duration-300 hover:scale-105 hover:border-primary/50 disabled:opacity-50 disabled:hover:scale-100"
             >
               <ChevronLeft className="h-4 w-4 mr-2" />
               Back
@@ -272,9 +290,20 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
             <Button
               onClick={handleNext}
               disabled={loading}
+              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-primary/25"
             >
               {currentStep === totalSteps - 1 ? (
-                loading ? 'Saving...' : 'Complete'
+                loading ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Complete
+                  </>
+                )
               ) : (
                 <>
                   Next
