@@ -25,9 +25,9 @@ export interface TabItem {
 }
 
 const defaultTabOrder = [
+  'connect',
   'dashboard',
   'calendar', 
-  'connect',
   'courses',
   'tasks',
   'upload'
