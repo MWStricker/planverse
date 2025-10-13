@@ -217,14 +217,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       {/* Conversations List */}
       <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 flex-col border-r`}>
         <div className="p-4 border-b">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-foreground">Messages</h3>
-            {onClose && (
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          <h3 className="font-semibold text-foreground">Messages</h3>
         </div>
         
         <ScrollArea className="flex-1">
