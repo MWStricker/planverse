@@ -114,8 +114,7 @@ export const usePeople = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .eq('is_public', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

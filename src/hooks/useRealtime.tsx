@@ -51,6 +51,9 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
         user_id: user.id,
         status,
         last_seen: new Date().toISOString()
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
       });
 
     if (error) {
@@ -267,10 +270,13 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
 
   // Load online users
   const loadOnlineUsers = async () => {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    
     const { data, error } = await supabase
       .from('user_presence')
       .select('user_id')
-      .eq('status', 'online');
+      .eq('status', 'online')
+      .gte('last_seen', fiveMinutesAgo);
 
     if (error) {
       console.error('Error loading online users:', error);

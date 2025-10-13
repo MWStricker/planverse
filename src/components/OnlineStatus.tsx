@@ -8,8 +8,11 @@ interface OnlineStatusProps {
 }
 
 export const OnlineStatus: React.FC<OnlineStatusProps> = ({ userId, className = '' }) => {
-  const { onlineUsers } = useRealtime();
-  const isOnline = onlineUsers.includes(userId);
+  const { getUserStatus } = useRealtime();
+  const userStatus = getUserStatus(userId);
+  
+  // Check if user is actually online
+  const isOnline = userStatus === 'online';
 
   if (!isOnline) return null;
 
