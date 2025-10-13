@@ -34,7 +34,7 @@ const PageLoader = () => (
 );
 
 const IndexContent = () => {
-  const [currentPage, setCurrentPage] = useState('connect');
+  const [currentPage, setCurrentPage] = useState('');
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
@@ -119,7 +119,7 @@ const IndexContent = () => {
 
   // Set initial page based on first tab in user's order
   useEffect(() => {
-    if (tabOrder.length > 0 && currentPage === 'connect') {
+    if (tabOrder.length > 0 && !currentPage) {
       setCurrentPage(tabOrder[0]);
     }
   }, [tabOrder]);
