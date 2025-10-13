@@ -161,10 +161,10 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const renderMusicQuestion = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-gradient-to-br from-primary/20 to-warning/20 rounded-xl">
-          <Music className="h-7 w-7 text-primary animate-pulse" />
+        <div className="p-3 rounded-xl" style={{ background: 'linear-gradient(to bottom right, rgba(17, 150, 239, 0.2), rgba(251, 214, 76, 0.2))' }}>
+          <Music className="h-7 w-7 text-[#1196ef] animate-pulse" />
         </div>
-        <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent">
+        <h3 className="text-2xl font-bold" style={{ background: 'linear-gradient(to right, #1196ef, #fbd64c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
           Who is your favorite artist?
         </h3>
       </div>
@@ -186,7 +186,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           maxLength={100}
         />
         <p className="text-sm text-muted-foreground flex items-start gap-2">
-          <Sparkles className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
+          <Sparkles className="h-4 w-4 mt-0.5 text-[#1196ef] flex-shrink-0" />
           Tell us who you love listening to! This helps us connect you with people who share your music taste.
         </p>
       </div>
@@ -243,14 +243,14 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const currentQuestion = currentStep === 0 ? null : selectedQuestions[currentStep - 1];
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-background via-primary/5 to-warning/5 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4" style={{ background: 'linear-gradient(to bottom right, hsl(var(--background)), rgba(17, 150, 239, 0.05), rgba(251, 214, 76, 0.05))' }}>
       <Card className="w-full max-w-2xl shadow-2xl border-2 animate-scale-in hover:shadow-primary/10 transition-shadow duration-300">
         <CardHeader className="space-y-4 pb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-gradient-to-br from-primary to-warning rounded-lg shadow-lg">
+            <div className="p-2.5 rounded-lg shadow-lg" style={{ background: 'linear-gradient(to bottom right, #1196ef, #fbd64c)' }}>
               <Sparkles className="h-6 w-6 text-white" />
             </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-warning bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold" style={{ background: 'linear-gradient(to right, #1196ef, #1196ef, #fbd64c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               Welcome to PlanVerse!
             </CardTitle>
           </div>
@@ -259,7 +259,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           </CardDescription>
           <div className="relative">
             <Progress value={progress} className="mt-2 h-3 bg-muted/50" />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-warning/20 rounded-full blur-sm -z-10" />
+            <div className="absolute inset-0 rounded-full blur-sm -z-10" style={{ background: 'linear-gradient(to right, rgba(17, 150, 239, 0.2), rgba(251, 214, 76, 0.2))' }} />
           </div>
         </CardHeader>
 
@@ -267,8 +267,8 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           {currentStep === 0 ? renderMusicQuestion() : (
             <div className="space-y-5 animate-fade-in">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-gradient-to-br from-primary/10 to-warning/10 rounded-lg mt-1">
-                  <Music className="h-5 w-5 text-primary" />
+                <div className="p-2 rounded-lg mt-1" style={{ background: 'linear-gradient(to bottom right, rgba(17, 150, 239, 0.1), rgba(251, 214, 76, 0.1))' }}>
+                  <Music className="h-5 w-5 text-[#1196ef]" />
                 </div>
                 <h3 className="text-2xl font-bold leading-tight">{currentQuestion?.text}</h3>
               </div>
@@ -290,7 +290,8 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
             <Button
               onClick={handleNext}
               disabled={loading}
-              className="bg-gradient-to-r from-primary to-warning hover:from-primary/90 hover:to-warning/90 transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-primary/25"
+              className="text-white hover:opacity-90 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              style={{ background: 'linear-gradient(to right, #1196ef, #fbd64c)' }}
             >
               {currentStep === totalSteps - 1 ? (
                 loading ? (
