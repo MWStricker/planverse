@@ -112,9 +112,17 @@ const IndexContent = () => {
   const {
     isReorderMode,
     setIsReorderMode,
+    tabOrder,
     saveTabOrder,
     cancelReorder,
   } = useTabReorder(navItems);
+
+  // Set initial page based on first tab in user's order
+  useEffect(() => {
+    if (tabOrder.length > 0 && currentPage === 'connect') {
+      setCurrentPage(tabOrder[0]);
+    }
+  }, [tabOrder]);
 
   // Check if user needs onboarding
   useEffect(() => {
