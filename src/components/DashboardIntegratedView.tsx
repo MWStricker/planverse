@@ -14,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EventTaskModal } from "@/components/EventTaskModal";
 import { CanvasIntegration } from "@/components/CanvasIntegration";
+import { AIEventCreator } from "@/components/AIEventCreator";
 import { getCourseIconById, courseIcons } from "@/data/courseIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -135,6 +136,7 @@ export const DashboardIntegratedView = memo(() => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAIEventDialogOpen, setIsAIEventDialogOpen] = useState(false);
 
   // Load data on component mount and listen for updates
   useEffect(() => {
@@ -619,7 +621,7 @@ export const DashboardIntegratedView = memo(() => {
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
-          {/* Calendar View Mode Toggle and Clear All Button */}
+          {/* Calendar View Mode Toggle and Action Buttons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button
@@ -645,8 +647,20 @@ export const DashboardIntegratedView = memo(() => {
               </Button>
             </div>
             
-            {/* Clear All Button */}
-            <AlertDialog>
+            <div className="flex items-center gap-2">
+              {/* AI Event Creator Button */}
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsAIEventDialogOpen(true)}
+              >
+                <Brain className="h-4 w-4" />
+                AI Create Event
+              </Button>
+
+              {/* Clear All Button */}
+              <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" className="gap-2">
                   <Trash2 className="h-4 w-4" />
@@ -677,8 +691,9 @@ export const DashboardIntegratedView = memo(() => {
                     Clear Calendar Data
                   </AlertDialogAction>
                 </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
 
           {/* Calendar Navigation - Date Display Only */}
@@ -857,6 +872,14 @@ export const DashboardIntegratedView = memo(() => {
         onClose={closeModal}
         event={selectedEvent || undefined}
         task={selectedTask || undefined}
+      />
+
+      {/* AI Event Creator Dialog */}
+      <AIEventCreator
+        open={isAIEventDialogOpen}
+        onOpenChange={setIsAIEventDialogOpen}
+        onEventCreated={loadAllData}
+        userId={user?.id || ''}
       />
     </div>
   );
