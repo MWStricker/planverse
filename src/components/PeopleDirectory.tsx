@@ -275,17 +275,17 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-12 w-12">
+                    <Avatar className="h-12 w-12 flex-shrink-0">
                       <AvatarImage src={friend.friend_profile?.avatar_url} />
                       <AvatarFallback>
                         {friend.friend_profile?.display_name?.charAt(0)?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 flex flex-col">
                       <div className="flex items-center gap-2">
                         <h4 
-                          className="font-semibold text-foreground cursor-pointer hover:text-primary"
+                          className="font-semibold text-foreground cursor-pointer hover:text-primary truncate"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (friend.friend_profile?.user_id) {
@@ -313,7 +313,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         )}
                       </div>
                       
-                      <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                      <div className="flex flex-wrap gap-1 mt-1 mb-3 min-h-[24px]">
                         {friend.friend_profile?.user_id && (
                           <OnlineStatus userId={friend.friend_profile.user_id} />
                         )}
@@ -339,7 +339,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                             e.stopPropagation();
                             onStartChat?.(friend.friend_profile!.user_id);
                           }}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 w-full mt-auto"
                         >
                           <MessageCircle className="h-3 w-3" />
                           Message
