@@ -96,8 +96,8 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
               )}
             </div>
           </div>
-          {/* Moderation status badge for post owners */}
-          {isOwner && post.moderation_status && post.moderation_status !== 'approved' && (
+          {/* Moderation status badge for post owners - only show if flagged/hidden */}
+          {isOwner && (post.moderation_status === 'auto_hidden' || post.moderation_status === 'flagged') && (
             <div className="ml-auto">
               {post.moderation_status === 'auto_hidden' && (
                 <Badge variant="destructive" className="flex items-center gap-1">
@@ -109,12 +109,6 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
                 <Badge variant="default" className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600">
                   <AlertTriangle className="h-3 w-3" />
                   Under review
-                </Badge>
-              )}
-              {post.moderation_status === 'pending' && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Checking...
                 </Badge>
               )}
             </div>
