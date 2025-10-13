@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Send, ArrowLeft, School, Upload, X } from 'lucide-react';
-import { useMessaging, Conversation } from '@/hooks/useMessaging';
+import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -38,10 +39,44 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Sync messages to local state
+  useEffect(() => {
+    setLocalMessages(messages);
+  }, [messages]);
+
   useEffect(() => {
     console.log('MessagingCenter: useEffect triggered - user:', user?.id, 'conversations:', conversations.length);
     scrollToBottom();
-  }, [messages]);
+  }, [localMessages]);
+
+  // Realtime subscription for new messages
+  useEffect(() => {
+    if (!selectedConversation || !user) return;
+
+    const channel = supabase
+      .channel('messages-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, (payload) => {
+        const newMessage = payload.new as Message;
+        // Only add if it's part of this conversation
+        if ((newMessage.sender_id === user.id && newMessage.receiver_id === selectedConversation.other_user?.id) ||
+            (newMessage.receiver_id === user.id && newMessage.sender_id === selectedConversation.other_user?.id)) {
+          setLocalMessages(prev => {
+            // Don't add if it's already there (from optimistic update)
+            if (prev.some(m => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation, user]);
 
   useEffect(() => {
     if (selectedUserId && conversations.length > 0) {
@@ -133,13 +168,32 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       setUploading(false);
     }
 
-    const success = await sendMessage(selectedConversation.other_user.id, newMessage, imageUrl);
+    // Optimistic update - add message immediately
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      sender_id: user!.id,
+      receiver_id: selectedConversation.other_user.id,
+      content: newMessage,
+      image_url: imageUrl,
+      is_read: false,
+      created_at: new Date().toISOString()
+    };
+
+    setLocalMessages(prev => [...prev, tempMessage]);
+    const messageContent = newMessage;
+    setNewMessage('');
+    setImageFile(null);
+
+    const success = await sendMessage(selectedConversation.other_user.id, messageContent, imageUrl);
     
-    if (success) {
-      setNewMessage('');
-      setImageFile(null);
-      fetchMessages(selectedConversation.id);
-      fetchConversations();
+    if (!success) {
+      // Remove temp message on failure
+      setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      });
     }
   };
 
@@ -263,8 +317,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {messages.map((message) => {
+                {localMessages.map((message) => {
                   const isOwn = message.sender_id === user?.id;
+                  const isTemp = message.id.startsWith('temp-');
                   return (
                     <div
                       key={message.id}
@@ -276,7 +331,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                             isOwn
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted text-foreground'
-                          }`}
+                          } ${isTemp ? 'opacity-70' : ''}`}
                         >
                           {message.image_url && (
                             <img
@@ -288,7 +343,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                           <p className="text-sm">{message.content}</p>
                         </div>
                         <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                          {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                         </p>
                       </div>
                     </div>

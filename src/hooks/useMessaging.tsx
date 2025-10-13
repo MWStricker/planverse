@@ -144,14 +144,12 @@ export const useMessaging = () => {
 
       if (messageError) throw messageError;
 
-      // Update conversation last message time
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', conversationId);
-
-      // Refresh conversations list
-      await fetchConversations();
+      // Update conversation last message time locally
+      setConversations(prev => prev.map(conv => 
+        conv.id === conversationId 
+          ? { ...conv, last_message_at: new Date().toISOString() }
+          : conv
+      ));
 
       return true;
     } catch (error) {
