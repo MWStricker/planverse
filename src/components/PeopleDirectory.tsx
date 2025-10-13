@@ -331,10 +331,6 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         )}
                       </div>
                       
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Friends since {formatDistanceToNow(new Date(friend.created_at), { addSuffix: true })}
-                      </p>
-                      
                       {friend.friend_profile?.user_id && (
                         <Button
                           size="sm"
