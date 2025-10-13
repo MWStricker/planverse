@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Music, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import planverseLogo from '@/assets/planverse-logo-onboarding.png';
 
 interface Question {
   id: string;
@@ -162,9 +163,6 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
     <div className="space-y-6 animate-fade-in">
       <div className="relative">
         <div className="flex items-center gap-4 mb-6">
-          <div className="p-4 bg-primary rounded-2xl shadow-lg hover:scale-110 transition-transform duration-300">
-            <Music className="h-8 w-8 text-white animate-pulse" />
-          </div>
           <div>
             <h3 className="text-3xl font-bold text-foreground">Who is your favorite artist?</h3>
             <p className="text-sm text-muted-foreground mt-1">🎵 Let's start with music!</p>
@@ -254,12 +252,12 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
       <Card className="w-full max-w-2xl shadow-2xl border-2 border-primary/20 animate-scale-in hover:shadow-primary/20 transition-all duration-300">
         <CardHeader className="space-y-6 pb-8 bg-primary/5 border-b-4 border-primary">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary rounded-2xl shadow-lg">
-              <Sparkles className="h-7 w-7 text-white" />
+            <div className="w-20 h-20 flex items-center justify-center">
+              <img src={planverseLogo} alt="PlanVerse" className="w-16 h-16 object-contain animate-float" />
             </div>
             <div>
               <CardTitle className="text-4xl font-bold text-foreground">
-                Welcome to PlanVerse! 🎉
+                Welcome to PlanVerse!
               </CardTitle>
               <CardDescription className="text-base mt-2">
                 Help us connect you with people who share your interests
@@ -279,9 +277,6 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           {currentStep === 0 ? renderMusicQuestion() : (
             <div className="space-y-6 animate-fade-in">
               <div className="flex items-start gap-4 p-4 bg-accent/10 border-l-4 border-accent rounded-r-xl">
-                <div className="p-2 bg-accent rounded-xl mt-1 shadow-md">
-                  <Music className="h-6 w-6 text-white" />
-                </div>
                 <h3 className="text-2xl font-bold leading-tight text-foreground">{currentQuestion?.text}</h3>
               </div>
               {currentQuestion && renderQuestion(currentQuestion)}
