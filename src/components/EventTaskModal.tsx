@@ -318,7 +318,7 @@ export const EventTaskModal = ({
     if (isCreatingNew) return "Create New Task";
     if (event) return isEditing ? "Edit Event" : "Event Details";
     if (task) return isEditing ? "Edit Task" : "Task Details";
-    return "Create New Item";
+    return "Details";
   };
 
   const formatDateTime = (dateString: string, sourceProvider?: string) => {
