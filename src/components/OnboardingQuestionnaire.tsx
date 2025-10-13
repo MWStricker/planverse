@@ -138,12 +138,13 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
 
       if (interestsError) throw interestsError;
 
-      // Update profile onboarding status
+      // Update profile onboarding status and set to public
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString()
+          onboarding_completed_at: new Date().toISOString(),
+          is_public: true
         })
         .eq('user_id', user.id);
 
