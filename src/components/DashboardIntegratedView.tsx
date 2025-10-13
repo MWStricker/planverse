@@ -648,16 +648,6 @@ export const DashboardIntegratedView = memo(() => {
             </div>
             
             <div className="flex items-center gap-2">
-              {/* AI Event Creator Button */}
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-2"
-                onClick={() => setIsAIEventDialogOpen(true)}
-              >
-                <Brain className="h-4 w-4" />
-                AI Create Event
-              </Button>
 
               {/* Clear All Button */}
               <AlertDialog>
@@ -730,6 +720,19 @@ export const DashboardIntegratedView = memo(() => {
                 setCurrentMonth={setCurrentDate}
               />
             )}
+          </div>
+
+          {/* AI Event Creator Button - positioned directly under calendar */}
+          <div className="mt-4">
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-2"
+              onClick={() => setIsAIEventDialogOpen(true)}
+            >
+              <Brain className="h-4 w-4" />
+              AI Create Event
+            </Button>
           </div>
 
           {/* Canvas Integration */}
