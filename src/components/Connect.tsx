@@ -222,7 +222,53 @@ export const Connect = () => {
         </TabsList>
 
         <TabsContent value="feed" className="space-y-6">
-...
+          {/* Post Filters */}
+          <PostFilters onFilterChange={setPostFilters} />
+          
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Latest Posts</h2>
+            <CreatePostDialog
+              open={isPostDialogOpen}
+              onOpenChange={setIsPostDialogOpen}
+              onCreatePost={handleCreatePost}
+            />
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => setIsPostDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Create Post
+            </Button>
+          </div>
+
+          {/* Posts Feed */}
+          <div className="max-w-2xl mx-auto space-y-4">
+            {filteredPosts.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground">
+                    {postFilters.search || postFilters.postType || postFilters.major || postFilters.school
+                      ? 'No posts match your filters.'
+                      : 'No posts yet. Be the first to share something!'
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  isOwner={user?.id === post.user_id}
+                  onLike={handleLike}
+                  onComment={handleViewComments}
+                  onDelete={deletePost}
+                  onImageClick={handleOpenImage}
+                  onProfileClick={handleViewProfile}
+                />
+              ))
+            )}
+          </div>
         </TabsContent>
 
         {/* Keep PeopleDirectory and MessagingCenter mounted to avoid refetch */}
