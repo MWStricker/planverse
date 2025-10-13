@@ -120,7 +120,15 @@ const IndexContent = () => {
   // Set initial page based on first tab in user's order
   useEffect(() => {
     if (tabOrder.length > 0 && !currentPage) {
-      setCurrentPage(tabOrder[0]);
+      // Filter tabOrder to only include tabs that exist in navItems
+      const validTabIds = navItems.map(item => item.id);
+      const validTabs = tabOrder.filter(id => validTabIds.includes(id));
+      
+      // Set to first valid tab, or fall back to first navItem if none are valid
+      const firstTab = validTabs.length > 0 ? validTabs[0] : navItems[0]?.id;
+      if (firstTab) {
+        setCurrentPage(firstTab);
+      }
     }
   }, [tabOrder]);
 
