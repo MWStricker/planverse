@@ -257,7 +257,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
             </div>
             <div>
               <CardTitle className="text-4xl font-bold text-foreground">
-                Welcome to PlanVerse!
+                Welcome to planverse
               </CardTitle>
               <CardDescription className="text-base mt-2">
                 Help us connect you with people who share your interests
