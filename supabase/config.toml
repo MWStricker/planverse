@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.link-spotify-connection]
 verify_jwt = true
+
+[functions.moderate-content]
+verify_jwt = true

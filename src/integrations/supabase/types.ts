@@ -67,6 +67,13 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_flags: Json | null
+          moderation_score: number | null
+          moderation_status:
+            | Database["public"]["Enums"]["moderation_status"]
+            | null
           post_id: string
           updated_at: string
           user_id: string
@@ -75,6 +82,13 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_flags?: Json | null
+          moderation_score?: number | null
+          moderation_status?:
+            | Database["public"]["Enums"]["moderation_status"]
+            | null
           post_id: string
           updated_at?: string
           user_id: string
@@ -83,6 +97,13 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_flags?: Json | null
+          moderation_score?: number | null
+          moderation_status?:
+            | Database["public"]["Enums"]["moderation_status"]
+            | null
           post_id?: string
           updated_at?: string
           user_id?: string
@@ -248,6 +269,45 @@ export type Database = {
         }
         Relationships: []
       }
+      moderation_logs: {
+        Row: {
+          action: string
+          ai_reasoning: string | null
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          moderation_flags: Json | null
+          moderation_score: number | null
+          moderator_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          ai_reasoning?: string | null
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          moderation_flags?: Json | null
+          moderation_score?: number | null
+          moderator_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          ai_reasoning?: string | null
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          moderation_flags?: Json | null
+          moderation_score?: number | null
+          moderator_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -352,6 +412,13 @@ export type Database = {
           id: string
           image_url: string | null
           likes_count: number | null
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_flags: Json | null
+          moderation_score: number | null
+          moderation_status:
+            | Database["public"]["Enums"]["moderation_status"]
+            | null
           post_type: string | null
           tags: string[] | null
           target_community: string | null
@@ -367,6 +434,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_flags?: Json | null
+          moderation_score?: number | null
+          moderation_status?:
+            | Database["public"]["Enums"]["moderation_status"]
+            | null
           post_type?: string | null
           tags?: string[] | null
           target_community?: string | null
@@ -382,6 +456,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_flags?: Json | null
+          moderation_score?: number | null
+          moderation_status?:
+            | Database["public"]["Enums"]["moderation_status"]
+            | null
           post_type?: string | null
           tags?: string[] | null
           target_community?: string | null
@@ -696,6 +777,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string
@@ -752,6 +854,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_comments_count: {
         Args: { post_id: string }
         Returns: undefined
@@ -766,7 +875,13 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      moderation_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "flagged"
+        | "auto_hidden"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -893,6 +1008,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      moderation_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "flagged",
+        "auto_hidden",
+      ],
+    },
   },
 } as const
