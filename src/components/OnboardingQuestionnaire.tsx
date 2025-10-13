@@ -160,13 +160,16 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
 
   const renderMusicQuestion = () => (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 rounded-xl" style={{ background: 'linear-gradient(to bottom right, rgba(17, 150, 239, 0.2), rgba(251, 214, 76, 0.2))' }}>
-          <Music className="h-7 w-7 text-[#1196ef] animate-pulse" />
+      <div className="relative">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-4 bg-primary rounded-2xl shadow-lg hover:scale-110 transition-transform duration-300">
+            <Music className="h-8 w-8 text-white animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-3xl font-bold text-foreground">Who is your favorite artist?</h3>
+            <p className="text-sm text-muted-foreground mt-1">🎵 Let's start with music!</p>
+          </div>
         </div>
-        <h3 className="text-2xl font-bold" style={{ background: 'linear-gradient(to right, #1196ef, #fbd64c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-          Who is your favorite artist?
-        </h3>
       </div>
       
       <div className="space-y-3">
@@ -182,13 +185,15 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
             }
           }}
           placeholder="e.g., Taylor Swift, Drake, The Beatles..."
-          className="text-lg h-14 transition-all duration-300 hover:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-[1.01] shadow-sm hover:shadow-md"
+          className="text-lg h-16 border-2 transition-all duration-300 hover:border-primary focus:ring-4 focus:ring-primary/20 focus:border-primary shadow-sm hover:shadow-lg"
           maxLength={100}
         />
-        <p className="text-sm text-muted-foreground flex items-start gap-2">
-          <Sparkles className="h-4 w-4 mt-0.5 text-[#1196ef] flex-shrink-0" />
-          Tell us who you love listening to! This helps us connect you with people who share your music taste.
-        </p>
+        <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border-l-4 border-primary">
+          <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-foreground">
+            Tell us who you love listening to! This helps us connect you with people who share your music taste.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -207,10 +212,12 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
               }
             }}
             placeholder={question.placeholder || 'Your answer...'}
-            className="min-h-[140px] text-base transition-all duration-300 hover:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-[1.01] shadow-sm hover:shadow-md resize-none"
+            className="min-h-[140px] text-base border-2 transition-all duration-300 hover:border-primary focus:ring-4 focus:ring-primary/20 focus:border-primary shadow-sm hover:shadow-lg resize-none"
             maxLength={500}
           />
-          <p className="text-xs text-muted-foreground italic">💡 Press Ctrl+Enter (or Cmd+Enter) to continue</p>
+          <p className="text-xs text-muted-foreground italic flex items-center gap-1">
+            💡 Press <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+Enter</kbd> to continue
+          </p>
         </div>
       );
     }
@@ -226,7 +233,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           }
         }}
         placeholder={question.placeholder || 'Your answer...'}
-        className="text-lg h-14 transition-all duration-300 hover:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-[1.01] shadow-sm hover:shadow-md animate-fade-in"
+        className="text-lg h-16 border-2 transition-all duration-300 hover:border-primary focus:ring-4 focus:ring-primary/20 focus:border-primary shadow-sm hover:shadow-lg animate-fade-in"
         maxLength={200}
       />
     );
@@ -243,72 +250,76 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const currentQuestion = currentStep === 0 ? null : selectedQuestions[currentStep - 1];
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4" style={{ background: 'linear-gradient(to bottom right, hsl(var(--background)), rgba(17, 150, 239, 0.05), rgba(251, 214, 76, 0.05))' }}>
-      <Card className="w-full max-w-2xl shadow-2xl border-2 animate-scale-in hover:shadow-primary/10 transition-shadow duration-300">
-        <CardHeader className="space-y-4 pb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-lg shadow-lg" style={{ background: 'linear-gradient(to bottom right, #1196ef, #fbd64c)' }}>
-              <Sparkles className="h-6 w-6 text-white" />
+    <div className="fixed inset-0 bg-background/98 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl shadow-2xl border-2 border-primary/20 animate-scale-in hover:shadow-primary/20 transition-all duration-300">
+        <CardHeader className="space-y-6 pb-8 bg-primary/5 border-b-4 border-primary">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary rounded-2xl shadow-lg">
+              <Sparkles className="h-7 w-7 text-white" />
             </div>
-            <CardTitle className="text-3xl font-bold" style={{ background: 'linear-gradient(to right, #1196ef, #1196ef, #fbd64c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Welcome to PlanVerse!
-            </CardTitle>
+            <div>
+              <CardTitle className="text-4xl font-bold text-foreground">
+                Welcome to PlanVerse! 🎉
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Help us connect you with people who share your interests
+              </CardDescription>
+            </div>
           </div>
-          <CardDescription className="text-base">
-            Help us connect you with people who share your interests ({currentStep + 1} of {totalSteps})
-          </CardDescription>
-          <div className="relative">
-            <Progress value={progress} className="mt-2 h-3 bg-muted/50" />
-            <div className="absolute inset-0 rounded-full blur-sm -z-10" style={{ background: 'linear-gradient(to right, rgba(17, 150, 239, 0.2), rgba(251, 214, 76, 0.2))' }} />
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm font-medium">
+              <span>Question {currentStep + 1} of {totalSteps}</span>
+              <span className="text-primary">{Math.round(progress)}% complete</span>
+            </div>
+            <Progress value={progress} className="h-3 shadow-inner" />
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6 pb-8">
+        <CardContent className="space-y-8 pt-8 pb-8">
           {currentStep === 0 ? renderMusicQuestion() : (
-            <div className="space-y-5 animate-fade-in">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg mt-1" style={{ background: 'linear-gradient(to bottom right, rgba(17, 150, 239, 0.1), rgba(251, 214, 76, 0.1))' }}>
-                  <Music className="h-5 w-5 text-[#1196ef]" />
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex items-start gap-4 p-4 bg-accent/10 border-l-4 border-accent rounded-r-xl">
+                <div className="p-2 bg-accent rounded-xl mt-1 shadow-md">
+                  <Music className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold leading-tight">{currentQuestion?.text}</h3>
+                <h3 className="text-2xl font-bold leading-tight text-foreground">{currentQuestion?.text}</h3>
               </div>
               {currentQuestion && renderQuestion(currentQuestion)}
             </div>
           )}
 
-          <div className="flex justify-between pt-6 border-t">
+          <div className="flex justify-between pt-8 border-t-2">
             <Button
               variant="outline"
               onClick={handleBack}
               disabled={currentStep === 0}
-              className="transition-all duration-300 hover:scale-105 hover:border-primary/50 disabled:opacity-50 disabled:hover:scale-100"
+              className="px-6 h-12 border-2 transition-all duration-300 hover:scale-105 hover:border-primary hover:text-primary disabled:opacity-50 disabled:hover:scale-100 shadow-sm"
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
+              <ChevronLeft className="h-5 w-5 mr-2" />
               Back
             </Button>
 
             <Button
               onClick={handleNext}
               disabled={loading}
-              className="text-white hover:opacity-90 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              style={{ background: 'linear-gradient(to right, #1196ef, #fbd64c)' }}
+              className="px-8 h-12 bg-primary hover:bg-primary/90 text-white transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg disabled:opacity-50"
             >
               {currentStep === totalSteps - 1 ? (
                 loading ? (
                   <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2" />
                     Complete
+                    <Sparkles className="h-5 w-5 ml-2" />
                   </>
                 )
               ) : (
                 <>
                   Next
-                  <ChevronRight className="h-4 w-4 ml-2" />
+                  <ChevronRight className="h-5 w-5 ml-2" />
                 </>
               )}
             </Button>
