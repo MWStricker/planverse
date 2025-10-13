@@ -236,121 +236,25 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="suggested" className="w-full">
+      <Tabs defaultValue="friends" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="suggested" className="flex items-center gap-2">
+          <TabsTrigger value="friends" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Suggested
+            Friends ({friends.length})
           </TabsTrigger>
           <TabsTrigger value="discover" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             Discover
           </TabsTrigger>
-          <TabsTrigger value="friends" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Friends ({friends.length})
-          </TabsTrigger>
           <TabsTrigger value="requests" className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
             Requests ({friendRequests.length})
           </TabsTrigger>
+          <TabsTrigger value="suggested" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Suggested
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="suggested" className="space-y-4">
-          <SuggestedConnections />
-        </TabsContent>
-
-        <TabsContent value="discover" className="space-y-4">
-          {/* Search and Filters */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Discover People
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                placeholder="Search by name, school, major, or bio..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full"
-              />
-              
-              <div className="flex flex-wrap gap-2">
-                <Select
-                  value={selectedFilter}
-                  onValueChange={(value: 'all' | 'school' | 'major') => {
-                    setSelectedFilter(value);
-                    if (value === 'all') {
-                      handleSearch(searchQuery);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All People</SelectItem>
-                    <SelectItem value="school">By School</SelectItem>
-                    <SelectItem value="major">By Major</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {selectedFilter === 'school' && (
-                  <Select
-                    value={filterValue}
-                    onValueChange={(value) => handleFilter('school', value)}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Select school" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getUniqueSchools().map((school) => (
-                        <SelectItem key={school} value={school!}>
-                          {school}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                
-                {selectedFilter === 'major' && (
-                  <Select
-                    value={filterValue}
-                    onValueChange={(value) => handleFilter('major', value)}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Select major" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getUniqueMajors().map((major) => (
-                        <SelectItem key={major} value={major!}>
-                          {major}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* People Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {people.map(renderPersonCard)}
-          </div>
-          
-          {people.length === 0 && (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">
-                  No people found. Try adjusting your search or filters.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
 
         <TabsContent value="friends" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -457,6 +361,98 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               <CardContent className="p-8 text-center">
                 <p className="text-muted-foreground">
                   No friends yet. Start by discovering and adding people!
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="discover" className="space-y-4">
+          {/* Search and Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Discover People
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                placeholder="Search by name, school, major, or bio..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full"
+              />
+              
+              <div className="flex flex-wrap gap-2">
+                <Select
+                  value={selectedFilter}
+                  onValueChange={(value: 'all' | 'school' | 'major') => {
+                    setSelectedFilter(value);
+                    if (value === 'all') {
+                      handleSearch(searchQuery);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All People</SelectItem>
+                    <SelectItem value="school">By School</SelectItem>
+                    <SelectItem value="major">By Major</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {selectedFilter === 'school' && (
+                  <Select
+                    value={filterValue}
+                    onValueChange={(value) => handleFilter('school', value)}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Select school" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getUniqueSchools().map((school) => (
+                        <SelectItem key={school} value={school!}>
+                          {school}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                
+                {selectedFilter === 'major' && (
+                  <Select
+                    value={filterValue}
+                    onValueChange={(value) => handleFilter('major', value)}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Select major" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getUniqueMajors().map((major) => (
+                        <SelectItem key={major} value={major!}>
+                          {major}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* People Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {people.map(renderPersonCard)}
+          </div>
+          
+          {people.length === 0 && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">
+                  No people found. Try adjusting your search or filters.
                 </p>
               </CardContent>
             </Card>
@@ -611,6 +607,10 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="suggested" className="space-y-4">
+          <SuggestedConnections />
         </TabsContent>
       </Tabs>
 
