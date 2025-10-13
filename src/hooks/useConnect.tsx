@@ -17,6 +17,9 @@ export interface Post {
   post_type: string;
   visibility: string;
   tags: string[];
+  moderation_status?: string;
+  moderation_score?: number;
+  moderation_flags?: any;
   profiles: {
     display_name: string;
     avatar_url?: string;

@@ -1,5 +1,5 @@
 import React, { memo, useRef } from 'react';
-import { Heart, MessageCircle, School, Users, GraduationCap, Hash, Trash2, MoreVertical } from 'lucide-react';
+import { Heart, MessageCircle, School, Users, GraduationCap, Hash, Trash2, MoreVertical, ShieldAlert, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -96,9 +96,72 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
               )}
             </div>
           </div>
+          {/* Moderation status badge for post owners */}
+          {isOwner && post.moderation_status && post.moderation_status !== 'approved' && (
+            <div className="ml-auto">
+              {post.moderation_status === 'auto_hidden' && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <ShieldAlert className="h-3 w-3" />
+                  Hidden from others
+                </Badge>
+              )}
+              {post.moderation_status === 'flagged' && (
+                <Badge variant="default" className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600">
+                  <AlertTriangle className="h-3 w-3" />
+                  Under review
+                </Badge>
+              )}
+              {post.moderation_status === 'pending' && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Checking...
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
+        {/* Moderation warning for hidden/flagged posts */}
+        {isOwner && post.moderation_status === 'auto_hidden' && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="flex items-start gap-2">
+              <ShieldAlert className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-destructive text-sm">This post is hidden from other users</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Our AI detected content that may violate community guidelines. 
+                  {post.moderation_score && ` (Score: ${post.moderation_score}/100)`}
+                </p>
+                {post.moderation_flags && Array.isArray(post.moderation_flags) && post.moderation_flags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {post.moderation_flags.map((flag: string, i: number) => (
+                      <Badge key={i} variant="outline" className="text-xs">
+                        {flag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {isOwner && post.moderation_status === 'flagged' && (
+          <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-yellow-700 text-sm">Under review by moderators</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your post has been flagged for review. It's still visible to others.
+                  {post.moderation_score && ` (Score: ${post.moderation_score}/100)`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Post metadata */}
         <div className="flex flex-wrap gap-2 mb-3">
           {post.target_major && (
