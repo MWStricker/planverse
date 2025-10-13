@@ -471,8 +471,24 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               </CardHeader>
               <CardContent className="space-y-3">
                 {friendRequests.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
+                  <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div 
+                      className="flex items-center gap-3 flex-1 cursor-pointer"
+                      onClick={async () => {
+                        if (request.sender_id) {
+                          const fullProfile = await getPersonByUserId(request.sender_id);
+                          if (fullProfile) {
+                            setSelectedPerson(fullProfile);
+                          } else {
+                            toast({
+                              title: "Profile Not Available",
+                              description: "Unable to load this user's profile.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
+                      }}
+                    >
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={request.sender_profile?.avatar_url} />
                         <AvatarFallback>
@@ -481,8 +497,8 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-foreground">
-                            {request.sender_profile?.display_name}
+                          <h4 className="font-medium text-foreground hover:text-primary transition-colors">
+                            {request.sender_profile?.display_name || 'Unknown User'}
                           </h4>
                           <UserStatusIndicator 
                             status={getUserStatus(request.sender_id)} 
@@ -506,14 +522,20 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleRespondToRequest(request.id, true)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRespondToRequest(request.id, true);
+                        }}
                       >
                         Accept
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleRespondToRequest(request.id, false)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRespondToRequest(request.id, false);
+                        }}
                       >
                         Decline
                       </Button>
@@ -531,7 +553,24 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               </CardHeader>
               <CardContent className="space-y-3">
                 {sentRequests.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div 
+                    key={request.id} 
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={async () => {
+                      if (request.receiver_id) {
+                        const fullProfile = await getPersonByUserId(request.receiver_id);
+                        if (fullProfile) {
+                          setSelectedPerson(fullProfile);
+                        } else {
+                          toast({
+                            title: "Profile Not Available",
+                            description: "Unable to load this user's profile.",
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                    }}
+                  >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={request.receiver_profile?.avatar_url} />
@@ -541,8 +580,8 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-foreground">
-                            {request.receiver_profile?.display_name}
+                          <h4 className="font-medium text-foreground hover:text-primary transition-colors">
+                            {request.receiver_profile?.display_name || 'Unknown User'}
                           </h4>
                           <UserStatusIndicator 
                             status={getUserStatus(request.receiver_id)} 

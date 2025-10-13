@@ -13,12 +13,14 @@ export interface FriendRequest {
     avatar_url?: string;
     school?: string;
     major?: string;
+    user_id?: string;
   };
   receiver_profile?: {
     display_name: string;
     avatar_url?: string;
     school?: string;
     major?: string;
+    user_id?: string;
   };
 }
 
@@ -103,16 +105,26 @@ export const useFriends = () => {
       // Get sender profiles separately
       const incomingWithProfiles = await Promise.all(
         (incoming || []).map(async (request: any) => {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('display_name, avatar_url, school, major')
+            .select('display_name, avatar_url, school, major, user_id')
             .eq('user_id', request.sender_id)
-            .single();
+            .maybeSingle();
+          
+          if (profileError) {
+            console.error('Error fetching sender profile:', profileError);
+          }
           
           return {
             ...request,
             status: request.status as 'pending' | 'accepted' | 'rejected',
-            sender_profile: profile
+            sender_profile: profile || {
+              display_name: 'Unknown User',
+              avatar_url: null,
+              school: null,
+              major: null,
+              user_id: request.sender_id
+            }
           };
         })
       );
@@ -129,16 +141,26 @@ export const useFriends = () => {
       // Get receiver profiles separately
       const outgoingWithProfiles = await Promise.all(
         (outgoing || []).map(async (request: any) => {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('display_name, avatar_url, school, major')
+            .select('display_name, avatar_url, school, major, user_id')
             .eq('user_id', request.receiver_id)
-            .single();
+            .maybeSingle();
+          
+          if (profileError) {
+            console.error('Error fetching receiver profile:', profileError);
+          }
           
           return {
             ...request,
             status: request.status as 'pending' | 'accepted' | 'rejected',
-            receiver_profile: profile
+            receiver_profile: profile || {
+              display_name: 'Unknown User',
+              avatar_url: null,
+              school: null,
+              major: null,
+              user_id: request.receiver_id
+            }
           };
         })
       );
