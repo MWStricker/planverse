@@ -34,7 +34,7 @@ const PageLoader = () => (
 );
 
 const IndexContent = () => {
-  const [currentPage, setCurrentPage] = useState('');
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
@@ -112,25 +112,9 @@ const IndexContent = () => {
   const {
     isReorderMode,
     setIsReorderMode,
-    tabOrder,
     saveTabOrder,
     cancelReorder,
   } = useTabReorder(navItems);
-
-  // Set initial page based on first tab in user's order
-  useEffect(() => {
-    if (tabOrder.length > 0 && !currentPage) {
-      // Filter tabOrder to only include tabs that exist in navItems
-      const validTabIds = navItems.map(item => item.id);
-      const validTabs = tabOrder.filter(id => validTabIds.includes(id));
-      
-      // Set to first valid tab, or fall back to first navItem if none are valid
-      const firstTab = validTabs.length > 0 ? validTabs[0] : navItems[0]?.id;
-      if (firstTab) {
-        setCurrentPage(firstTab);
-      }
-    }
-  }, [tabOrder]);
 
   // Check if user needs onboarding
   useEffect(() => {
