@@ -161,10 +161,10 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const renderMusicQuestion = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl">
+        <div className="p-3 bg-gradient-to-br from-primary/20 to-warning/20 rounded-xl">
           <Music className="h-7 w-7 text-primary animate-pulse" />
         </div>
-        <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent">
           Who is your favorite artist?
         </h3>
       </div>
@@ -243,14 +243,14 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
   const currentQuestion = currentStep === 0 ? null : selectedQuestions[currentStep - 1];
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-background via-primary/5 to-accent/5 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-gradient-to-br from-background via-primary/5 to-warning/5 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl shadow-2xl border-2 animate-scale-in hover:shadow-primary/10 transition-shadow duration-300">
         <CardHeader className="space-y-4 pb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-lg shadow-lg">
+            <div className="p-2.5 bg-gradient-to-br from-primary to-warning rounded-lg shadow-lg">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-warning bg-clip-text text-transparent">
               Welcome to PlanVerse!
             </CardTitle>
           </div>
@@ -259,7 +259,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           </CardDescription>
           <div className="relative">
             <Progress value={progress} className="mt-2 h-3 bg-muted/50" />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-sm -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-warning/20 rounded-full blur-sm -z-10" />
           </div>
         </CardHeader>
 
@@ -267,7 +267,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           {currentStep === 0 ? renderMusicQuestion() : (
             <div className="space-y-5 animate-fade-in">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg mt-1">
+                <div className="p-2 bg-gradient-to-br from-primary/10 to-warning/10 rounded-lg mt-1">
                   <Music className="h-5 w-5 text-primary" />
                 </div>
                 <h3 className="text-2xl font-bold leading-tight">{currentQuestion?.text}</h3>
@@ -290,7 +290,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
             <Button
               onClick={handleNext}
               disabled={loading}
-              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-primary/25"
+              className="bg-gradient-to-r from-primary to-warning hover:from-primary/90 hover:to-warning/90 transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-primary/25"
             >
               {currentStep === totalSteps - 1 ? (
                 loading ? (
