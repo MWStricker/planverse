@@ -34,7 +34,7 @@ const PageLoader = () => (
 );
 
 const IndexContent = () => {
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState('connect');
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
