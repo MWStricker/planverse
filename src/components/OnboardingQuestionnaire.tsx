@@ -267,7 +267,6 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           <div className="space-y-2">
             <div className="flex justify-between text-sm font-medium">
               <span>Question {currentStep + 1} of {totalSteps}</span>
-              <span className="text-primary">{Math.round(progress)}% complete</span>
             </div>
             <Progress value={progress} className="h-3 shadow-inner" />
           </div>
