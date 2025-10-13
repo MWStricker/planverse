@@ -150,6 +150,9 @@ export const useMessaging = () => {
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId);
 
+      // Refresh conversations list
+      await fetchConversations();
+
       return true;
     } catch (error) {
       console.error('Error sending message:', error);

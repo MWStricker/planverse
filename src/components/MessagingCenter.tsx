@@ -55,6 +55,42 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   }, [selectedUserId, conversations]);
 
+  // Create virtual conversation for new chats
+  useEffect(() => {
+    if (!selectedUserId || !user) return;
+    
+    const existingConv = conversations.find(
+      conv => conv.other_user?.id === selectedUserId
+    );
+    
+    if (!existingConv) {
+      // Fetch the other user's profile and create a virtual conversation
+      supabase
+        .from('profiles')
+        .select('id, user_id, display_name, avatar_url, school, major')
+        .eq('user_id', selectedUserId)
+        .single()
+        .then(({ data: profile }) => {
+          if (profile) {
+            const virtualConv: Conversation = {
+              id: 'new',
+              user1_id: user.id,
+              user2_id: selectedUserId,
+              last_message_at: new Date().toISOString(),
+              other_user: {
+                id: profile.user_id,
+                display_name: profile.display_name || 'Unknown User',
+                avatar_url: profile.avatar_url,
+                school: profile.school,
+                major: profile.major
+              }
+            };
+            setSelectedConversation(virtualConv);
+          }
+        });
+    }
+  }, [selectedUserId, conversations, user]);
+
   const handleSelectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);

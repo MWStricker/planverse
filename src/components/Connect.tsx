@@ -37,6 +37,7 @@ export const Connect = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('feed');
   const [imageZoomOpen, setImageZoomOpen] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [imageZoom, setImageZoom] = useState(100);
@@ -186,7 +187,7 @@ export const Connect = () => {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="feed" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="feed" className="flex items-center gap-2">
             <Share2 className="h-4 w-4" />
@@ -253,7 +254,10 @@ export const Connect = () => {
         </TabsContent>
 
         <TabsContent value="people">
-          <PeopleDirectory onStartChat={(userId) => setSelectedChatUserId(userId)} />
+          <PeopleDirectory onStartChat={(userId) => {
+            setSelectedChatUserId(userId);
+            setActiveTab('messages');
+          }} />
         </TabsContent>
 
         <TabsContent value="messages">
