@@ -553,6 +553,21 @@ export const DashboardIntegratedView = memo(() => {
           <TabsTrigger value="courses">Courses</TabsTrigger>
         </TabsList>
 
+        {/* AI Event Creator Button - shows only when Calendar tab is active */}
+        {activeTab === 'calendar' && (
+          <div className="mt-4 flex justify-center">
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-2"
+              onClick={() => setIsAIEventDialogOpen(true)}
+            >
+              <Brain className="h-4 w-4" />
+              AI Create Event
+            </Button>
+          </div>
+        )}
+
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Today's Schedule */}
@@ -722,18 +737,6 @@ export const DashboardIntegratedView = memo(() => {
             )}
           </div>
 
-          {/* AI Event Creator Button - positioned directly under calendar */}
-          <div className="mt-4 flex justify-center">
-            <Button
-              variant="default"
-              size="sm"
-              className="gap-2"
-              onClick={() => setIsAIEventDialogOpen(true)}
-            >
-              <Brain className="h-4 w-4" />
-              AI Create Event
-            </Button>
-          </div>
 
           {/* Canvas Integration */}
           <div className="mt-6">
