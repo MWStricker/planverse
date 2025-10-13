@@ -122,15 +122,11 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
             <div className="flex items-start gap-2">
               <ShieldAlert className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="font-semibold text-destructive text-sm">This post is hidden from other users</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Our AI detected content that may violate community guidelines. 
-                  {post.moderation_score && ` (Score: ${post.moderation_score}/100)`}
-                </p>
+                <p className="font-semibold text-destructive text-sm mb-2">The post is hidden from other users.</p>
                 {post.moderation_flags && Array.isArray(post.moderation_flags) && post.moderation_flags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {post.moderation_flags.map((flag: string, i: number) => (
-                      <Badge key={i} variant="outline" className="text-xs">
+                      <Badge key={i} variant="destructive" className="text-xs">
                         {flag}
                       </Badge>
                     ))}
