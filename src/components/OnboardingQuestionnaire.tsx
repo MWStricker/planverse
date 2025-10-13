@@ -48,7 +48,7 @@ const QUESTION_POOL: Question[] = [
   },
   {
     id: 'school_decision',
-    text: 'How did you decide to come here for school?',
+    text: 'How did you decide to go to your college?',
     field: 'reason_for_school',
     type: 'textarea',
     placeholder: 'Tell us what brought you here...'
