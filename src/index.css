@@ -290,41 +290,43 @@ div, span, button, a {
 }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
+    /* Keep academic blue theme in dark mode */
+    --background: 213 94% 8%;
+    --foreground: 213 27% 98%;
 
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 100%;
+    --card: 213 94% 12%;
+    --card-foreground: 213 27% 98%;
 
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 213 94% 12%;
+    --popover-foreground: 213 27% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 213 94% 98%;
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 213 94% 16%;
+    --secondary-foreground: 213 27% 98%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 213 27% 14%;
+    --muted-foreground: 213 15% 65%;
 
-    --accent: 0 0% 15%;
+    --accent: 25 95% 62%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 15%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 213 27% 24%;
+    --input: 213 27% 18%;
+    --ring: 213 94% 68%;
+    
+    --sidebar-background: 213 94% 10%;
+    --sidebar-foreground: 213 27% 95%;
+    --sidebar-primary: 213 94% 68%;
+    --sidebar-primary-foreground: 213 94% 98%;
+    --sidebar-accent: 213 94% 16%;
+    --sidebar-accent-foreground: 213 27% 95%;
+    --sidebar-border: 213 27% 24%;
+    --sidebar-ring: 213 94% 68%;
   }
 
   /* Smooth scrolling optimizations for 60fps */
