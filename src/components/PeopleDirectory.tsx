@@ -634,7 +634,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                 setSelectedPerson(null);
                 onStartChat?.(selectedPerson.user_id);
               }}
-              onAddFriend={() => {
+              onAddFriend={friendshipStatuses[selectedPerson.user_id] === 'friends' ? undefined : () => {
                 handleSendFriendRequest(selectedPerson.user_id);
                 setSelectedPerson(null);
               }}
