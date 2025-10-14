@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { SpotifyNowPlaying } from '@/components/SpotifyNowPlaying';
+import { SpotifyNowPlayingCard } from '@/components/SpotifyNowPlayingCard';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -410,21 +410,9 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
             </CardContent>
           </Card>
 
-          {/* Spotify Section - Show user's own Spotify */}
+          {/* Spotify Section - Only shows when connected and playing */}
           {user?.id === profile?.user_id && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  🎵 Currently Listening
-                </CardTitle>
-                <CardDescription>
-                  Connect Spotify in Settings → Account Linking to show what you're listening to
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SpotifyNowPlaying userId={user.id} />
-              </CardContent>
-            </Card>
+            <SpotifyNowPlayingCard userId={user.id} />
           )}
         </div>
       </DialogContent>

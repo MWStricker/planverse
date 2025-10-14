@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SpotifyNowPlaying } from '@/components/SpotifyNowPlaying';
+import { SpotifyNowPlayingCard } from '@/components/SpotifyNowPlayingCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { School, MapPin, Calendar, User, MessageCircle } from 'lucide-react';
@@ -65,11 +65,8 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
             </div>
           )}
 
-          {/* Spotify Section - Show for public profiles */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-foreground">Currently Listening</h3>
-            <SpotifyNowPlaying userId={profile.user_id} />
-          </div>
+          {/* Spotify Section - Only shows when connected and playing */}
+          <SpotifyNowPlayingCard userId={profile.user_id} isPublicProfile />
           
           <div className="flex gap-2">
             {onSendMessage && (

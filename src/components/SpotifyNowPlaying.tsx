@@ -26,21 +26,11 @@ export const SpotifyNowPlaying: React.FC<SpotifyNowPlayingProps> = ({ userId }) 
   }
 
   if (!isConnected) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Music className="h-4 w-4" />
-        <p className="text-sm">Not connected to Spotify</p>
-      </div>
-    );
+    return null;
   }
 
   if (!nowPlaying || !nowPlaying.isPlaying) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Music className="h-4 w-4" />
-        <p className="text-sm">Not listening right now</p>
-      </div>
-    );
+    return null;
   }
 
   const progressPercent = (nowPlaying.progress / nowPlaying.duration) * 100;
