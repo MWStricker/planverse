@@ -197,7 +197,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       try {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `messages/${fileName}`;
+        const filePath = `messages/${user!.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('Uploads')
