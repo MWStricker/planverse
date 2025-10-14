@@ -123,7 +123,7 @@ export const useMessaging = () => {
   };
 
   const sendMessage = async (receiverId: string, content: string, imageUrl?: string) => {
-    if (!user || !content.trim()) return false;
+    if (!user || (!content.trim() && !imageUrl)) return false;
 
     try {
       // Get or create conversation
@@ -138,7 +138,7 @@ export const useMessaging = () => {
         .insert({
           sender_id: user.id,
           receiver_id: receiverId,
-          content,
+          content: content.trim() || '',
           image_url: imageUrl
         });
 

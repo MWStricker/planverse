@@ -67,8 +67,21 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         if ((newMessage.sender_id === user.id && newMessage.receiver_id === selectedConversation.other_user?.id) ||
             (newMessage.receiver_id === user.id && newMessage.sender_id === selectedConversation.other_user?.id)) {
           setLocalMessages(prev => {
-            // Don't add if it's already there (from optimistic update)
-            if (prev.some(m => m.id === newMessage.id)) return prev;
+            // Check for duplicates by ID or content+timestamp match
+            const isDuplicate = prev.some(m => 
+              m.id === newMessage.id || 
+              (m.content === newMessage.content && 
+               m.sender_id === newMessage.sender_id && 
+               Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 2000)
+            );
+            if (isDuplicate) {
+              // Replace temp message with real message
+              return prev.map(m => 
+                m.id.startsWith('temp-') && m.content === newMessage.content && m.sender_id === newMessage.sender_id
+                  ? newMessage 
+                  : m
+              );
+            }
             return [...prev, newMessage];
           });
         }
@@ -211,7 +224,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       id: `temp-${Date.now()}`,
       sender_id: user!.id,
       receiver_id: selectedConversation.other_user.id,
-      content: newMessage,
+      content: newMessage.trim() || '',
       image_url: imageUrl,
       is_read: false,
       created_at: new Date().toISOString()
@@ -222,7 +235,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     setNewMessage('');
     setImageFile(null);
 
-    const success = await sendMessage(selectedConversation.other_user.id, messageContent, imageUrl);
+    const success = await sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl);
     
     if (!success) {
       // Remove temp message on failure
