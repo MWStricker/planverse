@@ -145,7 +145,7 @@ export const DashboardIntegratedView = memo(() => {
     }
   }, [user]);
 
-  // Listen for task creation events
+  // Listen for task and event creation/deletion events
   useEffect(() => {
     const handleTaskCreated = () => {
       console.log('Dashboard: Task created event received, reloading data');
@@ -168,6 +168,27 @@ export const DashboardIntegratedView = memo(() => {
       }
     };
 
+    const handleEventCreated = () => {
+      console.log('Dashboard: Event created event received, reloading data');
+      loadAllData();
+    };
+
+    const handleEventDeleted = (event: any) => {
+      console.log('Dashboard: Event deleted event received', event.detail);
+      const eventId = event.detail?.eventId;
+      if (eventId) {
+        // Immediately update local state to remove the event
+        setEvents(prevEvents => prevEvents.filter(ev => ev.id !== eventId));
+        setCourses(prevCourses => 
+          prevCourses.map(course => ({
+            ...course,
+            events: course.events.filter(ev => ev.id !== eventId)
+          }))
+        );
+        console.log('Dashboard: Event removed from local state');
+      }
+    };
+
     const handleDataRefresh = () => {
       console.log('Dashboard: Data refresh event received, reloading data');
       loadAllData();
@@ -175,11 +196,15 @@ export const DashboardIntegratedView = memo(() => {
 
     window.addEventListener('taskCreated', handleTaskCreated);
     window.addEventListener('taskDeleted', handleTaskDeleted);
+    window.addEventListener('eventCreated', handleEventCreated);
+    window.addEventListener('eventDeleted', handleEventDeleted);
     window.addEventListener('dataRefresh', handleDataRefresh);
 
     return () => {
       window.removeEventListener('taskCreated', handleTaskCreated);
       window.removeEventListener('taskDeleted', handleTaskDeleted);
+      window.removeEventListener('eventCreated', handleEventCreated);
+      window.removeEventListener('eventDeleted', handleEventDeleted);
       window.removeEventListener('dataRefresh', handleDataRefresh);
     };
   }, [user]);

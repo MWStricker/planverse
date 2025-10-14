@@ -141,6 +141,10 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
       setDescription("");
       onOpenChange(false);
       onEventCreated();
+      
+      // Dispatch events to notify all calendar components
+      window.dispatchEvent(new CustomEvent('eventCreated'));
+      window.dispatchEvent(new CustomEvent('dataRefresh'));
     } catch (error: any) {
       console.error('Error creating AI event:', error);
       toast({
