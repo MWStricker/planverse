@@ -274,7 +274,13 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                side="bottom" 
+                sideOffset={8} 
+                collisionPadding={8} 
+                avoidCollisions={false}
+                className="bg-popover border border-border shadow-lg z-50"
+              >
                 {timeFormats.map((format) => (
                   <SelectItem key={format.value} value={format.value}>
                     {format.label}
@@ -394,7 +400,13 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
                   <SelectTrigger className="mt-2">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent 
+                    side="bottom" 
+                    sideOffset={8} 
+                    collisionPadding={8} 
+                    avoidCollisions={false}
+                    className="bg-popover border border-border shadow-lg z-50"
+                  >
                     {dateFormats.map((format) => (
                       <SelectItem key={format.value} value={format.value}>
                         {format.label}
@@ -420,7 +432,13 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                side="bottom" 
+                sideOffset={8} 
+                collisionPadding={8} 
+                avoidCollisions={false}
+                className="bg-popover border border-border shadow-lg z-50"
+              >
                 {themes.map((theme) => (
                   <SelectItem key={theme.value} value={theme.value}>
                     {theme.label}

@@ -418,7 +418,13 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent 
+                    side="bottom" 
+                    sideOffset={8} 
+                    collisionPadding={8} 
+                    avoidCollisions={false}
+                    className="bg-popover border border-border shadow-lg z-50"
+                  >
                     <SelectItem value="all">All People</SelectItem>
                     <SelectItem value="school">By School</SelectItem>
                     <SelectItem value="major">By Major</SelectItem>
@@ -433,7 +439,13 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                     <SelectTrigger className="w-48">
                       <SelectValue placeholder="Select school" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent 
+                      side="bottom" 
+                      sideOffset={8} 
+                      collisionPadding={8} 
+                      avoidCollisions={false}
+                      className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
+                    >
                       {getUniqueSchools().map((school) => (
                         <SelectItem key={school} value={school!}>
                           {school}
@@ -451,7 +463,13 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                     <SelectTrigger className="w-48">
                       <SelectValue placeholder="Select major" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent 
+                      side="bottom" 
+                      sideOffset={8} 
+                      collisionPadding={8} 
+                      avoidCollisions={false}
+                      className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
+                    >
                       {getUniqueMajors().map((major) => (
                         <SelectItem key={major} value={major!}>
                           {major}

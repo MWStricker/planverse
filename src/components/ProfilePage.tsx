@@ -274,7 +274,13 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
                       <SelectTrigger>
                         <SelectValue placeholder="Select your school" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent 
+                        side="bottom" 
+                        sideOffset={8} 
+                        collisionPadding={8} 
+                        avoidCollisions={false}
+                        className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
+                      >
                         {universities.map((university) => (
                           <SelectItem key={university.id} value={university.name}>
                             {university.name}
@@ -293,7 +299,13 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
                       <SelectTrigger>
                         <SelectValue placeholder="Select your major" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent 
+                        side="bottom" 
+                        sideOffset={8} 
+                        collisionPadding={8} 
+                        avoidCollisions={false}
+                        className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
+                      >
                         {collegeMajors.map((major) => (
                           <SelectItem key={major} value={major}>
                             {major}
@@ -312,7 +324,13 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
                       <SelectTrigger>
                         <SelectValue placeholder="Select graduation year" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent 
+                        side="bottom" 
+                        sideOffset={8} 
+                        collisionPadding={8} 
+                        avoidCollisions={false}
+                        className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
+                      >
                         {graduationYears.map((year) => (
                           <SelectItem key={year} value={year.toString()}>
                             {year}

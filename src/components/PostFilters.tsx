@@ -126,7 +126,13 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                side="bottom" 
+                sideOffset={8} 
+                collisionPadding={8} 
+                avoidCollisions={false}
+                className="bg-popover border border-border shadow-lg z-50"
+              >
                 {SORT_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     <div className="flex items-center gap-2">
@@ -145,7 +151,13 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
               <SelectTrigger>
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                side="bottom" 
+                sideOffset={8} 
+                collisionPadding={8} 
+                avoidCollisions={false}
+                className="bg-popover border border-border shadow-lg z-50"
+              >
                 {POST_TYPES.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     <div className="flex items-center gap-2">
@@ -168,7 +180,13 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
                 <SelectTrigger>
                   <SelectValue placeholder="All majors" />
                 </SelectTrigger>
-                <SelectContent className="max-h-48 overflow-y-auto">
+                <SelectContent 
+                  side="bottom" 
+                  sideOffset={8} 
+                  collisionPadding={8} 
+                  avoidCollisions={false}
+                  className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
+                >
                   <SelectItem value="all-majors">All majors</SelectItem>
                   {collegeMajors.map((major) => (
                     <SelectItem key={major} value={major}>
@@ -185,7 +203,13 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
                 <SelectTrigger>
                   <SelectValue placeholder="All schools" />
                 </SelectTrigger>
-                <SelectContent className="max-h-48 overflow-y-auto">
+                <SelectContent 
+                  side="bottom" 
+                  sideOffset={8} 
+                  collisionPadding={8} 
+                  avoidCollisions={false}
+                  className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
+                >
                   <SelectItem value="all-schools">All schools</SelectItem>
                   {universities.map((university) => (
                     <SelectItem key={university.id} value={university.name}>

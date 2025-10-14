@@ -125,7 +125,7 @@ export const UserStatusIndicator = ({
         sideOffset={8}
         collisionPadding={8}
         avoidCollisions={false}
-        className="w-48 !animate-none data-[state=open]:animate-fade-in"
+        className="w-48 bg-popover border border-border shadow-lg z-50 !animate-none data-[state=open]:animate-fade-in"
       >
         <DropdownMenuItem onClick={() => updateStatus('online')}>
           <div className="flex items-center gap-2">
