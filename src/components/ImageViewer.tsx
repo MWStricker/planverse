@@ -69,6 +69,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
@@ -181,9 +182,10 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
               ref={imageRef}
               src={imageUrl || ''}
               alt="Full size"
-              className="max-w-full max-h-full object-contain select-none transition-transform duration-200"
+              className={`max-w-full max-h-full object-contain select-none ${!isDragging ? 'transition-transform duration-200' : ''}`}
               style={{
                 transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                willChange: isDragging ? 'transform' : 'auto',
               }}
               draggable={false}
             />
