@@ -77,12 +77,60 @@ export const Connect = () => {
     setLocalPosts(posts);
   }, [posts]);
 
-  // Real-time listeners for posts, comments, and likes (Phase 1)
+  // Real-time listeners for posts and likes (Phase 1 - Complete Fix)
   React.useEffect(() => {
     if (!user) return;
 
+    // Posts Channel - Listen for new posts and deletions
     const postsChannel = supabase
       .channel('posts-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        async (payload: any) => {
+          // Fetch full post data with profile separately
+          const { data: newPostData } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('id', payload.new.id)
+            .single();
+
+          if (!newPostData) return;
+
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('user_id, display_name, avatar_url, school, major')
+            .eq('user_id', newPostData.user_id)
+            .single();
+
+          if (!profileData) return;
+
+          // Check if user has liked this post
+          const { data: likeData } = await supabase
+            .from('post_likes')
+            .select('id')
+            .eq('post_id', newPostData.id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          const formattedPost: Post = {
+            ...newPostData,
+            profiles: {
+              display_name: profileData.display_name,
+              avatar_url: profileData.avatar_url || undefined,
+              school: profileData.school || undefined,
+              major: profileData.major || undefined
+            },
+            user_liked: !!likeData
+          };
+
+          setLocalPosts(prev => {
+            // Prevent duplicates
+            if (prev.some(p => p.id === formattedPost.id)) return prev;
+            return [formattedPost, ...prev];
+          });
+        }
+      )
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'posts' },
@@ -92,8 +140,48 @@ export const Connect = () => {
       )
       .subscribe();
 
+    // Likes Channel - Listen for like/unlike events
+    const likesChannel = supabase
+      .channel('post-likes-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'post_likes' },
+        (payload: any) => {
+          const { post_id, user_id } = payload.new;
+          setLocalPosts(prev => prev.map(post => {
+            if (post.id === post_id) {
+              return {
+                ...post,
+                likes_count: (post.likes_count || 0) + 1,
+                user_liked: user_id === user.id ? true : post.user_liked
+              };
+            }
+            return post;
+          }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'post_likes' },
+        (payload: any) => {
+          const { post_id, user_id } = payload.old;
+          setLocalPosts(prev => prev.map(post => {
+            if (post.id === post_id) {
+              return {
+                ...post,
+                likes_count: Math.max((post.likes_count || 0) - 1, 0),
+                user_liked: user_id === user.id ? false : post.user_liked
+              };
+            }
+            return post;
+          }));
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(postsChannel);
+      supabase.removeChannel(likesChannel);
     };
   }, [user]);
 
