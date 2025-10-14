@@ -4,7 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  FloatingActionPanelRoot,
+  FloatingActionPanelTrigger,
+  FloatingActionPanelContent,
+  FloatingActionPanelButton,
+} from '@/components/ui/floating-action-panel';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -239,32 +245,32 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
           {/* Post Type */}
           <div className="space-y-2">
             <Label>Post Type</Label>
-            <Select value={postType} onValueChange={setPostType}>
-              <SelectTrigger className="w-full">
-                <SelectValue>
-                  <div className="flex items-center gap-2">
-                    {selectedPostType && <selectedPostType.icon className="h-4 w-4" />}
-                    {selectedPostType?.label}
-                  </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent 
-                side="bottom" 
-                sideOffset={8} 
-                collisionPadding={8} 
-                avoidCollisions={false}
-                className="bg-popover border border-border shadow-lg z-50"
-              >
-                {POST_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
+            <FloatingActionPanelRoot>
+              {({ closePanel }) => (
+                <>
+                  <FloatingActionPanelTrigger title="Select Post Type" mode="actions" className="w-full justify-start">
                     <div className="flex items-center gap-2">
-                      <type.icon className="h-4 w-4" />
-                      {type.label}
+                      {selectedPostType && <selectedPostType.icon className="h-4 w-4" />}
+                      {selectedPostType?.label}
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </FloatingActionPanelTrigger>
+                  
+                  <FloatingActionPanelContent>
+                    <div className="space-y-1 p-2">
+                      {POST_TYPES.map((type) => (
+                        <FloatingActionPanelButton
+                          key={type.value}
+                          onClick={() => { setPostType(type.value); closePanel(); }}
+                        >
+                          <type.icon className="h-4 w-4" />
+                          {type.label}
+                        </FloatingActionPanelButton>
+                      ))}
+                    </div>
+                  </FloatingActionPanelContent>
+                </>
+              )}
+            </FloatingActionPanelRoot>
           </div>
 
           {/* Target Audience */}
@@ -272,77 +278,113 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
             {/* Target Major */}
             <div className="space-y-2">
               <Label>Target Major (Optional)</Label>
-              <Select value={targetMajor} onValueChange={setTargetMajor}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All majors" />
-                </SelectTrigger>
-                 <SelectContent position="popper" className="max-h-48 overflow-y-auto bg-popover z-[100]">
-                  <SelectItem value="all-majors">All majors</SelectItem>
-                  {collegeMajors.map((major) => (
-                    <SelectItem key={major} value={major}>
-                      {major}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FloatingActionPanelRoot>
+                {({ closePanel }) => (
+                  <>
+                    <FloatingActionPanelTrigger title="Select Major" mode="actions" className="w-full justify-start">
+                      {targetMajor === 'all-majors' ? 'All majors' : targetMajor}
+                    </FloatingActionPanelTrigger>
+                    
+                    <FloatingActionPanelContent className="w-[300px]">
+                      <ScrollArea className="h-[300px]">
+                        <div className="space-y-1 p-2">
+                          <FloatingActionPanelButton
+                            onClick={() => { setTargetMajor('all-majors'); closePanel(); }}
+                            className={targetMajor === 'all-majors' ? "bg-accent" : ""}
+                          >
+                            All majors
+                          </FloatingActionPanelButton>
+                          {collegeMajors.map((major) => (
+                            <FloatingActionPanelButton
+                              key={major}
+                              onClick={() => { setTargetMajor(major); closePanel(); }}
+                              className={targetMajor === major ? "bg-accent" : ""}
+                            >
+                              {major}
+                            </FloatingActionPanelButton>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </FloatingActionPanelContent>
+                  </>
+                )}
+              </FloatingActionPanelRoot>
             </div>
 
             {/* Target Community/School */}
             <div className="space-y-2">
               <Label>Target School (Optional)</Label>
-              <Select value={targetCommunity} onValueChange={setTargetCommunity}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All schools" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="max-h-48 overflow-y-auto bg-popover z-[100]">
-                  <SelectItem value="all-schools">All schools</SelectItem>
-                  {universities.map((university) => (
-                    <SelectItem key={university.id} value={university.name}>
-                      {university.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FloatingActionPanelRoot>
+                {({ closePanel }) => (
+                  <>
+                    <FloatingActionPanelTrigger title="Select School" mode="actions" className="w-full justify-start">
+                      {targetCommunity === 'all-schools' ? 'All schools' : targetCommunity}
+                    </FloatingActionPanelTrigger>
+                    
+                    <FloatingActionPanelContent className="w-[300px]">
+                      <ScrollArea className="h-[300px]">
+                        <div className="space-y-1 p-2">
+                          <FloatingActionPanelButton
+                            onClick={() => { setTargetCommunity('all-schools'); closePanel(); }}
+                            className={targetCommunity === 'all-schools' ? "bg-accent" : ""}
+                          >
+                            All schools
+                          </FloatingActionPanelButton>
+                          {universities.map((university) => (
+                            <FloatingActionPanelButton
+                              key={university.id}
+                              onClick={() => { setTargetCommunity(university.name); closePanel(); }}
+                              className={targetCommunity === university.name ? "bg-accent" : ""}
+                            >
+                              {university.name}
+                            </FloatingActionPanelButton>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </FloatingActionPanelContent>
+                  </>
+                )}
+              </FloatingActionPanelRoot>
             </div>
           </div>
 
           {/* Visibility */}
           <div className="space-y-2">
             <Label>Who can see this post?</Label>
-            <Select value={visibility} onValueChange={setVisibility}>
-              <SelectTrigger className="w-full">
-                <SelectValue>
-                  <div className="flex items-center gap-2">
-                    {selectedVisibility && <selectedVisibility.icon className="h-4 w-4" />}
-                    <div>
-                      <span className="font-medium">{selectedVisibility?.label}</span>
-                      <span className="text-sm text-muted-foreground ml-2">
-                        {selectedVisibility?.description}
-                      </span>
-                    </div>
-                  </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent 
-                side="bottom" 
-                sideOffset={8} 
-                collisionPadding={8} 
-                avoidCollisions={false}
-                className="bg-popover border border-border shadow-lg z-50"
-              >
-                {VISIBILITY_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+            <FloatingActionPanelRoot>
+              {({ closePanel }) => (
+                <>
+                  <FloatingActionPanelTrigger title="Select Visibility" mode="actions" className="w-full justify-start">
                     <div className="flex items-center gap-2">
-                      <option.icon className="h-4 w-4" />
+                      {selectedVisibility && <selectedVisibility.icon className="h-4 w-4" />}
                       <div>
-                        <div className="font-medium">{option.label}</div>
-                        <div className="text-sm text-muted-foreground">{option.description}</div>
+                        <span className="font-medium">{selectedVisibility?.label}</span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {selectedVisibility?.description}
+                        </span>
                       </div>
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </FloatingActionPanelTrigger>
+                  
+                  <FloatingActionPanelContent className="w-[350px]">
+                    <div className="space-y-1 p-2">
+                      {VISIBILITY_OPTIONS.map((option) => (
+                        <FloatingActionPanelButton
+                          key={option.value}
+                          onClick={() => { setVisibility(option.value); closePanel(); }}
+                        >
+                          <option.icon className="h-4 w-4" />
+                          <div>
+                            <div className="font-medium">{option.label}</div>
+                            <div className="text-sm text-muted-foreground">{option.description}</div>
+                          </div>
+                        </FloatingActionPanelButton>
+                      ))}
+                    </div>
+                  </FloatingActionPanelContent>
+                </>
+              )}
+            </FloatingActionPanelRoot>
           </div>
 
           {/* Tags */}

@@ -5,7 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  FloatingActionPanelRoot,
+  FloatingActionPanelTrigger,
+  FloatingActionPanelContent,
+  FloatingActionPanelButton,
+} from '@/components/ui/floating-action-panel';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Search, 
   UserPlus, 
@@ -406,77 +412,97 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               />
               
               <div className="flex flex-wrap gap-2">
-                <Select
-                  value={selectedFilter}
-                  onValueChange={(value: 'all' | 'school' | 'major') => {
-                    setSelectedFilter(value);
-                    if (value === 'all') {
-                      handleSearch(searchQuery);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent 
-                    side="bottom" 
-                    sideOffset={8} 
-                    collisionPadding={8} 
-                    avoidCollisions={false}
-                    className="bg-popover border border-border shadow-lg z-50"
-                  >
-                    <SelectItem value="all">All People</SelectItem>
-                    <SelectItem value="school">By School</SelectItem>
-                    <SelectItem value="major">By Major</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FloatingActionPanelRoot>
+                  {({ closePanel }) => (
+                    <>
+                      <FloatingActionPanelTrigger title="Filter Type" mode="actions" className="w-32 justify-start">
+                        {selectedFilter === 'all' ? 'All People' : selectedFilter === 'school' ? 'By School' : 'By Major'}
+                      </FloatingActionPanelTrigger>
+                      
+                      <FloatingActionPanelContent>
+                        <div className="space-y-1 p-2">
+                          <FloatingActionPanelButton
+                            onClick={() => { 
+                              setSelectedFilter('all'); 
+                              handleSearch(searchQuery); 
+                              closePanel(); 
+                            }}
+                            className={selectedFilter === 'all' ? "bg-accent" : ""}
+                          >
+                            All People
+                          </FloatingActionPanelButton>
+                          <FloatingActionPanelButton
+                            onClick={() => { setSelectedFilter('school'); closePanel(); }}
+                            className={selectedFilter === 'school' ? "bg-accent" : ""}
+                          >
+                            By School
+                          </FloatingActionPanelButton>
+                          <FloatingActionPanelButton
+                            onClick={() => { setSelectedFilter('major'); closePanel(); }}
+                            className={selectedFilter === 'major' ? "bg-accent" : ""}
+                          >
+                            By Major
+                          </FloatingActionPanelButton>
+                        </div>
+                      </FloatingActionPanelContent>
+                    </>
+                  )}
+                </FloatingActionPanelRoot>
                 
                 {selectedFilter === 'school' && (
-                  <Select
-                    value={filterValue}
-                    onValueChange={(value) => handleFilter('school', value)}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Select school" />
-                    </SelectTrigger>
-                    <SelectContent 
-                      side="bottom" 
-                      sideOffset={8} 
-                      collisionPadding={8} 
-                      avoidCollisions={false}
-                      className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
-                    >
-                      {getUniqueSchools().map((school) => (
-                        <SelectItem key={school} value={school!}>
-                          {school}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FloatingActionPanelRoot>
+                    {({ closePanel }) => (
+                      <>
+                        <FloatingActionPanelTrigger title="Select School" mode="actions" className="w-48 justify-start">
+                          {filterValue || "Select school"}
+                        </FloatingActionPanelTrigger>
+                        
+                        <FloatingActionPanelContent className="w-[300px]">
+                          <ScrollArea className="h-[300px]">
+                            <div className="space-y-1 p-2">
+                              {getUniqueSchools().map((school) => (
+                                <FloatingActionPanelButton
+                                  key={school}
+                                  onClick={() => { handleFilter('school', school!); closePanel(); }}
+                                  className={filterValue === school ? "bg-accent" : ""}
+                                >
+                                  {school}
+                                </FloatingActionPanelButton>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </FloatingActionPanelContent>
+                      </>
+                    )}
+                  </FloatingActionPanelRoot>
                 )}
                 
                 {selectedFilter === 'major' && (
-                  <Select
-                    value={filterValue}
-                    onValueChange={(value) => handleFilter('major', value)}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Select major" />
-                    </SelectTrigger>
-                    <SelectContent 
-                      side="bottom" 
-                      sideOffset={8} 
-                      collisionPadding={8} 
-                      avoidCollisions={false}
-                      className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
-                    >
-                      {getUniqueMajors().map((major) => (
-                        <SelectItem key={major} value={major!}>
-                          {major}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FloatingActionPanelRoot>
+                    {({ closePanel }) => (
+                      <>
+                        <FloatingActionPanelTrigger title="Select Major" mode="actions" className="w-48 justify-start">
+                          {filterValue || "Select major"}
+                        </FloatingActionPanelTrigger>
+                        
+                        <FloatingActionPanelContent className="w-[300px]">
+                          <ScrollArea className="h-[300px]">
+                            <div className="space-y-1 p-2">
+                              {getUniqueMajors().map((major) => (
+                                <FloatingActionPanelButton
+                                  key={major}
+                                  onClick={() => { handleFilter('major', major!); closePanel(); }}
+                                  className={filterValue === major ? "bg-accent" : ""}
+                                >
+                                  {major}
+                                </FloatingActionPanelButton>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </FloatingActionPanelContent>
+                      </>
+                    )}
+                  </FloatingActionPanelRoot>
                 )}
               </div>
             </CardContent>

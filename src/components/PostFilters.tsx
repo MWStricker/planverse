@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  FloatingActionPanelRoot,
+  FloatingActionPanelTrigger,
+  FloatingActionPanelContent,
+  FloatingActionPanelButton,
+} from '@/components/ui/floating-action-panel';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, Hash, Users, GraduationCap, Globe, Calendar } from 'lucide-react';
 import { collegeMajors } from '@/data/collegeMajors';
@@ -122,52 +128,58 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Sort By</label>
-            <Select value={selectedSort} onValueChange={(value) => handleFilterUpdate({ sortBy: value })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent 
-                side="bottom" 
-                sideOffset={8} 
-                collisionPadding={8} 
-                avoidCollisions={false}
-                className="bg-popover border border-border shadow-lg z-50"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <div className="flex items-center gap-2">
-                      <option.icon className="h-4 w-4" />
-                      {option.label}
+            <FloatingActionPanelRoot>
+              {({ closePanel }) => (
+                <>
+                  <FloatingActionPanelTrigger title="Sort By" mode="actions" className="w-full justify-start">
+                    {SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
+                  </FloatingActionPanelTrigger>
+                  
+                  <FloatingActionPanelContent>
+                    <div className="space-y-1 p-2">
+                      {SORT_OPTIONS.map((option) => (
+                        <FloatingActionPanelButton
+                          key={option.value}
+                          onClick={() => { handleFilterUpdate({ sortBy: option.value }); closePanel(); }}
+                          className={selectedSort === option.value ? "bg-accent" : ""}
+                        >
+                          <option.icon className="h-4 w-4" />
+                          {option.label}
+                        </FloatingActionPanelButton>
+                      ))}
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </FloatingActionPanelContent>
+                </>
+              )}
+            </FloatingActionPanelRoot>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Post Type</label>
-            <Select value={selectedPostType} onValueChange={(value) => handleFilterUpdate({ postType: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent 
-                side="bottom" 
-                sideOffset={8} 
-                collisionPadding={8} 
-                avoidCollisions={false}
-                className="bg-popover border border-border shadow-lg z-50"
-              >
-                {POST_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    <div className="flex items-center gap-2">
-                      <type.icon className="h-4 w-4" />
-                      {type.label}
+            <FloatingActionPanelRoot>
+              {({ closePanel }) => (
+                <>
+                  <FloatingActionPanelTrigger title="Post Type" mode="actions" className="w-full justify-start">
+                    {POST_TYPES.find(t => t.value === selectedPostType)?.label || 'All Types'}
+                  </FloatingActionPanelTrigger>
+                  
+                  <FloatingActionPanelContent>
+                    <div className="space-y-1 p-2">
+                      {POST_TYPES.map((type) => (
+                        <FloatingActionPanelButton
+                          key={type.value}
+                          onClick={() => { handleFilterUpdate({ postType: type.value }); closePanel(); }}
+                          className={selectedPostType === type.value ? "bg-accent" : ""}
+                        >
+                          <type.icon className="h-4 w-4" />
+                          {type.label}
+                        </FloatingActionPanelButton>
+                      ))}
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </FloatingActionPanelContent>
+                </>
+              )}
+            </FloatingActionPanelRoot>
           </div>
         </div>
 
@@ -176,48 +188,72 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
             <div className="space-y-2">
               <label className="text-sm font-medium">Filter by Major</label>
-              <Select value={selectedMajor} onValueChange={(value) => handleFilterUpdate({ major: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All majors" />
-                </SelectTrigger>
-                <SelectContent 
-                  side="bottom" 
-                  sideOffset={8} 
-                  collisionPadding={8} 
-                  avoidCollisions={false}
-                  className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
-                >
-                  <SelectItem value="all-majors">All majors</SelectItem>
-                  {collegeMajors.map((major) => (
-                    <SelectItem key={major} value={major}>
-                      {major}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FloatingActionPanelRoot>
+                {({ closePanel }) => (
+                  <>
+                    <FloatingActionPanelTrigger title="Filter by Major" mode="actions" className="w-full justify-start">
+                      {selectedMajor === 'all-majors' ? 'All majors' : selectedMajor}
+                    </FloatingActionPanelTrigger>
+                    
+                    <FloatingActionPanelContent className="w-[300px]">
+                      <ScrollArea className="h-[300px]">
+                        <div className="space-y-1 p-2">
+                          <FloatingActionPanelButton
+                            onClick={() => { handleFilterUpdate({ major: 'all-majors' }); closePanel(); }}
+                            className={selectedMajor === 'all-majors' ? "bg-accent" : ""}
+                          >
+                            All majors
+                          </FloatingActionPanelButton>
+                          {collegeMajors.map((major) => (
+                            <FloatingActionPanelButton
+                              key={major}
+                              onClick={() => { handleFilterUpdate({ major: major }); closePanel(); }}
+                              className={selectedMajor === major ? "bg-accent" : ""}
+                            >
+                              {major}
+                            </FloatingActionPanelButton>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </FloatingActionPanelContent>
+                  </>
+                )}
+              </FloatingActionPanelRoot>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Filter by School</label>
-              <Select value={selectedSchool} onValueChange={(value) => handleFilterUpdate({ school: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All schools" />
-                </SelectTrigger>
-                <SelectContent 
-                  side="bottom" 
-                  sideOffset={8} 
-                  collisionPadding={8} 
-                  avoidCollisions={false}
-                  className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
-                >
-                  <SelectItem value="all-schools">All schools</SelectItem>
-                  {universities.map((university) => (
-                    <SelectItem key={university.id} value={university.name}>
-                      {university.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FloatingActionPanelRoot>
+                {({ closePanel }) => (
+                  <>
+                    <FloatingActionPanelTrigger title="Filter by School" mode="actions" className="w-full justify-start">
+                      {selectedSchool === 'all-schools' ? 'All schools' : selectedSchool}
+                    </FloatingActionPanelTrigger>
+                    
+                    <FloatingActionPanelContent className="w-[300px]">
+                      <ScrollArea className="h-[300px]">
+                        <div className="space-y-1 p-2">
+                          <FloatingActionPanelButton
+                            onClick={() => { handleFilterUpdate({ school: 'all-schools' }); closePanel(); }}
+                            className={selectedSchool === 'all-schools' ? "bg-accent" : ""}
+                          >
+                            All schools
+                          </FloatingActionPanelButton>
+                          {universities.map((university) => (
+                            <FloatingActionPanelButton
+                              key={university.id}
+                              onClick={() => { handleFilterUpdate({ school: university.name }); closePanel(); }}
+                              className={selectedSchool === university.name ? "bg-accent" : ""}
+                            >
+                              {university.name}
+                            </FloatingActionPanelButton>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </FloatingActionPanelContent>
+                  </>
+                )}
+              </FloatingActionPanelRoot>
             </div>
           </div>
         )}

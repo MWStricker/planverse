@@ -5,7 +5,13 @@ import { SpotifyNowPlayingCard } from '@/components/SpotifyNowPlayingCard';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  FloatingActionPanelRoot,
+  FloatingActionPanelTrigger,
+  FloatingActionPanelContent,
+  FloatingActionPanelButton,
+} from '@/components/ui/floating-action-panel';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -267,77 +273,108 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="school">School</Label>
-                    <Select
-                      value={formData.school}
-                      onValueChange={(value) => setFormData({ ...formData, school: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your school" />
-                      </SelectTrigger>
-                      <SelectContent 
-                        side="bottom" 
-                        sideOffset={8} 
-                        collisionPadding={8} 
-                        avoidCollisions={false}
-                        className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
-                      >
-                        {universities.map((university) => (
-                          <SelectItem key={university.id} value={university.name}>
-                            {university.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FloatingActionPanelRoot>
+                      {({ closePanel }) => (
+                        <>
+                          <FloatingActionPanelTrigger 
+                            title="Select School" 
+                            mode="actions"
+                            className="w-full justify-start"
+                          >
+                            {formData.school || "Select your school"}
+                          </FloatingActionPanelTrigger>
+                          
+                          <FloatingActionPanelContent className="w-[300px]">
+                            <ScrollArea className="h-[300px]">
+                              <div className="space-y-1 p-2">
+                                {universities.map((university) => (
+                                  <FloatingActionPanelButton
+                                    key={university.id}
+                                    onClick={() => {
+                                      setFormData({ ...formData, school: university.name });
+                                      closePanel();
+                                    }}
+                                    className={formData.school === university.name ? "bg-accent" : ""}
+                                  >
+                                    {university.name}
+                                  </FloatingActionPanelButton>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                          </FloatingActionPanelContent>
+                        </>
+                      )}
+                    </FloatingActionPanelRoot>
                   </div>
 
                   <div>
                     <Label htmlFor="major">Major</Label>
-                    <Select
-                      value={formData.major}
-                      onValueChange={(value) => setFormData({ ...formData, major: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your major" />
-                      </SelectTrigger>
-                      <SelectContent 
-                        side="bottom" 
-                        sideOffset={8} 
-                        collisionPadding={8} 
-                        avoidCollisions={false}
-                        className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
-                      >
-                        {collegeMajors.map((major) => (
-                          <SelectItem key={major} value={major}>
-                            {major}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FloatingActionPanelRoot>
+                      {({ closePanel }) => (
+                        <>
+                          <FloatingActionPanelTrigger 
+                            title="Select Major" 
+                            mode="actions"
+                            className="w-full justify-start"
+                          >
+                            {formData.major || "Select your major"}
+                          </FloatingActionPanelTrigger>
+                          
+                          <FloatingActionPanelContent className="w-[300px]">
+                            <ScrollArea className="h-[300px]">
+                              <div className="space-y-1 p-2">
+                                {collegeMajors.map((major) => (
+                                  <FloatingActionPanelButton
+                                    key={major}
+                                    onClick={() => {
+                                      setFormData({ ...formData, major: major });
+                                      closePanel();
+                                    }}
+                                    className={formData.major === major ? "bg-accent" : ""}
+                                  >
+                                    {major}
+                                  </FloatingActionPanelButton>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                          </FloatingActionPanelContent>
+                        </>
+                      )}
+                    </FloatingActionPanelRoot>
                   </div>
 
                   <div>
                     <Label htmlFor="graduation_year">Graduation Year</Label>
-                    <Select
-                      value={formData.graduation_year?.toString()}
-                      onValueChange={(value) => setFormData({ ...formData, graduation_year: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select graduation year" />
-                      </SelectTrigger>
-                      <SelectContent 
-                        side="bottom" 
-                        sideOffset={8} 
-                        collisionPadding={8} 
-                        avoidCollisions={false}
-                        className="bg-popover border border-border shadow-lg z-50 max-h-[300px]"
-                      >
-                        {graduationYears.map((year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FloatingActionPanelRoot>
+                      {({ closePanel }) => (
+                        <>
+                          <FloatingActionPanelTrigger 
+                            title="Select Graduation Year" 
+                            mode="actions"
+                            className="w-full justify-start"
+                          >
+                            {formData.graduation_year || "Select graduation year"}
+                          </FloatingActionPanelTrigger>
+                          
+                          <FloatingActionPanelContent className="w-[200px]">
+                            <div className="space-y-1 p-2">
+                              {graduationYears.map((year) => (
+                                <FloatingActionPanelButton
+                                  key={year}
+                                  onClick={() => {
+                                    setFormData({ ...formData, graduation_year: year });
+                                    closePanel();
+                                  }}
+                                  className={formData.graduation_year === year ? "bg-accent" : ""}
+                                >
+                                  {year}
+                                </FloatingActionPanelButton>
+                              ))}
+                            </div>
+                          </FloatingActionPanelContent>
+                        </>
+                      )}
+                    </FloatingActionPanelRoot>
                   </div>
 
                   <div>

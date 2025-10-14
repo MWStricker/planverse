@@ -3,7 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  FloatingActionPanelRoot,
+  FloatingActionPanelTrigger,
+  FloatingActionPanelContent,
+  FloatingActionPanelButton,
+} from '@/components/ui/floating-action-panel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -267,27 +272,32 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
               <Settings className="h-4 w-4" />
               Time Format
             </Label>
-            <Select
-              value={settings.format}
-              onValueChange={(value: '12h' | '24h') => setSettings({ ...settings, format: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent 
-                side="bottom" 
-                sideOffset={8} 
-                collisionPadding={8} 
-                avoidCollisions={false}
-                className="bg-popover border border-border shadow-lg z-50"
-              >
-                {timeFormats.map((format) => (
-                  <SelectItem key={format.value} value={format.value}>
-                    {format.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FloatingActionPanelRoot>
+              {({ closePanel }) => (
+                <>
+                  <FloatingActionPanelTrigger title="Select Time Format" mode="actions" className="w-full justify-start">
+                    {timeFormats.find(f => f.value === settings.format)?.label || '12-Hour (2:30 PM)'}
+                  </FloatingActionPanelTrigger>
+                  
+                  <FloatingActionPanelContent>
+                    <div className="space-y-1 p-2">
+                      {timeFormats.map((format) => (
+                        <FloatingActionPanelButton
+                          key={format.value}
+                          onClick={() => { 
+                            setSettings({ ...settings, format: format.value as '12h' | '24h' }); 
+                            closePanel(); 
+                          }}
+                          className={settings.format === format.value ? "bg-accent" : ""}
+                        >
+                          {format.label}
+                        </FloatingActionPanelButton>
+                      ))}
+                    </div>
+                  </FloatingActionPanelContent>
+                </>
+              )}
+            </FloatingActionPanelRoot>
           </div>
 
           {/* Clock Style */}
@@ -391,29 +401,32 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
             {settings.showDate && (
               <div>
                 <Label className="text-sm font-medium">Date Format</Label>
-                <Select
-                  value={settings.dateFormat}
-                  onValueChange={(value: 'short' | 'long' | 'numeric') => 
-                    setSettings({ ...settings, dateFormat: value })
-                  }
-                >
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent 
-                    side="bottom" 
-                    sideOffset={8} 
-                    collisionPadding={8} 
-                    avoidCollisions={false}
-                    className="bg-popover border border-border shadow-lg z-50"
-                  >
-                    {dateFormats.map((format) => (
-                      <SelectItem key={format.value} value={format.value}>
-                        {format.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FloatingActionPanelRoot>
+                  {({ closePanel }) => (
+                    <>
+                      <FloatingActionPanelTrigger title="Select Date Format" mode="actions" className="w-full justify-start mt-2">
+                        {dateFormats.find(f => f.value === settings.dateFormat)?.label || 'Short (Dec 25)'}
+                      </FloatingActionPanelTrigger>
+                      
+                      <FloatingActionPanelContent>
+                        <div className="space-y-1 p-2">
+                          {dateFormats.map((format) => (
+                            <FloatingActionPanelButton
+                              key={format.value}
+                              onClick={() => { 
+                                setSettings({ ...settings, dateFormat: format.value as 'short' | 'long' | 'numeric' }); 
+                                closePanel(); 
+                              }}
+                              className={settings.dateFormat === format.value ? "bg-accent" : ""}
+                            >
+                              {format.label}
+                            </FloatingActionPanelButton>
+                          ))}
+                        </div>
+                      </FloatingActionPanelContent>
+                    </>
+                  )}
+                </FloatingActionPanelRoot>
               </div>
             )}
           </div>
@@ -423,29 +436,32 @@ export const ClockSettings = ({ open, onOpenChange, currentSettings, onSettingsC
           {/* Theme */}
           <div className="space-y-3">
             <Label className="text-base font-medium">Theme</Label>
-            <Select
-              value={settings.theme}
-              onValueChange={(value: 'auto' | 'light' | 'dark' | 'accent') => 
-                setSettings({ ...settings, theme: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent 
-                side="bottom" 
-                sideOffset={8} 
-                collisionPadding={8} 
-                avoidCollisions={false}
-                className="bg-popover border border-border shadow-lg z-50"
-              >
-                {themes.map((theme) => (
-                  <SelectItem key={theme.value} value={theme.value}>
-                    {theme.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FloatingActionPanelRoot>
+              {({ closePanel }) => (
+                <>
+                  <FloatingActionPanelTrigger title="Select Theme" mode="actions" className="w-full justify-start">
+                    {themes.find(t => t.value === settings.theme)?.label || 'Auto (Follow System)'}
+                  </FloatingActionPanelTrigger>
+                  
+                  <FloatingActionPanelContent>
+                    <div className="space-y-1 p-2">
+                      {themes.map((theme) => (
+                        <FloatingActionPanelButton
+                          key={theme.value}
+                          onClick={() => { 
+                            setSettings({ ...settings, theme: theme.value as 'auto' | 'light' | 'dark' | 'accent' }); 
+                            closePanel(); 
+                          }}
+                          className={settings.theme === theme.value ? "bg-accent" : ""}
+                        >
+                          {theme.label}
+                        </FloatingActionPanelButton>
+                      ))}
+                    </div>
+                  </FloatingActionPanelContent>
+                </>
+              )}
+            </FloatingActionPanelRoot>
           </div>
 
           {/* Auto-save indicator */}
