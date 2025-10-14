@@ -144,7 +144,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 flex flex-col">
               <div className="flex items-center gap-2">
                 <h4 className="font-semibold text-foreground cursor-pointer hover:text-primary"
                     onClick={() => handleViewProfile(person)}>
@@ -184,7 +184,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                 </p>
               )}
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-2">
                 {status === 'none' && (
                   <Button
                     size="sm"
@@ -208,7 +208,9 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                     Friends
                   </Button>
                 )}
-                
+              </div>
+              
+              <div className="flex justify-center mt-auto">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -257,107 +259,102 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
         </TabsList>
 
         <TabsContent value="friends" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {friends.map((friend) => (
-              <Card 
-                key={friend.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => friend.friend_profile?.user_id && handleViewProfile({
-                  id: friend.friend_profile.id,
-                  user_id: friend.friend_profile.user_id,
-                  display_name: friend.friend_profile.display_name,
-                  avatar_url: friend.friend_profile.avatar_url,
-                  school: friend.friend_profile.school,
-                  major: friend.friend_profile.major,
-                  bio: friend.friend_profile.bio,
-                  created_at: friend.created_at
-                } as Person)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-12 w-12 flex-shrink-0">
-                      <AvatarImage src={friend.friend_profile?.avatar_url} />
-                      <AvatarFallback>
-                        {friend.friend_profile?.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0 flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <h4 
-                          className="font-semibold text-foreground cursor-pointer hover:text-primary truncate"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (friend.friend_profile?.user_id) {
-                              handleViewProfile({
-                                id: friend.friend_profile.id,
-                                user_id: friend.friend_profile.user_id,
-                                display_name: friend.friend_profile.display_name,
-                                avatar_url: friend.friend_profile.avatar_url,
-                                school: friend.friend_profile.school,
-                                major: friend.friend_profile.major,
-                                bio: friend.friend_profile.bio,
-                                created_at: friend.created_at
-                              } as Person);
-                            }
-                          }}
-                        >
-                          {friend.friend_profile?.display_name || 'Unknown User'}
-                        </h4>
-                        {friend.friend_profile?.user_id && (
-                          <UserStatusIndicator 
-                            status={getUserStatus(friend.friend_profile.user_id)} 
-                            isCurrentUser={false}
-                            size="sm"
-                          />
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-1 mt-1 mb-3 min-h-[24px]">
-                        {friend.friend_profile?.user_id && (
-                          <OnlineStatus userId={friend.friend_profile.user_id} />
-                        )}
-                        {friend.friend_profile?.school && (
-                          <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-                            <School className="h-3 w-3" />
-                            {friend.friend_profile.school}
-                          </Badge>
-                        )}
-                        {friend.friend_profile?.major && (
-                          <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                            <GraduationCap className="h-3 w-3" />
-                            {friend.friend_profile.major}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      {friend.friend_profile?.user_id && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onStartChat?.(friend.friend_profile!.user_id);
-                          }}
-                          className="flex items-center gap-1 w-full mt-auto"
-                        >
-                          <MessageCircle className="h-3 w-3" />
-                          Message
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          {friends.length === 0 && (
+          {friends.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">
-                  No friends yet. Start by discovering and adding people!
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="font-semibold text-lg mb-2">No friends yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start by discovering and adding people!
                 </p>
+                <Button onClick={() => {
+                  const discoverTab = document.querySelector('[value="discover"]');
+                  if (discoverTab) (discoverTab as HTMLButtonElement).click();
+                }}>
+                  Discover People
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {friends.map((friend) => (
+                    <div 
+                      key={friend.id}
+                      className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors group"
+                    >
+                      <Avatar className="h-12 w-12 flex-shrink-0">
+                        <AvatarImage src={friend.friend_profile?.avatar_url} />
+                        <AvatarFallback>
+                          {friend.friend_profile?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => friend.friend_profile?.user_id && handleViewProfile({
+                          id: friend.friend_profile.id,
+                          user_id: friend.friend_profile.user_id,
+                          display_name: friend.friend_profile.display_name,
+                          avatar_url: friend.friend_profile.avatar_url,
+                          school: friend.friend_profile.school,
+                          major: friend.friend_profile.major,
+                          bio: friend.friend_profile.bio,
+                          created_at: friend.created_at
+                        } as Person)}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-foreground truncate hover:text-primary">
+                            {friend.friend_profile?.display_name || 'Unknown User'}
+                          </h4>
+                          {friend.friend_profile?.user_id && (
+                            <UserStatusIndicator 
+                              status={getUserStatus(friend.friend_profile.user_id)} 
+                              isCurrentUser={false}
+                              size="sm"
+                            />
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {friend.friend_profile?.school && (
+                            <span className="flex items-center gap-1">
+                              <School className="h-3 w-3" />
+                              {friend.friend_profile.school}
+                            </span>
+                          )}
+                          {friend.friend_profile?.school && friend.friend_profile?.major && (
+                            <span>•</span>
+                          )}
+                          {friend.friend_profile?.major && (
+                            <span className="flex items-center gap-1">
+                              <GraduationCap className="h-3 w-3" />
+                              {friend.friend_profile.major}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {friend.friend_profile?.user_id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStartChat?.(friend.friend_profile!.user_id);
+                            }}
+                            className="flex items-center gap-1"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            Message
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
