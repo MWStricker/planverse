@@ -19,7 +19,7 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
   onAddFriend 
 }) => {
   return (
-    <div className="max-w-2xl mx-auto p-6 rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="flex flex-col space-y-1.5 p-6">
         <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
