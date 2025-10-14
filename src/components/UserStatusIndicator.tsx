@@ -119,7 +119,7 @@ export const UserStatusIndicator = ({
           {statusDot}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48">
+      <DropdownMenuContent align="end" side="bottom" className="w-48">
         <DropdownMenuItem onClick={() => updateStatus('online')}>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500" />
