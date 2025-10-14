@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { ImageViewer } from '@/components/ImageViewer';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -32,6 +33,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -414,11 +416,16 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                           } ${isTemp ? 'opacity-70' : ''}`}
                         >
                           {message.image_url && (
-                            <img
-                              src={message.image_url}
-                              alt="Message attachment"
-                              className="w-full rounded-md mb-2 max-h-48 object-cover"
-                            />
+                            <div 
+                              className="cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setViewerImage(message.image_url!)}
+                            >
+                              <img
+                                src={message.image_url}
+                                alt="Message attachment"
+                                className="w-full rounded-md mb-2 max-h-48 object-cover hover:scale-[1.02] transition-transform"
+                              />
+                            </div>
                           )}
                           <p className="text-sm">{message.content}</p>
                         </div>
@@ -491,6 +498,12 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           </div>
         )}
       </div>
+
+      {/* Image Viewer */}
+      <ImageViewer 
+        imageUrl={viewerImage} 
+        onClose={() => setViewerImage(null)} 
+      />
     </div>
   );
 };
