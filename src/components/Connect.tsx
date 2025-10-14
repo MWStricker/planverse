@@ -81,6 +81,8 @@ export const Connect = () => {
   React.useEffect(() => {
     if (!user) return;
 
+    console.log('🔌 Setting up real-time channels for user:', user.id);
+
     // Posts Channel - Listen for new posts and deletions
     const postsChannel = supabase
       .channel('posts-realtime')
@@ -88,6 +90,7 @@ export const Connect = () => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
         async (payload: any) => {
+          console.log('📝 Real-time: New post detected', payload);
           // Fetch full post data with profile separately
           const { data: newPostData } = await supabase
             .from('posts')
@@ -135,10 +138,13 @@ export const Connect = () => {
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'posts' },
         (payload: any) => {
+          console.log('🗑️ Real-time: Post deleted', payload);
           setLocalPosts(prev => prev.filter(p => p.id !== payload.old.id));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Posts channel status:', status);
+      });
 
     // Likes Channel - Listen for like/unlike events
     const likesChannel = supabase
@@ -147,6 +153,7 @@ export const Connect = () => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'post_likes' },
         (payload: any) => {
+          console.log('❤️ Real-time: Like added', payload);
           const { post_id, user_id } = payload.new;
           setLocalPosts(prev => prev.map(post => {
             if (post.id === post_id) {
@@ -164,6 +171,7 @@ export const Connect = () => {
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'post_likes' },
         (payload: any) => {
+          console.log('💔 Real-time: Like removed', payload);
           const { post_id, user_id } = payload.old;
           setLocalPosts(prev => prev.map(post => {
             if (post.id === post_id) {
@@ -177,9 +185,12 @@ export const Connect = () => {
           }));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('💗 Likes channel status:', status);
+      });
 
     return () => {
+      console.log('🔌 Cleaning up real-time channels');
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(likesChannel);
     };
