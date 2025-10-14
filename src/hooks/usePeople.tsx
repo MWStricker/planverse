@@ -22,7 +22,7 @@ export const usePeople = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchPeople = async (query?: string) => {
+  const fetchPeople = async (query?: string, excludeUserIds?: string[]) => {
     if (!user) return;
 
     try {
@@ -33,6 +33,10 @@ export const usePeople = () => {
         .eq('is_public', true)
         .neq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      if (excludeUserIds && excludeUserIds.length > 0) {
+        queryBuilder = queryBuilder.not('user_id', 'in', `(${excludeUserIds.join(',')})`);
+      }
 
       if (query && query.trim()) {
         queryBuilder = queryBuilder.or(`
@@ -55,24 +59,29 @@ export const usePeople = () => {
     }
   };
 
-  const searchPeople = async (query: string) => {
+  const searchPeople = async (query: string, excludeUserIds?: string[]) => {
     setSearchQuery(query);
-    await fetchPeople(query);
+    await fetchPeople(query, excludeUserIds);
   };
 
-  const fetchPeopleBySchool = async (school: string) => {
+  const fetchPeopleBySchool = async (school: string, excludeUserIds?: string[]) => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let queryBuilder = supabase
         .from('profiles')
         .select('*')
         .eq('is_public', true)
         .eq('school', school)
         .neq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
+
+      if (excludeUserIds && excludeUserIds.length > 0) {
+        queryBuilder = queryBuilder.not('user_id', 'in', `(${excludeUserIds.join(',')})`);
+      }
+
+      const { data, error } = await queryBuilder.limit(50);
 
       if (error) throw error;
 
@@ -84,19 +93,24 @@ export const usePeople = () => {
     }
   };
 
-  const fetchPeopleByMajor = async (major: string) => {
+  const fetchPeopleByMajor = async (major: string, excludeUserIds?: string[]) => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let queryBuilder = supabase
         .from('profiles')
         .select('*')
         .eq('is_public', true)
         .eq('major', major)
         .neq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
+
+      if (excludeUserIds && excludeUserIds.length > 0) {
+        queryBuilder = queryBuilder.not('user_id', 'in', `(${excludeUserIds.join(',')})`);
+      }
+
+      const { data, error } = await queryBuilder.limit(50);
 
       if (error) throw error;
 

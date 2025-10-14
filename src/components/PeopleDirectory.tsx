@@ -39,6 +39,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
     people, 
     loading, 
     searchPeople, 
+    fetchPeople,
     fetchPeopleBySchool, 
     fetchPeopleByMajor,
     getPersonByUserId 
@@ -58,19 +59,34 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [friendshipStatuses, setFriendshipStatuses] = useState<Record<string, string>>({});
 
+  const getExcludedUserIds = (): string[] => {
+    const friendIds = friends.map(f => 
+      f.user1_id === f.friend_profile?.user_id ? f.user2_id : f.user1_id
+    ).filter(Boolean) as string[];
+    
+    const sentRequestIds = sentRequests.map(r => r.receiver_id);
+    const receivedRequestIds = friendRequests.map(r => r.sender_id);
+    
+    return [...friendIds, ...sentRequestIds, ...receivedRequestIds];
+  };
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    searchPeople(query);
+    const excludedIds = getExcludedUserIds();
+    searchPeople(query, excludedIds);
   };
 
   const handleFilter = (filterType: 'all' | 'school' | 'major', value?: string) => {
     setSelectedFilter(filterType);
     setFilterValue(value || '');
+    const excludedIds = getExcludedUserIds();
     
     if (filterType === 'school' && value) {
-      fetchPeopleBySchool(value);
+      fetchPeopleBySchool(value, excludedIds);
     } else if (filterType === 'major' && value) {
-      fetchPeopleByMajor(value);
+      fetchPeopleByMajor(value, excludedIds);
+    } else {
+      fetchPeople(undefined, excludedIds);
     }
   };
 
@@ -104,6 +120,18 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
     }
   };
 
+  // Refetch people when friends list changes to filter them out
+  useEffect(() => {
+    const excludedIds = getExcludedUserIds();
+    if (selectedFilter === 'school' && filterValue) {
+      fetchPeopleBySchool(filterValue, excludedIds);
+    } else if (selectedFilter === 'major' && filterValue) {
+      fetchPeopleByMajor(filterValue, excludedIds);
+    } else {
+      fetchPeople(searchQuery || undefined, excludedIds);
+    }
+  }, [friends, friendRequests, sentRequests]);
+
   // Load friendship statuses for visible people
   useEffect(() => {
     const loadStatuses = async () => {
@@ -134,20 +162,23 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
     const status = friendshipStatuses[person.user_id] || 'none';
     
     return (
-      <Card key={person.id} className="hover:shadow-md transition-shadow">
+      <Card 
+        key={person.id} 
+        className="hover:shadow-md transition-shadow cursor-pointer group"
+        onClick={() => handleViewProfile(person)}
+      >
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <Avatar className="h-12 w-12">
+            <Avatar className="h-12 w-12 flex-shrink-0">
               <AvatarImage src={person.avatar_url} />
               <AvatarFallback>
                 {person.display_name?.charAt(0)?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1 min-w-0 flex flex-col">
-              <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-foreground cursor-pointer hover:text-primary"
-                    onClick={() => handleViewProfile(person)}>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-semibold text-foreground group-hover:text-primary truncate">
                   {person.display_name}
                 </h4>
                 <UserStatusIndicator 
@@ -157,7 +188,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                 />
               </div>
               
-              <div className="flex flex-wrap gap-1 mt-1 mb-2">
+              <div className="flex flex-wrap gap-1 mb-2">
                 <OnlineStatus userId={person.user_id} />
                 {person.school && (
                   <Badge variant="secondary" className="flex items-center gap-1 text-xs">
@@ -184,42 +215,42 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                 </p>
               )}
               
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex justify-center">
                 {status === 'none' && (
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => handleSendFriendRequest(person.user_id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSendFriendRequest(person.user_id);
+                    }}
                     className="flex items-center gap-1"
                   >
-                    <UserPlus className="h-3 w-3" />
-                    Add Friend
+                    <UserPlus className="h-4 w-4" />
+                    Connect
                   </Button>
                 )}
                 {status === 'sent' && (
-                  <Button size="sm" variant="outline" disabled className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    disabled 
+                    className="flex items-center gap-1"
+                  >
+                    <Clock className="h-4 w-4" />
                     Pending
                   </Button>
                 )}
-                {status === 'friends' && (
-                  <Button size="sm" variant="outline" disabled className="flex items-center gap-1">
-                    <UserCheck className="h-3 w-3" />
-                    Friends
+                {status === 'received' && (
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    disabled
+                    className="flex items-center gap-1"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Request Received
                   </Button>
                 )}
-              </div>
-              
-              <div className="flex justify-center mt-auto">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onStartChat?.(person.user_id)}
-                  className="flex items-center gap-1"
-                >
-                  <MessageCircle className="h-3 w-3" />
-                  Message
-                </Button>
               </div>
             </div>
           </div>
