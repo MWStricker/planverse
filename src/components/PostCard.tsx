@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { FloatingActionPanelRoot, FloatingActionPanelTrigger, FloatingActionPanelContent, FloatingActionPanelButton } from '@/components/ui/floating-action-panel';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useIntersectionObserver } from '@/lib/performance';
 import { Post } from '@/hooks/useConnect';
@@ -252,56 +252,58 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
           </div>
           <div className="flex items-center gap-2">
             {isOwner && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="end" 
-                  side="bottom"
-                  sideOffset={8}
-                  collisionPadding={8}
-                  avoidCollisions={false}
-                  className="bg-background border border-border shadow-lg z-50 !animate-none data-[state=open]:animate-fade-in"
-                >
-                  <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem 
-                        onSelect={(e) => {
-                          e.preventDefault();
-                          setDeleteDialogOpen(true);
-                        }}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Post
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Post</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this post? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => {
-                            onDelete(post.id);
-                            setDeleteDialogOpen(false);
-                          }}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <FloatingActionPanelRoot>
+                {({ closePanel }) => (
+                  <>
+                    <FloatingActionPanelTrigger 
+                      title="Post Actions" 
+                      mode="actions"
+                      className="h-8 w-8 p-0 hover:bg-accent"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </FloatingActionPanelTrigger>
+                    
+                    <FloatingActionPanelContent>
+                      <div className="p-2">
+                        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                          <AlertDialogTrigger asChild>
+                            <FloatingActionPanelButton
+                              onClick={() => {
+                                setDeleteDialogOpen(true);
+                                closePanel();
+                              }}
+                              className="text-destructive hover:text-destructive w-full"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Post
+                            </FloatingActionPanelButton>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this post? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  onDelete(post.id);
+                                  setDeleteDialogOpen(false);
+                                }}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </FloatingActionPanelContent>
+                  </>
+                )}
+              </FloatingActionPanelRoot>
             )}
           </div>
         </div>
