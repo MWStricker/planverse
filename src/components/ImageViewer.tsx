@@ -30,10 +30,9 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const updateImageTransform = useCallback(() => {
     if (imageRef.current) {
       const { x, y } = positionRef.current;
-      const currentZoom = isDraggingRef.current ? zoomRef.current : zoom;
-      imageRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${currentZoom})`;
+      imageRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoomRef.current})`;
     }
-  }, [zoom]);
+  }, []);
 
   // Reset on image change
   useEffect(() => {
@@ -56,27 +55,6 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
       }
     };
   }, []);
-
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!imageUrl) return;
-      
-      if (e.key === '+' || e.key === '=') {
-        e.preventDefault();
-        handleZoomIn();
-      } else if (e.key === '-') {
-        e.preventDefault();
-        handleZoomOut();
-      } else if (e.key === '0') {
-        e.preventDefault();
-        handleReset();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [imageUrl, zoom]);
 
   const handleZoomIn = useCallback(() => {
     setZoom(prev => {
@@ -104,15 +82,37 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
     requestAnimationFrame(updateImageTransform);
   }, [updateImageTransform]);
 
-  const handleWheel = (e: React.WheelEvent) => {
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!imageUrl) return;
+      
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleZoomIn();
+      } else if (e.key === '-') {
+        e.preventDefault();
+        handleZoomOut();
+      } else if (e.key === '0') {
+        e.preventDefault();
+        handleReset();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [imageUrl, handleZoomIn, handleZoomOut, handleReset]);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
     setZoom(prev => {
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta));
       zoomRef.current = newZoom;
+      requestAnimationFrame(updateImageTransform);
       return newZoom;
     });
-  };
+  }, [updateImageTransform]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -257,7 +257,9 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
             style={{ 
               cursor: 'grab',
               touchAction: 'none',
-              willChange: 'contents'
+              willChange: 'contents',
+              userSelect: 'none',
+              WebkitUserSelect: 'none'
             }}
           >
             <img
@@ -266,7 +268,6 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
               alt="Full size"
               className="max-w-full max-h-full object-contain select-none"
               style={{
-                transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${zoom})`,
                 willChange: 'transform',
                 backfaceVisibility: 'hidden',
                 WebkitBackfaceVisibility: 'hidden',
