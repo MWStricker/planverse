@@ -60,10 +60,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
   const [friendshipStatuses, setFriendshipStatuses] = useState<Record<string, string>>({});
 
   const getExcludedUserIds = (): string[] => {
-    const friendIds = friends.map(f => 
-      f.user1_id === f.friend_profile?.user_id ? f.user2_id : f.user1_id
-    ).filter(Boolean) as string[];
-    
+    const friendIds = friends.map(f => f.friend_profile?.user_id).filter(Boolean) as string[];
     const sentRequestIds = sentRequests.map(r => r.receiver_id);
     const receivedRequestIds = friendRequests.map(r => r.sender_id);
     
