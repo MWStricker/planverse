@@ -20,6 +20,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const dragStartRef = useRef({ x: 0, y: 0 });
   const rafIdRef = useRef<number>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(1);
 
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 3;
@@ -29,7 +30,8 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const updateImageTransform = useCallback(() => {
     if (imageRef.current) {
       const { x, y } = positionRef.current;
-      imageRef.current.style.transform = `translate(${x}px, ${y}px) scale(${zoom})`;
+      const currentZoom = isDraggingRef.current ? zoomRef.current : zoom;
+      imageRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${currentZoom})`;
     }
   }, [zoom]);
 
@@ -37,10 +39,11 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   useEffect(() => {
     if (imageUrl) {
       setZoom(1);
+      zoomRef.current = 1;
       positionRef.current = { x: 0, y: 0 };
       setPosition({ x: 0, y: 0 });
       if (imageRef.current) {
-        imageRef.current.style.transform = 'translate(0px, 0px) scale(1)';
+        imageRef.current.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
       }
     }
   }, [imageUrl]);
@@ -78,6 +81,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const handleZoomIn = useCallback(() => {
     setZoom(prev => {
       const newZoom = Math.min(prev + ZOOM_STEP, MAX_ZOOM);
+      zoomRef.current = newZoom;
       requestAnimationFrame(updateImageTransform);
       return newZoom;
     });
@@ -86,6 +90,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const handleZoomOut = useCallback(() => {
     setZoom(prev => {
       const newZoom = Math.max(prev - ZOOM_STEP, MIN_ZOOM);
+      zoomRef.current = newZoom;
       requestAnimationFrame(updateImageTransform);
       return newZoom;
     });
@@ -93,6 +98,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
 
   const handleReset = useCallback(() => {
     setZoom(1);
+    zoomRef.current = 1;
     positionRef.current = { x: 0, y: 0 };
     setPosition({ x: 0, y: 0 });
     requestAnimationFrame(updateImageTransform);
@@ -101,11 +107,19 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-    setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)));
+    setZoom(prev => {
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta));
+      zoomRef.current = newZoom;
+      return newZoom;
+    });
   };
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
+    
+    // Capture pointer events to guarantee delivery
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    
     isDraggingRef.current = true;
     dragStartRef.current = {
       x: e.clientX - positionRef.current.x,
@@ -116,7 +130,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
     }
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
     
     // Cancel previous RAF if still pending
@@ -134,8 +148,9 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
     rafIdRef.current = requestAnimationFrame(updateImageTransform);
   }, [updateImageTransform]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     isDraggingRef.current = false;
+    
     // Sync ref state back to React state (for reset button)
     setPosition({ ...positionRef.current });
     if (containerRef.current) {
@@ -146,6 +161,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const handleDoubleClick = useCallback(() => {
     if (zoom === 1) {
       setZoom(2);
+      zoomRef.current = 2;
       requestAnimationFrame(updateImageTransform);
     } else {
       handleReset();
@@ -170,7 +186,11 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
         e.touches[0].clientY - e.touches[1].clientY
       );
       const scale = distance / initialPinchDistance;
-      setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev * scale)));
+      setZoom(prev => {
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev * scale));
+        zoomRef.current = newZoom;
+        return newZoom;
+      });
       setInitialPinchDistance(distance);
     }
   };
@@ -226,15 +246,19 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
             ref={containerRef}
             className="w-full h-full flex items-center justify-center overflow-hidden"
             onWheel={handleWheel}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
             onDoubleClick={handleDoubleClick}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={{ cursor: 'grab' }}
+            style={{ 
+              cursor: 'grab',
+              touchAction: 'none',
+              willChange: 'contents'
+            }}
           >
             <img
               ref={imageRef}
@@ -242,8 +266,10 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
               alt="Full size"
               className="max-w-full max-h-full object-contain select-none"
               style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${zoom})`,
                 willChange: 'transform',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
               }}
               draggable={false}
             />
