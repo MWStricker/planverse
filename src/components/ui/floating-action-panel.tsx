@@ -182,7 +182,7 @@ export function FloatingActionPanelContent({
             ref={contentRef}
             layoutId={`floating-panel-${uniqueId}-${mode}`}
             className={cn(
-              "absolute z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xl outline-none backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950",
+              "absolute z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white/100 shadow-xl outline-none backdrop-blur-md opacity-100 dark:border-zinc-800 dark:bg-zinc-950/100",
               className
             )}
             style={{
@@ -194,8 +194,8 @@ export function FloatingActionPanelContent({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -8 }}
           >
-            <div className="px-4 py-3 font-medium bg-zinc-50 dark:bg-zinc-900">{title}</div>
-            <div className="p-2">{children}</div>
+            <div className="px-4 py-3 font-medium bg-zinc-50/100 dark:bg-zinc-900/100">{title}</div>
+            <div className="p-2 bg-white dark:bg-zinc-950">{children}</div>
           </motion.div>
         </>
       )}
