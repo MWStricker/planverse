@@ -169,12 +169,12 @@ export function FloatingActionPanelContent({
             ref={contentRef}
             layoutId={`floating-panel-${uniqueId}-${mode}`}
             className={cn(
-              "fixed z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg outline-none dark:border-zinc-800 dark:bg-zinc-950",
+              "absolute z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg outline-none dark:border-zinc-800 dark:bg-zinc-950",
               className
             )}
             style={{
-              left: triggerRect ? triggerRect.left : "50%",
-              top: triggerRect ? triggerRect.bottom + 8 : "50%",
+              left: 0,
+              top: triggerRect ? triggerRect.height + 8 : 0,
               transformOrigin: "top left",
             }}
             initial={{ opacity: 0, scale: 0.9, y: -8 }}
