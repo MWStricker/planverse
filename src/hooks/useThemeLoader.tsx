@@ -6,6 +6,11 @@ export const useThemeLoader = () => {
   useEffect(() => {
     // Apply theme from localStorage immediately on app load
     const applyStoredTheme = () => {
+      // Skip theme application on auth page - it should always use default theme
+      if (window.location.pathname === '/auth') {
+        return;
+      }
+      
       try {
         const stored = localStorage.getItem('userPreferences');
         if (stored) {
