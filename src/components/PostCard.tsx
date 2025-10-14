@@ -258,7 +258,14 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background border border-border shadow-lg z-50">
+                <DropdownMenuContent 
+                  align="end" 
+                  side="bottom"
+                  sideOffset={8}
+                  collisionPadding={8}
+                  avoidCollisions={false}
+                  className="bg-background border border-border shadow-lg z-50 !animate-none data-[state=open]:animate-fade-in"
+                >
                   <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem 
