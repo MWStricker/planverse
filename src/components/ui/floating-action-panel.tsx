@@ -109,7 +109,7 @@ export function FloatingActionPanelTrigger({
       ref={triggerRef}
       layoutId={`floating-panel-trigger-${uniqueId}-${mode}`}
       className={cn(
-        "flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-sm hover:bg-accent/50",
+        "flex h-9 items-center rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-800",
         className
       )}
       onClick={handleClick}
@@ -169,7 +169,7 @@ export function FloatingActionPanelContent({
             ref={contentRef}
             layoutId={`floating-panel-${uniqueId}-${mode}`}
             className={cn(
-              "fixed z-50 min-w-[200px] overflow-hidden rounded-lg border border-border bg-popover shadow-lg outline-none",
+              "fixed z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg outline-none dark:border-zinc-800 dark:bg-zinc-950",
               className
             )}
             style={{
@@ -181,7 +181,7 @@ export function FloatingActionPanelContent({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -8 }}
           >
-            <div className="px-4 py-3 font-medium text-popover-foreground">{title}</div>
+            <div className="px-4 py-3 font-medium">{title}</div>
             {children}
           </motion.div>
         </>
@@ -204,7 +204,7 @@ export function FloatingActionPanelButton({
   return (
     <motion.button
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground",
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-900 hover:bg-zinc-100 dark:text-zinc-50 dark:hover:bg-zinc-800",
         className
       )}
       onClick={onClick}
