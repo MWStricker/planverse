@@ -12,10 +12,11 @@ const TRANSITION = {
 
 interface FloatingActionPanelContextType {
   isOpen: boolean;
-  openPanel: (rect: DOMRect, mode: "actions" | "note") => void;
+  openPanel: (rect: DOMRect, mode: "actions" | "note", offset: { left: number; top: number }) => void;
   closePanel: () => void;
   uniqueId: string;
   triggerRect: DOMRect | null;
+  triggerOffset: { left: number; top: number } | null;
   title: string;
   setTitle: (title: string) => void;
   note: string;
@@ -31,12 +32,14 @@ function useFloatingActionPanelLogic() {
   const uniqueId = React.useId();
   const [isOpen, setIsOpen] = React.useState(false);
   const [triggerRect, setTriggerRect] = React.useState<DOMRect | null>(null);
+  const [triggerOffset, setTriggerOffset] = React.useState<{ left: number; top: number } | null>(null);
   const [title, setTitle] = React.useState("");
   const [note, setNote] = React.useState("");
   const [mode, setMode] = React.useState<"actions" | "note">("actions");
 
-  const openPanel = (rect: DOMRect, newMode: "actions" | "note") => {
+  const openPanel = (rect: DOMRect, newMode: "actions" | "note", offset: { left: number; top: number }) => {
     setTriggerRect(rect);
+    setTriggerOffset(offset);
     setMode(newMode);
     setIsOpen(true);
   };
@@ -51,6 +54,7 @@ function useFloatingActionPanelLogic() {
     closePanel,
     uniqueId,
     triggerRect,
+    triggerOffset,
     title,
     setTitle,
     note,
@@ -99,7 +103,16 @@ export function FloatingActionPanelTrigger({
 
   const handleClick = () => {
     if (triggerRef.current) {
-      openPanel(triggerRef.current.getBoundingClientRect(), mode);
+      const rect = triggerRef.current.getBoundingClientRect();
+      const parent = triggerRef.current.offsetParent as HTMLElement;
+      const parentRect = parent?.getBoundingClientRect() || { left: 0, top: 0 };
+      
+      const offset = {
+        left: rect.left - parentRect.left,
+        top: rect.top - parentRect.top
+      };
+      
+      openPanel(rect, mode, offset);
       setTitle(title);
     }
   };
@@ -130,7 +143,7 @@ export function FloatingActionPanelContent({
   children,
   className,
 }: FloatingActionPanelContentProps) {
-  const { isOpen, closePanel, uniqueId, triggerRect, title, mode } =
+  const { isOpen, closePanel, uniqueId, triggerRect, triggerOffset, title, mode } =
     React.useContext(FloatingActionPanelContext)!;
   const contentRef = React.useRef<HTMLDivElement>(null);
 
@@ -173,8 +186,8 @@ export function FloatingActionPanelContent({
               className
             )}
             style={{
-              left: 0,
-              top: triggerRect ? triggerRect.height + 8 : 0,
+              left: triggerOffset?.left || 0,
+              top: (triggerOffset?.top || 0) + (triggerRect?.height || 0) + 8,
               transformOrigin: "top left",
             }}
             initial={{ opacity: 0, scale: 0.9, y: -8 }}
