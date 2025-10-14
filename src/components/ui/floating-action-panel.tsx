@@ -169,7 +169,7 @@ export function FloatingActionPanelContent({
             ref={contentRef}
             layoutId={`floating-panel-${uniqueId}-${mode}`}
             className={cn(
-              "absolute z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg outline-none dark:border-zinc-800 dark:bg-zinc-950",
+              "absolute z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xl outline-none backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950",
               className
             )}
             style={{
@@ -181,8 +181,8 @@ export function FloatingActionPanelContent({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -8 }}
           >
-            <div className="px-4 py-3 font-medium">{title}</div>
-            {children}
+            <div className="px-4 py-3 font-medium bg-zinc-50 dark:bg-zinc-900">{title}</div>
+            <div className="p-2">{children}</div>
           </motion.div>
         </>
       )}
@@ -204,11 +204,10 @@ export function FloatingActionPanelButton({
   return (
     <motion.button
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-900 hover:bg-zinc-100 dark:text-zinc-50 dark:hover:bg-zinc-800",
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-900 bg-transparent hover:bg-zinc-100 dark:text-zinc-50 dark:bg-transparent dark:hover:bg-zinc-800",
         className
       )}
       onClick={onClick}
-      whileHover={{ backgroundColor: "var(--accent)" }}
       whileTap={{ scale: 0.98 }}
     >
       {children}
