@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
@@ -11,22 +11,48 @@ interface ImageViewerProps {
 export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialPinchDistance, setInitialPinchDistance] = useState<number | null>(null);
+  
+  // Refs for smooth dragging without re-renders
   const imageRef = useRef<HTMLImageElement>(null);
+  const positionRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const rafIdRef = useRef<number>();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 3;
   const ZOOM_STEP = 0.25;
 
+  // Direct DOM transform update for 60fps
+  const updateImageTransform = useCallback(() => {
+    if (imageRef.current) {
+      const { x, y } = positionRef.current;
+      imageRef.current.style.transform = `translate(${x}px, ${y}px) scale(${zoom})`;
+    }
+  }, [zoom]);
+
   // Reset on image change
   useEffect(() => {
     if (imageUrl) {
       setZoom(1);
+      positionRef.current = { x: 0, y: 0 };
       setPosition({ x: 0, y: 0 });
+      if (imageRef.current) {
+        imageRef.current.style.transform = 'translate(0px, 0px) scale(1)';
+      }
     }
   }, [imageUrl]);
+
+  // Cleanup RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
 
   // Keyboard controls
   useEffect(() => {
@@ -49,18 +75,28 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imageUrl, zoom]);
 
-  const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + ZOOM_STEP, MAX_ZOOM));
-  };
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => {
+      const newZoom = Math.min(prev + ZOOM_STEP, MAX_ZOOM);
+      requestAnimationFrame(updateImageTransform);
+      return newZoom;
+    });
+  }, [updateImageTransform]);
 
-  const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - ZOOM_STEP, MIN_ZOOM));
-  };
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => {
+      const newZoom = Math.max(prev - ZOOM_STEP, MIN_ZOOM);
+      requestAnimationFrame(updateImageTransform);
+      return newZoom;
+    });
+  }, [updateImageTransform]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setZoom(1);
+    positionRef.current = { x: 0, y: 0 };
     setPosition({ x: 0, y: 0 });
-  };
+    requestAnimationFrame(updateImageTransform);
+  }, [updateImageTransform]);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -68,32 +104,53 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
     setZoom(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)));
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
+    isDraggingRef.current = true;
+    dragStartRef.current = {
+      x: e.clientX - positionRef.current.x,
+      y: e.clientY - positionRef.current.y
+    };
+    if (containerRef.current) {
+      containerRef.current.style.cursor = 'grabbing';
     }
-  };
+  }, []);
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    
+    // Cancel previous RAF if still pending
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+    
+    // Update position ref (no React re-render)
+    positionRef.current = {
+      x: e.clientX - dragStartRef.current.x,
+      y: e.clientY - dragStartRef.current.y
+    };
+    
+    // Schedule DOM update for next frame
+    rafIdRef.current = requestAnimationFrame(updateImageTransform);
+  }, [updateImageTransform]);
 
-  const handleDoubleClick = () => {
+  const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+    // Sync ref state back to React state (for reset button)
+    setPosition({ ...positionRef.current });
+    if (containerRef.current) {
+      containerRef.current.style.cursor = 'grab';
+    }
+  }, []);
+
+  const handleDoubleClick = useCallback(() => {
     if (zoom === 1) {
       setZoom(2);
+      requestAnimationFrame(updateImageTransform);
     } else {
       handleReset();
     }
-  };
+  }, [zoom, handleReset, updateImageTransform]);
 
   // Touch handling for pinch zoom
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -166,6 +223,7 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
 
           {/* Image Container */}
           <div
+            ref={containerRef}
             className="w-full h-full flex items-center justify-center overflow-hidden"
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
@@ -176,16 +234,16 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+            style={{ cursor: 'grab' }}
           >
             <img
               ref={imageRef}
               src={imageUrl || ''}
               alt="Full size"
-              className={`max-w-full max-h-full object-contain select-none ${!isDragging ? 'transition-transform duration-200' : ''}`}
+              className="max-w-full max-h-full object-contain select-none"
               style={{
                 transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-                willChange: isDragging ? 'transform' : 'auto',
+                willChange: 'transform',
               }}
               draggable={false}
             />
