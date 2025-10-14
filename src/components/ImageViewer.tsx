@@ -133,20 +133,18 @@ export const ImageViewer = ({ imageUrl, onClose }: ImageViewerProps) => {
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
     
-    // Cancel previous RAF if still pending
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
-    }
-    
-    // Update position ref (no React re-render)
+    // Update position ref
     positionRef.current = {
       x: e.clientX - dragStartRef.current.x,
       y: e.clientY - dragStartRef.current.y
     };
     
-    // Schedule DOM update for next frame
-    rafIdRef.current = requestAnimationFrame(updateImageTransform);
-  }, [updateImageTransform]);
+    // INSTANT DOM update (no RAF delay)
+    if (imageRef.current) {
+      const { x, y } = positionRef.current;
+      imageRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoomRef.current})`;
+    }
+  }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     isDraggingRef.current = false;
