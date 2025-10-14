@@ -110,6 +110,30 @@ const Auth = () => {
     setTimeout(() => setIsTyping(false), 1000);
   };
 
+  // Force default theme on auth page
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    // Save current preferences
+    const savedTheme = root.getAttribute('data-theme');
+    const savedDarkClass = root.classList.contains('dark');
+    
+    // Force default theme (remove all customizations)
+    root.removeAttribute('data-theme');
+    root.classList.remove('dark');
+    root.style.removeProperty('--font-weight-normal');
+    root.style.removeProperty('--font-weight-medium');
+    root.style.removeProperty('--font-weight-semibold');
+    root.style.removeProperty('--font-weight-bold');
+    root.style.removeProperty('--base-font-size');
+    
+    // Cleanup: restore preferences when leaving auth page
+    return () => {
+      if (savedTheme) root.setAttribute('data-theme', savedTheme);
+      if (savedDarkClass) root.classList.add('dark');
+    };
+  }, []);
+
   useEffect(() => {
     // Only listen for auth state changes, don't auto-redirect on page load
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
