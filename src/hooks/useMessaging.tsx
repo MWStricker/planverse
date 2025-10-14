@@ -58,23 +58,37 @@ export const useMessaging = () => {
         throw error;
       }
 
-      // Get other user profiles separately
-      const conversationsWithProfiles = await Promise.all(
-        (data || []).map(async (conv: any) => {
-          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, display_name, avatar_url, school, major')
-            .eq('user_id', otherUserId)
-            .single();
-          
-          return {
-            ...conv,
-            other_user: profile
-          };
-        })
+      if (!data || data.length === 0) {
+        setConversations([]);
+        return;
+      }
+
+      // Batch fetch all other user profiles in one query
+      const otherUserIds = data.map(conv => 
+        conv.user1_id === user.id ? conv.user2_id : conv.user1_id
       );
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, user_id, display_name, avatar_url, school, major')
+        .in('user_id', otherUserIds);
+
+      if (profileError) {
+        console.error('useMessaging: Error fetching profiles:', profileError);
+      }
+
+      // Create a map for quick profile lookup
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, p])
+      );
+
+      const conversationsWithProfiles = data.map(conv => {
+        const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
+        return {
+          ...conv,
+          other_user: profileMap.get(otherUserId)
+        };
+      });
 
       setConversations(conversationsWithProfiles);
       console.log('useMessaging: Set conversations:', conversationsWithProfiles);
@@ -98,21 +112,26 @@ export const useMessaging = () => {
 
       if (error) throw error;
 
-      // Get sender profiles separately
-      const messagesWithProfiles = await Promise.all(
-        (data || []).map(async (message: any) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('display_name, avatar_url')
-            .eq('user_id', message.sender_id)
-            .single();
-          
-          return {
-            ...message,
-            sender_profile: profile
-          };
-        })
+      if (!data || data.length === 0) {
+        setMessages([]);
+        return;
+      }
+
+      // Batch fetch sender profiles
+      const senderIds = [...new Set(data.map(m => m.sender_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', senderIds);
+
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, p])
       );
+
+      const messagesWithProfiles = data.map(message => ({
+        ...message,
+        sender_profile: profileMap.get(message.sender_id)
+      }));
 
       setMessages(messagesWithProfiles);
     } catch (error) {

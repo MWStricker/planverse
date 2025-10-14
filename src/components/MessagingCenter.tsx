@@ -112,7 +112,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     };
   }, [selectedConversation, user]);
 
-  // Mark messages as read (Phase 3)
+  // Mark messages as read with debouncing
   useEffect(() => {
     if (!selectedConversation || !localMessages.length || !user) return;
 
@@ -121,11 +121,15 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     );
 
     if (unreadMessages.length > 0) {
-      supabase
-        .from('messages')
-        .update({ is_read: true })
-        .in('id', unreadMessages.map(m => m.id))
-        .then(() => console.log('Messages marked as read'));
+      const timeoutId = setTimeout(() => {
+        supabase
+          .from('messages')
+          .update({ is_read: true })
+          .in('id', unreadMessages.map(m => m.id))
+          .then(() => console.log('Messages marked as read'));
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [selectedConversation, localMessages, user]);
 
