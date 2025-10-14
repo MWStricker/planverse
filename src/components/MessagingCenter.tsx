@@ -30,6 +30,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -77,6 +79,42 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       supabase.removeChannel(channel);
     };
   }, [selectedConversation, user]);
+
+  // Typing indicators (Phase 3)
+  useEffect(() => {
+    if (!selectedConversation || !user) return;
+
+    const typingChannel = supabase
+      .channel(`typing:${selectedConversation.id}`)
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        if (payload.payload.userId !== user.id) {
+          setIsTyping(true);
+          setTimeout(() => setIsTyping(false), 3000);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(typingChannel);
+    };
+  }, [selectedConversation, user]);
+
+  // Mark messages as read (Phase 3)
+  useEffect(() => {
+    if (!selectedConversation || !localMessages.length || !user) return;
+
+    const unreadMessages = localMessages.filter(
+      m => m.receiver_id === user.id && !m.is_read
+    );
+
+    if (unreadMessages.length > 0) {
+      supabase
+        .from('messages')
+        .update({ is_read: true })
+        .in('id', unreadMessages.map(m => m.id))
+        .then(() => console.log('Messages marked as read'));
+    }
+  }, [selectedConversation, localMessages, user]);
 
   useEffect(() => {
     if (selectedUserId && conversations.length > 0) {
@@ -204,6 +242,27 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   };
 
+  const handleTyping = () => {
+    if (!selectedConversation || !user) return;
+
+    // Clear previous timeout
+    if (typingTimeout) clearTimeout(typingTimeout);
+
+    // Send typing indicator
+    supabase.channel(`typing:${selectedConversation.id}`)
+      .send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: user.id, conversationId: selectedConversation.id }
+      });
+
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      // Typing stopped
+    }, 3000);
+    setTypingTimeout(timeout);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -310,6 +369,17 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {localMessages.map((message) => {
                   const isOwn = message.sender_id === user?.id;
                   const isTemp = message.id.startsWith('temp-');
@@ -371,7 +441,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 </Button>
                 <Input
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    handleTyping();
+                  }}
                   placeholder="Type a message..."
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   disabled={uploading}

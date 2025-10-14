@@ -340,21 +340,16 @@ const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
       console.log('Calendar received dataRefresh event, user:', !!user, 'event detail:', event.detail);
       if (user) {
         console.log('Clearing cache and fetching fresh data');
-        // Clear ALL cache to force fresh data fetch
         setDataCache(new Map());
-        
-        // Immediately clear local state to remove visual artifacts
         setTasks([]);
         setEvents([]);
         setStudySessions([]);
         
-        // Force refresh by bypassing all caching - fetch current AND adjacent periods
         const forceRefresh = async () => {
           console.log('Force refresh started for current period and adjacent periods');
           setLoading(true);
           try {
-            // Force refresh current period
-            const data = await fetchDataForPeriod(currentDate, viewMode, true); // Force refresh
+            const data = await fetchDataForPeriod(currentDate, viewMode, true);
             console.log('Fresh data fetched:', { 
               tasksCount: data.tasks.length, 
               eventsCount: data.events.length 
@@ -363,14 +358,12 @@ const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
             setEvents(data.events);
             setStudySessions(data.sessions);
             
-            // Also clear cache for adjacent periods to ensure they're fresh too
             const prevDate = viewMode === 'week' ? subWeeks(currentDate, 1) : subMonths(currentDate, 1);
             const nextDate = viewMode === 'week' ? addWeeks(currentDate, 1) : addMonths(currentDate, 1);
             
-            // Force fresh cache for adjacent periods
             await Promise.all([
-              fetchDataForPeriod(prevDate, viewMode, true), // Force refresh
-              fetchDataForPeriod(nextDate, viewMode, true)  // Force refresh
+              fetchDataForPeriod(prevDate, viewMode, true),
+              fetchDataForPeriod(nextDate, viewMode, true)
             ]);
             
             console.log('All periods refreshed successfully');
@@ -385,25 +378,12 @@ const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
       }
     };
 
-    // Also handle specific task events for immediate updates
     const handleTaskCreated = (event: any) => {
       console.log('Task created event received:', event.detail);
       if (event.detail?.task) {
         setTasks(prev => [...prev, event.detail.task]);
       }
     };
-
-    // Test event listener to see if ANY events are being received
-    const testEventListener = (event: any) => {
-      console.log('=== ANY EVENT RECEIVED ===', event.type, event.detail);
-    };
-
-    console.log('Setting up Calendar event listeners for user:', !!user);
-    
-    // Add test listeners for all possible events
-    window.addEventListener('taskDeleted', testEventListener);
-    window.addEventListener('taskCreated', testEventListener);
-    window.addEventListener('dataRefresh', testEventListener);
 
     const handleTaskDeleted = (event: any) => {
       console.log('=== TASK DELETED EVENT RECEIVED ===');
@@ -449,15 +429,10 @@ const Calendar = ({ initialDate }: { initialDate?: Date } = {}) => {
       window.removeEventListener('tasksCleared', handleDataRefresh);
       window.removeEventListener('eventsCleared', handleDataRefresh);
       window.removeEventListener('canvasDataCleared', handleDataRefresh);
-      
-      // Remove test listeners
-      window.removeEventListener('taskDeleted', testEventListener);
-      window.removeEventListener('taskCreated', testEventListener);
-      window.removeEventListener('dataRefresh', testEventListener);
     };
   }, [user, currentDate, viewMode]);
 
-  // Set up real-time subscriptions for tasks and events
+  // Real-time listeners for events and tasks (Phase 1)
   useEffect(() => {
     if (!user) return;
 

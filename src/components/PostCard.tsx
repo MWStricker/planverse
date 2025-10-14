@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useIntersectionObserver } from '@/lib/performance';
 import { Post } from '@/hooks/useConnect';
 import { formatDistanceToNow } from 'date-fns';
+import { hapticSelection } from '@/lib/haptics';
 
 interface PostCardProps {
   post: Post;
@@ -31,11 +32,51 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
 
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
-  // Don't render content until card is visible (lazy rendering)
+  const [optimisticLiked, setOptimisticLiked] = React.useState(post.user_liked);
+  const [optimisticLikesCount, setOptimisticLikesCount] = React.useState(post.likes_count);
+
+  // Sync with props
+  React.useEffect(() => {
+    setOptimisticLiked(post.user_liked);
+    setOptimisticLikesCount(post.likes_count);
+  }, [post.user_liked, post.likes_count]);
+
+  const handleLikeClick = async () => {
+    // Optimistic update with haptic feedback (Phase 1 & 3)
+    const wasLiked = optimisticLiked;
+    setOptimisticLiked(!wasLiked);
+    setOptimisticLikesCount(prev => wasLiked ? prev - 1 : prev + 1);
+    hapticSelection();
+
+    try {
+      await onLike(post.id);
+    } catch (error) {
+      // Revert on failure
+      setOptimisticLiked(wasLiked);
+      setOptimisticLikesCount(post.likes_count);
+    }
+  };
+
+  // Skeleton loading (Phase 2)
   if (!hasIntersected) {
     return (
-      <Card ref={cardRef} className="h-48 animate-pulse">
-        <div className="h-full bg-muted/20" />
+      <Card ref={cardRef} className="animate-pulse">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-muted" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-1/3 bg-muted rounded" />
+              <div className="h-3 w-1/4 bg-muted rounded" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="h-4 bg-muted rounded" />
+            <div className="h-4 bg-muted rounded w-5/6" />
+            <div className="h-4 bg-muted rounded w-4/6" />
+          </div>
+        </CardContent>
       </Card>
     );
   }
@@ -191,13 +232,13 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onLike(post.id)}
-              className={`flex items-center gap-2 transition-colors will-change-transform ${
-                post.user_liked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground'
+              onClick={handleLikeClick}
+              className={`flex items-center gap-2 transition-all will-change-transform ${
+                optimisticLiked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground'
               }`}
             >
-              <Heart className={`h-4 w-4 ${post.user_liked ? 'fill-current' : ''}`} />
-              {post.likes_count}
+              <Heart className={`h-4 w-4 transition-transform ${optimisticLiked ? 'fill-current scale-110' : ''}`} />
+              {optimisticLikesCount}
             </Button>
             <Button
               variant="ghost"

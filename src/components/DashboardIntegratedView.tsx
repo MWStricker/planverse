@@ -157,11 +157,11 @@ export const DashboardIntegratedView = memo(() => {
       const taskId = event.detail?.taskId;
       if (taskId) {
         // Immediately update local state to remove the task
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
         setCourses(prevCourses => 
           prevCourses.map(course => ({
             ...course,
-            tasks: course.tasks.filter(task => task.id !== taskId)
+            tasks: course.tasks.filter(t => t.id !== taskId)
           }))
         );
         console.log('Dashboard: Task removed from local state');
@@ -208,6 +208,50 @@ export const DashboardIntegratedView = memo(() => {
       window.removeEventListener('dataRefresh', handleDataRefresh);
     };
   }, [user]);
+
+  // Real-time listeners for events and tasks (Phase 1)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const eventsChannel = supabase
+      .channel('dashboard-events-realtime')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*',
+          schema: 'public', 
+          table: 'events', 
+          filter: `user_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Dashboard: Real-time event change:', payload);
+          loadAllData();
+        }
+      )
+      .subscribe();
+
+    const tasksChannel = supabase
+      .channel('dashboard-tasks-realtime')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tasks', 
+          filter: `user_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Dashboard: Real-time task change:', payload);
+          loadAllData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(eventsChannel);
+      supabase.removeChannel(tasksChannel);
+    };
+  }, [user?.id]);
 
   const loadAllData = async () => {
     if (!user?.id) return;

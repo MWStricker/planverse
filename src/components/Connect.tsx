@@ -16,6 +16,7 @@ import { useConnect, Post, Comment, PublicProfile } from '@/hooks/useConnect';
 import { useAuth } from '@/hooks/useAuth';
 import { useFriends } from '@/hooks/useFriends';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { PeopleDirectory } from './PeopleDirectory';
 import { MessagingCenter } from './MessagingCenter';
 import { CreatePostDialog } from './CreatePostDialog';
@@ -30,6 +31,7 @@ export const Connect = () => {
   const { toast } = useToast();
   const [newPostContent, setNewPostContent] = useState('');
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
+  const [localPosts, setLocalPosts] = useState(posts);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -70,6 +72,31 @@ export const Connect = () => {
     }
   }, [selectedChatUserId]);
 
+  // Sync posts to local state
+  React.useEffect(() => {
+    setLocalPosts(posts);
+  }, [posts]);
+
+  // Real-time listeners for posts, comments, and likes (Phase 1)
+  React.useEffect(() => {
+    if (!user) return;
+
+    const postsChannel = supabase
+      .channel('posts-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'posts' },
+        (payload: any) => {
+          setLocalPosts(prev => prev.filter(p => p.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(postsChannel);
+    };
+  }, [user]);
+
   const handleCreatePost = async (postData: {
     content: string;
     imageUrl?: string;
@@ -79,8 +106,44 @@ export const Connect = () => {
     visibility: string;
     tags: string[];
   }) => {
-    // Create a combined call since createPost expects different parameters
+    // Optimistic update (Phase 1)
+    const tempPost: any = {
+      id: `temp-${Date.now()}`,
+      content: postData.content,
+      image_url: postData.imageUrl,
+      user_id: user!.id,
+      profiles: {
+        user_id: user!.id,
+        display_name: user!.email?.split('@')[0] || 'You',
+        avatar_url: null,
+        school: null,
+        major: null
+      },
+      likes_count: 0,
+      comments_count: 0,
+      created_at: new Date().toISOString(),
+      moderation_status: 'pending',
+      post_type: postData.postType,
+      visibility: postData.visibility,
+      tags: postData.tags,
+      user_liked: false
+    };
+    
+    setLocalPosts(prev => [tempPost, ...prev]);
+    setIsPostDialogOpen(false);
+    
     const success = await createPost(postData.content, postData.imageUrl);
+    
+    if (!success) {
+      // Remove temp post on failure
+      setLocalPosts(prev => prev.filter(p => p.id !== tempPost.id));
+      toast({
+        title: "Error",
+        description: "Failed to create post",
+        variant: "destructive",
+      });
+    }
+    
     return success;
   };
 
@@ -152,7 +215,7 @@ export const Connect = () => {
 
   // Memoize filtered posts to prevent unnecessary recalculations
   const filteredPosts = useMemo(() => {
-    return posts.filter(post => {
+    return localPosts.filter(post => {
       // Search filter
       if (postFilters.search && !post.content.toLowerCase().includes(postFilters.search.toLowerCase()) &&
           !post.profiles.display_name.toLowerCase().includes(postFilters.search.toLowerCase())) {
@@ -187,7 +250,7 @@ export const Connect = () => {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
     });
-  }, [posts, postFilters]);
+  }, [localPosts, postFilters]);
 
   if (loading) {
     return (
