@@ -36,53 +36,8 @@ interface AccountIntegration {
   category: 'academic' | 'calendar' | 'communication';
 }
 
-const accountIntegrations: AccountIntegration[] = [
-  {
-    id: 'canvas',
-    name: 'Canvas LMS',
-    description: 'Your school\'s learning management system',
-    icon: '🎓',
-    status: 'disconnected',
-    features: ['Assignments', 'Grades', 'Course schedules', 'Announcements'],
-    category: 'academic',
-  },
-  {
-    id: 'google-calendar',
-    name: 'Google Calendar',
-    description: 'Sync with your Google Calendar',
-    icon: '📅',
-    status: 'disconnected',
-    features: ['Event sync', 'Create study blocks', 'Free time detection'],
-    category: 'calendar',
-  },
-  {
-    id: 'outlook',
-    name: 'Outlook Calendar',
-    description: 'Microsoft Outlook calendar integration',
-    icon: '📧',
-    status: 'disconnected',
-    features: ['Email calendar', 'Meeting sync', 'Office 365 integration'],
-    category: 'calendar',
-  },
-  {
-    id: 'apple-calendar',
-    name: 'Apple Calendar',
-    description: 'iCloud calendar synchronization',
-    icon: '🍎',
-    status: 'disconnected',
-    features: ['iCloud sync', 'Cross-device events', 'CalDAV support'],
-    category: 'calendar',
-  },
-  {
-    id: 'microsoft-teams',
-    name: 'Microsoft Teams',
-    description: 'Class meetings and collaboration',
-    icon: '👥',
-    status: 'disconnected',
-    features: ['Meeting notifications', 'Class links', 'Team assignments'],
-    category: 'communication',
-  },
-];
+// Note: The accountIntegrations array is no longer used. 
+// The Settings component uses the IntegrationSetup component for account linking.
 
 export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = {}) => {
   const [activeTab, setActiveTab] = useState(defaultTab);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock, RefreshCw, X } from "lucide-react";
+import { Calendar, CheckCircle, ExternalLink, AlertTriangle, Zap, Lock, RefreshCw, X, Music } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ interface Integration {
   id: string;
   name: string;
   description: string;
-  icon: string;
+  icon?: React.ReactNode;
   status: 'connected' | 'disconnected' | 'error' | 'coming_soon';
   lastSync?: string;
   features: string[];
@@ -25,7 +25,6 @@ const integrations: Integration[] = [
     id: 'google_calendar',
     name: 'Google Calendar',
     description: 'Sync your Google Calendar events and assignments',
-    icon: '📅',
     status: 'disconnected',
     features: ['Event sync', 'Two-way sync', 'Real-time updates'],
     requiresBackend: true,
@@ -34,37 +33,9 @@ const integrations: Integration[] = [
     id: 'spotify',
     name: 'Spotify',
     description: 'Show what you\'re listening to on your profile',
-    icon: '🎵',
     status: 'disconnected',
     features: ['Now playing display', 'Real-time updates', 'Profile integration'],
     requiresBackend: false,
-  },
-  {
-    id: 'apple_calendar',
-    name: 'Apple Calendar',
-    description: 'Connect your Apple Calendar',
-    icon: '🍎',
-    status: 'coming_soon',
-    features: ['Event sync', 'Reminders', 'Multiple calendars'],
-    requiresBackend: false,
-  },
-  {
-    id: 'canvas_lms',
-    name: 'Canvas LMS',
-    description: 'Automatically import assignments and deadlines',
-    icon: '🎓',
-    status: 'coming_soon',
-    features: ['Assignment sync', 'Grade tracking', 'Due date reminders'],
-    requiresBackend: true,
-  },
-  {
-    id: 'blackboard',
-    name: 'Blackboard',
-    description: 'Import your Blackboard assignments',
-    icon: '📚',
-    status: 'coming_soon',
-    features: ['Assignment import', 'Deadline tracking'],
-    requiresBackend: true,
   },
 ];
 
@@ -699,7 +670,11 @@ export const IntegrationSetup = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{integration.icon}</span>
+                    {integration.id === 'google_calendar' ? (
+                      <Calendar className="h-8 w-8 text-blue-600" />
+                    ) : integration.id === 'spotify' ? (
+                      <Music className="h-8 w-8 text-green-500" />
+                    ) : null}
                     <div>
                       <CardTitle className="text-lg">{integration.name}</CardTitle>
                       <p className="text-sm text-muted-foreground">{integration.description}</p>
