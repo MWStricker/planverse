@@ -195,18 +195,18 @@ export const Navigation = ({
                 variant="ghost"
                 size="sm"
                 onClick={onToggleReorder}
-                className="h-6 w-6 p-0 hover:bg-muted/30"
+                className="h-8 w-8 p-0 hover:bg-muted/30"
               >
-                <MoreVertical className="h-3 w-3" />
+                <MoreVertical className="h-5 w-5" />
               </Button>
             ) : (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onCancelReorder}
-                className="h-6 w-6 p-0 hover:bg-muted/30"
+                className="h-8 w-8 p-0 hover:bg-muted/30"
               >
-                <X className="h-3 w-3" />
+                <X className="h-5 w-5" />
               </Button>
             )}
           </div>
