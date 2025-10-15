@@ -20,6 +20,8 @@ const getPlatformIcon = (platform: string) => {
 };
 
 const extractUsername = (url: string, platform: string): string | null => {
+  if (!url || typeof url !== 'string') return null;
+  
   const patterns: Record<string, RegExp> = {
     instagram: /instagram\.com\/([a-zA-Z0-9_.]+)/,
     snapchat: /snapchat\.com\/add\/([a-zA-Z0-9_.]+)/,
@@ -111,6 +113,8 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
               <h3 className="font-semibold text-foreground mb-3">Connect</h3>
               <div className="space-y-2">
                 {Object.entries(profile.social_links || {}).map(([platform, url]) => {
+                  if (!url || typeof url !== 'string') return null;
+                  
                   const Icon = getPlatformIcon(platform);
                   const username = extractUsername(url, platform);
                   const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
