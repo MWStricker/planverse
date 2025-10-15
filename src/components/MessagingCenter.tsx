@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Send, ArrowLeft, School, Upload, X } from 'lucide-react';
+import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
@@ -539,7 +540,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   </Button>
                 </div>
               )}
-              <div className="flex items-center gap-2">
+              <div className="flex items-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -548,15 +549,21 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 >
                   <Upload className="h-4 w-4" />
                 </Button>
-                <Input
+                <AutoTextarea
                   value={newMessage}
                   onChange={(e) => {
                     setNewMessage(e.target.value);
                     handleTyping();
                   }}
                   placeholder="Type a message..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                   disabled={uploading}
+                  maxHeight={120}
                 />
                 <Button
                   onClick={handleSendMessage}
