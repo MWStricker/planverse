@@ -161,26 +161,6 @@ export const Navigation = ({
 
   const orderedNavItems = getOrderedNavItems();
 
-  const getCurrentPageLabel = () => {
-    const currentItem = orderedNavItems.find(item => item.id === currentPage);
-    
-    if (currentItem) {
-      return currentItem.label;
-    }
-    
-    // Handle special cases for pages not in navItems
-    switch (currentPage) {
-      case 'settings':
-        return 'Settings';
-      case 'tasks':
-        return 'Tasks';
-      case 'calendar':
-        return 'Calendar';
-      default:
-        // Capitalize first letter of currentPage as fallback
-        return currentPage.charAt(0).toUpperCase() + currentPage.slice(1);
-    }
-  };
 
   return (
     <div 
@@ -192,45 +172,37 @@ export const Navigation = ({
       }}
     >
 
-      {/* Logo */}
-      <div className="p-4 pt-1">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center flex-col gap-2' : 'justify-between'}`}>
-          {/* Logo and Text */}
-          <div className={`flex items-center ${isCollapsed ? 'flex-col gap-1' : 'gap-3'}`}>
-            <img 
-              src={planverseLogoSidebar} 
-              alt="Planverse Logo" 
-              className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded`}
-            />
-            {!isCollapsed && (
-              <span className="text-2xl font-bold tracking-wide text-foreground">
-                {getCurrentPageLabel()}
-              </span>
-            )}
-          </div>
-          
-          {/* Reorder Button */}
-          <div className="flex flex-col gap-1">
-            {!isReorderMode ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggleReorder}
-                className="h-8 w-8 p-0 hover:bg-muted/30"
-              >
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onCancelReorder}
-                className="h-8 w-8 p-0 hover:bg-muted/30"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
+      {/* Logo - Centered */}
+      <div className="p-4 pt-1 relative">
+        <div className={`flex items-center justify-center`}>
+          <img 
+            src={planverseLogoSidebar} 
+            alt="Planverse Logo" 
+            className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded`}
+          />
+        </div>
+        
+        {/* Reorder Button - Top Right */}
+        <div className="absolute top-4 right-4">
+          {!isReorderMode ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleReorder}
+              className="h-8 w-8 p-0 hover:bg-muted/30"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCancelReorder}
+              className="h-8 w-8 p-0 hover:bg-muted/30"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          )}
         </div>
         
         {isReorderMode && (
