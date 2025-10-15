@@ -178,7 +178,7 @@ export const Navigation = ({
     >
 
       {/* Logo - Centered */}
-      <div className="p-4 pt-1 relative">
+      <div className="p-4 pt-1">
         <div className={`flex items-center justify-center`}>
           <img 
             src={planverseLogoSidebar} 
@@ -187,25 +187,27 @@ export const Navigation = ({
           />
         </div>
         
-        {/* Reorder Button - Top Right */}
-        <div className="absolute top-4 right-4">
+        {/* Reorder Button - Below Logo */}
+        <div className="mt-2 flex justify-center">
           {!isReorderMode ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={onToggleReorder}
-              className="h-8 w-8 p-0 hover:bg-muted/30"
+              className="h-7 px-2 hover:bg-muted/30 text-xs"
             >
-              <MoreVertical className="h-5 w-5" />
+              <MoreVertical className="h-4 w-4 mr-1" />
+              {!isCollapsed && <span>Reorder</span>}
             </Button>
           ) : (
             <Button
               variant="ghost"
               size="sm"
               onClick={onCancelReorder}
-              className="h-8 w-8 p-0 hover:bg-muted/30"
+              className="h-7 px-2 hover:bg-muted/30 text-xs"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 mr-1" />
+              {!isCollapsed && <span>Cancel</span>}
             </Button>
           )}
         </div>
