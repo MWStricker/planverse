@@ -1880,7 +1880,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
       </div>
       
       <SocialLinksEditor
-        initialLinks={(profile?.social_links as Record<string, string>) || {}}
+        initialLinks={profile?.social_links && typeof profile.social_links === 'object' ? (profile.social_links as Record<string, string>) : {}}
         onSave={handleSaveSocialLinks}
       />
     </div>

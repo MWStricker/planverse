@@ -513,7 +513,7 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
           </Card>
 
           {/* Social Media Links */}
-          {profile?.social_links && Object.keys(profile.social_links).length > 0 && (
+          {profile?.social_links && typeof profile.social_links === 'object' && Object.keys(profile.social_links).length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Connect</CardTitle>
@@ -523,7 +523,7 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {Object.entries(profile.social_links as Record<string, string>).map(([platform, url]) => {
+                  {Object.entries((profile.social_links || {}) as Record<string, string>).map(([platform, url]) => {
                     const Icon = getPlatformIcon(platform);
                     const username = extractUsername(url, platform);
                     const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);

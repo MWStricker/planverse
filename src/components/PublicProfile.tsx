@@ -106,11 +106,11 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
           <SpotifyNowPlayingCard userId={profile.user_id} isPublicProfile />
 
           {/* Social Media Links */}
-          {profile.social_links && Object.keys(profile.social_links).length > 0 && (
+          {profile.social_links && typeof profile.social_links === 'object' && profile.social_links !== null && Object.keys(profile.social_links).length > 0 && (
             <div>
               <h3 className="font-semibold text-foreground mb-3">Connect</h3>
               <div className="space-y-2">
-                {Object.entries(profile.social_links).map(([platform, url]) => {
+                {Object.entries(profile.social_links || {}).map(([platform, url]) => {
                   const Icon = getPlatformIcon(platform);
                   const username = extractUsername(url, platform);
                   const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
