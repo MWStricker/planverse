@@ -182,7 +182,7 @@ export const Navigation = ({
               className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded`}
             />
             {!isCollapsed && (
-              <span className="text-2xl font-bold tracking-wide bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-in fade-in slide-in-from-left-2 duration-300">
+              <span className="text-2xl font-bold tracking-wide text-foreground">
                 Dashboard
               </span>
             )}
