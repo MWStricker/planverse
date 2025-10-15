@@ -30,7 +30,6 @@ import {
   Eye,
   EyeOff,
   Instagram,
-  Ghost,
   Tv,
   Github,
   Twitter,
@@ -48,7 +47,6 @@ import { collegeMajors } from '@/data/collegeMajors';
 const getPlatformIcon = (platform: string) => {
   const icons: Record<string, any> = {
     instagram: Instagram,
-    snapchat: Ghost,
     twitch: Tv,
     github: Github,
     twitter: Twitter,
@@ -62,7 +60,6 @@ const extractUsername = (url: string, platform: string): string | null => {
   
   const patterns: Record<string, RegExp> = {
     instagram: /instagram\.com\/([a-zA-Z0-9_.]+)/,
-    snapchat: /snapchat\.com\/add\/([a-zA-Z0-9_.]+)/,
     twitch: /twitch\.tv\/([a-zA-Z0-9_]+)/,
     github: /github\.com\/([a-zA-Z0-9-]+)/,
     twitter: /(twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/,
@@ -79,8 +76,7 @@ const getPlatformColor = (platform: string): string => {
     youtube: 'bg-red-600',
     twitch: 'bg-purple-600',
     github: 'bg-gray-800',
-    twitter: 'bg-sky-500',
-    snapchat: 'bg-yellow-400'
+    twitter: 'bg-sky-500'
   };
   return colors[platform.toLowerCase()] || 'bg-gray-500';
 };

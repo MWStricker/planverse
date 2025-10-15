@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Instagram, Ghost, Tv, Github, Twitter, Youtube, Check, X } from 'lucide-react';
+import { Instagram, Tv, Github, Twitter, Youtube, Check, X } from 'lucide-react';
 
 interface SocialLinksEditorProps {
   initialLinks?: Record<string, string>;
@@ -12,7 +12,6 @@ interface SocialLinksEditorProps {
 
 const platforms = [
   { id: 'instagram', label: 'Instagram', icon: Instagram, placeholder: 'https://instagram.com/username' },
-  { id: 'snapchat', label: 'Snapchat', icon: Ghost, placeholder: 'https://snapchat.com/add/username' },
   { id: 'twitch', label: 'Twitch', icon: Tv, placeholder: 'https://twitch.tv/username' },
   { id: 'github', label: 'GitHub', icon: Github, placeholder: 'https://github.com/username' },
   { id: 'twitter', label: 'Twitter/X', icon: Twitter, placeholder: 'https://twitter.com/username' },
@@ -21,7 +20,6 @@ const platforms = [
 
 const urlPatterns: Record<string, RegExp> = {
   instagram: /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/,
-  snapchat: /^https?:\/\/(www\.)?snapchat\.com\/add\/[a-zA-Z0-9_.]+\/?$/,
   twitch: /^https?:\/\/(www\.)?twitch\.tv\/[a-zA-Z0-9_]+\/?$/,
   github: /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9-]+\/?$/,
   twitter: /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/?$/,
@@ -31,7 +29,6 @@ const urlPatterns: Record<string, RegExp> = {
 const extractUsername = (url: string, platform: string): string | null => {
   const patterns: Record<string, RegExp> = {
     instagram: /instagram\.com\/([a-zA-Z0-9_.]+)/,
-    snapchat: /snapchat\.com\/add\/([a-zA-Z0-9_.]+)/,
     twitch: /twitch\.tv\/([a-zA-Z0-9_]+)/,
     github: /github\.com\/([a-zA-Z0-9-]+)/,
     twitter: /(twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/,
