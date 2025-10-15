@@ -71,7 +71,6 @@ const integrations: Integration[] = [
 export const IntegrationSetup = () => {
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user } = useAuth();
   const { syncAllConnections, isProviderConnected, refreshConnections } = useIntegrationSync();
@@ -79,21 +78,12 @@ export const IntegrationSetup = () => {
   console.log('🔍 IntegrationSetup component rendered');
   console.log('🔍 Current user:', !!user);
 
-  // Update integration status based on connections
-  useEffect(() => {
-    const updateIntegrationStatus = () => {
-      const connected = new Set<string>();
-      if (isProviderConnected('google')) {
-        connected.add('google_calendar');
-      }
-      if (isProviderConnected('spotify')) {
-        connected.add('spotify');
-      }
-      setConnectedIntegrations(connected);
-    };
-
-    updateIntegrationStatus();
-  }, []); // Remove dependency to fix infinite loop
+  // Helper to check if integration is connected
+  const isConnected = (integrationId: string) => {
+    if (integrationId === 'google_calendar') return isProviderConnected('google');
+    if (integrationId === 'spotify') return isProviderConnected('spotify');
+    return false;
+  };
 
   // Check if we just returned from Spotify OAuth and link the account
   useEffect(() => {
@@ -148,9 +138,6 @@ export const IntegrationSetup = () => {
           
           // Refresh connections
           await refreshConnections();
-          
-          // Update UI state
-          setConnectedIntegrations(prev => new Set([...prev, 'spotify']));
           
         } catch (error) {
           console.error('💥 Unexpected error:', error);
@@ -401,7 +388,6 @@ export const IntegrationSetup = () => {
 
       if (syncData?.success) {
         console.log(`✅ Synced ${syncData.syncedEvents} real Google Calendar events!`);
-        setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
         await refreshConnections();
         return true;
       } else {
@@ -587,7 +573,6 @@ export const IntegrationSetup = () => {
       }
 
       if (syncData?.success) {
-        setConnectedIntegrations(prev => new Set([...prev, 'google-calendar']));
         await refreshConnections();
         
         console.log('✅ Sync successful:', syncData);
@@ -624,11 +609,7 @@ export const IntegrationSetup = () => {
         .eq('user_id', user?.id)
         .eq('provider', 'spotify');
       
-      setConnectedIntegrations(prev => {
-        const newSet = new Set(prev);
-        newSet.delete('spotify');
-        return newSet;
-      });
+      await refreshConnections();
       
       toast({
         title: "Disconnected",
@@ -699,8 +680,8 @@ export const IntegrationSetup = () => {
       {/* Integration Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {integrations.map((integration) => {
-          const isConnected = connectedIntegrations.has(integration.id);
-          const currentStatus = isConnected ? 'connected' : integration.status;
+          const connected = isConnected(integration.id);
+          const currentStatus = connected ? 'connected' : integration.status;
           
           console.log('🔍 Rendering integration:', integration.id, 'requiresBackend:', integration.requiresBackend);
           

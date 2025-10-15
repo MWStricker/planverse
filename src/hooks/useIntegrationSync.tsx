@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,7 +19,7 @@ export const useIntegrationSync = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchConnections = async () => {
+  const fetchConnections = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -38,7 +38,7 @@ export const useIntegrationSync = () => {
     } catch (error) {
       console.error('Unexpected error fetching connections:', error);
     }
-  };
+  }, [user]);
 
   const syncGoogleCalendar = async (connection: IntegrationConnection) => {
     try {
@@ -117,7 +117,7 @@ export const useIntegrationSync = () => {
     }
   };
 
-  const syncAllConnections = async () => {
+  const syncAllConnections = useCallback(async () => {
     if (connections.length === 0) return;
 
     setSyncStatus('syncing');
@@ -155,15 +155,15 @@ export const useIntegrationSync = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [connections, toast]);
 
-  const getConnectedProviders = () => {
+  const getConnectedProviders = useCallback(() => {
     return connections.map(conn => conn.provider);
-  };
+  }, [connections]);
 
-  const isProviderConnected = (provider: string) => {
+  const isProviderConnected = useCallback((provider: string) => {
     return connections.some(conn => conn.provider === provider && conn.is_active);
-  };
+  }, [connections]);
 
   useEffect(() => {
     fetchConnections();
