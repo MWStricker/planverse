@@ -99,17 +99,17 @@ export const useMessaging = () => {
     }
   };
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = async (conversationId: string, otherUserId: string) => {
     if (!user) return;
 
     try {
       setLoading(true);
       
-      // Fetch messages and profiles in parallel
+      // Fetch messages between current user and the specific conversation partner
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;

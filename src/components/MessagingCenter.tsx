@@ -140,9 +140,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       const conversation = conversations.find(c => 
         c.other_user?.id === selectedUserId
       );
-      if (conversation) {
+      if (conversation && conversation.other_user) {
         setSelectedConversation(conversation);
-        fetchMessages(conversation.id);
+        fetchMessages(conversation.id, conversation.other_user.id);
       }
     }
   }, [selectedUserId, conversations]);
@@ -184,8 +184,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   }, [selectedUserId, conversations, user]);
 
   const handleSelectConversation = (conversation: Conversation) => {
+    if (!conversation.other_user) return;
     setSelectedConversation(conversation);
-    fetchMessages(conversation.id);
+    fetchMessages(conversation.id, conversation.other_user.id);
   };
 
   const handleSendMessage = async () => {
