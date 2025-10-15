@@ -50,7 +50,7 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-20 text-lg transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
+      className={`w-full h-20 text-lg transition-[background-color,transform,box-shadow] duration-50 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
         isCollapsed ? 'justify-center px-2' : 'justify-start px-6'
       } ${
         isDragging ? 'shadow-lg' : ''
@@ -72,7 +72,7 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 transition-transform duration-200 ease-out will-change-transform flex-shrink-0 ${
+      <Icon className={`h-5 w-5 flex-shrink-0 ${
         isCollapsed ? '' : 'mr-3'
       } ${
         isActive 
@@ -105,7 +105,7 @@ export const SortableTabItem = ({
       
       {/* Glow effect for active items */}
       {isActive && !isReorderMode && (
-        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-opacity duration-200 ease-out"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/10 blur-sm -z-10 transition-opacity duration-100 ease-out"></div>
       )}
     </Button>
   );
