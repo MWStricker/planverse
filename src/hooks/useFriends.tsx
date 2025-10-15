@@ -46,44 +46,44 @@ export const useFriends = () => {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  
+  // Cache duration: 30 seconds
+  const CACHE_DURATION = 30000;
 
   const fetchFriends = async () => {
     if (!user) return;
 
     try {
+      // Single optimized query with PostgreSQL join - fetches friendships and profiles in one go
       const { data, error } = await supabase
         .from('friendships')
-        .select('*')
+        .select(`
+          *,
+          user1_profile:profiles!friendships_user1_id_fkey(id, user_id, display_name, avatar_url, school, major, bio),
+          user2_profile:profiles!friendships_user2_id_fkey(id, user_id, display_name, avatar_url, school, major, bio)
+        `)
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
 
       if (error) throw error;
 
-      // Get friend profiles separately
-      const friendsWithProfiles = await Promise.all(
-        (data || []).map(async (friendship: any) => {
-          const friendUserId = friendship.user1_id === user.id ? friendship.user2_id : friendship.user1_id;
-          
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id, user_id, display_name, avatar_url, school, major, bio')
-            .eq('user_id', friendUserId)
-            .maybeSingle();
-          
-          if (profileError) {
-            console.error('Error fetching friend profile:', profileError);
-          }
-          if (!profile) {
-            console.warn(`No profile found for user: ${friendUserId}`);
-          }
-          
-          return {
-            ...friendship,
-            friend_profile: profile
-          };
-        })
-      );
+      // Map to determine which profile is the friend's profile
+      const friendsWithProfiles = (data || []).map((friendship: any) => {
+        const friend_profile = friendship.user1_id === user.id 
+          ? friendship.user2_profile 
+          : friendship.user1_profile;
+
+        return {
+          id: friendship.id,
+          user1_id: friendship.user1_id,
+          user2_id: friendship.user2_id,
+          created_at: friendship.created_at,
+          friend_profile
+        };
+      });
 
       setFriends(friendsWithProfiles);
+      setLastFetchTime(Date.now());
     } catch (error) {
       console.error('Error fetching friends:', error);
     }
@@ -93,80 +93,58 @@ export const useFriends = () => {
     if (!user) return;
 
     try {
-      // Incoming requests  
-      const { data: incoming, error: incomingError } = await supabase
-        .from('friend_requests')
-        .select('*')
-        .eq('receiver_id', user.id)
-        .eq('status', 'pending');
+      // Parallel fetch with PostgreSQL joins for both incoming and outgoing requests
+      const [incomingResult, outgoingResult] = await Promise.all([
+        supabase
+          .from('friend_requests')
+          .select(`
+            *,
+            sender_profile:profiles!friend_requests_sender_id_fkey(display_name, avatar_url, school, major, user_id)
+          `)
+          .eq('receiver_id', user.id)
+          .eq('status', 'pending'),
+        
+        supabase
+          .from('friend_requests')
+          .select(`
+            *,
+            receiver_profile:profiles!friend_requests_receiver_id_fkey(display_name, avatar_url, school, major, user_id)
+          `)
+          .eq('sender_id', user.id)
+          .eq('status', 'pending')
+      ]);
 
-      if (incomingError) throw incomingError;
+      if (incomingResult.error) throw incomingResult.error;
+      if (outgoingResult.error) throw outgoingResult.error;
 
-      // Get sender profiles separately
-      const incomingWithProfiles = await Promise.all(
-        (incoming || []).map(async (request: any) => {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('display_name, avatar_url, school, major, user_id')
-            .eq('user_id', request.sender_id)
-            .maybeSingle();
-          
-          if (profileError) {
-            console.error('Error fetching sender profile:', profileError);
-          }
-          
-          return {
-            ...request,
-            status: request.status as 'pending' | 'accepted' | 'rejected',
-            sender_profile: profile || {
-              display_name: 'Unknown User',
-              avatar_url: null,
-              school: null,
-              major: null,
-              user_id: request.sender_id
-            }
-          };
-        })
-      );
+      // Map with default values for missing profiles
+      const incomingWithProfiles = (incomingResult.data || []).map((request: any) => ({
+        ...request,
+        status: request.status as 'pending' | 'accepted' | 'rejected',
+        sender_profile: request.sender_profile || {
+          display_name: 'Unknown User',
+          avatar_url: null,
+          school: null,
+          major: null,
+          user_id: request.sender_id
+        }
+      }));
 
-      // Outgoing requests
-      const { data: outgoing, error: outgoingError } = await supabase
-        .from('friend_requests')
-        .select('*')
-        .eq('sender_id', user.id)
-        .eq('status', 'pending');
-
-      if (outgoingError) throw outgoingError;
-
-      // Get receiver profiles separately
-      const outgoingWithProfiles = await Promise.all(
-        (outgoing || []).map(async (request: any) => {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('display_name, avatar_url, school, major, user_id')
-            .eq('user_id', request.receiver_id)
-            .maybeSingle();
-          
-          if (profileError) {
-            console.error('Error fetching receiver profile:', profileError);
-          }
-          
-          return {
-            ...request,
-            status: request.status as 'pending' | 'accepted' | 'rejected',
-            receiver_profile: profile || {
-              display_name: 'Unknown User',
-              avatar_url: null,
-              school: null,
-              major: null,
-              user_id: request.receiver_id
-            }
-          };
-        })
-      );
+      const outgoingWithProfiles = (outgoingResult.data || []).map((request: any) => ({
+        ...request,
+        status: request.status as 'pending' | 'accepted' | 'rejected',
+        receiver_profile: request.receiver_profile || {
+          display_name: 'Unknown User',
+          avatar_url: null,
+          school: null,
+          major: null,
+          user_id: request.receiver_id
+        }
+      }));
 
       setFriendRequests(incomingWithProfiles);
       setSentRequests(outgoingWithProfiles);
+      setLastFetchTime(Date.now());
     } catch (error) {
       console.error('Error fetching friend requests:', error);
     }
@@ -186,6 +164,8 @@ export const useFriends = () => {
 
       if (error) throw error;
 
+      // Force refetch (bypass cache) after user action
+      setLastFetchTime(0);
       await fetchFriendRequests();
       return true;
     } catch (error) {
@@ -222,9 +202,13 @@ export const useFriends = () => {
             user2_id: user2
           });
 
+        // Force refetch (bypass cache) after user action
+        setLastFetchTime(0);
         await fetchFriends();
       }
 
+      // Force refetch (bypass cache) after user action
+      setLastFetchTime(0);
       await fetchFriendRequests();
       return true;
     } catch (error) {
@@ -245,6 +229,8 @@ export const useFriends = () => {
 
       if (error) throw error;
 
+      // Force refetch (bypass cache) after user action
+      setLastFetchTime(0);
       await fetchFriends();
       return true;
     } catch (error) {
@@ -300,12 +286,61 @@ export const useFriends = () => {
 
   useEffect(() => {
     if (user) {
-      setLoading(true);
-      Promise.all([fetchFriends(), fetchFriendRequests()]).finally(() => {
+      // Check cache before fetching
+      const now = Date.now();
+      const isCacheValid = lastFetchTime > 0 && (now - lastFetchTime) < CACHE_DURATION;
+      
+      if (!isCacheValid) {
+        setLoading(true);
+        Promise.all([fetchFriends(), fetchFriendRequests()]).finally(() => {
+          setLoading(false);
+        });
+      } else {
+        // Data is cached, just clear loading state
         setLoading(false);
-      });
+      }
     }
   }, [user]);
+
+  // Real-time subscription for instant updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('friendships-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friendships',
+          filter: `user1_id=eq.${user.id},user2_id=eq.${user.id}`
+        },
+        () => {
+          // Invalidate cache and refetch on friendship changes
+          setLastFetchTime(0);
+          fetchFriends();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friend_requests'
+        },
+        () => {
+          // Invalidate cache and refetch on friend request changes
+          setLastFetchTime(0);
+          fetchFriendRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   return {
     friends,
