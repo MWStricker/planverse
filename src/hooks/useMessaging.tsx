@@ -75,9 +75,18 @@ export const useMessaging = () => {
 
       // Map to determine which profile is the other user's profile
       const conversationsWithProfiles = data.map((conv: any) => {
-        const other_user = conv.user1_id === user.id 
+        const otherUserProfile = conv.user1_id === user.id 
           ? conv.user2_profile 
           : conv.user1_profile;
+        
+        // Transform profile to include 'id' field from 'user_id'
+        const other_user = otherUserProfile ? {
+          id: otherUserProfile.user_id,
+          display_name: otherUserProfile.display_name,
+          avatar_url: otherUserProfile.avatar_url,
+          school: otherUserProfile.school,
+          major: otherUserProfile.major
+        } : undefined;
 
         return {
           id: conv.id,
