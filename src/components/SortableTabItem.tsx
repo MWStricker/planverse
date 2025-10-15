@@ -50,7 +50,7 @@ export const SortableTabItem = ({
       ref={setNodeRef}
       style={style}
       variant={isActive ? "default" : "ghost"}
-      className={`w-full h-14 text-base transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
+      className={`w-full h-20 text-lg transition-[background-color,transform,box-shadow] duration-200 ease-out focus:outline-none focus-visible:outline-none will-change-[background,transform] ${
         isCollapsed ? 'justify-center px-2' : 'justify-start px-6'
       } ${
         isDragging ? 'shadow-lg' : ''
@@ -72,8 +72,8 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-6 w-6 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] flex-shrink-0 ${
-        isCollapsed ? '' : 'mr-4'
+      <Icon className={`h-5 w-5 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] flex-shrink-0 ${
+        isCollapsed ? '' : 'mr-3'
       } ${
         isActive 
           ? 'text-primary-foreground scale-110' 

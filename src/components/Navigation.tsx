@@ -175,7 +175,7 @@ export const Navigation = ({
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
             <div className="text-center flex-1 transition-all duration-200">
-              <h1 className="text-xl font-bold text-foreground transition-opacity duration-200">
+              <h1 className="text-lg font-bold text-foreground transition-opacity duration-200">
                 Planverse
               </h1>
             </div>
@@ -212,6 +212,9 @@ export const Navigation = ({
           </div>
         )}
       </div>
+      
+      {/* Border separator */}
+      <div className="border-b border-border"></div>
 
       {/* Navigation */}
       <nav className="flex-1 min-h-0 overflow-hidden">
