@@ -72,7 +72,7 @@ export const SortableTabItem = ({
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
       )}
       
-      <Icon className={`h-5 w-5 transition-[margin,transform] duration-200 ease-out will-change-[margin,transform] flex-shrink-0 ${
+      <Icon className={`h-5 w-5 transition-transform duration-200 ease-out will-change-transform flex-shrink-0 ${
         isCollapsed ? '' : 'mr-3'
       } ${
         isActive 
@@ -81,7 +81,7 @@ export const SortableTabItem = ({
       }`} />
       
       {!isCollapsed && (
-        <div className="flex items-center transition-opacity duration-75 ease-out opacity-100 min-w-0 flex-1">
+        <div className="flex items-center min-w-0 flex-1">
           <span className={`font-medium truncate ${
             isActive ? 'tracking-wide' : ''
           }`}>
