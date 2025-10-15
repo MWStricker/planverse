@@ -77,38 +77,37 @@ export const Connect = () => {
     setLocalPosts(posts);
   }, [posts]);
 
-  // Real-time listeners for posts and likes (Phase 1 - Complete Fix)
+  // Real-time listeners for posts and likes (OPTIMIZED: Stable channel refs)
   React.useEffect(() => {
     if (!user) return;
 
     console.log('🔌 Setting up real-time channels for user:', user.id);
 
+    const postsChannel = supabase.channel(`posts-realtime-${user.id}`, {
+      config: { broadcast: { ack: false } }
+    });
+
+    const likesChannel = supabase.channel(`post-likes-realtime-${user.id}`, {
+      config: { broadcast: { ack: false } }
+    });
+
     // Posts Channel - Listen for new posts and deletions
-    const postsChannel = supabase
-      .channel('posts-realtime')
+    postsChannel
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
         async (payload: any) => {
           console.log('📝 Real-time: New post detected', payload);
-          // Fetch full post data with profile separately
-          const { data: newPostData } = await supabase
-            .from('posts')
-            .select('*')
-            .eq('id', payload.new.id)
-            .single();
+          const [
+            { data: newPostData },
+            { data: profileData }
+          ] = await Promise.all([
+            supabase.from('posts').select('*').eq('id', payload.new.id).single(),
+            supabase.from('profiles').select('user_id, display_name, avatar_url, school, major').eq('user_id', payload.new.user_id).single()
+          ]);
 
-          if (!newPostData) return;
+          if (!newPostData || !profileData) return;
 
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('user_id, display_name, avatar_url, school, major')
-            .eq('user_id', newPostData.user_id)
-            .single();
-
-          if (!profileData) return;
-
-          // Check if user has liked this post
           const { data: likeData } = await supabase
             .from('post_likes')
             .select('id')
@@ -128,7 +127,6 @@ export const Connect = () => {
           };
 
           setLocalPosts(prev => {
-            // Prevent duplicates
             if (prev.some(p => p.id === formattedPost.id)) return prev;
             return [formattedPost, ...prev];
           });
@@ -147,8 +145,7 @@ export const Connect = () => {
       });
 
     // Likes Channel - Listen for like/unlike events
-    const likesChannel = supabase
-      .channel('post-likes-realtime')
+    likesChannel
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'post_likes' },

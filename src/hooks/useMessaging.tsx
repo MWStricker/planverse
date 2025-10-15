@@ -60,10 +60,10 @@ export const useMessaging = () => {
 
       if (!data || data.length === 0) {
         setConversations([]);
+        setLoading(false);
         return;
       }
 
-      // Batch fetch all other user profiles in one query
       const otherUserIds = data.map(conv => 
         conv.user1_id === user.id ? conv.user2_id : conv.user1_id
       );
@@ -77,10 +77,7 @@ export const useMessaging = () => {
         console.error('useMessaging: Error fetching profiles:', profileError);
       }
 
-      // Create a map for quick profile lookup
-      const profileMap = new Map(
-        (profiles || []).map(p => [p.user_id, p])
-      );
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
       const conversationsWithProfiles = data.map(conv => {
         const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
@@ -114,19 +111,17 @@ export const useMessaging = () => {
 
       if (!data || data.length === 0) {
         setMessages([]);
+        setLoading(false);
         return;
       }
 
-      // Batch fetch sender profiles
       const senderIds = [...new Set(data.map(m => m.sender_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name, avatar_url')
         .in('user_id', senderIds);
 
-      const profileMap = new Map(
-        (profiles || []).map(p => [p.user_id, p])
-      );
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
       const messagesWithProfiles = data.map(message => ({
         ...message,

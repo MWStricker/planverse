@@ -61,45 +61,55 @@ export const useConnect = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch posts with profile information
+  // Fetch posts with profile information (OPTIMIZED: Parallel queries)
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      // First fetch posts
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch posts and initial data in parallel
+      const [
+        { data: postsData, error: postsError }
+      ] = await Promise.all([
+        supabase.from('posts').select('*').order('created_at', { ascending: false })
+      ]);
 
       if (postsError) throw postsError;
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        setLoading(false);
+        return;
+      }
 
-      // Then fetch profiles for these posts
-      const userIds = postsData?.map(post => post.user_id) || [];
-      const { data: profilesData, error: profilesError } = await supabase
+      const userIds = postsData.map(post => post.user_id);
+      const postIds = postsData.map(post => post.id);
+
+      // Fetch profiles and likes in parallel
+      const profilesPromise = supabase
         .from('profiles')
         .select('user_id, display_name, avatar_url, school, major')
         .in('user_id', userIds);
 
+      const likesPromise = user
+        ? supabase.from('post_likes').select('post_id').eq('user_id', user.id).in('post_id', postIds)
+        : null;
+
+      const [profilesResult, likesResult] = await Promise.all([
+        profilesPromise,
+        likesPromise
+      ]);
+
+      const { data: profilesData, error: profilesError } = profilesResult;
       if (profilesError) throw profilesError;
 
-      // Create a map of user_id to profile
       const profilesMap = new Map(profilesData?.map(profile => [profile.user_id, profile]) || []);
-
-      // Check which posts current user has liked
+      
       let likedPostIds = new Set<string>();
-      if (user) {
-        const postIds = postsData?.map(post => post.id) || [];
-        const { data: likes } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', user.id)
-          .in('post_id', postIds);
-
+      if (likesResult) {
+        const { data: likes } = likesResult;
         likedPostIds = new Set(likes?.map(like => like.post_id) || []);
       }
 
       // Combine posts with profiles
-      const formattedPosts = postsData?.map(post => {
+      const formattedPosts = postsData.map(post => {
         const profile = profilesMap.get(post.user_id);
         return {
           ...post,
@@ -113,7 +123,7 @@ export const useConnect = () => {
             major: profile?.major,
           }
         };
-      }) || [];
+      });
 
       setPosts(formattedPosts as Post[]);
     } catch (error) {
@@ -233,10 +243,9 @@ export const useConnect = () => {
     }
   };
 
-  // Fetch comments for a post
+  // Fetch comments for a post (OPTIMIZED: Parallel queries)
   const fetchComments = async (postId: string): Promise<Comment[]> => {
     try {
-      // First fetch comments
       const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
         .select('*')
@@ -244,9 +253,10 @@ export const useConnect = () => {
         .order('created_at', { ascending: true });
 
       if (commentsError) throw commentsError;
+      if (!commentsData || commentsData.length === 0) return [];
 
-      // Then fetch profiles for these comments
-      const userIds = commentsData?.map(comment => comment.user_id) || [];
+      const userIds = commentsData.map(comment => comment.user_id);
+      
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, display_name, avatar_url')
@@ -254,11 +264,9 @@ export const useConnect = () => {
 
       if (profilesError) throw profilesError;
 
-      // Create a map of user_id to profile
       const profilesMap = new Map(profilesData?.map(profile => [profile.user_id, profile]) || []);
 
-      // Combine comments with profiles
-      const formattedComments = commentsData?.map(comment => {
+      const formattedComments = commentsData.map(comment => {
         const profile = profilesMap.get(comment.user_id);
         return {
           ...comment,
@@ -267,7 +275,7 @@ export const useConnect = () => {
             avatar_url: profile?.avatar_url,
           }
         };
-      }) || [];
+      });
 
       return formattedComments as Comment[];
     } catch (error) {

@@ -49,21 +49,7 @@ body {
   padding: 0;
 }
 
-/* Optimize all scrollable containers */
-* {
-  /* Force compositing layer for better performance */
-  -webkit-transform: translateZ(0);
-  -moz-transform: translateZ(0);
-  -ms-transform: translateZ(0);
-  -o-transform: translateZ(0);
-  transform: translateZ(0);
-  /* Optimize paint performance */
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  /* Remove unnecessary repaints */
-  -webkit-perspective: 1000;
-  perspective: 1000;
-}
+/* Removed universal GPU acceleration - apply only to animated elements */
 
 /* High performance scroll containers */
 .scroll-performance {
@@ -76,22 +62,12 @@ body {
   isolation: isolate;
 }
 
-/* Remove expensive operations during scroll */
+/* Optimize media rendering only */
 img, video, canvas {
-  /* Force own compositing layer */
-  transform: translateZ(0);
-  will-change: transform;
-  /* Optimize image rendering */
   image-rendering: optimizeSpeed;
 }
 
-/* Optimize complex layouts */
-[class*="grid"], [class*="flex"] {
-  /* Prevent layout recalculation */
-  contain: layout;
-  /* Force compositing */
-  transform: translateZ(0);
-}
+/* Removed GPU acceleration from all layouts - apply selectively */
 
 @layer base {
   :root {
