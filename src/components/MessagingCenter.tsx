@@ -321,20 +321,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-foreground truncate">
-                        {conversation.other_user?.display_name || 'Unknown User'}
-                      </h4>
-                      {conversation.other_user?.school && (
-                        <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-                          <School className="h-3 w-3" />
-                          {conversation.other_user.school}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {conversation.other_user?.major}
-                    </p>
+                    <h4 className="font-medium text-foreground truncate">
+                      {conversation.other_user?.display_name || 'Unknown User'}
+                    </h4>
                     <p className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
                     </p>
@@ -361,28 +350,37 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={selectedConversation.other_user?.avatar_url} />
-                  <AvatarFallback>
-                    {selectedConversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h4 className="font-semibold text-foreground">
-                    {selectedConversation.other_user?.display_name || 'Unknown User'}
-                  </h4>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {selectedConversation.other_user?.school && (
-                      <span>{selectedConversation.other_user.school}</span>
-                    )}
-                    {selectedConversation.other_user?.major && (
-                      <>
-                        <span>•</span>
-                        <span>{selectedConversation.other_user.major}</span>
-                      </>
-                    )}
+                <button
+                  onClick={() => {
+                    if (selectedConversation.other_user?.id) {
+                      window.location.href = `/?profile=${selectedConversation.other_user.id}`;
+                    }
+                  }}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={selectedConversation.other_user?.avatar_url} />
+                    <AvatarFallback>
+                      {selectedConversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-foreground">
+                      {selectedConversation.other_user?.display_name || 'Unknown User'}
+                    </h4>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {selectedConversation.other_user?.school && (
+                        <span>{selectedConversation.other_user.school}</span>
+                      )}
+                      {selectedConversation.other_user?.major && (
+                        <>
+                          <span>•</span>
+                          <span>{selectedConversation.other_user.major}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </button>
               </div>
             </div>
 
