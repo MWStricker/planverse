@@ -270,6 +270,15 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   const handleProfileClick = async (userId: string) => {
     console.log('handleProfileClick called with userId:', userId);
+    
+    // Prevent multiple rapid clicks
+    if (profileLoading) {
+      console.log('Already loading, ignoring click');
+      return;
+    }
+    
+    // Clear any existing profile data first
+    setSelectedPublicProfile(null);
     setProfileLoading(true);
     
     try {
@@ -318,6 +327,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       });
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const handleCloseProfileDialog = (open: boolean) => {
+    setProfileDialogOpen(open);
+    if (!open) {
+      // Clear profile data when dialog closes (with delay for animation)
+      setTimeout(() => setSelectedPublicProfile(null), 300);
     }
   };
 
@@ -564,7 +581,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       />
 
       {/* Profile Dialog */}
-      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+      <Dialog open={profileDialogOpen} onOpenChange={handleCloseProfileDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {profileLoading ? (
             <div className="flex items-center justify-center p-8">
