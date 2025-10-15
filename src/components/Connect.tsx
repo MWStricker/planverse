@@ -438,12 +438,12 @@ export const Connect = () => {
           }} />
         </div>
 
-        <div className={activeTab === 'messages' ? 'block' : 'hidden'}>
+        <TabsContent value="messages" className="mt-6">
           <MessagingCenter 
             selectedUserId={selectedChatUserId} 
             onClose={() => setSelectedChatUserId(null)}
           />
-        </div>
+        </TabsContent>
       </Tabs>
 
       {/* Comments Dialog */}

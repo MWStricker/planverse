@@ -51,8 +51,8 @@ export const useMessaging = () => {
         .from('conversations')
         .select(`
           *,
-          user1_profile:profiles!conversations_user1_id_fkey(id, user_id, display_name, avatar_url, school, major),
-          user2_profile:profiles!conversations_user2_id_fkey(id, user_id, display_name, avatar_url, school, major)
+          user1_profile:profiles!user1_id(user_id, display_name, avatar_url, school, major),
+          user2_profile:profiles!user2_id(user_id, display_name, avatar_url, school, major)
         `)
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('last_message_at', { ascending: false });
