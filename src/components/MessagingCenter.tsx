@@ -543,7 +543,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       key={message.id}
                       className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}`}>
+                      <div className={`max-w-[70%] w-fit ${isOwn ? 'order-2' : 'order-1'}`}>
                         <div
                           className={`rounded-lg p-3 ${
                             isOwn
