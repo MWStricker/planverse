@@ -71,6 +71,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         schema: 'public',
         table: 'messages'
       }, (payload) => {
+        console.log('Realtime message received:', payload);
         const newMessage = payload.new as Message;
         // Only add if it's part of this conversation
         if ((newMessage.sender_id === user.id && newMessage.receiver_id === selectedConversation.other_user?.id) ||
@@ -85,6 +86,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             );
             
             if (tempIndex !== -1) {
+              console.log('Replacing temp message with real message:', prev[tempIndex].id, '->', newMessage.id);
               // Replace temp with real message
               const updated = [...prev];
               updated[tempIndex] = newMessage;
@@ -101,7 +103,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           });
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
