@@ -76,21 +76,27 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         if ((newMessage.sender_id === user.id && newMessage.receiver_id === selectedConversation.other_user?.id) ||
             (newMessage.receiver_id === user.id && newMessage.sender_id === selectedConversation.other_user?.id)) {
           setLocalMessages(prev => {
-            // Check for duplicates by ID or content+timestamp match
-            const isDuplicate = prev.some(m => 
-              m.id === newMessage.id || 
-              (m.content === newMessage.content && 
-               m.sender_id === newMessage.sender_id && 
-               Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 2000)
+            // Check if this is replacing a temp message
+            const tempIndex = prev.findIndex(m => 
+              m.id.startsWith('temp-') &&
+              m.sender_id === newMessage.sender_id &&
+              m.content === newMessage.content &&
+              Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 5000
             );
-            if (isDuplicate) {
-              // Replace temp message with real message
-              return prev.map(m => 
-                m.id.startsWith('temp-') && m.content === newMessage.content && m.sender_id === newMessage.sender_id
-                  ? newMessage 
-                  : m
-              );
+            
+            if (tempIndex !== -1) {
+              // Replace temp with real message
+              const updated = [...prev];
+              updated[tempIndex] = newMessage;
+              return updated;
             }
+            
+            // Check for duplicate (already exists)
+            if (prev.some(m => m.id === newMessage.id)) {
+              return prev;
+            }
+            
+            // New message from other user
             return [...prev, newMessage];
           });
         }
@@ -257,17 +263,32 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     setNewMessage('');
     setImageFile(null);
 
-    const success = await sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl);
-    
-    if (!success) {
-      // Remove temp message on failure
-      setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive",
+    // Send in background, don't block UI
+    sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl)
+      .then((success) => {
+        if (!success) {
+          // Only remove on failure
+          setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+          toast({
+            title: "Error",
+            description: "Failed to send message",
+            variant: "destructive",
+          });
+        }
+        // On success, realtime subscription will replace temp message
       });
-    }
+
+    // Set timeout to remove temp message if not replaced within 10 seconds
+    setTimeout(() => {
+      setLocalMessages(prev => {
+        const stillTemp = prev.find(m => m.id === tempMessage.id);
+        if (stillTemp) {
+          console.warn('Temp message not replaced, removing:', tempMessage.id);
+          return prev.filter(m => m.id !== tempMessage.id);
+        }
+        return prev;
+      });
+    }, 10000);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
