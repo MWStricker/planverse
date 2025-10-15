@@ -11,7 +11,7 @@ import {
   FloatingActionPanelContent,
   FloatingActionPanelButton,
 } from '@/components/ui/floating-action-panel';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,8 @@ import {
   MessageSquare,
   Twitter,
   Youtube,
-  Link
+  Link,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -68,6 +69,18 @@ const extractUsername = (url: string, platform: string): string | null => {
   
   const match = url.match(patterns[platform.toLowerCase()]);
   return match ? (match[2] || match[1]) : null;
+};
+
+const getPlatformColor = (platform: string): string => {
+  const colors: Record<string, string> = {
+    instagram: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500',
+    youtube: 'bg-red-600',
+    twitch: 'bg-purple-600',
+    discord: 'bg-indigo-600',
+    twitter: 'bg-sky-500',
+    snapchat: 'bg-yellow-400'
+  };
+  return colors[platform.toLowerCase()] || 'bg-gray-500';
 };
 
 interface ProfilePageProps {
@@ -509,34 +522,38 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <TooltipProvider>
-                  <div className="flex gap-3 flex-wrap">
-                    {Object.entries(profile.social_links as Record<string, string>).map(([platform, url]) => {
-                      const Icon = getPlatformIcon(platform);
-                      const username = extractUsername(url, platform);
-                      
-                      return (
-                        <Tooltip key={platform}>
-                          <TooltipTrigger asChild>
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="group"
-                            >
-                              <div className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors flex items-center justify-center">
-                                <Icon className="w-5 h-5 text-primary" />
-                              </div>
-                            </a>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>@{username || platform}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                </TooltipProvider>
+                <div className="space-y-2">
+                  {Object.entries(profile.social_links as Record<string, string>).map(([platform, url]) => {
+                    const Icon = getPlatformIcon(platform);
+                    const username = extractUsername(url, platform);
+                    const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+                    
+                    return (
+                      <a
+                        key={platform}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent transition-colors group"
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getPlatformColor(platform)}`}>
+                          <Icon className="w-5 h-5 text-white" />
+                        </div>
+                        
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {platformName}
+                          </span>
+                          <span className="text-sm text-foreground">
+                            @{username || 'user'}
+                          </span>
+                        </div>
+                        
+                        <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}

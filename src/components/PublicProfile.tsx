@@ -4,9 +4,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SpotifyNowPlayingCard } from '@/components/SpotifyNowPlayingCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { School, MapPin, Calendar, User, MessageCircle, Instagram, Ghost, Tv, MessageSquare, Twitter, Youtube, Link } from 'lucide-react';
+import { School, MapPin, Calendar, User, MessageCircle, Instagram, Ghost, Tv, MessageSquare, Twitter, Youtube, Link, ExternalLink } from 'lucide-react';
 import { PublicProfile as PublicProfileType } from '@/hooks/useConnect';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const getPlatformIcon = (platform: string) => {
   const icons: Record<string, any> = {
@@ -32,6 +31,18 @@ const extractUsername = (url: string, platform: string): string | null => {
   
   const match = url.match(patterns[platform.toLowerCase()]);
   return match ? (match[2] || match[1]) : null;
+};
+
+const getPlatformColor = (platform: string): string => {
+  const colors: Record<string, string> = {
+    instagram: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500',
+    youtube: 'bg-red-600',
+    twitch: 'bg-purple-600',
+    discord: 'bg-indigo-600',
+    twitter: 'bg-sky-500',
+    snapchat: 'bg-yellow-400'
+  };
+  return colors[platform.toLowerCase()] || 'bg-gray-500';
 };
 
 interface PublicProfileProps {
@@ -98,34 +109,38 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
           {profile.social_links && Object.keys(profile.social_links).length > 0 && (
             <div>
               <h3 className="font-semibold text-foreground mb-3">Connect</h3>
-              <TooltipProvider>
-                <div className="flex gap-3 flex-wrap">
-                  {Object.entries(profile.social_links).map(([platform, url]) => {
-                    const Icon = getPlatformIcon(platform);
-                    const username = extractUsername(url, platform);
-                    
-                    return (
-                      <Tooltip key={platform}>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors flex items-center justify-center">
-                              <Icon className="w-5 h-5 text-primary" />
-                            </div>
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>@{username || platform}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </TooltipProvider>
+              <div className="space-y-2">
+                {Object.entries(profile.social_links).map(([platform, url]) => {
+                  const Icon = getPlatformIcon(platform);
+                  const username = extractUsername(url, platform);
+                  const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+                  
+                  return (
+                    <a
+                      key={platform}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent transition-colors group"
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getPlatformColor(platform)}`}>
+                        <Icon className="w-5 h-5 text-white" />
+                      </div>
+                      
+                      <div className="flex-1 flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          {platformName}
+                        </span>
+                        <span className="text-sm text-foreground">
+                          @{username || 'user'}
+                        </span>
+                      </div>
+                      
+                      <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           )}
           
