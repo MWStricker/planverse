@@ -40,16 +40,35 @@ export interface Friend {
   };
 }
 
+// Helper to load from localStorage
+const loadFromCache = () => {
+  try {
+    const cached = localStorage.getItem('friends-cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return {
+        friends: parsed.friends || [],
+        friendRequests: parsed.friendRequests || [],
+        sentRequests: parsed.sentRequests || []
+      };
+    }
+  } catch (error) {
+    console.error('Error loading friends cache:', error);
+  }
+  return { friends: [], friendRequests: [], sentRequests: [] };
+};
+
 export const useFriends = () => {
   const { user } = useAuth();
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
-  const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialCache = loadFromCache();
+  const [friends, setFriends] = useState<Friend[]>(initialCache.friends);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(initialCache.friendRequests);
+  const [sentRequests, setSentRequests] = useState<FriendRequest[]>(initialCache.sentRequests);
+  const [loading, setLoading] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   
-  // Cache duration: 30 seconds
-  const CACHE_DURATION = 30000;
+  // Cache duration: 5 minutes
+  const CACHE_DURATION = 300000;
 
   const fetchFriends = async () => {
     if (!user) return;
@@ -101,6 +120,18 @@ export const useFriends = () => {
 
       setFriends(friendsWithProfiles);
       setLastFetchTime(Date.now());
+      
+      // Save to localStorage for instant loading
+      try {
+        const currentCache = loadFromCache();
+        localStorage.setItem('friends-cache', JSON.stringify({
+          friends: friendsWithProfiles,
+          friendRequests: currentCache.friendRequests,
+          sentRequests: currentCache.sentRequests
+        }));
+      } catch (error) {
+        console.error('Error saving friends cache:', error);
+      }
     } catch (error) {
       console.error('Error fetching friends:', error);
     }
@@ -179,6 +210,18 @@ export const useFriends = () => {
       setFriendRequests(incomingWithProfiles);
       setSentRequests(outgoingWithProfiles);
       setLastFetchTime(Date.now());
+      
+      // Save to localStorage for instant loading
+      try {
+        const currentCache = loadFromCache();
+        localStorage.setItem('friends-cache', JSON.stringify({
+          friends: currentCache.friends,
+          friendRequests: incomingWithProfiles,
+          sentRequests: outgoingWithProfiles
+        }));
+      } catch (error) {
+        console.error('Error saving requests cache:', error);
+      }
     } catch (error) {
       console.error('Error fetching friend requests:', error);
     }
@@ -329,10 +372,13 @@ export const useFriends = () => {
         Promise.all([fetchFriends(), fetchFriendRequests()]).finally(() => {
           setLoading(false);
         });
-      } else {
-        // Data is cached, just clear loading state
-        setLoading(false);
       }
+    } else {
+      // Clear cache on logout
+      localStorage.removeItem('friends-cache');
+      setFriends([]);
+      setFriendRequests([]);
+      setSentRequests([]);
     }
   }, [user]);
 
