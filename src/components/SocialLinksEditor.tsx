@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Instagram, Ghost, Tv, MessageSquare, Twitter, Youtube, Check, X } from 'lucide-react';
+import { Instagram, Ghost, Tv, Github, Twitter, Youtube, Check, X } from 'lucide-react';
 
 interface SocialLinksEditorProps {
   initialLinks?: Record<string, string>;
@@ -14,7 +14,7 @@ const platforms = [
   { id: 'instagram', label: 'Instagram', icon: Instagram, placeholder: 'https://instagram.com/username' },
   { id: 'snapchat', label: 'Snapchat', icon: Ghost, placeholder: 'https://snapchat.com/add/username' },
   { id: 'twitch', label: 'Twitch', icon: Tv, placeholder: 'https://twitch.tv/username' },
-  { id: 'discord', label: 'Discord', icon: MessageSquare, placeholder: 'https://discord.gg/invite' },
+  { id: 'github', label: 'GitHub', icon: Github, placeholder: 'https://github.com/username' },
   { id: 'twitter', label: 'Twitter/X', icon: Twitter, placeholder: 'https://twitter.com/username' },
   { id: 'youtube', label: 'YouTube', icon: Youtube, placeholder: 'https://youtube.com/@username' },
 ];
@@ -23,7 +23,7 @@ const urlPatterns: Record<string, RegExp> = {
   instagram: /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/,
   snapchat: /^https?:\/\/(www\.)?snapchat\.com\/add\/[a-zA-Z0-9_.]+\/?$/,
   twitch: /^https?:\/\/(www\.)?twitch\.tv\/[a-zA-Z0-9_]+\/?$/,
-  discord: /^https?:\/\/(www\.)?discord\.(gg|com)\/[a-zA-Z0-9_]+\/?$/,
+  github: /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9-]+\/?$/,
   twitter: /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/?$/,
   youtube: /^https?:\/\/(www\.)?(youtube\.com\/(c\/|channel\/|user\/|@)?[a-zA-Z0-9_-]+|youtu\.be\/[a-zA-Z0-9_-]+)\/?$/,
 };
@@ -33,7 +33,7 @@ const extractUsername = (url: string, platform: string): string | null => {
     instagram: /instagram\.com\/([a-zA-Z0-9_.]+)/,
     snapchat: /snapchat\.com\/add\/([a-zA-Z0-9_.]+)/,
     twitch: /twitch\.tv\/([a-zA-Z0-9_]+)/,
-    discord: /discord\.(gg|com)\/([a-zA-Z0-9_]+)/,
+    github: /github\.com\/([a-zA-Z0-9-]+)/,
     twitter: /(twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/,
     youtube: /youtube\.com\/(c\/|channel\/|user\/|@)?([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+)/,
   };

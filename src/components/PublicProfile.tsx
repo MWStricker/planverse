@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SpotifyNowPlayingCard } from '@/components/SpotifyNowPlayingCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { School, MapPin, Calendar, User, MessageCircle, Instagram, Ghost, Tv, MessageSquare, Twitter, Youtube, Link, ExternalLink } from 'lucide-react';
+import { School, MapPin, Calendar, User, MessageCircle, Instagram, Ghost, Tv, Github, Twitter, Youtube, Link, ExternalLink } from 'lucide-react';
 import { PublicProfile as PublicProfileType } from '@/hooks/useConnect';
 
 const getPlatformIcon = (platform: string) => {
@@ -12,7 +12,7 @@ const getPlatformIcon = (platform: string) => {
     instagram: Instagram,
     snapchat: Ghost,
     twitch: Tv,
-    discord: MessageSquare,
+    github: Github,
     twitter: Twitter,
     youtube: Youtube
   };
@@ -26,7 +26,7 @@ const extractUsername = (url: string, platform: string): string | null => {
     instagram: /instagram\.com\/([a-zA-Z0-9_.]+)/,
     snapchat: /snapchat\.com\/add\/([a-zA-Z0-9_.]+)/,
     twitch: /twitch\.tv\/([a-zA-Z0-9_]+)/,
-    discord: /discord\.(gg|com)\/([a-zA-Z0-9_]+)/,
+    github: /github\.com\/([a-zA-Z0-9-]+)/,
     twitter: /(twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/,
     youtube: /youtube\.com\/(c\/|channel\/|user\/|@)?([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+)/
   };
@@ -40,7 +40,7 @@ const getPlatformColor = (platform: string): string => {
     instagram: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500',
     youtube: 'bg-red-600',
     twitch: 'bg-purple-600',
-    discord: 'bg-indigo-600',
+    github: 'bg-gray-800',
     twitter: 'bg-sky-500',
     snapchat: 'bg-yellow-400'
   };
