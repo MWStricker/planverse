@@ -161,6 +161,27 @@ export const Navigation = ({
 
   const orderedNavItems = getOrderedNavItems();
 
+  const getCurrentPageLabel = () => {
+    const currentItem = orderedNavItems.find(item => item.id === currentPage);
+    
+    if (currentItem) {
+      return currentItem.label;
+    }
+    
+    // Handle special cases for pages not in navItems
+    switch (currentPage) {
+      case 'settings':
+        return 'Settings';
+      case 'tasks':
+        return 'Tasks';
+      case 'calendar':
+        return 'Calendar';
+      default:
+        // Capitalize first letter of currentPage as fallback
+        return currentPage.charAt(0).toUpperCase() + currentPage.slice(1);
+    }
+  };
+
   return (
     <div 
       className="flex flex-col bg-card border-r border-border relative h-full w-full"
@@ -183,7 +204,7 @@ export const Navigation = ({
             />
             {!isCollapsed && (
               <span className="text-2xl font-bold tracking-wide text-foreground">
-                Dashboard
+                {getCurrentPageLabel()}
               </span>
             )}
           </div>
