@@ -212,9 +212,6 @@ export const Navigation = ({
           </div>
         )}
       </div>
-      
-      {/* Border separator */}
-      <div className="border-b border-border"></div>
 
       {/* Navigation */}
       <nav className="flex-1 min-h-0 overflow-hidden">
