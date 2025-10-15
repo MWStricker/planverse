@@ -179,10 +179,10 @@ export const Navigation = ({
             <img 
               src={planverseLogoSidebar} 
               alt="Planverse Logo" 
-              className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-6 w-6' : 'h-8 w-8'} rounded`}
+              className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded`}
             />
             {!isCollapsed && (
-              <span className="text-base font-semibold text-foreground">
+              <span className="text-lg font-semibold text-foreground">
                 Dashboard
               </span>
             )}
