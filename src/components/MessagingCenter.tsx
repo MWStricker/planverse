@@ -265,7 +265,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     // Send in background, don't block UI
     sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl)
-      .then((success) => {
+      .then(async (success) => {
         if (!success) {
           // Only remove on failure
           setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
@@ -274,8 +274,33 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             description: "Failed to send message",
             variant: "destructive",
           });
+          return;
         }
-        // On success, realtime subscription will replace temp message
+        
+        // SUCCESS: Fetch the latest message as fallback in case realtime doesn't fire
+        setTimeout(async () => {
+          const { data: latestMessages } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${selectedConversation.other_user.id}),and(sender_id.eq.${selectedConversation.other_user.id},receiver_id.eq.${user.id})`)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          if (latestMessages && latestMessages.length > 0) {
+            const realMessage = latestMessages[0];
+            setLocalMessages(prev => {
+              // Replace temp message with real one if it still exists
+              const tempIndex = prev.findIndex(m => m.id === tempMessage.id);
+              if (tempIndex !== -1) {
+                console.log('Fallback: Replacing temp message with fetched message');
+                const updated = [...prev];
+                updated[tempIndex] = realMessage;
+                return updated;
+              }
+              return prev;
+            });
+          }
+        }, 500); // Wait 500ms for database to process
       });
 
     // Set timeout to remove temp message if not replaced within 10 seconds
@@ -283,7 +308,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       setLocalMessages(prev => {
         const stillTemp = prev.find(m => m.id === tempMessage.id);
         if (stillTemp) {
-          console.warn('Temp message not replaced, removing:', tempMessage.id);
+          console.warn('Temp message not replaced after 10s, removing:', tempMessage.id);
           return prev.filter(m => m.id !== tempMessage.id);
         }
         return prev;
