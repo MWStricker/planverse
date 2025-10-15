@@ -79,14 +79,18 @@ export const useMessaging = () => {
           ? conv.user2_profile 
           : conv.user1_profile;
         
+        // Determine the other user's ID with fallback
+        const otherUserId = otherUserProfile?.user_id || 
+          (conv.user1_id === user.id ? conv.user2_id : conv.user1_id);
+        
         // Transform profile to include 'id' field from 'user_id'
-        const other_user = otherUserProfile ? {
-          id: otherUserProfile.user_id,
-          display_name: otherUserProfile.display_name,
-          avatar_url: otherUserProfile.avatar_url,
-          school: otherUserProfile.school,
-          major: otherUserProfile.major
-        } : undefined;
+        const other_user = {
+          id: otherUserId,
+          display_name: otherUserProfile?.display_name || 'Unknown User',
+          avatar_url: otherUserProfile?.avatar_url,
+          school: otherUserProfile?.school,
+          major: otherUserProfile?.major
+        };
 
         return {
           id: conv.id,

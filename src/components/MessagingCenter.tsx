@@ -197,7 +197,15 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() && !imageFile) return;
-    if (!selectedConversation?.other_user) return;
+    if (!selectedConversation?.other_user?.id) {
+      console.error('Cannot send message: other_user.id is undefined', selectedConversation);
+      toast({
+        title: "Error",
+        description: "Unable to identify recipient. Please try refreshing.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     let imageUrl = '';
     
