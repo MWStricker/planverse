@@ -375,7 +375,12 @@ const Auth = () => {
         {/* Header Section */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="mx-auto w-32 h-32 flex items-center justify-center mb-6">
-            <img src={planverseLogo} alt="Planverse" className="w-28 h-28 object-contain animate-float" style={{ animationDelay: '0.2s' }} />
+            <img 
+              src={planverseLogo} 
+              alt="Planverse" 
+              className="w-28 h-28 object-contain animate-float hover:animate-spin-slow transition-transform duration-500 hover:scale-110 animate-pulse-subtle" 
+              style={{ animationDelay: '0.2s' }} 
+            />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             Welcome to Planverse

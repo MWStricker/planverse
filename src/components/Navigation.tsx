@@ -17,6 +17,7 @@ import { NotificationCenter } from "./NotificationCenter";
 import { useRealtime } from "@/hooks/useRealtime";
 import { UserStatusIndicator } from "./UserStatusIndicator";
 import { ProfilePage } from "./ProfilePage";
+import planverseLogoSidebar from "@/assets/planverse-logo-sidebar.png";
 
 interface NavigationProps {
   currentPage: string;
@@ -172,14 +173,21 @@ export const Navigation = ({
 
       {/* Logo */}
       <div className="p-4 pt-1">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-          {!isCollapsed && (
-            <div className="text-center flex-1 transition-all duration-200">
-              <h1 className="text-lg font-bold text-foreground transition-opacity duration-200">
-                Planverse
-              </h1>
-            </div>
-          )}
+        <div className={`flex items-center ${isCollapsed ? 'justify-center flex-col gap-2' : 'justify-between'}`}>
+          {/* Logo and Text */}
+          <div className={`flex items-center ${isCollapsed ? 'flex-col gap-1' : 'gap-3'}`}>
+            <img 
+              src={planverseLogoSidebar} 
+              alt="Planverse Logo" 
+              className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-6 w-6' : 'h-8 w-8'} rounded`}
+            />
+            {!isCollapsed && (
+              <span className="text-base font-semibold text-foreground">
+                Dashboard
+              </span>
+            )}
+          </div>
+          
           {/* Reorder Button */}
           <div className="flex flex-col gap-1">
             {!isReorderMode ? (

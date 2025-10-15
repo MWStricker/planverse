@@ -226,6 +226,8 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "spin-slow": "spin-slow 8s linear infinite",
+        "pulse-subtle": "pulse-subtle 3s ease-in-out infinite",
         "scroll-text": "scroll-text 3s linear infinite",
         // Ultra smooth animations
         "smooth-fade-in": "smooth-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
