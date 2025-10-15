@@ -277,9 +277,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       return;
     }
     
-    // Clear any existing profile data first
+    // Open dialog FIRST, then load data
     setSelectedPublicProfile(null);
+    setProfileDialogOpen(true);
     setProfileLoading(true);
+    console.log('Dialog opened and loading started for userId:', userId);
     
     try {
       const { data, error } = await supabase
@@ -308,8 +310,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         
         console.log('Setting profile data:', profileData);
         setSelectedPublicProfile(profileData);
-        setProfileDialogOpen(true);
-        console.log('Dialog should now be open');
+        console.log('Profile data set, dialog should be open:', profileData.display_name);
       } else {
         console.warn('No profile data returned');
         toast({
@@ -333,8 +334,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const handleCloseProfileDialog = (open: boolean) => {
     setProfileDialogOpen(open);
     if (!open) {
-      // Clear profile data when dialog closes (with delay for animation)
-      setTimeout(() => setSelectedPublicProfile(null), 300);
+      // Clear profile data when dialog closes
+      setSelectedPublicProfile(null);
+      console.log('Profile dialog closed and data cleared');
     }
   };
 
@@ -586,6 +588,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           {profileLoading ? (
             <div className="flex items-center justify-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <p className="ml-3 text-muted-foreground">Loading profile...</p>
             </div>
           ) : selectedPublicProfile ? (
             <PublicProfile
@@ -594,7 +597,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 setProfileDialogOpen(false);
               }}
             />
-          ) : null}
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <p className="text-muted-foreground">No profile data available</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
