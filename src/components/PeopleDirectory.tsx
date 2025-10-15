@@ -133,7 +133,7 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
     } else {
       fetchPeople(searchQuery || undefined, excludedIds);
     }
-  }, [friends, friendRequests, sentRequests]);
+  }, [JSON.stringify(friends.map(f => f.friend_profile?.user_id).sort())]);
 
   // Load friendship statuses for visible people
   useEffect(() => {

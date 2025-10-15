@@ -66,13 +66,15 @@ export const useFriends = () => {
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>(initialCache.sentRequests);
   const [loading, setLoading] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [isFetching, setIsFetching] = useState(false);
   
   // Cache duration: 5 minutes
   const CACHE_DURATION = 300000;
 
   const fetchFriends = async () => {
-    if (!user) return;
-
+    if (!user || isFetching) return;
+    
+    setIsFetching(true);
     try {
       // Step 1: Get all friendships for this user
       const { data: friendships, error: friendshipsError } = await supabase
@@ -134,6 +136,8 @@ export const useFriends = () => {
       }
     } catch (error) {
       console.error('Error fetching friends:', error);
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -394,10 +398,10 @@ export const useFriends = () => {
           event: '*',
           schema: 'public',
           table: 'friendships',
-          filter: `user1_id=eq.${user.id},user2_id=eq.${user.id}`
+          filter: `user1_id=eq.${user.id}`
         },
         () => {
-          // Invalidate cache and refetch on friendship changes
+          console.log('🔄 Friendship change detected (user1)');
           setLastFetchTime(0);
           fetchFriends();
         }
@@ -407,10 +411,39 @@ export const useFriends = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'friend_requests'
+          table: 'friendships',
+          filter: `user2_id=eq.${user.id}`
         },
         () => {
-          // Invalidate cache and refetch on friend request changes
+          console.log('🔄 Friendship change detected (user2)');
+          setLastFetchTime(0);
+          fetchFriends();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friend_requests',
+          filter: `sender_id=eq.${user.id}`
+        },
+        () => {
+          console.log('🔄 Friend request change detected (sender)');
+          setLastFetchTime(0);
+          fetchFriendRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friend_requests',
+          filter: `receiver_id=eq.${user.id}`
+        },
+        () => {
+          console.log('🔄 Friend request change detected (receiver)');
           setLastFetchTime(0);
           fetchFriendRequests();
         }
