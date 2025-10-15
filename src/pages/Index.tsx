@@ -253,7 +253,7 @@ const IndexContent = () => {
                     isReorderMode={isReorderMode}
                     onToggleReorder={() => setIsReorderMode(true)}
                     onCancelReorder={cancelReorder}
-                    sidebarWidth={sidebarWidthPx}
+                    sidebarWidth={sidebarWidth}
                   />
                 </div>
               </ResizablePanel>

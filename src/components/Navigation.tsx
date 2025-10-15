@@ -25,7 +25,7 @@ interface NavigationProps {
   isReorderMode?: boolean;
   onToggleReorder?: () => void;
   onCancelReorder?: () => void;
-  sidebarWidth?: number;
+  sidebarWidth?: number; // percentage
 }
 
 export const Navigation = ({ 
@@ -43,12 +43,8 @@ export const Navigation = ({
   const { profile } = useProfile();
   const { unreadCount, currentUserStatus } = useRealtime();
   
-  const isCollapsed = sidebarWidth !== undefined && sidebarWidth < 180;
-
-  // Temporary debugging
-  useEffect(() => {
-    console.log('Navigation - sidebarWidth:', sidebarWidth, 'isCollapsed:', isCollapsed);
-  }, [sidebarWidth, isCollapsed]);
+  // Use percentage threshold instead of pixels for consistent collapse behavior
+  const isCollapsed = sidebarWidth !== undefined && sidebarWidth < 15; // ~180px at 1200px viewport width
 
   // Fetch courses data
   useEffect(() => {
@@ -186,39 +182,6 @@ export const Navigation = ({
             className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded`}
           />
         </div>
-        
-        {/* Reorder Button - Below Logo */}
-        <div className="mt-2 flex justify-center">
-          {!isReorderMode ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleReorder}
-              className="h-7 px-2 hover:bg-muted/30 text-xs"
-            >
-              <MoreVertical className="h-4 w-4 mr-1" />
-              {!isCollapsed && <span>Reorder</span>}
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onCancelReorder}
-              className="h-7 px-2 hover:bg-muted/30 text-xs"
-            >
-              <X className="h-4 w-4 mr-1" />
-              {!isCollapsed && <span>Cancel</span>}
-            </Button>
-          )}
-        </div>
-        
-        {isReorderMode && (
-          <div className="mt-2 p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20">
-            <p className="text-xs text-foreground font-medium text-center">
-              Drag tabs to reorder
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Navigation */}
@@ -252,6 +215,42 @@ export const Navigation = ({
         </div>
       </nav>
 
+
+      {/* Reorder Button */}
+      <div className="flex-shrink-0 p-2 border-t border-border">
+        <div className="flex flex-col gap-2">
+          {isReorderMode && (
+            <div className="p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20">
+              <p className="text-xs text-foreground font-medium text-center">
+                Drag tabs to reorder
+              </p>
+            </div>
+          )}
+          <div className="flex justify-center">
+            {!isReorderMode ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleReorder}
+                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
+              >
+                <MoreVertical className="h-4 w-4 mr-1" />
+                {!isCollapsed && <span>Reorder</span>}
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancelReorder}
+                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
+              >
+                <X className="h-4 w-4 mr-1" />
+                {!isCollapsed && <span>Cancel</span>}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* User Section */}
       <div className="flex-shrink-0 p-2 border-t border-border">
