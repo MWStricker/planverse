@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar, RefreshCw } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar, RefreshCw, Share2 } from "lucide-react";
 import { ImageCropper } from "@/components/ImageCropper";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +22,7 @@ import { universities, getUniversityById, getPublicUniversities, searchPublicUni
 import { collegeMajors } from "@/data/collegeMajors";
 import { supabase } from "@/integrations/supabase/client";
 import { courseIcons, getCourseIconCategories } from "@/data/courseIcons";
+import { SocialLinksEditor } from "@/components/SocialLinksEditor";
 
 interface AccountIntegration {
   id: string;
@@ -623,6 +624,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
     { id: 'sleep', label: 'Sleep Schedule', icon: Clock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'social-links', label: 'Social Links', icon: Share2 },
     { id: 'privacy', label: 'Privacy & Security', icon: Shield },
     { id: 'signout', label: 'Sign Out', icon: LogOut },
   ];
@@ -1851,6 +1853,39 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
       </Card>
     </div>
   );
+  const handleSaveSocialLinks = async (links: Record<string, string>) => {
+    try {
+      await updateProfile({ social_links: links });
+      toast({
+        title: "Social links saved",
+        description: "Your social media links have been updated.",
+      });
+    } catch (error) {
+      console.error('Error saving social links:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save social links. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const renderSocialLinks = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Social Media Links</h2>
+        <p className="text-muted-foreground">
+          Connect your social media profiles. They'll appear as icons on your public profile.
+        </p>
+      </div>
+      
+      <SocialLinksEditor
+        initialLinks={(profile?.social_links as Record<string, string>) || {}}
+        onSave={handleSaveSocialLinks}
+      />
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'accounts':
@@ -1865,6 +1900,8 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
         return renderNotifications();
       case 'profile':
         return renderProfile();
+      case 'social-links':
+        return renderSocialLinks();
       case 'privacy':
         return renderComingSoon('Privacy & Security');
       case 'signout':

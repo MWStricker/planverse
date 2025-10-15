@@ -11,23 +11,31 @@ import {
   FloatingActionPanelContent,
   FloatingActionPanelButton,
 } from '@/components/ui/floating-action-panel';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { 
-  User, 
-  GraduationCap, 
-  School, 
-  Calendar, 
-  MapPin, 
-  Edit2, 
-  Save, 
+import {
+  User,
+  GraduationCap,
+  School,
+  Calendar,
+  MapPin,
+  Edit2,
+  Save,
   X,
   Eye,
-  EyeOff
+  EyeOff,
+  Instagram,
+  Ghost,
+  Tv,
+  MessageSquare,
+  Twitter,
+  Youtube,
+  Link
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -35,6 +43,32 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { universities } from '@/data/universities';
 import { collegeMajors } from '@/data/collegeMajors';
+
+const getPlatformIcon = (platform: string) => {
+  const icons: Record<string, any> = {
+    instagram: Instagram,
+    snapchat: Ghost,
+    twitch: Tv,
+    discord: MessageSquare,
+    twitter: Twitter,
+    youtube: Youtube
+  };
+  return icons[platform.toLowerCase()] || Link;
+};
+
+const extractUsername = (url: string, platform: string): string | null => {
+  const patterns: Record<string, RegExp> = {
+    instagram: /instagram\.com\/([a-zA-Z0-9_.]+)/,
+    snapchat: /snapchat\.com\/add\/([a-zA-Z0-9_.]+)/,
+    twitch: /twitch\.tv\/([a-zA-Z0-9_]+)/,
+    discord: /discord\.(gg|com)\/([a-zA-Z0-9_]+)/,
+    twitter: /(twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/,
+    youtube: /youtube\.com\/(c\/|channel\/|user\/|@)?([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+)/
+  };
+  
+  const match = url.match(patterns[platform.toLowerCase()]);
+  return match ? (match[2] || match[1]) : null;
+};
 
 interface ProfilePageProps {
   open: boolean;
@@ -464,6 +498,48 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
               )}
             </CardContent>
           </Card>
+
+          {/* Social Media Links */}
+          {profile?.social_links && Object.keys(profile.social_links).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Connect</CardTitle>
+                <CardDescription>
+                  My social media profiles
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TooltipProvider>
+                  <div className="flex gap-3 flex-wrap">
+                    {Object.entries(profile.social_links as Record<string, string>).map(([platform, url]) => {
+                      const Icon = getPlatformIcon(platform);
+                      const username = extractUsername(url, platform);
+                      
+                      return (
+                        <Tooltip key={platform}>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors flex items-center justify-center">
+                                <Icon className="w-5 h-5 text-primary" />
+                              </div>
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>@{username || platform}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </TooltipProvider>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Spotify Section - Only shows when connected and playing */}
           {user?.id === profile?.user_id && (

@@ -487,6 +487,7 @@ export type Database = {
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
           school: string | null
+          social_links: Json | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -504,6 +505,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           school?: string | null
+          social_links?: Json | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -521,6 +523,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           school?: string | null
+          social_links?: Json | null
           timezone?: string | null
           updated_at?: string
           user_id?: string

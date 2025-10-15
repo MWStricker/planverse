@@ -17,6 +17,7 @@ export interface UserProfile {
   is_public?: boolean;
   onboarding_completed?: boolean;
   onboarding_completed_at?: string;
+  social_links?: Record<string, string>;
   created_at: string;
   updated_at: string;
 }
@@ -77,7 +78,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
       if (data) {
         console.log('Profile fetched:', data);
-        setProfile(data);
+        setProfile(data as UserProfile);
       } else {
         console.log('No profile found, creating new one');
         const { data: newProfile, error: createError } = await supabase
@@ -94,7 +95,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
           throw createError;
         }
         console.log('New profile created:', newProfile);
-        setProfile(newProfile);
+        setProfile(newProfile as UserProfile);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -128,10 +129,10 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
           
           if (payload.eventType === 'UPDATE' && payload.new) {
             console.log('Applying realtime profile update:', payload.new);
-            setProfile(payload.new as UserProfile);
+            setProfile(payload.new as any as UserProfile);
           } else if (payload.eventType === 'INSERT' && payload.new) {
             console.log('Applying realtime profile insert:', payload.new);
-            setProfile(payload.new as UserProfile);
+            setProfile(payload.new as any as UserProfile);
           }
         }
       )
@@ -188,14 +189,14 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       console.log('✅ PROFILE UPDATE SUCCESSFUL:', data);
       
       // Immediately update the local state for all consumers
-      setProfile(data);
+      setProfile(data as UserProfile);
       
       toast({
         title: "Success",
         description: "Profile updated successfully",
       });
       
-      return data;
+      return data as UserProfile;
     } catch (error) {
       console.error('❌ ERROR UPDATING PROFILE:', error);
       toast({

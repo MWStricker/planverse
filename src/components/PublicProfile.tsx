@@ -4,8 +4,35 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SpotifyNowPlayingCard } from '@/components/SpotifyNowPlayingCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { School, MapPin, Calendar, User, MessageCircle } from 'lucide-react';
+import { School, MapPin, Calendar, User, MessageCircle, Instagram, Ghost, Tv, MessageSquare, Twitter, Youtube, Link } from 'lucide-react';
 import { PublicProfile as PublicProfileType } from '@/hooks/useConnect';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+const getPlatformIcon = (platform: string) => {
+  const icons: Record<string, any> = {
+    instagram: Instagram,
+    snapchat: Ghost,
+    twitch: Tv,
+    discord: MessageSquare,
+    twitter: Twitter,
+    youtube: Youtube
+  };
+  return icons[platform.toLowerCase()] || Link;
+};
+
+const extractUsername = (url: string, platform: string): string | null => {
+  const patterns: Record<string, RegExp> = {
+    instagram: /instagram\.com\/([a-zA-Z0-9_.]+)/,
+    snapchat: /snapchat\.com\/add\/([a-zA-Z0-9_.]+)/,
+    twitch: /twitch\.tv\/([a-zA-Z0-9_]+)/,
+    discord: /discord\.(gg|com)\/([a-zA-Z0-9_]+)/,
+    twitter: /(twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/,
+    youtube: /youtube\.com\/(c\/|channel\/|user\/|@)?([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+)/
+  };
+  
+  const match = url.match(patterns[platform.toLowerCase()]);
+  return match ? (match[2] || match[1]) : null;
+};
 
 interface PublicProfileProps {
   profile: PublicProfileType;
@@ -66,6 +93,41 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
 
           {/* Spotify Section - Only shows when connected and playing */}
           <SpotifyNowPlayingCard userId={profile.user_id} isPublicProfile />
+
+          {/* Social Media Links */}
+          {profile.social_links && Object.keys(profile.social_links).length > 0 && (
+            <div>
+              <h3 className="font-semibold text-foreground mb-3">Connect</h3>
+              <TooltipProvider>
+                <div className="flex gap-3 flex-wrap">
+                  {Object.entries(profile.social_links).map(([platform, url]) => {
+                    const Icon = getPlatformIcon(platform);
+                    const username = extractUsername(url, platform);
+                    
+                    return (
+                      <Tooltip key={platform}>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors flex items-center justify-center">
+                              <Icon className="w-5 h-5 text-primary" />
+                            </div>
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>@{username || platform}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </TooltipProvider>
+            </div>
+          )}
           
           <div className="flex gap-2">
             {onSendMessage && (

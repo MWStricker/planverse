@@ -52,6 +52,7 @@ export interface PublicProfile {
   bio?: string;
   graduation_year?: number;
   is_public?: boolean;
+  social_links?: Record<string, string>;
 }
 
 export const useConnect = () => {
@@ -389,7 +390,7 @@ export const useConnect = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as PublicProfile;
     } catch (error) {
       console.error('Error fetching public profile:', error);
       return null;
