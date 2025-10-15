@@ -49,10 +49,7 @@ const IndexContent = () => {
   // Initialize user preferences on app load
   usePreferences();
 
-  // Clear any saved sidebar width to ensure consistency
-  useEffect(() => {
-    localStorage.removeItem('planverse-sidebar-width');
-  }, []);
+  // Note: localStorage persistence removed to fix collapse behavior
 
   // Debounced handler to save sidebar width
   const handleLayoutChange = useMemo(
@@ -71,13 +68,20 @@ const IndexContent = () => {
     []
   );
 
-  // Track pixel width changes
+  // Track pixel width changes with immediate initial measurement
   useEffect(() => {
     if (!sidebarRef.current) return;
     
+    // Immediate measurement on mount
+    const initialWidth = sidebarRef.current.getBoundingClientRect().width;
+    setSidebarWidthPx(initialWidth);
+    console.log('Initial sidebar width:', initialWidth);
+    
     const observer = new ResizeObserver((entries) => {
       if (entries[0]) {
-        setSidebarWidthPx(entries[0].contentRect.width);
+        const newWidth = entries[0].contentRect.width;
+        setSidebarWidthPx(newWidth);
+        console.log('Sidebar resized to:', newWidth);
       }
     });
     

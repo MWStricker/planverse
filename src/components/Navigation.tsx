@@ -45,6 +45,11 @@ export const Navigation = ({
   
   const isCollapsed = sidebarWidth !== undefined && sidebarWidth < 180;
 
+  // Temporary debugging
+  useEffect(() => {
+    console.log('Navigation - sidebarWidth:', sidebarWidth, 'isCollapsed:', isCollapsed);
+  }, [sidebarWidth, isCollapsed]);
+
   // Fetch courses data
   useEffect(() => {
     if (!user?.id) return;
