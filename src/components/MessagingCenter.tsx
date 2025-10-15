@@ -585,7 +585,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     >
                       <div className={`max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}`}>
                         <div
-                          className={`rounded-lg p-3 w-fit ${
+                          className={`rounded-lg p-3 inline-block ${
                             isOwn
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted text-foreground'
@@ -603,7 +603,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                               />
                             </div>
                           )}
-                          <p className="text-sm">{message.content}</p>
+                          <p className="text-sm break-words">{message.content}</p>
                         </div>
                         <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
                           {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
