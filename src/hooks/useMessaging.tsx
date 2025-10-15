@@ -40,10 +40,12 @@ export const useMessaging = () => {
   const fetchConversations = async () => {
     if (!user) {
       console.log('useMessaging: No user, skipping fetchConversations');
+      setLoading(false);
       return;
     }
 
     try {
+      setLoading(true);
       console.log('useMessaging: Querying conversations table...');
       
       // Single optimized query with PostgreSQL joins - fetches conversations and profiles in one go
@@ -61,12 +63,13 @@ export const useMessaging = () => {
 
       if (error) {
         console.error('useMessaging: Error fetching conversations:', error);
-        throw error;
+        // Fail gracefully - set empty conversations instead of throwing
+        setConversations([]);
+        return;
       }
 
       if (!data || data.length === 0) {
         setConversations([]);
-        setLoading(false);
         return;
       }
 
@@ -89,6 +92,8 @@ export const useMessaging = () => {
       console.log('useMessaging: Set conversations:', conversationsWithProfiles);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      // Fail gracefully instead of crashing
+      setConversations([]);
     } finally {
       setLoading(false);
     }

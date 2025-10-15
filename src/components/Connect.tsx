@@ -430,13 +430,12 @@ export const Connect = () => {
           </div>
         </TabsContent>
 
-        {/* Keep PeopleDirectory and MessagingCenter mounted to avoid refetch */}
-        <div className={activeTab === 'people' ? 'block' : 'hidden'}>
+        <TabsContent value="people" className="mt-6">
           <PeopleDirectory onStartChat={(userId) => {
             setSelectedChatUserId(userId);
             setActiveTab('messages');
           }} />
-        </div>
+        </TabsContent>
 
         <TabsContent value="messages" className="mt-6">
           <MessagingCenter 
