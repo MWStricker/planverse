@@ -47,7 +47,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
   };
 
   // Sync messages to local state
