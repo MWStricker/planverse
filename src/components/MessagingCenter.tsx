@@ -152,6 +152,46 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   }, [selectedConversation, localMessages, user]);
 
+  // Global realtime subscription for all incoming messages
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up global message subscription for user:', user.id);
+    
+    const channel = supabase
+      .channel('all-messages-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `receiver_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Global realtime: New message received:', payload);
+        const newMessage = payload.new as Message;
+        
+        // Update conversation list
+        fetchConversations();
+        
+        // If this message is for the currently open conversation, add it to localMessages
+        if (selectedConversation && 
+            newMessage.sender_id === selectedConversation.other_user?.id) {
+          setLocalMessages(prev => {
+            // Check for duplicates
+            if (prev.some(m => m.id === newMessage.id)) {
+              return prev;
+            }
+            return [...prev, newMessage];
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up global message subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user, selectedConversation, fetchConversations]);
+
   useEffect(() => {
     if (selectedUserId && conversations.length > 0 && !selectedConversation) {
       const conversation = conversations.find(c => 
