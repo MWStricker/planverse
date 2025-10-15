@@ -81,7 +81,7 @@ export const SortableTabItem = ({
       }`} />
       
       {!isCollapsed && (
-        <div className="flex items-center transition-opacity duration-150 ease-out opacity-100 min-w-0 flex-1">
+        <div className="flex items-center transition-opacity duration-75 ease-out opacity-100 min-w-0 flex-1">
           <span className={`font-medium truncate ${
             isActive ? 'tracking-wide' : ''
           }`}>
