@@ -39,6 +39,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [viewerImage, setViewerImage] = useState<string | null>(null);
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicProfileType | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -268,6 +269,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   };
 
   const handleProfileClick = async (userId: string) => {
+    console.log('handleProfileClick called with userId:', userId);
+    setProfileLoading(true);
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -275,11 +279,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         .eq('user_id', userId)
         .single();
 
+      console.log('Profile fetch result:', { data, error });
+
       if (error) throw error;
 
       if (data) {
-        setSelectedPublicProfile({
+        const profileData = {
           id: data.user_id,
+          user_id: data.user_id, // Add this for Spotify component
           display_name: data.display_name || 'Unknown User',
           avatar_url: data.avatar_url,
           school: data.school,
@@ -288,11 +295,29 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           bio: data.bio,
           is_public: data.is_public,
           social_links: (data.social_links as Record<string, string>) || {},
-        });
+        };
+        
+        console.log('Setting profile data:', profileData);
+        setSelectedPublicProfile(profileData);
         setProfileDialogOpen(true);
+        console.log('Dialog should now be open');
+      } else {
+        console.warn('No profile data returned');
+        toast({
+          title: "Profile Not Found",
+          description: "Could not load user profile",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive",
+      });
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -541,14 +566,18 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       {/* Profile Dialog */}
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          {selectedPublicProfile && (
+          {profileLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : selectedPublicProfile ? (
             <PublicProfile
               profile={selectedPublicProfile}
               onSendMessage={() => {
                 setProfileDialogOpen(false);
               }}
             />
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>
