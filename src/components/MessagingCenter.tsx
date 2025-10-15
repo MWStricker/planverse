@@ -13,6 +13,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { ImageViewer } from '@/components/ImageViewer';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { PublicProfile } from './PublicProfile';
+import type { PublicProfile as PublicProfileType } from '@/hooks/useConnect';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -34,6 +37,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicProfileType | null>(null);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -262,6 +267,35 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   };
 
+  const handleProfileClick = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setSelectedPublicProfile({
+          id: data.user_id,
+          display_name: data.display_name || 'Unknown User',
+          avatar_url: data.avatar_url,
+          school: data.school,
+          major: data.major,
+          graduation_year: data.graduation_year,
+          bio: data.bio,
+          is_public: data.is_public,
+          social_links: (data.social_links as Record<string, string>) || {},
+        });
+        setProfileDialogOpen(true);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
   const handleTyping = () => {
     if (!selectedConversation || !user) return;
 
@@ -353,7 +387,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 <button
                   onClick={() => {
                     if (selectedConversation.other_user?.id) {
-                      window.location.href = `/?profile=${selectedConversation.other_user.id}`;
+                      handleProfileClick(selectedConversation.other_user.id);
                     }
                   }}
                   className="flex items-center gap-3 hover:opacity-80 transition-opacity"
@@ -503,6 +537,20 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         imageUrl={viewerImage} 
         onClose={() => setViewerImage(null)} 
       />
+
+      {/* Profile Dialog */}
+      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedPublicProfile && (
+            <PublicProfile
+              profile={selectedPublicProfile}
+              onSendMessage={() => {
+                setProfileDialogOpen(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
