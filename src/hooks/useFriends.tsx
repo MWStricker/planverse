@@ -55,23 +55,40 @@ export const useFriends = () => {
     if (!user) return;
 
     try {
-      // Single optimized query with PostgreSQL join - fetches friendships and profiles in one go
-      const { data, error } = await supabase
+      // Step 1: Get all friendships for this user
+      const { data: friendships, error: friendshipsError } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          user1_profile:profiles!friendships_user1_id_fkey(id, user_id, display_name, avatar_url, school, major, bio),
-          user2_profile:profiles!friendships_user2_id_fkey(id, user_id, display_name, avatar_url, school, major, bio)
-        `)
+        .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
 
-      if (error) throw error;
+      if (friendshipsError) throw friendshipsError;
+      
+      if (!friendships || friendships.length === 0) {
+        setFriends([]);
+        setLastFetchTime(Date.now());
+        return;
+      }
 
-      // Map to determine which profile is the friend's profile
-      const friendsWithProfiles = (data || []).map((friendship: any) => {
-        const friend_profile = friendship.user1_id === user.id 
-          ? friendship.user2_profile 
-          : friendship.user1_profile;
+      // Step 2: Get all friend user IDs
+      const friendUserIds = friendships.map(f => 
+        f.user1_id === user.id ? f.user2_id : f.user1_id
+      );
+
+      // Step 3: Batch fetch all friend profiles in one query
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, user_id, display_name, avatar_url, school, major, bio')
+        .in('user_id', friendUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Step 4: Map friendships with profiles
+      const friendsWithProfiles: Friend[] = friendships.map(friendship => {
+        const friendUserId = friendship.user1_id === user.id 
+          ? friendship.user2_id 
+          : friendship.user1_id;
+        
+        const friend_profile = profiles?.find(p => p.user_id === friendUserId);
 
         return {
           id: friendship.id,
@@ -93,23 +110,17 @@ export const useFriends = () => {
     if (!user) return;
 
     try {
-      // Parallel fetch with PostgreSQL joins for both incoming and outgoing requests
+      // Parallel queries for incoming and outgoing
       const [incomingResult, outgoingResult] = await Promise.all([
         supabase
           .from('friend_requests')
-          .select(`
-            *,
-            sender_profile:profiles!friend_requests_sender_id_fkey(display_name, avatar_url, school, major, user_id)
-          `)
+          .select('*')
           .eq('receiver_id', user.id)
           .eq('status', 'pending'),
         
         supabase
           .from('friend_requests')
-          .select(`
-            *,
-            receiver_profile:profiles!friend_requests_receiver_id_fkey(display_name, avatar_url, school, major, user_id)
-          `)
+          .select('*')
           .eq('sender_id', user.id)
           .eq('status', 'pending')
       ]);
@@ -117,11 +128,33 @@ export const useFriends = () => {
       if (incomingResult.error) throw incomingResult.error;
       if (outgoingResult.error) throw outgoingResult.error;
 
-      // Map with default values for missing profiles
-      const incomingWithProfiles = (incomingResult.data || []).map((request: any) => ({
+      const incomingData = incomingResult.data || [];
+      const outgoingData = outgoingResult.data || [];
+
+      // Batch fetch all profiles in one query
+      const allUserIds = [
+        ...incomingData.map(r => r.sender_id),
+        ...outgoingData.map(r => r.receiver_id)
+      ];
+
+      if (allUserIds.length === 0) {
+        setFriendRequests([]);
+        setSentRequests([]);
+        return;
+      }
+
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, user_id, display_name, avatar_url, school, major, bio')
+        .in('user_id', allUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Map incoming requests with sender profiles
+      const incomingWithProfiles = incomingData.map(request => ({
         ...request,
         status: request.status as 'pending' | 'accepted' | 'rejected',
-        sender_profile: request.sender_profile || {
+        sender_profile: profiles?.find(p => p.user_id === request.sender_id) || {
           display_name: 'Unknown User',
           avatar_url: null,
           school: null,
@@ -130,10 +163,11 @@ export const useFriends = () => {
         }
       }));
 
-      const outgoingWithProfiles = (outgoingResult.data || []).map((request: any) => ({
+      // Map outgoing requests with receiver profiles
+      const outgoingWithProfiles = outgoingData.map(request => ({
         ...request,
         status: request.status as 'pending' | 'accepted' | 'rejected',
-        receiver_profile: request.receiver_profile || {
+        receiver_profile: profiles?.find(p => p.user_id === request.receiver_id) || {
           display_name: 'Unknown User',
           avatar_url: null,
           school: null,
