@@ -27,7 +27,7 @@ const AutoTextarea = React.forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
 
     React.useEffect(() => {
       adjustHeight();
-    }, [props.value]);
+    }, [props.value, maxHeight]);
 
     return (
       <textarea
@@ -44,6 +44,12 @@ const AutoTextarea = React.forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
           }
         }}
         rows={1}
+        onInput={(e) => {
+          adjustHeight();
+          if (props.onInput) {
+            props.onInput(e);
+          }
+        }}
         {...props}
       />
     );

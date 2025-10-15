@@ -143,7 +143,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   }, [selectedConversation, localMessages, user]);
 
   useEffect(() => {
-    if (selectedUserId && conversations.length > 0) {
+    if (selectedUserId && conversations.length > 0 && !selectedConversation) {
       const conversation = conversations.find(c => 
         c.other_user?.id === selectedUserId
       );
