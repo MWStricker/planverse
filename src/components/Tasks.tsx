@@ -608,7 +608,7 @@ export const Tasks = () => {
                             <FormLabel>Due Time</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger id="due-time-select" className="w-full">
                                   <SelectValue placeholder="Select time" />
                                 </SelectTrigger>
                               </FormControl>
@@ -672,7 +672,7 @@ export const Tasks = () => {
                   </div>
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger id="task-status-filter" className="w-40">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -682,7 +682,7 @@ export const Tasks = () => {
                   </SelectContent>
                 </Select>
                 <Select value={filterPriority} onValueChange={setFilterPriority}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger id="task-priority-filter" className="w-40">
                     <SelectValue placeholder="Priority" />
                   </SelectTrigger>
                   <SelectContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,6 +61,7 @@ interface OnboardingQuestionnaireProps {
 }
 
 export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireProps) => {
+  const componentId = React.useId();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({
@@ -203,7 +204,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
       return (
         <div className="space-y-2 animate-fade-in">
           <Textarea
-            id={question.field}
+            id={`${componentId}-${question.field}`}
             name={question.field}
             value={answers[question.field] || ''}
             onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
@@ -216,6 +217,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
             placeholder={question.placeholder || 'Your answer...'}
             className="min-h-[140px] text-base border-2 transition-all duration-300 hover:border-primary focus:ring-4 focus:ring-primary/20 focus:border-primary shadow-sm hover:shadow-lg resize-none"
             maxLength={500}
+            autoComplete="off"
           />
           <p className="text-xs text-muted-foreground italic flex items-center gap-1">
             💡 Press <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+Enter</kbd> to continue
@@ -226,7 +228,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
 
     return (
       <Input
-        id={question.field}
+        id={`${componentId}-${question.field}`}
         name={question.field}
         value={answers[question.field] || ''}
         onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
@@ -237,6 +239,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
           }
         }}
         placeholder={question.placeholder || 'Your answer...'}
+        autoComplete="off"
         className="text-lg h-16 border-2 transition-all duration-300 hover:border-primary focus:ring-4 focus:ring-primary/20 focus:border-primary shadow-sm hover:shadow-lg animate-fade-in"
         maxLength={200}
       />

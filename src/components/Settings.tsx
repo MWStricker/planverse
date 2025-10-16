@@ -977,7 +977,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               value={preferences.textSize} 
               onValueChange={(value) => updatePreference('textSize', value as any)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="text-size-select" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1187,7 +1187,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   value={editedProfile.school} 
                   onValueChange={(value) => handleProfileChange('school', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="school-select">
                     <SelectValue placeholder="Select your school or university" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[200px] overflow-y-auto">
@@ -1206,7 +1206,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   value={editedProfile.major} 
                   onValueChange={(value) => handleProfileChange('major', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="major-select">
                     <SelectValue placeholder="Select your major" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[200px] overflow-y-auto">
@@ -1281,7 +1281,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                   value={editedProfile.timezone} 
                   onValueChange={(value) => handleProfileChange('timezone', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="timezone-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
