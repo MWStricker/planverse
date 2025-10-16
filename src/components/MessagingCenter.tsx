@@ -516,11 +516,18 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       const newPinnedStatus = !currentPinStatus;
       const newDisplayOrder = newPinnedStatus ? -1 : 0;
       
+      // Find the conversation to determine which column to update
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (!conversation) return;
+      
+      const isUser1 = conversation.user1_id === user.id;
+      const columnToUpdate = isUser1 ? 'user1_is_pinned' : 'user2_is_pinned';
+      
       const { error } = await supabase
         .from('conversations')
         .update({ 
-          is_pinned: newPinnedStatus,
-          display_order: newDisplayOrder
+          [columnToUpdate]: newPinnedStatus,
+          display_order: newDisplayOrder 
         })
         .eq('id', conversationId);
 
@@ -551,9 +558,16 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   const handleToggleConversationMute = async (conversationId: string, currentMutedStatus: boolean) => {
     try {
+      // Find the conversation to determine which column to update
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (!conversation) return;
+      
+      const isUser1 = conversation.user1_id === user.id;
+      const columnToUpdate = isUser1 ? 'user1_is_muted' : 'user2_is_muted';
+      
       const { error } = await supabase
         .from('conversations')
-        .update({ is_muted: !currentMutedStatus })
+        .update({ [columnToUpdate]: !currentMutedStatus })
         .eq('id', conversationId);
 
       if (error) throw error;

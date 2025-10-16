@@ -4,7 +4,8 @@ import { GripVertical, Pin, BellOff } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ConversationActionsMenu } from './ConversationActionsMenu';
-import { OnlineStatus } from '@/components/OnlineStatus';
+import { UserStatusIndicator } from '@/components/UserStatusIndicator';
+import { useRealtime } from '@/hooks/useRealtime';
 
 interface Conversation {
   id: string;
@@ -46,6 +47,11 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
   } = useSortable({ 
     id: conversation.id,
   });
+
+  const { getUserStatus } = useRealtime();
+  const userStatus = conversation.other_user?.id 
+    ? getUserStatus(conversation.other_user.id) 
+    : 'offline';
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -102,10 +108,13 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
                 {conversation.other_user?.display_name || 'Unknown User'}
               </h4>
               
-              {/* Online status indicator */}
-              {conversation.other_user?.id && (
-                <OnlineStatus userId={conversation.other_user.id} />
-              )}
+              {/* Status indicator */}
+              <UserStatusIndicator 
+                status={userStatus}
+                isCurrentUser={false}
+                size="sm"
+                compact
+              />
               
               {/* Visual badges for pinned and muted */}
               <div className="flex items-center gap-1">

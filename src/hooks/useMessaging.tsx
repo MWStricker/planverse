@@ -97,13 +97,18 @@ export const useMessaging = () => {
           major: otherUserProfile?.major
         };
 
+        // Determine user-specific pin/mute status based on who the current user is
+        const isUser1 = conv.user1_id === user.id;
+        const is_pinned = isUser1 ? (conv.user1_is_pinned || false) : (conv.user2_is_pinned || false);
+        const is_muted = isUser1 ? (conv.user1_is_muted || false) : (conv.user2_is_muted || false);
+
         return {
           id: conv.id,
           user1_id: conv.user1_id,
           user2_id: conv.user2_id,
           last_message_at: conv.last_message_at,
-          is_pinned: conv.is_pinned || false,
-          is_muted: conv.is_muted || false,
+          is_pinned,
+          is_muted,
           display_order: conv.display_order || null,
           unread_count: conv.unread_count || 0,
           other_user

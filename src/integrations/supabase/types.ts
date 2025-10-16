@@ -148,7 +148,11 @@ export type Database = {
           last_message_at: string | null
           unread_count: number | null
           user1_id: string
+          user1_is_muted: boolean | null
+          user1_is_pinned: boolean | null
           user2_id: string
+          user2_is_muted: boolean | null
+          user2_is_pinned: boolean | null
         }
         Insert: {
           created_at?: string
@@ -160,7 +164,11 @@ export type Database = {
           last_message_at?: string | null
           unread_count?: number | null
           user1_id: string
+          user1_is_muted?: boolean | null
+          user1_is_pinned?: boolean | null
           user2_id: string
+          user2_is_muted?: boolean | null
+          user2_is_pinned?: boolean | null
         }
         Update: {
           created_at?: string
@@ -172,7 +180,11 @@ export type Database = {
           last_message_at?: string | null
           unread_count?: number | null
           user1_id?: string
+          user1_is_muted?: boolean | null
+          user1_is_pinned?: boolean | null
           user2_id?: string
+          user2_is_muted?: boolean | null
+          user2_is_pinned?: boolean | null
         }
         Relationships: [
           {
