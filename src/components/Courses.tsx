@@ -37,6 +37,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface Course {
   code: string;
+  semester: string;
   color: string;
   icon: any;
   events: any[];
@@ -411,45 +412,79 @@ export const Courses = ({}: CoursesProps = {}) => {
       // Process events first
       events.forEach((event, index) => {
         console.log(`Event ${index + 1}:`, event.title);
-        const courseCode = extractCourseCode(event.title, true);
-        console.log('Processing event:', event.title, 'extracted course:', courseCode);
+        const extracted = extractCourseCode(event.title, true);
+        console.log('Processing event:', event.title, 'extracted:', extracted);
         
-        if (courseCode) {
-          if (!coursesMap.has(courseCode)) {
-          coursesMap.set(courseCode, {
-            code: courseCode,
-            color: loadedColors[courseCode] || getCourseColor(event.title, true, courseCode),
-            icon: getCourseIconWithLoadedIcons(courseCode),
-            events: [],
-            tasks: []
-          });
-          }
-          coursesMap.get(courseCode).events.push(event);
+        if (!extracted) return;
+        if (typeof extracted !== 'object') return;
+        
+        const code = 'code' in extracted ? (extracted.code as string) : '';
+        const semester = 'semester' in extracted ? (extracted.semester as string) : '';
+        if (!code || !semester) return;
+        const fullKey = `${semester}-${code}`;
+        
+        if (!coursesMap.has(fullKey)) {
+        coursesMap.set(fullKey, {
+          code: code,
+          semester: semester,
+          color: loadedColors[code] || getCourseColor(event.title, true, code),
+          icon: getCourseIconWithLoadedIcons(code),
+          events: [],
+          tasks: []
+        });
         }
+        coursesMap.get(fullKey).events.push(event);
       });
 
       // Process tasks
       tasks.forEach(task => {
-        const courseCode = task.course_name || extractCourseCode(task.title, true);
-        if (courseCode) {
-          if (!coursesMap.has(courseCode)) {
-            const pseudoTitle = `[2025FA-${courseCode}]`;
-          coursesMap.set(courseCode, {
-            code: courseCode,
-            color: loadedColors[courseCode] || getCourseColor(pseudoTitle, true, courseCode),
-            icon: getCourseIconWithLoadedIcons(courseCode),
-            events: [],
-            tasks: []
-          });
-          }
-          coursesMap.get(courseCode).tasks.push(task);
+        const extractedRaw = task.course_name || extractCourseCode(task.title, true);
+        if (!extractedRaw) return;
+        
+        let code: string, semester: string;
+        if (typeof extractedRaw === 'object') {
+          code = 'code' in extractedRaw ? (extractedRaw.code as string) : '';
+          semester = 'semester' in extractedRaw ? (extractedRaw.semester as string) : '';
+          if (!code || !semester) return;
+        } else if (typeof extractedRaw === 'string') {
+          code = extractedRaw;
+          semester = '2025FA'; // Default for tasks without semester
+        } else {
+          return; // Skip if we can't extract course info
         }
+        
+        const fullKey = `${semester}-${code}`;
+        
+        if (!coursesMap.has(fullKey)) {
+          const pseudoTitle = `[${semester}-${code}]`;
+        coursesMap.set(fullKey, {
+          code: code,
+          semester: semester,
+          color: loadedColors[code] || getCourseColor(pseudoTitle, true, code),
+          icon: getCourseIconWithLoadedIcons(code),
+          events: [],
+          tasks: []
+        });
+        }
+        coursesMap.get(fullKey).tasks.push(task);
       });
 
       console.log('Courses found:', Array.from(coursesMap.keys()));
+      
+      // Filter to show only the most recent semester
+      const allCourses = Array.from(coursesMap.values());
+      const semesters = allCourses.map(c => c.semester).filter(s => s !== 'UNKNOWN');
+      const mostRecentSemester = semesters.length > 0 
+        ? semesters.sort((a, b) => b.localeCompare(a))[0]
+        : '2025FA';
+      
+      console.log(`🎓 Most recent semester detected: ${mostRecentSemester}`);
+      console.log(`📊 Filtering ${allCourses.length} courses to show only ${mostRecentSemester} courses`);
+      
+      const filteredCourses = allCourses.filter(course => course.semester === mostRecentSemester);
 
       // Calculate statistics for each course
-      const processedCourses = Array.from(coursesMap.values()).map(course => {
+      const processedCourses = filteredCourses.map(course => {
         const allAssignments = [...course.events, ...course.tasks];
         const completedTasks = course.tasks.filter(task => task.completion_status === 'completed').length;
         const upcomingAssignments = allAssignments.filter(item => {
@@ -464,6 +499,8 @@ export const Courses = ({}: CoursesProps = {}) => {
           upcomingAssignments
         };
       });
+      
+      console.log(`✅ Displaying ${processedCourses.length} courses from ${mostRecentSemester}:`, processedCourses.map(c => c.code));
 
       // Apply saved course order if available
       const orderToUse = savedOrder || courseOrder;
@@ -598,42 +635,57 @@ export const Courses = ({}: CoursesProps = {}) => {
   };
 
   // Helper functions
-  const extractCourseCode = (title: string, forCanvas = false) => {
+  const extractCourseCode = (title: string, forCanvas = false): string | { code: string; semester: string } | null => {
     if (!forCanvas) return null;
     
     // Enhanced patterns for Canvas course extraction
     const patterns = [
-      // [2025FA-PSY-100-007] or [2025FA-LIFE-102-003] format
-      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)\]/i,
-      // [PSY-100-007-2025FA] format
-      /\[([A-Z]{2,4}-?\d{3,4}[A-Z]?(?:-[A-Z]?\d*)?)-(\d{4}[A-Z]{2})\]/i,
-      // Simple course codes like PSY-100, MATH-118, LIFE-102, etc.
-      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?)\b/i,
-      // Lab courses like LIFE-102-L16
-      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}-?L\d*)\]/i
+      // [2025FA-LIFE-102-003] or [2025FA-LIFE-102-L16]
+      /\[(\d{4}[A-Z]{2})-([A-Z]{2,4}-?\d{3,4}(?:-?[A-Z]?\d*)?)\]/i,
+      // [CHS1440C-25Fall 0021] or [COP2500C_CMB-25Fall]
+      /\[([A-Z]{3}\d{4}[A-Z](?:_[A-Z]+)?)-(\d{2}[A-Z][a-z]+)\s*\d*\]/i,
+      // Simple course codes without semester (fallback)
+      /\b([A-Z]{2,4}-?\d{3,4}[A-Z]?)\b/i
     ];
     
     for (const pattern of patterns) {
       const match = title.match(pattern);
       if (match) {
-        // Return the course code, cleaning up any extra formatting
-        let courseCode = match[2] || match[1];
-        // Remove semester info and normalize format
+        let courseCode = '';
+        let semester = '';
+        
+        // Pattern 1: [2025FA-COURSE-XXX]
+        if (match[1] && match[1].match(/^\d{4}[A-Z]{2}$/)) {
+          semester = match[1];
+          courseCode = match[2];
+        }
+        // Pattern 2: [COURSE-25Fall]
+        else if (match[2] && match[2].match(/^\d{2}[A-Z][a-z]+$/)) {
+          semester = match[2];
+          courseCode = match[1];
+        }
+        // Pattern 3: No semester info
+        else {
+          courseCode = match[1];
+          semester = 'UNKNOWN';
+        }
+        
+        // Clean up course code
         courseCode = courseCode.replace(/\d{4}[A-Z]{2}/, '').replace(/^-|-$/, '');
         
-        // If it's a regular course with section number (not a lab), keep just the base course
-        // Lab courses (containing -L) keep their full section numbers to display separately
-        if (!courseCode.includes('-L') && courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
-          courseCode = courseCode.replace(/-\d{3}$/, '');
+        // Normalize semester format (25Fall -> 2025FA, etc.)
+        if (semester.match(/^\d{2}[A-Z][a-z]+$/)) {
+          const yearSuffix = semester.slice(0, 2);
+          const term = semester.slice(2);
+          const termCode = term.toLowerCase().includes('fall') ? 'FA' : 
+                          term.toLowerCase().includes('spring') ? 'SP' : 
+                          term.toLowerCase().includes('summer') ? 'SU' : term.slice(0, 2).toUpperCase();
+          semester = `20${yearSuffix}${termCode}`;
         }
         
         const finalCode = courseCode.toUpperCase();
-        if (finalCode.includes('-L')) {
-          console.log('🧪 LAB COURSE EXTRACTED:', finalCode, 'from title:', title);
-        } else {
-          console.log('📚 Regular course extracted:', finalCode, 'from title:', title);
-        }
-        return finalCode;
+        console.log(`📚 Extracted: ${finalCode} (${semester}) from: ${title}`);
+        return { code: finalCode, semester };
       }
     }
     
@@ -683,10 +735,13 @@ export const Courses = ({}: CoursesProps = {}) => {
   const getCourseColor = (title: string, forCanvas = false, courseCode?: string) => {
     if (!forCanvas) return '#6b7280'; // Default gray color for non-canvas courses
     
-    const extractedCourseCode = courseCode || extractCourseCode(title, true);
+    const extractedData = courseCode || extractCourseCode(title, true);
+    const extractedCourseCode = typeof extractedData === 'object' && extractedData !== null 
+      ? extractedData.code 
+      : (typeof extractedData === 'string' ? extractedData : null);
     
     // First, try to use stored Canvas color (return the hex value directly)
-    if (storedColors && extractedCourseCode && storedColors[extractedCourseCode]) {
+    if (storedColors && extractedCourseCode && typeof extractedCourseCode === 'string' && storedColors[extractedCourseCode]) {
       return storedColors[extractedCourseCode];
     }
     
@@ -706,12 +761,12 @@ export const Courses = ({}: CoursesProps = {}) => {
     };
     
     // Direct match first
-    if (extractedCourseCode && colorMappings[extractedCourseCode]) {
+    if (extractedCourseCode && typeof extractedCourseCode === 'string' && colorMappings[extractedCourseCode]) {
       return colorMappings[extractedCourseCode];
     }
     
     // Try base code match (e.g., PSY from PSY-100)
-    if (extractedCourseCode) {
+    if (extractedCourseCode && typeof extractedCourseCode === 'string') {
       const baseCode = extractedCourseCode.split('-')[0];
       if (colorMappings[baseCode]) {
         return colorMappings[baseCode];
@@ -730,7 +785,7 @@ export const Courses = ({}: CoursesProps = {}) => {
     
     // Simple hash function
     let hash = 0;
-    const textToHash = extractedCourseCode || title;
+    const textToHash = (extractedCourseCode && typeof extractedCourseCode === 'string') ? extractedCourseCode : title;
     for (let i = 0; i < textToHash.length; i++) {
       hash = ((hash << 5) - hash + textToHash.charCodeAt(i)) & 0xffffffff;
     }
