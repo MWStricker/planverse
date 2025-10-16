@@ -410,6 +410,65 @@ export type Database = {
         }
         Relationships: []
       }
+      post_analytics: {
+        Row: {
+          clicks: number | null
+          comments: number | null
+          created_at: string
+          date: string
+          id: string
+          impressions: number | null
+          likes: number | null
+          post_id: string
+          shares: number | null
+          unique_viewers: number | null
+          updated_at: string
+          user_id: string
+          viewer_majors: Json | null
+          viewer_schools: Json | null
+        }
+        Insert: {
+          clicks?: number | null
+          comments?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          post_id: string
+          shares?: number | null
+          unique_viewers?: number | null
+          updated_at?: string
+          user_id: string
+          viewer_majors?: Json | null
+          viewer_schools?: Json | null
+        }
+        Update: {
+          clicks?: number | null
+          comments?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          post_id?: string
+          shares?: number | null
+          unique_viewers?: number | null
+          updated_at?: string
+          user_id?: string
+          viewer_majors?: Json | null
+          viewer_schools?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_analytics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string
@@ -438,6 +497,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          is_promoted: boolean | null
           likes_count: number | null
           moderated_at: string | null
           moderated_by: string | null
@@ -447,6 +507,7 @@ export type Database = {
             | Database["public"]["Enums"]["moderation_status"]
             | null
           post_type: string | null
+          promotion_priority: number | null
           tags: string[] | null
           target_community: string | null
           target_major: string | null
@@ -460,6 +521,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_promoted?: boolean | null
           likes_count?: number | null
           moderated_at?: string | null
           moderated_by?: string | null
@@ -469,6 +531,7 @@ export type Database = {
             | Database["public"]["Enums"]["moderation_status"]
             | null
           post_type?: string | null
+          promotion_priority?: number | null
           tags?: string[] | null
           target_community?: string | null
           target_major?: string | null
@@ -482,6 +545,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_promoted?: boolean | null
           likes_count?: number | null
           moderated_at?: string | null
           moderated_by?: string | null
@@ -491,6 +555,7 @@ export type Database = {
             | Database["public"]["Enums"]["moderation_status"]
             | null
           post_type?: string | null
+          promotion_priority?: number | null
           tags?: string[] | null
           target_community?: string | null
           target_major?: string | null
@@ -502,6 +567,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string
           avatar_url: string | null
           bio: string | null
           campus_location: string | null
@@ -520,9 +586,11 @@ export type Database = {
           social_links: Json | null
           timezone: string | null
           updated_at: string
+          upgraded_to_professional_at: string | null
           user_id: string
         }
         Insert: {
+          account_type?: string
           avatar_url?: string | null
           bio?: string | null
           campus_location?: string | null
@@ -540,31 +608,123 @@ export type Database = {
           school?: string | null
           social_links?: Json | null
           timezone?: string | null
+          updated_at?: string
+          upgraded_to_professional_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_type?: string
+          avatar_url?: string | null
+          bio?: string | null
+          campus_location?: string | null
+          created_at?: string
+          device_id?: string | null
+          display_name?: string | null
+          graduation_year?: number | null
+          id?: string
+          is_public?: boolean | null
+          key_fingerprint?: string | null
+          major?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
+          public_key?: string | null
+          school?: string | null
+          social_links?: Json | null
+          timezone?: string | null
+          updated_at?: string
+          upgraded_to_professional_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      promoted_posts: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          engagement_rate: number | null
+          id: string
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_notes: string | null
+          moderation_status: Database["public"]["Enums"]["moderation_status"]
+          payment_status: string
+          post_id: string
+          promotion_budget: number
+          promotion_duration_days: number
+          starts_at: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          target_engagement_rate: number | null
+          target_impressions: number | null
+          total_clicks: number | null
+          total_comments: number | null
+          total_impressions: number | null
+          total_likes: number | null
+          total_shares: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          engagement_rate?: number | null
+          id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_notes?: string | null
+          moderation_status?: Database["public"]["Enums"]["moderation_status"]
+          payment_status?: string
+          post_id: string
+          promotion_budget: number
+          promotion_duration_days?: number
+          starts_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          target_engagement_rate?: number | null
+          target_impressions?: number | null
+          total_clicks?: number | null
+          total_comments?: number | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_shares?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          campus_location?: string | null
           created_at?: string
-          device_id?: string | null
-          display_name?: string | null
-          graduation_year?: number | null
+          ends_at?: string | null
+          engagement_rate?: number | null
           id?: string
-          is_public?: boolean | null
-          key_fingerprint?: string | null
-          major?: string | null
-          onboarding_completed?: boolean | null
-          onboarding_completed_at?: string | null
-          public_key?: string | null
-          school?: string | null
-          social_links?: Json | null
-          timezone?: string | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_notes?: string | null
+          moderation_status?: Database["public"]["Enums"]["moderation_status"]
+          payment_status?: string
+          post_id?: string
+          promotion_budget?: number
+          promotion_duration_days?: number
+          starts_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          target_engagement_rate?: number | null
+          target_impressions?: number | null
+          total_clicks?: number | null
+          total_comments?: number | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_shares?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "promoted_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_sessions: {
         Row: {
