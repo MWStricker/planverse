@@ -61,6 +61,7 @@ export const useMessaging = () => {
           user2_profile:profiles!user2_id(user_id, display_name, avatar_url, school, major)
         `)
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+        .order('display_order', { ascending: true, nullsFirst: false })
         .order('last_message_at', { ascending: false });
 
       console.log('useMessaging: Conversations query result:', { data, error });

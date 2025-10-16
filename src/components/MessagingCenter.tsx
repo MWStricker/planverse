@@ -499,18 +499,30 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     try {
       console.log('[MessagingCenter] Toggling pin for conversation:', conversationId, 'from', currentPinStatus, 'to', !currentPinStatus);
       
+      const newPinnedStatus = !currentPinStatus;
       const { error } = await supabase
         .from('conversations')
-        .update({ is_pinned: !currentPinStatus })
+        .update({ 
+          is_pinned: newPinnedStatus,
+          // Reset display_order when pinning to float to top
+          display_order: newPinnedStatus ? -1 : null
+        })
         .eq('id', conversationId);
 
       if (error) throw error;
 
-      fetchConversations();
+      // Update local state immediately
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, is_pinned: newPinnedStatus, display_order: newPinnedStatus ? -1 : null }
+            : conv
+        )
+      );
 
       toast({
-        title: currentPinStatus ? "Conversation unpinned" : "Conversation pinned",
-        description: currentPinStatus ? "Moved to chronological order" : "Moved to top of list",
+        title: newPinnedStatus ? "Conversation pinned" : "Conversation unpinned",
+        description: newPinnedStatus ? "Moved to top of list" : "Moved to chronological order",
       });
     } catch (error) {
       console.error('[MessagingCenter] Error toggling pin:', error);
@@ -604,8 +616,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       id: conv.id,
       display_order: index,
       user1_id: conv.user1_id,
-      user2_id: conv.user2_id,
-      last_message_at: conv.last_message_at
+      user2_id: conv.user2_id
     }));
 
     try {
@@ -1008,26 +1019,36 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               <SortableContext
                 items={[...conversations]
                   .sort((a, b) => {
+                    // Pinned conversations ALWAYS go first
+                    if (a.is_pinned && !b.is_pinned) return -1;
+                    if (!a.is_pinned && b.is_pinned) return 1;
+                    
+                    // Among pinned (or among unpinned), sort by display_order
                     if (a.display_order !== null && b.display_order !== null) {
                       return a.display_order - b.display_order;
                     }
                     if (a.display_order !== null) return -1;
                     if (b.display_order !== null) return 1;
-                    if (a.is_pinned && !b.is_pinned) return -1;
-                    if (!a.is_pinned && b.is_pinned) return 1;
+                    
+                    // Fallback to chronological
                     return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
                   }).map(c => c.id)}
                 strategy={verticalListSortingStrategy}
               >
                 {[...conversations]
                   .sort((a, b) => {
+                    // Pinned conversations ALWAYS go first
+                    if (a.is_pinned && !b.is_pinned) return -1;
+                    if (!a.is_pinned && b.is_pinned) return 1;
+                    
+                    // Among pinned (or among unpinned), sort by display_order
                     if (a.display_order !== null && b.display_order !== null) {
                       return a.display_order - b.display_order;
                     }
                     if (a.display_order !== null) return -1;
                     if (b.display_order !== null) return 1;
-                    if (a.is_pinned && !b.is_pinned) return -1;
-                    if (!a.is_pinned && b.is_pinned) return 1;
+                    
+                    // Fallback to chronological
                     return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
                   })
                   .map((conversation) => (
