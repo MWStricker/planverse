@@ -10,7 +10,6 @@ import { Send, ArrowLeft, School, Upload, X, Lock, ShieldAlert } from 'lucide-re
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
-import { useEncryption } from '@/contexts/EncryptionContext';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,7 +29,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isUnlocked, isInitializing, deviceId, keyPair } = useEncryption();
   const { conversations, messages, loading, fetchConversations, fetchMessages, sendMessage } = useMessaging();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -72,84 +70,48 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         event: 'INSERT',
         schema: 'public',
         table: 'messages'
-      }, async (payload) => {
+      }, (payload) => {
         console.log('Realtime message received:', payload);
         const newMessage = payload.new as Message;
         // Only add if it's part of this conversation
         if ((newMessage.sender_id === user.id && newMessage.receiver_id === selectedConversation.other_user?.id) ||
             (newMessage.receiver_id === user.id && newMessage.sender_id === selectedConversation.other_user?.id)) {
           
-          // Decrypt received messages
-          let decryptedContent = newMessage.content;
-          
-          if (newMessage.receiver_id === user.id && newMessage.is_encrypted && keyPair && isUnlocked) {
-            try {
-              // Fetch sender's public key
-              const { data: senderProfile } = await supabase
-                .from('profiles')
-                .select('public_key')
-                .eq('user_id', newMessage.sender_id)
-                .single();
-
-              if (senderProfile?.public_key) {
-                const { decryptMessage } = await import('@/lib/crypto/encryption');
-                
-                const encryptedMsg = {
-                  ciphertext: newMessage.content,
-                  nonce: newMessage.nonce,
-                  senderPublicKey: senderProfile.public_key
-                };
-
-                decryptedContent = decryptMessage(
-                  encryptedMsg,
-                  senderProfile.public_key,
-                  keyPair
-                );
-                console.log('✅ Decrypted realtime message');
-              } else {
-                console.warn('Could not fetch sender public key');
-              }
-            } catch (error) {
-              console.error('Failed to decrypt realtime message:', error);
-              decryptedContent = '[Unable to decrypt message]';
-            }
-          }
-          
           setLocalMessages(prev => {
             // Check if this is replacing a temp message
             const tempIndex = prev.findIndex(m => 
-              m.id.startsWith('temp-') &&
+              m.id.startsWith('temp-') && 
               m.sender_id === newMessage.sender_id &&
               Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 5000
             );
             
             if (tempIndex !== -1) {
-              console.log('Replacing temp message with real message:', prev[tempIndex].id, '->', newMessage.id);
-              // CRITICAL: For messages YOU sent, keep the plain text from temp message
-              if (newMessage.sender_id === user.id) {
+              console.log('Replacing temp message with real message:', newMessage.id);
+              // Replace temp message with real one
+              // Keep the original content from the temp message if it was sent by us
+              if (prev[tempIndex].sender_id === user.id) {
                 const updated = [...prev];
                 updated[tempIndex] = {
                   ...newMessage,
-                  content: prev[tempIndex].content // Keep plain text, don't show encrypted version
+                  content: prev[tempIndex].content // Keep original plain text
                 };
                 return updated;
               }
-              // For received messages, use decrypted content
+              // For received messages, use the new message content
               const updated = [...prev];
-              updated[tempIndex] = { ...newMessage, content: decryptedContent };
+              updated[tempIndex] = newMessage;
               return updated;
             }
             
-            // Check for duplicate by ID
-            const isDuplicate = prev.some(m => m.id === newMessage.id);
-            
-            if (isDuplicate) {
-              console.log('Duplicate message detected, skipping:', newMessage.id);
+            // Check if message already exists
+            const exists = prev.some(m => m.id === newMessage.id);
+            if (exists) {
+              console.log('Message already exists, skipping:', newMessage.id);
               return prev;
             }
             
             console.log('Adding new message from realtime:', newMessage.id);
-            return [...prev, { ...newMessage, content: decryptedContent }];
+            return [...prev, newMessage];
           });
         }
       })
@@ -160,7 +122,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConversation, user, keyPair, isUnlocked]);
+  }, [selectedConversation, user]);
 
   // Typing indicators (Phase 3)
   useEffect(() => {
@@ -359,21 +321,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     // Send in background, don't block UI
     sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl)
-      .then(async (success) => {
-        if (!success) {
-          // Only remove on failure
-          setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
-          toast({
-            title: "Error",
-            description: "Failed to send message",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Don't fetch from database - the temp message already has plain text
-        // Realtime subscription will replace temp with real message (keeping plain text)
-        console.log('Message sent successfully, temp message will be replaced by realtime');
+      .catch(() => {
+        // Remove temp message on error
+        setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+        toast({
+          title: "Error",
+          description: "Failed to send message",
+          variant: "destructive"
+        });
       });
 
     // Set timeout to remove temp message if not replaced within 10 seconds
@@ -589,29 +544,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 </button>
               </div>
               
-              {/* Encryption Status Banner */}
-              {isUnlocked && deviceId ? (
-                <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400 px-3 py-2 rounded mt-3">
-                  <Lock className="h-3 w-3" />
-                  <span>End-to-end encrypted</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 dark:text-yellow-400 px-3 py-2 rounded mt-3">
-                  <ShieldAlert className="h-3 w-3" />
-                  <span>Setting up encryption...</span>
-                </div>
-              )}
             </div>
 
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {isInitializing && (
-                  <div className="text-center py-4 text-muted-foreground flex items-center justify-center gap-2">
-                    <Lock className="h-4 w-4 animate-pulse" />
-                    <span>Setting up secure messaging...</span>
-                  </div>
-                )}
                 {isTyping && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg p-3">
@@ -651,19 +588,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                               />
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm break-words flex-1">{message.content}</p>
-                            {message.is_encrypted && message.nonce && message.nonce !== 'LEGACY_UNENCRYPTED' && (
-                              <div title="End-to-end encrypted">
-                                <Lock className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              </div>
-                            )}
-                            {(!message.is_encrypted || !message.nonce || message.nonce === 'LEGACY_UNENCRYPTED') && (
-                              <div title="Legacy message (sent before encryption was enabled)">
-                                <ShieldAlert className="h-3 w-3 text-yellow-500/60 flex-shrink-0" />
-                              </div>
-                            )}
-                          </div>
+                          <p className="text-sm break-words">{message.content}</p>
                         </div>
                         <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
                           {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}

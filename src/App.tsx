@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RealtimeProvider } from "@/hooks/useRealtime";
-import { EncryptionProvider } from "@/contexts/EncryptionContext";
 import { useThemeLoader } from "@/hooks/useThemeLoader";
 import { useOAuthCallback } from "@/hooks/useOAuthCallback";
 import Index from "./pages/Index";
@@ -29,25 +28,23 @@ const App = () => {
     <React.Fragment>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <EncryptionProvider>
-            <RealtimeProvider>
-              <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/terms" element={<TermsOfService />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/moderation" element={<ModerationDashboard />} />
-                  <Route path="/" element={<Index />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-              </TooltipProvider>
-            </RealtimeProvider>
-          </EncryptionProvider>
+          <RealtimeProvider>
+            <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/moderation" element={<ModerationDashboard />} />
+                <Route path="/" element={<Index />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+            </TooltipProvider>
+          </RealtimeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </React.Fragment>
