@@ -175,6 +175,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
         <Label htmlFor="favorite-artist" className="text-base font-semibold">Artist Name</Label>
         <Input
           id="favorite-artist"
+          name="favorite-artist"
           value={answers.favorite_artist || ''}
           onChange={(e) => setAnswers(prev => ({ ...prev, favorite_artist: e.target.value }))}
           onKeyDown={(e) => {
@@ -202,6 +203,8 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
       return (
         <div className="space-y-2 animate-fade-in">
           <Textarea
+            id={question.field}
+            name={question.field}
             value={answers[question.field] || ''}
             onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
             onKeyDown={(e) => {
@@ -223,6 +226,8 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
 
     return (
       <Input
+        id={question.field}
+        name={question.field}
         value={answers[question.field] || ''}
         onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
         onKeyDown={(e) => {

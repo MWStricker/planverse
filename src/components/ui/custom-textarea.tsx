@@ -13,6 +13,8 @@ interface CustomTextareaProps {
 
 export const CustomTextarea = React.forwardRef<HTMLDivElement, CustomTextareaProps>(
   ({ className, value = "", onChange, placeholder, id, disabled, rows = 4, ...props }, ref) => {
+    const autoId = React.useId();
+    const textareaId = id || autoId;
     const [focused, setFocused] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +65,7 @@ export const CustomTextarea = React.forwardRef<HTMLDivElement, CustomTextareaPro
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          id={id}
+          id={textareaId}
           className="w-full outline-none bg-transparent min-h-full whitespace-pre-wrap break-words empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none"
           data-placeholder={!value ? placeholder : undefined}
         />

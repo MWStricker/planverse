@@ -361,6 +361,7 @@ export const EventTaskModal = ({
               <Input
                 type="text"
                 id="title"
+                name="title"
                 value={editedTitle}
                 onChange={(e) => {
                   console.log('Title input changed:', e.target.value);
@@ -446,7 +447,7 @@ export const EventTaskModal = ({
                 <div>
                   <Label className="text-xs text-muted-foreground">Priority</Label>
                   <Select value={editedPriority} onValueChange={setEditedPriority}>
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger id="task-priority" className="w-full mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -492,6 +493,7 @@ export const EventTaskModal = ({
             {isCreatingNew || isEditing ? (
               <Textarea
                 id="notes"
+                name="notes"
                 value={editedNotes}
                 onChange={(e) => {
                   console.log('Notes input changed:', e.target.value);

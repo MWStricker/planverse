@@ -12,6 +12,8 @@ interface CustomInputProps {
 
 export const CustomInput = React.forwardRef<HTMLDivElement, CustomInputProps>(
   ({ className, value = "", onChange, placeholder, id, disabled, ...props }, ref) => {
+    const autoId = React.useId();
+    const inputId = id || autoId;
     const [focused, setFocused] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +61,7 @@ export const CustomInput = React.forwardRef<HTMLDivElement, CustomInputProps>(
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          id={id}
+          id={inputId}
           className="w-full outline-none bg-transparent min-h-[1.25rem] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none"
           data-placeholder={!value ? placeholder : undefined}
         />

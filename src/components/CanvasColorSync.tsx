@@ -68,8 +68,8 @@ export const CanvasColorSync = () => {
 
   return (
     <form autoComplete="off" data-form-type="other" onSubmit={(e) => e.preventDefault()}>
-      <input type="password" autoComplete="new-password" style={{display:'none', position:'absolute', left:'-9999px'}} />
-      <input type="text" autoComplete="off" style={{display:'none', position:'absolute', left:'-9999px'}} />
+      <input id="hidden-password-decoy" name="hidden-password-decoy" type="password" autoComplete="new-password" style={{display:'none', position:'absolute', left:'-9999px'}} />
+      <input id="hidden-text-decoy" name="hidden-text-decoy" type="text" autoComplete="off" style={{display:'none', position:'absolute', left:'-9999px'}} />
       <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
