@@ -30,7 +30,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isUnlocked, isInitializing, deviceId } = useEncryption();
+  const { isUnlocked, isInitializing, deviceId, keyPair } = useEncryption();
   const { conversations, messages, loading, fetchConversations, fetchMessages, sendMessage } = useMessaging();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -72,12 +72,49 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         event: 'INSERT',
         schema: 'public',
         table: 'messages'
-      }, (payload) => {
+      }, async (payload) => {
         console.log('Realtime message received:', payload);
         const newMessage = payload.new as Message;
         // Only add if it's part of this conversation
         if ((newMessage.sender_id === user.id && newMessage.receiver_id === selectedConversation.other_user?.id) ||
             (newMessage.receiver_id === user.id && newMessage.sender_id === selectedConversation.other_user?.id)) {
+          
+          // Decrypt received messages
+          let decryptedContent = newMessage.content;
+          
+          if (newMessage.receiver_id === user.id && newMessage.is_encrypted && keyPair && isUnlocked) {
+            try {
+              // Fetch sender's public key
+              const { data: senderProfile } = await supabase
+                .from('profiles')
+                .select('public_key')
+                .eq('user_id', newMessage.sender_id)
+                .single();
+
+              if (senderProfile?.public_key) {
+                const { decryptMessage } = await import('@/lib/crypto/encryption');
+                
+                const encryptedMsg = {
+                  ciphertext: newMessage.content,
+                  nonce: newMessage.nonce,
+                  senderPublicKey: senderProfile.public_key
+                };
+
+                decryptedContent = decryptMessage(
+                  encryptedMsg,
+                  senderProfile.public_key,
+                  keyPair
+                );
+                console.log('✅ Decrypted realtime message');
+              } else {
+                console.warn('Could not fetch sender public key');
+              }
+            } catch (error) {
+              console.error('Failed to decrypt realtime message:', error);
+              decryptedContent = '[Unable to decrypt message]';
+            }
+          }
+          
           setLocalMessages(prev => {
             // Check if this is replacing a temp message
             const tempIndex = prev.findIndex(m => 
@@ -97,9 +134,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 };
                 return updated;
               }
-              // For received messages, use the new message (will be decrypted by fetchMessages)
+              // For received messages, use decrypted content
               const updated = [...prev];
-              updated[tempIndex] = newMessage;
+              updated[tempIndex] = { ...newMessage, content: decryptedContent };
               return updated;
             }
             
@@ -112,7 +149,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             }
             
             console.log('Adding new message from realtime:', newMessage.id);
-            return [...prev, newMessage];
+            return [...prev, { ...newMessage, content: decryptedContent }];
           });
         }
       })
@@ -123,7 +160,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConversation, user]);
+  }, [selectedConversation, user, keyPair, isUnlocked]);
 
   // Typing indicators (Phase 3)
   useEffect(() => {
