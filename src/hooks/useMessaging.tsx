@@ -123,7 +123,7 @@ export const useMessaging = () => {
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
-        .order('created_at', { ascending: true });
+        .order('seq_num', { ascending: true });
 
       if (error) throw error;
 
@@ -163,6 +163,9 @@ export const useMessaging = () => {
   ) => {
     if (!user || (!content.trim() && !imageUrl)) return false;
 
+    // Generate client-side UUID for idempotency
+    const clientMsgId = crypto.randomUUID();
+
     try {
       // Get or create conversation
       const { data: conversationId, error: convError } = await supabase
@@ -170,7 +173,7 @@ export const useMessaging = () => {
 
       if (convError) throw convError;
 
-      // Send message
+      // Send message with client_msg_id for deduplication
       const { error: messageError } = await supabase
         .from('messages')
         .insert({
@@ -179,6 +182,7 @@ export const useMessaging = () => {
           content: content.trim() || '',
           image_url: imageUrl,
           reply_to_message_id: replyToMessageId,
+          client_msg_id: clientMsgId,
           status: 'sent'
         });
 

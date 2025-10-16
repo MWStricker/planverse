@@ -24,6 +24,7 @@ import { MessageActionSheet } from './messaging/MessageActionSheet';
 import { ReplyPreview } from './messaging/ReplyPreview';
 import { useReactions } from '@/hooks/useReactions';
 import { MessageBubble } from './messaging/MessageBubble';
+import { NewMessagesPill } from './messaging/NewMessagesPill';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -54,6 +55,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
@@ -61,15 +65,41 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
   };
 
-  // Sync messages to local state
+  // Detect if user is near bottom
   useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      setIsNearBottom(distanceFromBottom < 100);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [selectedConversation]);
+
+  // Sync messages to local state and track new messages
+  useEffect(() => {
+    if (isNearBottom) {
+      setNewMessagesCount(0);
+    } else {
+      // Increment count when new message arrives and user is scrolled up
+      if (messages.length > localMessages.length) {
+        const diff = messages.length - localMessages.length;
+        setNewMessagesCount(prev => prev + diff);
+      }
+    }
     setLocalMessages(messages);
-  }, [messages]);
+  }, [messages, isNearBottom]);
 
   useEffect(() => {
     console.log('MessagingCenter: useEffect triggered - user:', user?.id, 'conversations:', conversations.length);
-    scrollToBottom();
-  }, [localMessages]);
+    if (isNearBottom) {
+      scrollToBottom();
+    }
+  }, [localMessages, isNearBottom]);
 
   // Realtime subscription for new messages
   useEffect(() => {
@@ -123,21 +153,37 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     };
   }, [selectedConversation, user]);
 
-  // Typing indicators (Phase 3)
+  // Typing indicators with 2s TTL
   useEffect(() => {
     if (!selectedConversation || !user) return;
+    let typingTimeoutId: NodeJS.Timeout | null = null;
 
     const typingChannel = supabase
       .channel(`typing:${selectedConversation.id}`)
       .on('broadcast', { event: 'typing' }, (payload) => {
         if (payload.payload.userId !== user.id) {
           setIsTyping(true);
-          setTimeout(() => setIsTyping(false), 3000);
+          
+          // Clear previous timeout
+          if (typingTimeoutId) clearTimeout(typingTimeoutId);
+          
+          // Set new timeout for 2 seconds
+          typingTimeoutId = setTimeout(() => {
+            setIsTyping(false);
+            typingTimeoutId = null;
+          }, 2000);
+        }
+      })
+      .on('broadcast', { event: 'typing_stop' }, (payload) => {
+        if (payload.payload.userId !== user.id) {
+          if (typingTimeoutId) clearTimeout(typingTimeoutId);
+          setIsTyping(false);
         }
       })
       .subscribe();
 
     return () => {
+      if (typingTimeoutId) clearTimeout(typingTimeoutId);
       supabase.removeChannel(typingChannel);
     };
   }, [selectedConversation, user]);
@@ -154,10 +200,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       const timeoutId = setTimeout(() => {
         supabase
           .from('messages')
-          .update({ is_read: true })
+          .update({ is_read: true, status: 'seen' })
           .in('id', unreadMessages.map(m => m.id))
           .then(() => console.log('Messages marked as read'));
-      }, 500);
+      }, 200);
 
       return () => clearTimeout(timeoutId);
     }
@@ -497,13 +543,22 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const handleTyping = () => {
     if (!selectedConversation || !user) return;
     if (typingTimeout) clearTimeout(typingTimeout);
-    supabase.channel(`typing:${selectedConversation.id}`)
-      .send({
+    
+    const channel = supabase.channel(`typing:${selectedConversation.id}`);
+    channel.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { userId: user.id, conversationId: selectedConversation.id }
+    });
+    
+    // Send explicit stop after 2 seconds of no typing
+    const timeout = setTimeout(() => {
+      channel.send({
         type: 'broadcast',
-        event: 'typing',
-        payload: { userId: user.id, conversationId: selectedConversation.id }
+        event: 'typing_stop',
+        payload: { userId: user.id }
       });
-    const timeout = setTimeout(() => {}, 3000);
+    }, 2000);
     setTypingTimeout(timeout);
   };
 
@@ -609,7 +664,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
+            <ScrollArea ref={scrollContainerRef} className="flex-1 p-4 relative">
               <div className="space-y-4">
                 {isTyping && (
                   <div className="flex justify-start">
@@ -642,6 +697,15 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 })}
                 <div ref={messagesEndRef} />
               </div>
+              
+              {/* New Messages Pill */}
+              <NewMessagesPill
+                count={newMessagesCount}
+                onClick={() => {
+                  scrollToBottom();
+                  setNewMessagesCount(0);
+                }}
+              />
             </ScrollArea>
 
             {/* Message Input */}
