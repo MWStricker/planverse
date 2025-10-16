@@ -621,13 +621,9 @@ export const Courses = ({}: CoursesProps = {}) => {
         // Remove semester info and normalize format
         courseCode = courseCode.replace(/\d{4}[A-Z]{2}/, '').replace(/^-|-$/, '');
         
-        // Keep lab courses with their full section numbers (e.g., LIFE-102-L16)
-        // Lab sections are distinct courses in Canvas and should display separately
-        if (courseCode.includes('-L')) {
-          // Don't normalize lab courses - keep the full section number
-        }
-        // If it's a regular course with section number, keep just the base course
-        else if (courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
+        // If it's a regular course with section number (not a lab), keep just the base course
+        // Lab courses (containing -L) keep their full section numbers to display separately
+        if (!courseCode.includes('-L') && courseCode.match(/^[A-Z]{2,4}-?\d{3,4}-\d{3}$/i)) {
           courseCode = courseCode.replace(/-\d{3}$/, '');
         }
         
