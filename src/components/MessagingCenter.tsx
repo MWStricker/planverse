@@ -71,6 +71,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
+  // Debug logging for action sheet state
+  useEffect(() => {
+    console.log('[MessagingCenter] actionSheetMessage changed:', actionSheetMessage?.id || 'null');
+  }, [actionSheetMessage]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
   };
@@ -616,10 +621,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   };
 
   const handleMessageLongPress = (message: Message) => {
+    console.log('[MessagingCenter] Opening action sheet for message:', message.id);
     setActionSheetMessage(message);
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
-    }
   };
 
   const handleCopyMessage = () => {

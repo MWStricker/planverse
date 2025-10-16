@@ -5,6 +5,7 @@ import { ReactionBar } from './ReactionBar';
 import { ReactionPill } from './ReactionPill';
 import { formatDistanceToNow } from 'date-fns';
 import { Check } from 'lucide-react';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 interface MessageBubbleProps {
   message: Message;
@@ -28,22 +29,57 @@ export const MessageBubble = ({
   const [showReactionBar, setShowReactionBar] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
+  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
   const { reactions, addReaction } = useReactions(message.id);
 
-  const handleMouseDown = () => {
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     console.log('[MessageBubble] Long press started for message:', message.id);
+    
+    // Record touch/mouse position
+    if ('touches' in e) {
+      setTouchStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    } else {
+      setTouchStartPos({ x: e.clientX, y: e.clientY });
+    }
+    
     setIsLongPressing(true);
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       console.log('[MessageBubble] Long press triggered for message:', message.id);
+      
+      // Trigger haptic feedback
+      try {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+      } catch (error) {
+        // Fallback to navigator.vibrate
+        if ('vibrate' in navigator) {
+          navigator.vibrate(50);
+        }
+      }
+      
       onLongPress(message);
       setIsLongPressing(false);
     }, 500);
     setLongPressTimer(timer);
   };
 
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos) return;
+    
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+    
+    // Only cancel if moved more than 10 pixels (allows for finger wobble)
+    if (deltaX > 10 || deltaY > 10) {
+      console.log('[MessageBubble] Touch moved too far, canceling long press');
+      handleMouseUp();
+    }
+  };
+
   const handleMouseUp = () => {
     console.log('[MessageBubble] Long press cancelled/ended');
     setIsLongPressing(false);
+    setTouchStartPos(null);
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
@@ -64,7 +100,7 @@ export const MessageBubble = ({
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
       onTouchCancel={handleMouseUp}
-      onTouchMove={handleMouseUp}
+      onTouchMove={handleTouchMove}
     >
       <div className={`max-w-[70%] w-fit relative ${isOwn ? 'order-2' : 'order-1'}`}>
         {/* Reaction Bar */}
