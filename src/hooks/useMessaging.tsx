@@ -9,6 +9,7 @@ export interface Message {
   content: string;
   image_url?: string;
   is_read: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'seen' | 'failed';
   created_at: string;
   sender_profile?: {
     display_name: string;

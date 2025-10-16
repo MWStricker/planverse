@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, School, Upload, X, Smile } from 'lucide-react';
+import { Send, ArrowLeft, School, Upload, X, Smile, Settings } from 'lucide-react';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +25,12 @@ import { ReplyPreview } from './messaging/ReplyPreview';
 import { useReactions } from '@/hooks/useReactions';
 import { MessageBubble } from './messaging/MessageBubble';
 import { NewMessagesPill } from './messaging/NewMessagesPill';
+import { useMessagingSettings } from '@/hooks/useMessagingSettings';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MessagePinsBanner } from './messaging/MessagePinsBanner';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -58,6 +64,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { settings: messagingSettings, updateSetting } = useMessagingSettings();
+  const [showChatSettings, setShowChatSettings] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
@@ -198,16 +207,56 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     if (unreadMessages.length > 0) {
       const timeoutId = setTimeout(() => {
+        const updates: any = { is_read: true };
+        
+        // Only set status to 'seen' if user has read receipts enabled
+        if (messagingSettings.read_receipts_enabled) {
+          updates.status = 'seen';
+        }
+        
         supabase
           .from('messages')
-          .update({ is_read: true, status: 'seen' })
+          .update(updates)
           .in('id', unreadMessages.map(m => m.id))
           .then(() => console.log('Messages marked as read'));
       }, 200);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedConversation, localMessages, user]);
+  }, [selectedConversation, localMessages, user, messagingSettings]);
+
+  // Fetch pinned messages
+  useEffect(() => {
+    const fetchPinnedMessages = async () => {
+      if (!selectedConversation) return;
+
+      const { data, error } = await supabase
+        .from('message_pins')
+        .select(`
+          message_id,
+          messages:message_id (
+            id,
+            content,
+            sender_id,
+            created_at,
+            sender_profile:profiles!sender_id (display_name)
+          )
+        `)
+        .eq('conversation_id', selectedConversation.id)
+        .order('pinned_at', { ascending: false });
+
+      if (!error && data) {
+        setPinnedMessages(data.map((pin: any) => ({
+          id: pin.messages.id,
+          content: pin.messages.content,
+          sender_name: pin.messages.sender_profile.display_name,
+          created_at: pin.messages.created_at
+        })));
+      }
+    };
+
+    fetchPinnedMessages();
+  }, [selectedConversation]);
 
   // Global realtime subscription for all incoming messages
   useEffect(() => {
@@ -540,6 +589,61 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   };
 
+  const handlePinMessage = async (messageId: string) => {
+    if (!selectedConversation || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('message_pins')
+        .insert({
+          message_id: messageId,
+          conversation_id: selectedConversation.id,
+          pinned_by: user.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Message pinned",
+        description: "Message has been pinned to the top of the chat.",
+      });
+    } catch (error) {
+      console.error('Error pinning message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to pin message.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUnpinMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('message_pins')
+        .delete()
+        .eq('message_id', messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Message unpinned",
+        description: "Message has been unpinned.",
+      });
+    } catch (error) {
+      console.error('Error unpinning message:', error);
+    }
+  };
+
+  const handleJumpToMessage = (messageId: string) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('bg-primary/10');
+      setTimeout(() => element.classList.remove('bg-primary/10'), 2000);
+    }
+  };
+
   const handleTyping = () => {
     if (!selectedConversation || !user) return;
     if (typingTimeout) clearTimeout(typingTimeout);
@@ -660,11 +764,31 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     </div>
                   </div>
                 </button>
+                {/* Chat Settings Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowChatSettings(true)}
+                  className="ml-auto"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
               </div>
             </div>
 
             {/* Messages */}
             <ScrollArea ref={scrollContainerRef} className="flex-1 p-4 relative">
+              {/* Pinned Messages Banner */}
+              {pinnedMessages.length > 0 && (
+                <MessagePinsBanner
+                  pinnedMessages={pinnedMessages}
+                  onJumpToMessage={handleJumpToMessage}
+                  onUnpin={handleUnpinMessage}
+                  currentUserId={user?.id || ''}
+                  conversationCreatorId={selectedConversation?.user1_id || ''}
+                />
+              )}
+              
               <div className="space-y-4">
                 {isTyping && (
                   <div className="flex justify-start">
@@ -681,18 +805,21 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   const isOwn = message.sender_id === user?.id;
                   const isTemp = message.id.startsWith('temp-');
                   return (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      isOwn={isOwn}
-                      isTemp={isTemp}
-                      onImageClick={(url) => setViewerImage(url)}
-                      onLongPress={handleMessageLongPress}
-                      onReactionClick={(messageId) => {
-                        const msg = localMessages.find(m => m.id === messageId);
-                        if (msg) setReactionSheetMessage(msg);
-                      }}
-                    />
+                    <div key={message.id} id={`message-${message.id}`}>
+                      <MessageBubble
+                        message={message}
+                        isOwn={isOwn}
+                        isTemp={isTemp}
+                        onImageClick={(url) => setViewerImage(url)}
+                        onLongPress={handleMessageLongPress}
+                        onReactionClick={(messageId) => {
+                          const msg = localMessages.find(m => m.id === messageId);
+                          if (msg) setReactionSheetMessage(msg);
+                        }}
+                        onPin={handlePinMessage}
+                        isPinned={pinnedMessages.some(p => p.id === message.id)}
+                      />
+                    </div>
                   );
                 })}
                 <div ref={messagesEndRef} />
@@ -833,6 +960,64 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           reactions={useReactions(reactionSheetMessage.id).reactions}
         />
       )}
+
+      {/* Chat Settings Sheet */}
+      <Sheet open={showChatSettings} onOpenChange={setShowChatSettings}>
+        <SheetContent side="bottom" className="h-[400px]">
+          <SheetHeader>
+            <SheetTitle>Chat Settings</SheetTitle>
+            <SheetDescription>
+              Manage your messaging preferences
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 mt-6">
+            {/* Read Receipts Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="read-receipts" className="text-base font-medium">
+                  Send Read Receipts
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Let people know when you've read their messages
+                </p>
+              </div>
+              <Switch
+                id="read-receipts"
+                checked={messagingSettings.read_receipts_enabled}
+                onCheckedChange={(checked) => 
+                  updateSetting('read_receipts_enabled', checked)
+                }
+              />
+            </div>
+
+            {/* Typing Indicators Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="typing" className="text-base font-medium">
+                  Typing Indicators
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Show when you're typing a message
+                </p>
+              </div>
+              <Switch
+                id="typing"
+                checked={messagingSettings.typing_indicators_enabled}
+                onCheckedChange={(checked) => 
+                  updateSetting('typing_indicators_enabled', checked)
+                }
+              />
+            </div>
+
+            <Alert>
+              <AlertDescription>
+                If you turn off read receipts, you won't see when others read your messages either.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

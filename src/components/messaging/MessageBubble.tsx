@@ -4,6 +4,7 @@ import { useReactions } from '@/hooks/useReactions';
 import { ReactionBar } from './ReactionBar';
 import { ReactionPill } from './ReactionPill';
 import { formatDistanceToNow } from 'date-fns';
+import { Check } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -12,6 +13,8 @@ interface MessageBubbleProps {
   onImageClick: (url: string) => void;
   onLongPress: (message: Message) => void;
   onReactionClick: (messageId: string) => void;
+  onPin?: (messageId: string) => void;
+  isPinned?: boolean;
 }
 
 export const MessageBubble = ({
@@ -103,9 +106,32 @@ export const MessageBubble = ({
           </div>
         )}
 
-        <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-          {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-        </p>
+        <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+          <p className="text-xs text-muted-foreground">
+            {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+          </p>
+          
+          {/* Read Receipt Indicators (only show for own messages) */}
+          {isOwn && !isTemp && (
+            <div className="flex items-center gap-0.5">
+              {message.status === 'sent' && (
+                <Check className="h-3 w-3 text-muted-foreground" />
+              )}
+              {message.status === 'delivered' && (
+                <>
+                  <Check className="h-3 w-3 text-muted-foreground" />
+                  <Check className="h-3 w-3 text-muted-foreground -ml-2" />
+                </>
+              )}
+              {message.status === 'seen' && (
+                <>
+                  <Check className="h-3 w-3 text-blue-500" />
+                  <Check className="h-3 w-3 text-blue-500 -ml-2" />
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
       </div>
     </div>
