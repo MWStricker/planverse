@@ -140,21 +140,30 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          draft_message: string | null
           id: string
+          is_muted: boolean | null
+          is_pinned: boolean | null
           last_message_at: string | null
           user1_id: string
           user2_id: string
         }
         Insert: {
           created_at?: string
+          draft_message?: string | null
           id?: string
+          is_muted?: boolean | null
+          is_pinned?: boolean | null
           last_message_at?: string | null
           user1_id: string
           user2_id: string
         }
         Update: {
           created_at?: string
+          draft_message?: string | null
           id?: string
+          is_muted?: boolean | null
+          is_pinned?: boolean | null
           last_message_at?: string | null
           user1_id?: string
           user2_id?: string
@@ -282,46 +291,60 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          deleted_at: string | null
+          expires_at: string | null
           id: string
           image_url: string | null
-          is_encrypted: boolean | null
+          is_ephemeral: boolean | null
           is_read: boolean | null
-          message_counter: number | null
-          nonce: string | null
+          payload: Json | null
           receiver_id: string
-          sender_device_id: string | null
+          reply_to_message_id: string | null
           sender_id: string
+          status: Database["public"]["Enums"]["message_status"] | null
           updated_at: string
         }
         Insert: {
           content: string
           created_at?: string
+          deleted_at?: string | null
+          expires_at?: string | null
           id?: string
           image_url?: string | null
-          is_encrypted?: boolean | null
+          is_ephemeral?: boolean | null
           is_read?: boolean | null
-          message_counter?: number | null
-          nonce?: string | null
+          payload?: Json | null
           receiver_id: string
-          sender_device_id?: string | null
+          reply_to_message_id?: string | null
           sender_id: string
+          status?: Database["public"]["Enums"]["message_status"] | null
           updated_at?: string
         }
         Update: {
           content?: string
           created_at?: string
+          deleted_at?: string | null
+          expires_at?: string | null
           id?: string
           image_url?: string | null
-          is_encrypted?: boolean | null
+          is_ephemeral?: boolean | null
           is_read?: boolean | null
-          message_counter?: number | null
-          nonce?: string | null
+          payload?: Json | null
           receiver_id?: string
-          sender_device_id?: string | null
+          reply_to_message_id?: string | null
           sender_id?: string
+          status?: Database["public"]["Enums"]["message_status"] | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       moderation_logs: {
         Row: {
@@ -599,16 +622,13 @@ export type Database = {
           bio: string | null
           campus_location: string | null
           created_at: string
-          device_id: string | null
           display_name: string | null
           graduation_year: number | null
           id: string
           is_public: boolean | null
-          key_fingerprint: string | null
           major: string | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
-          public_key: string | null
           school: string | null
           social_links: Json | null
           timezone: string | null
@@ -622,16 +642,13 @@ export type Database = {
           bio?: string | null
           campus_location?: string | null
           created_at?: string
-          device_id?: string | null
           display_name?: string | null
           graduation_year?: number | null
           id?: string
           is_public?: boolean | null
-          key_fingerprint?: string | null
           major?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
-          public_key?: string | null
           school?: string | null
           social_links?: Json | null
           timezone?: string | null
@@ -645,16 +662,13 @@ export type Database = {
           bio?: string | null
           campus_location?: string | null
           created_at?: string
-          device_id?: string | null
           display_name?: string | null
           graduation_year?: number | null
           id?: string
           is_public?: boolean | null
-          key_fingerprint?: string | null
           major?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
-          public_key?: string | null
           school?: string | null
           social_links?: Json | null
           timezone?: string | null
@@ -749,6 +763,38 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: true
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
@@ -1102,6 +1148,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      message_status: "sending" | "sent" | "delivered" | "seen" | "failed"
       moderation_status:
         | "pending"
         | "approved"
@@ -1236,6 +1283,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      message_status: ["sending", "sent", "delivered", "seen", "failed"],
       moderation_status: [
         "pending",
         "approved",

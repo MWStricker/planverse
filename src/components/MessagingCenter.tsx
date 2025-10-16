@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, School, Upload, X } from 'lucide-react';
+import { Send, ArrowLeft, School, Upload, X, Smile } from 'lucide-react';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,6 +17,12 @@ import { ImageViewer } from '@/components/ImageViewer';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PublicProfile } from './PublicProfile';
 import type { PublicProfile as PublicProfileType } from '@/hooks/useConnect';
+import { ReactionBar } from './messaging/ReactionBar';
+import { ReactionPill } from './messaging/ReactionPill';
+import { ReactionSheet } from './messaging/ReactionSheet';
+import { MessageActionSheet } from './messaging/MessageActionSheet';
+import { ReplyPreview } from './messaging/ReplyPreview';
+import { useReactions } from '@/hooks/useReactions';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -41,8 +47,13 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicProfileType | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [showReactionBar, setShowReactionBar] = useState<string | null>(null);
+  const [reactionSheetMessage, setReactionSheetMessage] = useState<string | null>(null);
+  const [actionSheetMessage, setActionSheetMessage] = useState<Message | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
@@ -308,8 +319,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     setImageFile(null);
 
     // Send in background, don't block UI
-    sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl)
+    sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl, replyToMessage?.id)
       .then(async (success) => {
+        setReplyToMessage(null);
         if (!success) {
           // Only remove on failure
           setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
@@ -439,24 +451,59 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   };
 
+  const handleMessageLongPress = (message: Message) => {
+    setActionSheetMessage(message);
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+  };
+
+  const handleCopyMessage = () => {
+    if (!actionSheetMessage) return;
+    navigator.clipboard.writeText(actionSheetMessage.content);
+    toast({
+      title: "Copied",
+      description: "Message copied to clipboard"
+    });
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!actionSheetMessage) return;
+    setLocalMessages(prev => prev.filter(m => m.id !== actionSheetMessage.id));
+    toast({
+      title: "Deleted",
+      description: "Message deleted for you"
+    });
+  };
+
+  const handleUnsendMessage = async () => {
+    if (!actionSheetMessage) return;
+    try {
+      await supabase.from('messages').delete().eq('id', actionSheetMessage.id);
+      setLocalMessages(prev => prev.filter(m => m.id !== actionSheetMessage.id));
+      toast({
+        title: "Unsent",
+        description: "Message removed for everyone"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to unsend message",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleTyping = () => {
     if (!selectedConversation || !user) return;
-
-    // Clear previous timeout
     if (typingTimeout) clearTimeout(typingTimeout);
-
-    // Send typing indicator
     supabase.channel(`typing:${selectedConversation.id}`)
       .send({
         type: 'broadcast',
         event: 'typing',
         payload: { userId: user.id, conversationId: selectedConversation.id }
       });
-
-    // Set new timeout
-    const timeout = setTimeout(() => {
-      // Typing stopped
-    }, 3000);
+    const timeout = setTimeout(() => {}, 3000);
     setTypingTimeout(timeout);
   };
 
@@ -579,35 +626,65 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   const isOwn = message.sender_id === user?.id;
                   const isTemp = message.id.startsWith('temp-');
                   return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-[70%] w-fit ${isOwn ? 'order-2' : 'order-1'}`}>
-                        <div
-                          className={`rounded-lg p-3 break-words ${
-                            isOwn
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-foreground'
-                          } ${isTemp ? 'opacity-70' : ''}`}
-                        >
-                          {message.image_url && (
-                            <div 
-                              className="cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => setViewerImage(message.image_url!)}
-                            >
-                              <img
-                                src={message.image_url}
-                                alt="Message attachment"
-                                className="w-full rounded-md mb-2 max-h-48 object-cover hover:scale-[1.02] transition-transform"
+                    <div key={message.id}>
+                      <div
+                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group relative`}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          handleMessageLongPress(message);
+                        }}
+                        onDoubleClick={() => setShowReactionBar(message.id)}
+                      >
+                        <div className={`max-w-[70%] w-fit relative ${isOwn ? 'order-2' : 'order-1'}`}>
+                          {/* Reaction Bar */}
+                          {showReactionBar === message.id && (
+                            <div className={`absolute -top-12 ${isOwn ? 'right-0' : 'left-0'} z-10`}>
+                              <ReactionBar
+                                onReact={(emoji) => {
+                                  const { addReaction } = useReactions(message.id);
+                                  addReaction(message.id, emoji);
+                                  setShowReactionBar(null);
+                                }}
+                                className="shadow-xl"
                               />
                             </div>
                           )}
-                          <p className="text-sm break-words">{message.content}</p>
+
+                          <div
+                            className={`rounded-lg px-3 py-2 inline-flex flex-col break-words overflow-wrap-anywhere ${
+                              isOwn
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-foreground'
+                            } ${isTemp ? 'opacity-70' : ''}`}
+                          >
+                            {message.image_url && (
+                              <div 
+                                className="cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setViewerImage(message.image_url!)}
+                              >
+                                <img
+                                  src={message.image_url}
+                                  alt="Message attachment"
+                                  className="w-full rounded-md mb-2 max-h-48 object-cover hover:scale-[1.02] transition-transform"
+                                />
+                              </div>
+                            )}
+                            <p className="text-sm break-words overflow-wrap-anywhere hyphens-auto">{message.content}</p>
+                          </div>
+
+                          <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+                            {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                          </p>
+
+                          {/* Hover reaction button */}
+                          <button
+                            className={`absolute -top-2 ${isOwn ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border rounded-full p-1 hover:bg-muted`}
+                            onClick={() => setShowReactionBar(showReactionBar === message.id ? null : message.id)}
+                            aria-label="Add reaction"
+                          >
+                            <Smile className="h-3 w-3" />
+                          </button>
                         </div>
-                        <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                          {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                        </p>
                       </div>
                     </div>
                   );
@@ -618,6 +695,12 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
             {/* Message Input */}
             <div className="p-4 border-t">
+              {replyToMessage && (
+                <ReplyPreview
+                  message={replyToMessage}
+                  onDismiss={() => setReplyToMessage(null)}
+                />
+              )}
               {imageFile && (
                 <div className="mb-2 p-2 bg-muted rounded-lg flex items-center justify-between">
                   <span className="text-sm text-foreground">Image: {imageFile.name}</span>
@@ -709,6 +792,23 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Message Action Sheet */}
+      {actionSheetMessage && user && (
+        <MessageActionSheet
+          open={!!actionSheetMessage}
+          onOpenChange={(open) => !open && setActionSheetMessage(null)}
+          message={actionSheetMessage}
+          currentUserId={user.id}
+          onReply={() => {
+            setReplyToMessage(actionSheetMessage);
+            setActionSheetMessage(null);
+          }}
+          onCopy={handleCopyMessage}
+          onDelete={handleDeleteMessage}
+          onUnsend={handleUnsendMessage}
+        />
+      )}
     </div>
   );
 };

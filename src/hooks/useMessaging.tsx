@@ -155,7 +155,12 @@ export const useMessaging = () => {
     }
   };
 
-  const sendMessage = async (receiverId: string, content: string, imageUrl?: string) => {
+  const sendMessage = async (
+    receiverId: string, 
+    content: string, 
+    imageUrl?: string,
+    replyToMessageId?: string
+  ) => {
     if (!user || (!content.trim() && !imageUrl)) return false;
 
     try {
@@ -172,7 +177,9 @@ export const useMessaging = () => {
           sender_id: user.id,
           receiver_id: receiverId,
           content: content.trim() || '',
-          image_url: imageUrl
+          image_url: imageUrl,
+          reply_to_message_id: replyToMessageId,
+          status: 'sent'
         });
 
       if (messageError) throw messageError;
