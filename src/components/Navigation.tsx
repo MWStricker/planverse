@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical, ChevronLeft, Menu } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical, ChevronLeft, Menu, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -144,11 +144,24 @@ export const Navigation = ({
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'connect', label: 'Connect', icon: Users },
-    { id: 'upload', label: 'Image Upload', icon: Upload },
-  ];
+  const navItems = useMemo(() => {
+    const baseItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: Home },
+      { id: 'connect', label: 'Connect', icon: Users },
+      { id: 'upload', label: 'Image Upload', icon: Upload },
+    ];
+    
+    // Only add Analytics for professional accounts
+    if (profile?.account_type === 'professional') {
+      baseItems.push({ 
+        id: 'analytics', 
+        label: 'Analytics', 
+        icon: TrendingUp 
+      });
+    }
+    
+    return baseItems;
+  }, [profile?.account_type]);
 
   const {
     sensors,

@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense, memo, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Home, Users, Upload } from "lucide-react";
+import { Loader2, Home, Users, Upload, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { Navigation } from "@/components/Navigation";
 import { BottomNav } from "@/components/BottomNav";
@@ -23,6 +24,7 @@ const OCRUpload = lazy(() => import("@/components/OCRUpload").then(m => ({ defau
 const ScheduleScanner = lazy(() => import("@/components/ScheduleScanner").then(m => ({ default: m.ScheduleScanner })));
 const Settings = lazy(() => import("@/components/Settings").then(m => ({ default: m.Settings })));
 const Connect = lazy(() => import("@/components/Connect").then(m => ({ default: m.Connect })));
+const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard").then(m => ({ default: m.AnalyticsDashboard })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -107,11 +109,24 @@ const IndexContent = () => {
   }, []);
 
   // Tab reordering functionality
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'connect', label: 'Connect', icon: Users },
-    { id: 'upload', label: 'Image Upload', icon: Upload },
-  ];
+  const navItems = useMemo(() => {
+    const baseItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: Home },
+      { id: 'connect', label: 'Connect', icon: Users },
+      { id: 'upload', label: 'Image Upload', icon: Upload },
+    ];
+    
+    // Only add Analytics for professional accounts
+    if (profile?.account_type === 'professional') {
+      baseItems.push({ 
+        id: 'analytics', 
+        label: 'Analytics', 
+        icon: TrendingUp 
+      });
+    }
+    
+    return baseItems;
+  }, [profile?.account_type]);
 
   const {
     isReorderMode,
@@ -201,15 +216,29 @@ const IndexContent = () => {
           </Suspense>
         );
       case 'analytics':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-foreground mb-2">Coming Soon</h2>
-              <p className="text-muted-foreground">
-                {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)} feature is in development
-              </p>
+        // Only professional accounts can access analytics
+        if (profile?.account_type !== 'professional') {
+          return (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Upgrade Required</h2>
+                <p className="text-muted-foreground mb-4">
+                  Switch to a Professional Account to access Analytics
+                </p>
+                <Button 
+                  onClick={() => setCurrentPage('settings')} 
+                >
+                  Upgrade to Professional
+                </Button>
+              </div>
             </div>
-          </div>
+          );
+        }
+        
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <AnalyticsDashboard />
+          </Suspense>
         );
       default:
         return (

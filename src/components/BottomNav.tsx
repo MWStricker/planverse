@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Home, Users, Upload, Settings, User } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Home, Users, Upload, Settings, User, TrendingUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,12 +15,25 @@ export const BottomNav = ({ currentPage, onPageChange }: BottomNavProps) => {
   const { user } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const navItems = [
-    { id: 'dashboard', icon: Home, label: 'Dashboard' },
-    { id: 'connect', icon: Users, label: 'Connect' },
-    { id: 'upload', icon: Upload, label: 'Upload' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-  ];
+  const navItems = useMemo(() => {
+    const baseItems = [
+      { id: 'dashboard', icon: Home, label: 'Dashboard' },
+      { id: 'connect', icon: Users, label: 'Connect' },
+      { id: 'upload', icon: Upload, label: 'Upload' },
+      { id: 'settings', icon: Settings, label: 'Settings' },
+    ];
+    
+    // Insert Analytics before Settings for professional accounts
+    if (profile?.account_type === 'professional') {
+      baseItems.splice(3, 0, { 
+        id: 'analytics', 
+        icon: TrendingUp, 
+        label: 'Analytics' 
+      });
+    }
+    
+    return baseItems;
+  }, [profile?.account_type]);
 
   return (
     <>
