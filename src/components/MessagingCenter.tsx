@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, School, Upload, X, Smile, Settings } from 'lucide-react';
+import { Send, ArrowLeft, School, Upload, X, Smile, Settings, Pin, PinOff } from 'lucide-react';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
@@ -433,6 +433,34 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     fetchMessages(conversation.id, conversation.other_user.id);
   };
 
+  const handleToggleConversationPin = async (conversationId: string, currentPinStatus: boolean) => {
+    try {
+      console.log('[MessagingCenter] Toggling pin for conversation:', conversationId, 'from', currentPinStatus, 'to', !currentPinStatus);
+      
+      const { error } = await supabase
+        .from('conversations')
+        .update({ is_pinned: !currentPinStatus })
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      // Optimistically update local state
+      fetchConversations();
+
+      toast({
+        title: currentPinStatus ? "Conversation unpinned" : "Conversation pinned",
+        description: currentPinStatus ? "Moved to chronological order" : "Moved to top of list",
+      });
+    } catch (error) {
+      console.error('[MessagingCenter] Error toggling pin:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update pin status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() && !imageFile) return;
     if (!selectedConversation?.other_user?.id) {
@@ -788,29 +816,58 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               No conversations yet
             </div>
           ) : (
-            conversations.map((conversation) => (
+            [...conversations]
+              .sort((a, b) => {
+                // Sort pinned conversations first
+                if (a.is_pinned && !b.is_pinned) return -1;
+                if (!a.is_pinned && b.is_pinned) return 1;
+                // Within same pin status, sort by last_message_at
+                return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+              })
+              .map((conversation) => (
               <div
                 key={conversation.id}
-                className={`p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
-                  selectedConversation?.id === conversation.id ? 'bg-muted' : ''
+                className={`p-3 border-b transition-colors ${
+                  conversation.is_pinned ? 'bg-primary/5' : ''
+                } ${
+                  selectedConversation?.id === conversation.id ? 'bg-muted' : 'hover:bg-muted/50'
                 }`}
-                onClick={() => handleSelectConversation(conversation)}
               >
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={conversation.other_user?.avatar_url} />
-                    <AvatarFallback>
-                      {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-foreground truncate">
-                      {conversation.other_user?.display_name || 'Unknown User'}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
-                    </p>
+                  <div 
+                    className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                    onClick={() => handleSelectConversation(conversation)}
+                  >
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={conversation.other_user?.avatar_url} />
+                      <AvatarFallback>
+                        {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-foreground truncate">
+                        {conversation.other_user?.display_name || 'Unknown User'}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
+                      </p>
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleConversationPin(conversation.id, conversation.is_pinned || false);
+                    }}
+                  >
+                    {conversation.is_pinned ? (
+                      <PinOff className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Pin className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
                 </div>
               </div>
             ))

@@ -22,6 +22,7 @@ export interface Conversation {
   user1_id: string;
   user2_id: string;
   last_message_at: string;
+  is_pinned?: boolean;
   other_user?: {
     id: string;
     display_name: string;
@@ -98,6 +99,7 @@ export const useMessaging = () => {
           user1_id: conv.user1_id,
           user2_id: conv.user2_id,
           last_message_at: conv.last_message_at,
+          is_pinned: conv.is_pinned || false,
           other_user
         };
       });
