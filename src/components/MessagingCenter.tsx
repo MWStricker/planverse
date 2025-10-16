@@ -6,10 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, School, Upload, X } from 'lucide-react';
+import { Send, ArrowLeft, School, Upload, X, Lock } from 'lucide-react';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
+import { useEncryption } from '@/contexts/EncryptionContext';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -29,6 +30,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isUnlocked, isInitializing } = useEncryption();
   const { conversations, messages, loading, fetchConversations, fetchMessages, sendMessage } = useMessaging();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -564,6 +566,12 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
+                {isInitializing && (
+                  <div className="text-center py-4 text-muted-foreground flex items-center justify-center gap-2">
+                    <Lock className="h-4 w-4 animate-pulse" />
+                    <span>Setting up secure messaging...</span>
+                  </div>
+                )}
                 {isTyping && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg p-3">
@@ -603,7 +611,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                               />
                             </div>
                           )}
-                          <p className="text-sm break-words">{message.content}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm break-words flex-1">{message.content}</p>
+                            {message.is_encrypted && <Lock className="h-3 w-3 text-green-500 flex-shrink-0" />}
+                          </div>
                         </div>
                         <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
                           {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}

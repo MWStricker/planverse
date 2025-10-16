@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useEncryption } from '@/contexts/EncryptionContext';
+import { encryptMessage, decryptMessage } from '@/lib/crypto/encryption';
+import { toast } from '@/hooks/use-toast';
 
 export interface Message {
   id: string;
@@ -10,6 +13,9 @@ export interface Message {
   image_url?: string;
   is_read: boolean;
   created_at: string;
+  is_encrypted?: boolean;
+  nonce?: string;
+  sender_device_id?: string;
   sender_profile?: {
     display_name: string;
     avatar_url?: string;
@@ -33,6 +39,7 @@ export interface Conversation {
 
 export const useMessaging = () => {
   const { user } = useAuth();
+  const { keyPair, isUnlocked, deviceId } = useEncryption();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +120,7 @@ export const useMessaging = () => {
   };
 
   const fetchMessages = async (conversationId: string, otherUserId: string) => {
-    if (!user) return;
+    if (!user || !keyPair) return;
 
     try {
       setLoading(true);
@@ -133,19 +140,49 @@ export const useMessaging = () => {
         return;
       }
 
-      // Get unique sender IDs and fetch profiles in batch
+      // Get unique sender IDs and fetch profiles with public keys
       const senderIds = [...new Set(data.map(m => m.sender_id))];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name, avatar_url')
+        .select('user_id, display_name, avatar_url, public_key')
         .in('user_id', senderIds);
 
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
-      const messagesWithProfiles = data.map(message => ({
-        ...message,
-        sender_profile: profileMap.get(message.sender_id)
-      }));
+      // Decrypt messages
+      const messagesWithProfiles = data.map((message) => {
+        let decryptedContent = message.content;
+
+        if (message.is_encrypted && message.nonce) {
+          try {
+            const senderProfile = profileMap.get(message.sender_id);
+            if (senderProfile?.public_key && keyPair) {
+              const encryptedData = {
+                ciphertext: message.content,
+                nonce: message.nonce,
+                senderPublicKey: senderProfile.public_key
+              };
+              
+              decryptedContent = decryptMessage(
+                encryptedData,
+                senderProfile.public_key,
+                keyPair
+              );
+            } else {
+              decryptedContent = "[Unable to decrypt - missing keys]";
+            }
+          } catch (error) {
+            console.error('Decryption failed:', error);
+            decryptedContent = "[Unable to decrypt message]";
+          }
+        }
+
+        return {
+          ...message,
+          content: decryptedContent,
+          sender_profile: profileMap.get(message.sender_id)
+        };
+      });
 
       setMessages(messagesWithProfiles);
     } catch (error) {
@@ -158,21 +195,58 @@ export const useMessaging = () => {
   const sendMessage = async (receiverId: string, content: string, imageUrl?: string) => {
     if (!user || (!content.trim() && !imageUrl)) return false;
 
+    // Check if encryption is ready
+    if (!isUnlocked || !keyPair) {
+      toast({
+        title: "Encryption Not Ready",
+        description: "Please wait while we set up secure messaging...",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     try {
+      // Get receiver's public key
+      const { data: receiverProfile } = await supabase
+        .from('profiles')
+        .select('public_key')
+        .eq('user_id', receiverId)
+        .single();
+
+      if (!receiverProfile?.public_key) {
+        toast({
+          title: "Recipient Not Ready",
+          description: "The recipient hasn't set up secure messaging yet.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Encrypt message content
+      const messageText = content.trim() || '';
+      const encryptedData = encryptMessage(
+        messageText,
+        receiverProfile.public_key,
+        keyPair
+      );
+
       // Get or create conversation
       const { data: conversationId, error: convError } = await supabase
         .rpc('get_or_create_conversation', { other_user_id: receiverId });
 
       if (convError) throw convError;
 
-      // Send message
+      // Insert encrypted message
       const { error: messageError } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
           receiver_id: receiverId,
-          content: content.trim() || '',
-          image_url: imageUrl
+          content: encryptedData.ciphertext,
+          image_url: imageUrl,
+          is_encrypted: true,
+          nonce: encryptedData.nonce,
+          sender_device_id: deviceId
         });
 
       if (messageError) throw messageError;
@@ -186,7 +260,12 @@ export const useMessaging = () => {
 
       return true;
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error sending encrypted message:', error);
+      toast({
+        title: "Send Failed",
+        description: "Could not send message. Please try again.",
+        variant: "destructive"
+      });
       return false;
     }
   };

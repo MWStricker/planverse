@@ -25,38 +25,43 @@ const DEVICE_IDENTITY_KEY = 'e2ee_device_identity';
 const ENCRYPTED_KEYPAIR_KEY = 'e2ee_encrypted_keypair';
 
 /**
- * Derive encryption key from password using PBKDF2-like approach
+ * Derive encryption key from Supabase session (transparent encryption)
  * 
- * In production, use Argon2id. For web compatibility, we use:
- * - PBKDF2 via Web Crypto API (100k iterations)
- * - Random salt per device
+ * Uses session.access_token + device ID to derive a key
+ * This allows automatic encryption without user passwords
  * 
- * @param password - User's password/passphrase
- * @param salt - Random salt (generate once per device)
+ * @param sessionToken - Supabase session access token
+ * @param deviceId - Unique device identifier
  */
-const deriveKeyFromPassword = async (
-  password: string,
-  salt: Uint8Array
+const deriveKeyFromSession = async (
+  sessionToken: string,
+  deviceId: string
 ): Promise<CryptoKey> => {
   const encoder = new TextEncoder();
-  const passwordKey = await crypto.subtle.importKey(
+  const combinedKey = `${sessionToken}:${deviceId}`;
+  
+  const keyMaterial = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(password),
+    encoder.encode(combinedKey),
     { name: 'PBKDF2' },
     false,
     ['deriveKey']
   );
-
-  const saltBuffer = salt.buffer.slice(salt.byteOffset, salt.byteOffset + salt.byteLength) as ArrayBuffer;
+  
+  // Use a deterministic salt derived from device ID
+  const salt = await crypto.subtle.digest(
+    'SHA-256',
+    encoder.encode(deviceId)
+  );
   
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: saltBuffer,
-      iterations: 100000, // 100k iterations
+      salt: salt,
+      iterations: 100000,
       hash: 'SHA-256'
     },
-    passwordKey,
+    keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,
     ['encrypt', 'decrypt']
@@ -64,18 +69,19 @@ const deriveKeyFromPassword = async (
 };
 
 /**
- * Encrypt private key with password-derived key
+ * Encrypt private key with session-derived key
  */
 const encryptPrivateKey = async (
   secretKey: Uint8Array,
-  password: string
+  sessionToken: string,
+  deviceId: string
 ): Promise<{ encrypted: string; salt: string; iv: string }> => {
-  // Generate random salt and IV
+  // Generate random IV (salt is deterministic from device ID)
   const salt = nacl.randomBytes(32);
   const iv = nacl.randomBytes(12);
 
-  // Derive encryption key from password
-  const derivedKey = await deriveKeyFromPassword(password, salt);
+  // Derive encryption key from session
+  const derivedKey = await deriveKeyFromSession(sessionToken, deviceId);
 
   // Encrypt secret key with AES-GCM
   const ivBuffer = iv.buffer.slice(iv.byteOffset, iv.byteOffset + iv.byteLength) as ArrayBuffer;
@@ -98,18 +104,18 @@ const encryptPrivateKey = async (
 };
 
 /**
- * Decrypt private key with password
+ * Decrypt private key with session token
  */
 const decryptPrivateKey = async (
   encryptedData: { encrypted: string; salt: string; iv: string },
-  password: string
+  sessionToken: string,
+  deviceId: string
 ): Promise<Uint8Array> => {
-  const salt = new Uint8Array(decodeBase64(encryptedData.salt));
   const iv = new Uint8Array(decodeBase64(encryptedData.iv));
   const encrypted = new Uint8Array(decodeBase64(encryptedData.encrypted));
 
-  // Derive decryption key from password
-  const derivedKey = await deriveKeyFromPassword(password, salt);
+  // Derive decryption key from session
+  const derivedKey = await deriveKeyFromSession(sessionToken, deviceId);
 
   try {
     // Decrypt secret key
@@ -127,37 +133,41 @@ const decryptPrivateKey = async (
 
     return new Uint8Array(decrypted);
   } catch (error) {
-    throw new Error('Invalid password or corrupted key data');
+    throw new Error('Invalid session or corrupted key data');
   }
 };
 
 /**
- * Initialize device identity (first-time setup)
+ * Initialize device identity (transparent - no password needed)
  * 
  * Generates:
  * - X25519 keypair for E2EE
  * - Unique device ID
  * - Key fingerprint for verification
  * 
- * @param password - Password to encrypt private key
+ * @param sessionToken - Supabase session access token
  * @returns Device identity with public information
  */
 export const initializeDeviceIdentity = async (
-  password: string
+  sessionToken: string
 ): Promise<DeviceIdentity> => {
   // Generate new keypair
   const keyPair = generateKeyPair();
   const deviceId = generateDeviceId();
   const fingerprint = calculateFingerprint(new Uint8Array(keyPair.publicKey));
 
-  // Encrypt and store private key
-  const encryptedKey = await encryptPrivateKey(new Uint8Array(keyPair.secretKey), password);
+  // Encrypt and store private key using session
+  const encryptedKey = await encryptPrivateKey(
+    new Uint8Array(keyPair.secretKey), 
+    sessionToken, 
+    deviceId
+  );
   await set(ENCRYPTED_KEYPAIR_KEY, encryptedKey);
 
   // Store device identity (public info only)
   const identity: DeviceIdentity = {
     deviceId,
-    keyPair, // Will be cleared after public key upload
+    keyPair,
     fingerprint,
     createdAt: Date.now()
   };
@@ -192,13 +202,13 @@ export const loadDeviceIdentity = async (): Promise<DeviceIdentity | null> => {
 };
 
 /**
- * Unlock private key with password
- * This is called when user needs to decrypt messages
+ * Unlock private key with session token (transparent)
+ * This is called automatically when user is logged in
  * 
- * @param password - User's password
+ * @param sessionToken - Supabase session access token
  * @returns Full keypair with decrypted private key
  */
-export const unlockPrivateKey = async (password: string): Promise<KeyPair> => {
+export const unlockPrivateKey = async (sessionToken: string): Promise<KeyPair> => {
   const encryptedKey = await get(ENCRYPTED_KEYPAIR_KEY);
   if (!encryptedKey) {
     throw new Error('No encrypted key found - device not initialized');
@@ -209,8 +219,8 @@ export const unlockPrivateKey = async (password: string): Promise<KeyPair> => {
     throw new Error('Device identity not found');
   }
 
-  // Decrypt private key
-  const secretKey = await decryptPrivateKey(encryptedKey, password);
+  // Decrypt private key using session
+  const secretKey = await decryptPrivateKey(encryptedKey, sessionToken, identity.deviceId);
 
   return {
     publicKey: identity.keyPair.publicKey,
@@ -244,17 +254,26 @@ export const clearKeys = async (): Promise<void> => {
 };
 
 /**
- * Re-encrypt private key with new password
- * Useful for password change
+ * Re-encrypt private key with new session (for session refresh)
+ * Called automatically when session is refreshed
  */
-export const changePassword = async (
-  oldPassword: string,
-  newPassword: string
+export const reencryptWithNewSession = async (
+  oldSessionToken: string,
+  newSessionToken: string
 ): Promise<void> => {
-  // Decrypt with old password
-  const keyPair = await unlockPrivateKey(oldPassword);
+  const identity = await loadDeviceIdentity();
+  if (!identity) {
+    throw new Error('Device identity not found');
+  }
 
-  // Re-encrypt with new password
-  const encryptedKey = await encryptPrivateKey(new Uint8Array(keyPair.secretKey), newPassword);
+  // Decrypt with old session
+  const keyPair = await unlockPrivateKey(oldSessionToken);
+
+  // Re-encrypt with new session
+  const encryptedKey = await encryptPrivateKey(
+    new Uint8Array(keyPair.secretKey), 
+    newSessionToken,
+    identity.deviceId
+  );
   await set(ENCRYPTED_KEYPAIR_KEY, encryptedKey);
 };
