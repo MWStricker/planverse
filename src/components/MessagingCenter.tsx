@@ -83,11 +83,16 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [showChatSettings, setShowChatSettings] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isSavingOrder = useRef(false);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
-  // Sync local conversations with hook updates
+  // Sync local conversations with hook updates (but not during drag-and-drop saves)
   useEffect(() => {
+    if (isSavingOrder.current) {
+      console.log('Skipping conversation sync - save in progress');
+      return;
+    }
     setConversations(hookConversations);
   }, [hookConversations]);
 
@@ -587,6 +592,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     if (oldIndex === -1 || newIndex === -1) return;
 
+    // Set flag to prevent sync from overwriting our changes
+    isSavingOrder.current = true;
+
     // OPTIMISTIC UPDATE: Reorder immediately in UI
     const reorderedConversations = arrayMove(conversations, oldIndex, newIndex);
     setConversations(reorderedConversations);
@@ -595,7 +603,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     const updates = reorderedConversations.map((conv, index) => ({
       id: conv.id,
       display_order: index,
-      // Include other required fields to avoid null errors
       user1_id: conv.user1_id,
       user2_id: conv.user2_id,
       last_message_at: conv.last_message_at
@@ -615,11 +622,19 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       if (error) throw error;
       
       console.log('Conversation order saved successfully');
-      // Silent success - database updated, UI already updated
+      
+      // Wait for database replication, then allow syncing again
+      setTimeout(() => {
+        isSavingOrder.current = false;
+      }, 500);
+      
     } catch (error) {
       console.error('Error updating conversation order:', error);
       
-      // Only refetch on error to revert
+      // Clear flag immediately on error so we can revert
+      isSavingOrder.current = false;
+      
+      // Refetch to revert to last known good state
       await fetchConversations();
       
       toast({
