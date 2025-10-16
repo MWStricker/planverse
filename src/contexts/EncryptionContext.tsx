@@ -46,9 +46,22 @@ export const EncryptionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const sessionToken = session.access_token;
         const deviceInitialized = await isDeviceInitialized();
 
-        if (!deviceInitialized) {
-          // First-time setup - generate keys automatically
-          console.log('🔐 Initializing encryption for first time...');
+        // CHECK: Does the user's profile have encryption keys?
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('public_key, device_id')
+          .eq('user_id', user.id)
+          .single();
+
+        const profileMissingKeys = !profile?.public_key || !profile?.device_id;
+
+        if (!deviceInitialized || profileMissingKeys) {
+          // Generate keys (either first time OR for legacy users)
+          console.log('🔐 Setting up encryption...', { 
+            deviceInitialized, 
+            profileMissingKeys 
+          });
+          
           const identity = await initializeDeviceIdentity(sessionToken);
           
           // Upload public key to profile
@@ -63,12 +76,7 @@ export const EncryptionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             .eq('user_id', user.id);
 
           if (error) {
-            console.error('Failed to upload public key:', error);
-            toast({
-              title: "Encryption Setup Warning",
-              description: "Could not sync encryption keys. Messages may not work.",
-              variant: "destructive"
-            });
+            throw new Error(`Failed to upload public key: ${error.message}`);
           }
 
           setKeyPair(identity.keyPair);
@@ -89,12 +97,13 @@ export const EncryptionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           console.log('✅ Encryption unlocked successfully');
         }
       } catch (error) {
-        console.error('Encryption initialization failed:', error);
+        console.error('❌ Encryption initialization failed:', error);
         toast({
-          title: "Encryption Error",
-          description: "Failed to set up message encryption. Please try logging out and back in.",
+          title: "Encryption Required",
+          description: "Message encryption could not be set up. Please contact support.",
           variant: "destructive"
         });
+        // Don't clear keys here - keep trying
       } finally {
         setIsInitializing(false);
       }

@@ -535,7 +535,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       handleProfileClick(selectedConversation.other_user.id);
                     }
                   }}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-1"
                 >
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={selectedConversation.other_user?.avatar_url} />
@@ -561,6 +561,19 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   </div>
                 </button>
               </div>
+              
+              {/* Encryption Status Banner */}
+              {isUnlocked && deviceId ? (
+                <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400 px-3 py-2 rounded mt-3">
+                  <Lock className="h-3 w-3" />
+                  <span>End-to-end encrypted</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 dark:text-yellow-400 px-3 py-2 rounded mt-3">
+                  <ShieldAlert className="h-3 w-3" />
+                  <span>Setting up encryption...</span>
+                </div>
+              )}
             </div>
 
             {/* Messages */}

@@ -218,7 +218,7 @@ export const useMessaging = () => {
       console.error('❌ Encryption not ready:', { isUnlocked, hasKeyPair: !!keyPair, deviceId });
       toast({
         title: "Encryption Not Ready",
-        description: "Please wait while we set up secure messaging...",
+        description: "Please wait while we set up secure messaging... This may take a few seconds.",
         variant: "destructive"
       });
       return false;
@@ -232,18 +232,20 @@ export const useMessaging = () => {
     });
 
     try {
-      // Get receiver's public key
+      // Get receiver's public key and display name
       const { data: receiverProfile } = await supabase
         .from('profiles')
-        .select('public_key')
+        .select('public_key, display_name')
         .eq('user_id', receiverId)
         .single();
 
       if (!receiverProfile?.public_key) {
+        console.error('❌ Recipient missing encryption:', receiverId);
         toast({
           title: "Recipient Not Ready",
-          description: "The recipient hasn't set up secure messaging yet.",
-          variant: "destructive"
+          description: `${receiverProfile?.display_name || 'This user'} needs to log in again to enable encrypted messaging.`,
+          variant: "destructive",
+          duration: 5000
         });
         return false;
       }
