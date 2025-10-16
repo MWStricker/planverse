@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, getHours } from "date-fns";
 import { EventTaskModal } from "./EventTaskModal";
+import { useProfile } from "@/hooks/useProfile";
+import { toUserTimezone } from "@/lib/timezone-utils";
 
 interface Event {
   id: string;
@@ -89,6 +91,9 @@ const getEventColorClass = (title: string) => {
 };
 
 export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek }: WeeklyCalendarViewProps) => {
+  const { profile } = useProfile();
+  const userTimezone = profile?.timezone || 'America/New_York';
+  
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,14 +135,16 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
   const getItemsForTimeSlot = (day: Date, hour: number) => {
     const dayEvents = events.filter(event => {
       if (!event.start_time) return false;
-      const eventDate = new Date(event.start_time);
+      // Convert UTC timestamp to user's timezone
+      const eventDate = toUserTimezone(event.start_time, userTimezone);
       const eventHour = eventDate.getHours();
       return isSameDay(eventDate, day) && eventHour === hour;
     });
     
     const dayTasks = tasks.filter(task => {
       if (!task.due_date) return false;
-      const taskDate = new Date(task.due_date);
+      // Convert UTC timestamp to user's timezone
+      const taskDate = toUserTimezone(task.due_date, userTimezone);
       const taskHour = taskDate.getHours();
       return isSameDay(taskDate, day) && taskHour === hour;
     });

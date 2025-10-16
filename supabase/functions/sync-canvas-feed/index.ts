@@ -216,9 +216,33 @@ function parseICSDate(dateStr: string, userTimezone: string = 'America/New_York'
       const day = cleanDateStr.substr(6, 2);
       
       // For date-only events (like Canvas assignments), create at 11:59:59 PM in user's timezone
-      // This ensures the assignment shows up at the correct time in their calendar view
-      const result = `${year}-${month}-${day}T23:59:59`;
-      console.log(`Parsed date-only: ${result} (original: ${dateStr})`);
+      // Then convert to UTC for proper storage
+      const localDateStr = `${year}-${month}-${day}T23:59:59`;
+      
+      // Timezone offset mapping (in hours, standard time)
+      // Note: This is simplified - DST would require a proper library
+      const timezoneOffsets: { [key: string]: number } = {
+        'America/New_York': -5,
+        'America/Chicago': -6, 
+        'America/Denver': -7,
+        'America/Los_Angeles': -8,
+        'America/Phoenix': -7,
+        'US/Eastern': -5,
+        'US/Central': -6,
+        'US/Mountain': -7,
+        'US/Pacific': -8,
+      };
+      
+      const offsetHours = timezoneOffsets[userTimezone] || -5; // Default to EST
+      
+      // Create date and adjust to UTC
+      const localDate = new Date(localDateStr);
+      // Subtract the offset to convert FROM local TO UTC
+      // Example: 11:59 PM Denver (UTC-7) = 6:59 AM UTC next day
+      const utcDate = new Date(localDate.getTime() - (offsetHours * 60 * 60 * 1000));
+      const result = utcDate.toISOString();
+      
+      console.log(`Parsed date-only: ${result} (original: ${dateStr}, local: ${localDateStr}, timezone: ${userTimezone})`);
       return result;
     }
     

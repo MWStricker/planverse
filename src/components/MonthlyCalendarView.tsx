@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock, BookOpen, CheckCircle, Calendar as CalendarIcon } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, isToday, isSameMonth, addMonths, subMonths } from "date-fns";
 import { EventTaskModal } from "./EventTaskModal";
+import { useProfile } from "@/hooks/useProfile";
+import { toUserTimezone } from "@/lib/timezone-utils";
 
 interface Event {
   id: string;
@@ -85,6 +87,9 @@ const getTaskColorClass = (task: Task) => {
 };
 
 export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMonth }: MonthlyCalendarViewProps) => {
+  const { profile } = useProfile();
+  const userTimezone = profile?.timezone || 'America/New_York';
+  
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -132,12 +137,16 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
   const getItemsForDay = (day: Date) => {
     const dayEvents = events.filter(event => {
       if (!event.start_time) return false;
-      return isSameDay(new Date(event.start_time), day);
+      // Convert UTC timestamp to user's timezone
+      const eventDate = toUserTimezone(event.start_time, userTimezone);
+      return isSameDay(eventDate, day);
     });
     
     const dayTasks = tasks.filter(task => {
       if (!task.due_date) return false;
-      return isSameDay(new Date(task.due_date), day);
+      // Convert UTC timestamp to user's timezone
+      const taskDate = toUserTimezone(task.due_date, userTimezone);
+      return isSameDay(taskDate, day);
     });
     
     return { events: dayEvents, tasks: dayTasks };

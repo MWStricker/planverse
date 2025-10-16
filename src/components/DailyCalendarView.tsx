@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock, BookOpen, CheckCircle, Calendar as CalendarIcon, Navigation } from "lucide-react";
 import { format, addDays, subDays, isToday, getHours, startOfDay, isSameDay } from "date-fns";
 import { EventTaskModal } from "./EventTaskModal";
+import { useProfile } from "@/hooks/useProfile";
+import { toUserTimezone } from "@/lib/timezone-utils";
 
 interface Event {
   id: string;
@@ -90,6 +92,9 @@ const getTaskColorClass = (task: Task) => {
 };
 
 export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: DailyCalendarViewProps) => {
+  const { profile } = useProfile();
+  const userTimezone = profile?.timezone || 'America/New_York';
+  
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -152,26 +157,16 @@ export const DailyCalendarView = ({ events, tasks, currentDay, setCurrentDay }: 
   const getItemsForTimeSlot = (hour: number) => {
     const dayEvents = events.filter(event => {
       if (!event.start_time) return false;
-      
-      // Special handling for Canvas 23:59:59+00:00 events - they should appear at 23:59 (11:59 PM)
-      if (event.source_provider === 'canvas' && event.start_time.includes('23:59:59+00')) {
-        return isSameDay(new Date(event.start_time), currentDay) && hour === 23;
-      }
-      
-      const eventDate = new Date(event.start_time);
+      // Convert UTC timestamp to user's timezone
+      const eventDate = toUserTimezone(event.start_time, userTimezone);
       const eventHour = eventDate.getHours();
       return isSameDay(eventDate, currentDay) && eventHour === hour;
     });
     
     const dayTasks = tasks.filter(task => {
       if (!task.due_date) return false;
-      
-      // Special handling for Canvas 23:59:59+00:00 tasks - they should appear at 23:59 (11:59 PM)
-      if (task.source_provider === 'canvas' && task.due_date.includes('23:59:59+00')) {
-        return isSameDay(new Date(task.due_date), currentDay) && hour === 23;
-      }
-      
-      const taskDate = new Date(task.due_date);
+      // Convert UTC timestamp to user's timezone
+      const taskDate = toUserTimezone(task.due_date, userTimezone);
       const taskHour = taskDate.getHours();
       return isSameDay(taskDate, currentDay) && taskHour === hour;
     });
