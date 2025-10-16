@@ -446,7 +446,7 @@ export const EventTaskModal = ({
               {isCreatingNew || isEditing ? (
                 <div>
                   <Label className="text-xs text-muted-foreground">Priority</Label>
-                  <Select value={editedPriority} onValueChange={setEditedPriority}>
+                  <Select name="task-priority" value={editedPriority} onValueChange={setEditedPriority}>
                     <SelectTrigger id="task-priority" className="w-full mt-1">
                       <SelectValue />
                     </SelectTrigger>

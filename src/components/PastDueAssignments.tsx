@@ -295,8 +295,8 @@ export const PastDueAssignments = () => {
                 />
               </div>
             </div>
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger id="past-due-priority-filter" className="w-40">
+          <Select name="past-due-priority-filter" value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger id="past-due-priority-filter" className="w-40">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>

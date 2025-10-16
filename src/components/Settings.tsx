@@ -974,6 +974,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <p className="text-sm text-muted-foreground">Adjust the size of text throughout the app</p>
             </div>
             <Select 
+              name="text-size"
               value={preferences.textSize} 
               onValueChange={(value) => updatePreference('textSize', value as any)}
             >
@@ -1184,6 +1185,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <div className="space-y-2">
                 <Label htmlFor="school">School/University</Label>
                 <Select 
+                  name="school"
                   value={editedProfile.school} 
                   onValueChange={(value) => handleProfileChange('school', value)}
                 >
@@ -1203,6 +1205,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <div className="space-y-2">
                 <Label htmlFor="major">Major</Label>
                 <Select 
+                  name="major"
                   value={editedProfile.major} 
                   onValueChange={(value) => handleProfileChange('major', value)}
                 >
@@ -1278,6 +1281,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
                 <Select 
+                  name="timezone"
                   value={editedProfile.timezone} 
                   onValueChange={(value) => handleProfileChange('timezone', value)}
                 >

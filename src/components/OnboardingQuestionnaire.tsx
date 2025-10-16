@@ -205,7 +205,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
         <div className="space-y-2 animate-fade-in">
           <Textarea
             id={`${componentId}-${question.field}`}
-            name={question.field}
+            name={`${componentId}-${question.field}`}
             value={answers[question.field] || ''}
             onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
             onKeyDown={(e) => {
@@ -229,7 +229,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
     return (
       <Input
         id={`${componentId}-${question.field}`}
-        name={question.field}
+        name={`${componentId}-${question.field}`}
         value={answers[question.field] || ''}
         onChange={(e) => setAnswers(prev => ({ ...prev, [question.field]: e.target.value }))}
         onKeyDown={(e) => {
