@@ -1,4 +1,4 @@
-import React, { memo, useRef } from 'react';
+import React, { memo, useRef, useState, useEffect } from 'react';
 import { Heart, MessageCircle, School, Users, GraduationCap, Hash, Trash2, MoreVertical, ShieldAlert, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,9 @@ import { useIntersectionObserver } from '@/lib/performance';
 import { Post } from '@/hooks/useConnect';
 import { formatDistanceToNow } from 'date-fns';
 import { hapticSelection } from '@/lib/haptics';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 
 interface PostCardProps {
   post: Post;
@@ -25,6 +28,9 @@ interface PostCardProps {
 export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onImageClick, onProfileClick }: PostCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const { hasIntersected } = useIntersectionObserver(cardRef, { rootMargin: '100px' });
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const [hasTrackedView, setHasTrackedView] = useState(false);
   
   const formatTimeAgo = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
@@ -41,6 +47,52 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
     setOptimisticLikesCount(post.likes_count);
   }, [post.user_liked, post.likes_count]);
 
+  // Track view when post is visible
+  useEffect(() => {
+    if (!hasIntersected || !post.id || hasTrackedView || !user?.id) return;
+    
+    const trackView = async () => {
+      // Wait 2 seconds before tracking (ensures user actually viewed)
+      const timer = setTimeout(async () => {
+        try {
+          await supabase.functions.invoke('track-post-view', {
+            body: {
+              postId: post.id,
+              viewerId: user.id,
+              viewerSchool: profile?.school || null,
+              viewerMajor: profile?.major || null
+            }
+          });
+          setHasTrackedView(true);
+          console.log(`Tracked view for post ${post.id}`);
+        } catch (error) {
+          console.error('Error tracking post view:', error);
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    };
+    
+    trackView();
+  }, [hasIntersected, post.id, user?.id, profile?.school, profile?.major, hasTrackedView]);
+
+  const trackEngagement = async (type: 'like' | 'comment' | 'share' | 'click') => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await supabase.rpc('upsert_daily_analytics', {
+        p_post_id: post.id,
+        p_date: today,
+        p_increment_impressions: 0,
+        p_increment_clicks: type === 'click' ? 1 : 0,
+        p_increment_likes: type === 'like' ? 1 : 0,
+        p_increment_comments: type === 'comment' ? 1 : 0,
+        p_increment_shares: type === 'share' ? 1 : 0
+      });
+    } catch (error) {
+      console.error('Error tracking engagement:', error);
+    }
+  };
+
   const handleLikeClick = async () => {
     // Optimistic update with haptic feedback (Phase 1 & 3)
     const wasLiked = optimisticLiked;
@@ -50,11 +102,26 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
 
     try {
       await onLike(post.id);
+      
+      // Track like engagement
+      if (!wasLiked) {
+        await trackEngagement('like');
+      }
     } catch (error) {
       // Revert on failure
       setOptimisticLiked(wasLiked);
       setOptimisticLikesCount(post.likes_count);
     }
+  };
+  
+  const handleCommentClick = async () => {
+    onComment(post);
+    await trackEngagement('comment');
+  };
+  
+  const handleImageClick = async () => {
+    onImageClick(post.image_url!);
+    await trackEngagement('click');
   };
 
   // Skeleton loading (Phase 2)
@@ -223,7 +290,7 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
             loading="lazy"
             decoding="async"
             className="w-full rounded-lg mb-4 max-h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity will-change-transform"
-            onClick={() => onImageClick(post.image_url!)}
+            onClick={handleImageClick}
           />
         )}
 
@@ -243,7 +310,7 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onComment(post)}
+              onClick={handleCommentClick}
               className="flex items-center gap-2 text-muted-foreground transition-colors will-change-transform"
             >
               <MessageCircle className="h-4 w-4" />

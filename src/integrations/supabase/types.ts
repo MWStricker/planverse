@@ -617,6 +617,47 @@ export type Database = {
         }
         Relationships: []
       }
+      post_views: {
+        Row: {
+          id: string
+          is_unique_view: boolean | null
+          post_id: string
+          session_duration: number | null
+          viewed_at: string | null
+          viewer_id: string | null
+          viewer_major: string | null
+          viewer_school: string | null
+        }
+        Insert: {
+          id?: string
+          is_unique_view?: boolean | null
+          post_id: string
+          session_duration?: number | null
+          viewed_at?: string | null
+          viewer_id?: string | null
+          viewer_major?: string | null
+          viewer_school?: string | null
+        }
+        Update: {
+          id?: string
+          is_unique_view?: boolean | null
+          post_id?: string
+          session_duration?: number | null
+          viewed_at?: string | null
+          viewer_id?: string | null
+          viewer_major?: string | null
+          viewer_school?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           comments_count: number | null
@@ -1194,9 +1235,44 @@ export type Database = {
         Args: { post_id: string }
         Returns: undefined
       }
+      get_analytics_timeseries: {
+        Args: { p_days?: number; p_user_id: string }
+        Returns: {
+          clicks: number
+          date: string
+          engagement: number
+          impressions: number
+        }[]
+      }
+      get_individual_post_analytics: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          engagement_rate: number
+          is_promoted: boolean
+          post_content: string
+          post_created_at: string
+          post_id: string
+          post_image_url: string
+          total_clicks: number
+          total_comments: number
+          total_impressions: number
+          total_likes: number
+          total_shares: number
+        }[]
+      }
       get_or_create_conversation: {
         Args: { other_user_id: string }
         Returns: string
+      }
+      get_post_analytics_summary: {
+        Args: { p_time_range?: unknown; p_user_id: string }
+        Returns: {
+          active_promotions: number
+          avg_engagement_rate: number
+          total_engagement: number
+          total_impressions: number
+          total_posts: number
+        }[]
       }
       get_suggested_matches: {
         Args: { match_limit?: number; target_user_id: string }
@@ -1228,6 +1304,20 @@ export type Database = {
       test_auth_uid: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      upsert_daily_analytics: {
+        Args: {
+          p_date: string
+          p_increment_clicks?: number
+          p_increment_comments?: number
+          p_increment_impressions?: number
+          p_increment_likes?: number
+          p_increment_shares?: number
+          p_post_id: string
+          p_viewer_major?: string
+          p_viewer_school?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
