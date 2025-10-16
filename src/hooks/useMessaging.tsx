@@ -232,18 +232,24 @@ export const useMessaging = () => {
     });
 
     try {
-      // Get receiver's public key and display name
+      // Get receiver's public key, display name, and onboarding status
       const { data: receiverProfile } = await supabase
         .from('profiles')
-        .select('public_key, display_name')
+        .select('public_key, display_name, onboarding_completed')
         .eq('user_id', receiverId)
         .single();
 
       if (!receiverProfile?.public_key) {
         console.error('❌ Recipient missing encryption:', receiverId);
+        
+        // Check if it's because they haven't completed onboarding
+        const reason = !receiverProfile?.onboarding_completed
+          ? "needs to complete their profile setup first"
+          : "needs to log in to enable encrypted messaging";
+        
         toast({
-          title: "Recipient Not Ready",
-          description: `${receiverProfile?.display_name || 'This user'} needs to log in again to enable encrypted messaging.`,
+          title: "Can't Send Message",
+          description: `${receiverProfile?.display_name || 'This user'} ${reason}.`,
           variant: "destructive",
           duration: 5000
         });

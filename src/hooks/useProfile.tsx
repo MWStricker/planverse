@@ -32,6 +32,7 @@ interface ProfileContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | undefined>;
   uploadAvatar: (file: File) => Promise<void>;
   refetch: () => Promise<void>;
+  fetchProfile: () => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -264,6 +265,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       updateProfile,
       uploadAvatar,
       refetch: fetchProfile,
+      fetchProfile,
     }}>
       {children}
     </ProfileContext.Provider>
