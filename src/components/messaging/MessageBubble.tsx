@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Message } from '@/hooks/useMessaging';
 import { useReactions } from '@/hooks/useReactions';
 import { ReactionBar } from './ReactionBar';
@@ -16,6 +16,8 @@ interface MessageBubbleProps {
   onReactionClick: (messageId: string) => void;
   onPin?: (messageId: string) => void;
   isPinned?: boolean;
+  forceShowReactionBar?: boolean;
+  onReactionBarClose?: () => void;
 }
 
 export const MessageBubble = ({
@@ -24,7 +26,9 @@ export const MessageBubble = ({
   isTemp,
   onImageClick,
   onLongPress,
-  onReactionClick
+  onReactionClick,
+  forceShowReactionBar = false,
+  onReactionBarClose
 }: MessageBubbleProps) => {
   const [showReactionBar, setShowReactionBar] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -82,7 +86,15 @@ export const MessageBubble = ({
   const handleReact = async (emoji: string) => {
     await addReaction(message.id, emoji);
     setShowReactionBar(false);
+    onReactionBarClose?.();
   };
+
+  // Listen for external trigger to show reaction bar
+  useEffect(() => {
+    if (forceShowReactionBar) {
+      setShowReactionBar(true);
+    }
+  }, [forceShowReactionBar]);
 
   return (
     <div

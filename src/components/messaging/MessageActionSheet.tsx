@@ -5,7 +5,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Copy, Trash2, CornerUpLeft, Flag, XCircle, Pin, PinOff } from 'lucide-react';
+import { Copy, Trash2, CornerUpLeft, Flag, XCircle, Pin, PinOff, Smile } from 'lucide-react';
 
 interface MessageActionSheetProps {
   open: boolean;
@@ -23,6 +23,7 @@ interface MessageActionSheetProps {
   onUnsend?: () => void;
   onReport?: () => void;
   onPin?: (messageId: string) => void;
+  onReact?: () => void;
   isPinned?: boolean;
   canPin?: boolean;
 }
@@ -38,6 +39,7 @@ export const MessageActionSheet = ({
   onUnsend,
   onReport,
   onPin,
+  onReact,
   isPinned,
   canPin = true,
 }: MessageActionSheetProps) => {
@@ -57,6 +59,17 @@ export const MessageActionSheet = ({
           <SheetTitle>Message actions</SheetTitle>
         </SheetHeader>
         <div className="mt-6 space-y-2">
+          {onReact && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3"
+              onClick={() => handleAction(onReact)}
+            >
+              <Smile className="h-4 w-4" />
+              React
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             className="w-full justify-start gap-3"

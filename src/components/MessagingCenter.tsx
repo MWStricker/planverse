@@ -73,6 +73,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [profileLoading, setProfileLoading] = useState(false);
   const [reactionSheetMessage, setReactionSheetMessage] = useState<Message | null>(null);
   const [actionSheetMessage, setActionSheetMessage] = useState<Message | null>(null);
+  const [reactionBarMessageId, setReactionBarMessageId] = useState<string | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1232,6 +1233,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                             }}
                             onPin={handlePinMessage}
                             isPinned={pinnedMessages.some(p => p.id === message.id)}
+                            forceShowReactionBar={reactionBarMessageId === message.id}
+                            onReactionBarClose={() => setReactionBarMessageId(null)}
                           />
                         </div>
                       );
@@ -1358,6 +1361,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           onOpenChange={(open) => !open && setActionSheetMessage(null)}
           message={actionSheetMessage}
           currentUserId={user.id}
+          onReact={() => {
+            setReactionBarMessageId(actionSheetMessage.id);
+            setActionSheetMessage(null);
+          }}
           onReply={() => {
             setReplyToMessage(actionSheetMessage);
             setActionSheetMessage(null);
