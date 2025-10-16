@@ -421,6 +421,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   const handleSelectConversation = (conversation: Conversation) => {
     if (!conversation.other_user) return;
+    
+    // Prevent re-selecting the same conversation (avoids refresh)
+    if (selectedConversation?.id === conversation.id) {
+      console.log('[MessagingCenter] Clicked on active conversation, preventing refresh');
+      return;
+    }
+    
+    console.log('[MessagingCenter] Selecting new conversation:', conversation.id);
     setSelectedConversation(conversation);
     fetchMessages(conversation.id, conversation.other_user.id);
   };
