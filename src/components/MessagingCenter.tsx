@@ -660,10 +660,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       
       console.log('Conversation order saved successfully');
       
-      // Wait for database replication, then allow syncing again
-      setTimeout(() => {
-        isSavingOrder.current = false;
-      }, 500);
+      // Refetch conversations to get the latest order from database
+      await fetchConversations();
+      
+      // Now it's safe to allow syncing again
+      isSavingOrder.current = false;
       
     } catch (error) {
       console.error('Error updating conversation order:', error);
