@@ -764,6 +764,8 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
                     <Input
+                      id="primary-color-hex-input"
+                      name="primary-color-hex-input"
                       value={customPrimaryColor}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -777,6 +779,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     />
                     <input
                       id="primary-color-input"
+                      name="primary-color-input"
                       type="color"
                       value={customPrimaryColor}
                       onChange={(e) => setCustomPrimaryColor(e.target.value)}
@@ -844,6 +847,8 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
                     <Input
+                      id="secondary-color-hex-input"
+                      name="secondary-color-hex-input"
                       value={customSecondaryColor}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -857,6 +862,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                     />
                     <input
                       id="secondary-color-input"
+                      name="secondary-color-input"
                       type="color"
                       value={customSecondaryColor}
                       onChange={(e) => setCustomSecondaryColor(e.target.value)}
@@ -912,6 +918,8 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               </div>
               <div className="relative">
                 <input
+                  id="corner-radius-slider"
+                  name="corner-radius-slider"
                   type="range"
                   min="0"
                   max="100"
@@ -1117,6 +1125,8 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
               </div>
               
               <input
+                id="avatar-upload"
+                name="avatar-upload"
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"

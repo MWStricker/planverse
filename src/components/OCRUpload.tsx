@@ -236,6 +236,8 @@ export const OCRUpload = () => {
             </CardHeader>
             <CardContent>
               <Textarea
+                id="ocr-extracted-text"
+                name="ocr-extracted-text"
                 value={extractedText}
                 readOnly
                 className="min-h-[200px] resize-none"
@@ -255,6 +257,8 @@ export const OCRUpload = () => {
               </CardHeader>
               <CardContent>
                 <Textarea
+                  id="ocr-paraphrased-text"
+                  name="ocr-paraphrased-text"
                   value={paraphrasedText}
                   onChange={(e) => setParaphrasedText(e.target.value)}
                   className="min-h-[200px]"

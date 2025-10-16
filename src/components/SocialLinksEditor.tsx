@@ -107,6 +107,7 @@ export const SocialLinksEditor: React.FC<SocialLinksEditorProps> = ({ initialLin
                 <div className="relative">
                   <Input
                     id={platform.id}
+                    name={platform.id}
                     type="url"
                     value={url}
                     onChange={(e) => handleLinkChange(platform.id, e.target.value)}

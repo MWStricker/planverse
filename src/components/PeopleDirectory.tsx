@@ -403,8 +403,10 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                 Discover People
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+          <CardContent className="space-y-4">
               <Input
+                id="people-search"
+                name="people-search"
                 placeholder="Search by name, school, major, or bio..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}

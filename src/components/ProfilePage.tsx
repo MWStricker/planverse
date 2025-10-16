@@ -422,15 +422,16 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
                     </FloatingActionPanelRoot>
                   </div>
 
-                  <div>
-                    <Label htmlFor="campus_location">Campus Location</Label>
-                    <Input
-                      id="campus_location"
-                      value={formData.campus_location}
-                      onChange={(e) => setFormData({ ...formData, campus_location: e.target.value })}
-                      placeholder="e.g., Main Campus, Downtown"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor="campus_location">Campus Location</Label>
+                        <Input
+                          id="campus_location"
+                          name="campus_location"
+                          value={formData.campus_location}
+                          onChange={(e) => setFormData({ ...formData, campus_location: e.target.value })}
+                          placeholder="e.g., Main Campus, Downtown"
+                        />
+                      </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -492,6 +493,7 @@ export const ProfilePage = ({ open, onOpenChange }: ProfilePageProps) => {
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
+                    name="bio"
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     placeholder="Write a short bio about yourself..."

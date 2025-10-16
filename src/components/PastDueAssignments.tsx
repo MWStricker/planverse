@@ -286,6 +286,8 @@ export const PastDueAssignments = () => {
               <div className="relative">
                 <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
+                  id="past-due-search"
+                  name="past-due-search"
                   placeholder="Search past due items..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

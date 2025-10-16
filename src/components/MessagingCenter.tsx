@@ -1284,6 +1284,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   <Upload className="h-4 w-4" />
                 </Button>
                 <AutoTextarea
+                  id="message-input"
+                  name="message-input"
                   value={newMessage}
                   onChange={(e) => {
                     setNewMessage(e.target.value);
@@ -1307,6 +1309,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 </Button>
               </div>
               <input
+                id="message-image-upload"
+                name="message-image-upload"
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"

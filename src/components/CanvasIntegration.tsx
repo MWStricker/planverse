@@ -570,6 +570,7 @@ export const CanvasIntegration = () => {
               </label>
               <Input
                 id="canvasFeedUrl"
+                name="canvasFeedUrl"
                 type="url"
                 value={canvasFeedUrl}
                 onChange={(e) => setCanvasFeedUrl(e.target.value)}

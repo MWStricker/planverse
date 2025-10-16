@@ -117,6 +117,8 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         {/* Search */}
         <div className="space-y-2">
           <Input
+            id="post-search"
+            name="post-search"
             placeholder="Search posts..."
             value={searchQuery}
             onChange={(e) => handleFilterUpdate({ search: e.target.value })}

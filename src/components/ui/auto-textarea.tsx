@@ -7,7 +7,10 @@ export interface AutoTextareaProps
 }
 
 const AutoTextarea = React.forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
-  ({ className, maxHeight = 120, ...props }, ref) => {
+  ({ className, maxHeight = 120, id, name, ...props }, ref) => {
+    const autoId = React.useId();
+    const textareaId = id || autoId;
+    const textareaName = name || textareaId;
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
     const adjustHeight = () => {
@@ -31,6 +34,8 @@ const AutoTextarea = React.forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
 
     return (
       <textarea
+        id={textareaId}
+        name={textareaName}
         className={cn(
           "flex min-h-[40px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-[height] duration-100",
           className

@@ -211,6 +211,7 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
             
             <Textarea
               id="description"
+              name="description"
               placeholder="Describe your event... (e.g., 'Math exam tomorrow at 2pm')"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

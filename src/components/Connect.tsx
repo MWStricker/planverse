@@ -521,13 +521,14 @@ export const Connect = () => {
                   </Avatar>
                   <div className="flex-1 space-y-2">
                     <Input
+                      id="comment-input"
+                      name="comment-input"
                       placeholder="Write a comment..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
                       autoComplete="off"
                       data-form-type="other"
-                      name="comment-input"
                     />
                     <Button 
                       size="sm" 

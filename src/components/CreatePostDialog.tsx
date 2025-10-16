@@ -235,6 +235,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
             <Label htmlFor="content">What's on your mind?</Label>
             <Textarea
               id="content"
+              name="content"
               placeholder="Share something with your community..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -404,6 +405,8 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
             {tags.length < 5 && (
               <div className="flex gap-2">
                 <Input
+                  id="post-tag-input"
+                  name="post-tag-input"
                   placeholder="Add a tag..."
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
@@ -452,11 +455,12 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <input
+                  id="image-upload"
+                  name="image-upload"
                   type="file"
                   accept="image/*"
                   onChange={handleImageSelect}
                   className="hidden"
-                  id="image-upload"
                 />
                 <label htmlFor="image-upload">
                   <Button
