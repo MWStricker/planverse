@@ -95,11 +95,19 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               return updated;
             }
             
-            // Check for duplicate (already exists)
-            if (prev.some(m => m.id === newMessage.id)) {
+            // Check for duplicate by ID or similar content/timestamp
+            const isDuplicate = prev.some(m => 
+              m.id === newMessage.id ||
+              (m.content === newMessage.content &&
+               Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 2000)
+            );
+            
+            if (isDuplicate) {
+              console.log('Duplicate message detected, skipping:', newMessage.id);
               return prev;
             }
             
+            console.log('Adding new message from realtime:', newMessage.id);
             // New message from other user
             return [...prev, newMessage];
           });
@@ -323,30 +331,32 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           return;
         }
         
-        // SUCCESS: Fetch the latest message as fallback in case realtime doesn't fire
+        // SUCCESS: Refresh messages with proper decryption if realtime doesn't fire
         setTimeout(async () => {
-          const { data: latestMessages } = await supabase
-            .from('messages')
-            .select('*')
-            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${selectedConversation.other_user.id}),and(sender_id.eq.${selectedConversation.other_user.id},receiver_id.eq.${user.id})`)
-            .order('created_at', { ascending: false })
-            .limit(1);
+          console.log('Fallback: Refreshing messages to ensure proper decryption');
+          const refreshedMessages = await fetchMessages(
+            selectedConversation.id,
+            selectedConversation.other_user.id
+          );
           
-          if (latestMessages && latestMessages.length > 0) {
-            const realMessage = latestMessages[0];
-            setLocalMessages(prev => {
-              // Replace temp message with real one if it still exists
-              const tempIndex = prev.findIndex(m => m.id === tempMessage.id);
-              if (tempIndex !== -1) {
-                console.log('Fallback: Replacing temp message with fetched message');
+          if (!refreshedMessages) return;
+          
+          // Replace temp message with decrypted real message
+          setLocalMessages(prev => {
+            const tempIndex = prev.findIndex(m => m.id === tempMessage.id);
+            if (tempIndex !== -1 && refreshedMessages.length > 0) {
+              console.log('Fallback: Replacing temp message with decrypted message');
+              // Find the newest message from refreshed list
+              const newestMessage = refreshedMessages[refreshedMessages.length - 1];
+              if (newestMessage) {
                 const updated = [...prev];
-                updated[tempIndex] = realMessage;
+                updated[tempIndex] = newestMessage;
                 return updated;
               }
-              return prev;
-            });
-          }
-        }, 500); // Wait 500ms for database to process
+            }
+            return prev;
+          });
+        }, 1000); // Wait 1s for database to process and encrypt
       });
 
     // Set timeout to remove temp message if not replaced within 10 seconds

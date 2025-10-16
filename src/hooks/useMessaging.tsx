@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useEncryption } from '@/contexts/EncryptionContext';
 import { encryptMessage, decryptMessage } from '@/lib/crypto/encryption';
+import { encodeBase64 } from 'tweetnacl-util';
 import { toast } from '@/hooks/use-toast';
 
 export interface Message {
@@ -119,8 +120,8 @@ export const useMessaging = () => {
     }
   };
 
-  const fetchMessages = async (conversationId: string, otherUserId: string) => {
-    if (!user || !keyPair) return;
+  const fetchMessages = async (conversationId: string, otherUserId: string): Promise<Message[]> => {
+    if (!user || !keyPair) return [];
 
     try {
       setLoading(true);
@@ -137,7 +138,7 @@ export const useMessaging = () => {
       if (!data || data.length === 0) {
         setMessages([]);
         setLoading(false);
-        return;
+        return [];
       }
 
       // Get unique sender IDs and fetch profiles with public keys
@@ -160,30 +161,46 @@ export const useMessaging = () => {
           try {
             const senderProfile = profileMap.get(message.sender_id);
             if (senderProfile?.public_key && keyPair) {
+              console.log('🔓 Decrypting message:', {
+                messageId: message.id,
+                senderId: message.sender_id,
+                receiverId: message.receiver_id,
+                hasNonce: !!message.nonce,
+                nonceLength: message.nonce?.length,
+                ciphertextLength: message.content?.length,
+                senderPublicKeyPrefix: senderProfile.public_key.substring(0, 10),
+                recipientPublicKeyPrefix: encodeBase64(keyPair.publicKey).substring(0, 10),
+              });
+
               const encryptedData = {
                 ciphertext: message.content,
                 nonce: message.nonce,
                 senderPublicKey: senderProfile.public_key
               };
               
-              console.log('🔓 Decrypting message:', message.id);
               decryptedContent = decryptMessage(
                 encryptedData,
                 senderProfile.public_key,
                 keyPair
               );
-              console.log('✅ Decryption successful');
+              console.log('✅ Decryption successful for message:', message.id);
             } else {
               messageStatus = 'decrypt_failed_keys';
               decryptedContent = "[Unable to decrypt - missing keys]";
-              console.warn('Missing keys for decryption:', { 
+              console.error('❌ Decryption failed - Missing keys:', { 
+                messageId: message.id,
                 hasPublicKey: !!senderProfile?.public_key, 
-                hasKeyPair: !!keyPair 
+                hasKeyPair: !!keyPair,
+                keyPairPublicKey: keyPair ? encodeBase64(keyPair.publicKey).substring(0, 10) : 'none',
               });
             }
           } catch (error) {
             messageStatus = 'decrypt_failed_error';
-            console.error('Decryption failed for message:', message.id, error);
+            console.error('❌ Decryption error for message:', message.id, {
+              error: error instanceof Error ? error.message : 'Unknown error',
+              nonceLength: message.nonce?.length,
+              contentLength: message.content?.length,
+            });
             decryptedContent = "[Unable to decrypt message]";
           }
         } else if (message.is_encrypted === true && !message.nonce) {
@@ -203,8 +220,10 @@ export const useMessaging = () => {
       });
 
       setMessages(messagesWithProfiles);
+      return messagesWithProfiles;
     } catch (error) {
       console.error('Error fetching messages:', error);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -255,6 +274,26 @@ export const useMessaging = () => {
         });
         return false;
       }
+
+      // Validate recipient's public key format
+      if (receiverProfile.public_key.length < 20) {
+        console.error('❌ Invalid recipient public key:', {
+          receiverId,
+          publicKeyLength: receiverProfile.public_key.length,
+        });
+        toast({
+          title: "Can't Send Message",
+          description: "Recipient's encryption keys are not properly configured.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('✅ Recipient encryption validated:', {
+        receiverId,
+        receiverPublicKeyPrefix: receiverProfile.public_key.substring(0, 10),
+        senderPublicKeyPrefix: encodeBase64(keyPair.publicKey).substring(0, 10),
+      });
 
       // Encrypt message content
       const messageText = content.trim() || '';
