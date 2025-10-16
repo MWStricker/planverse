@@ -57,7 +57,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { conversations, messages, loading, fetchConversations, fetchMessages, sendMessage } = useMessaging();
+  const { conversations: hookConversations, messages, loading, fetchConversations, fetchMessages, sendMessage } = useMessaging();
+  const [conversations, setConversations] = useState<Conversation[]>(hookConversations);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -84,6 +85,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
+
+  // Sync local conversations with hook updates
+  useEffect(() => {
+    setConversations(hookConversations);
+  }, [hookConversations]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -554,6 +560,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     // OPTIMISTIC UPDATE: Reorder immediately in UI
     const reorderedConversations = arrayMove(conversations, oldIndex, newIndex);
+    setConversations(reorderedConversations);
     
     const updates = reorderedConversations.map((conv, index) => ({
       id: conv.id,
@@ -569,8 +576,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           .eq('id', update.id);
       }
       
-      // Silent success - no toast, no refetch
-      fetchConversations();
+      // Silent success - database updated, UI already updated
     } catch (error) {
       console.error('Error updating conversation order:', error);
       

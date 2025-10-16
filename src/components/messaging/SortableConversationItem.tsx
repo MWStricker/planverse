@@ -80,18 +80,21 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
           className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
           onClick={() => onSelect(conversation)}
         >
-          <Avatar className="h-12 w-12 relative">
-            <AvatarImage src={conversation.other_user?.avatar_url} />
-            <AvatarFallback>
-              {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
-            </AvatarFallback>
-            {/* Unread indicator - only show if truly unread */}
+          <div className="relative">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={conversation.other_user?.avatar_url} />
+              <AvatarFallback>
+                {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            
+            {/* Unread indicator - positioned outside avatar */}
             {conversation.unread_count != null && conversation.unread_count > 0 && (
-              <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+              <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-[10px] text-white font-bold border-2 border-background">
                 {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
               </div>
             )}
-          </Avatar>
+          </div>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
