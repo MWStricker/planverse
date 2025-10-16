@@ -267,9 +267,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   // Fetch pinned messages
   useEffect(() => {
-    const fetchPinnedMessages = async () => {
-      if (!selectedConversation) return;
+    if (!selectedConversation) {
+      setPinnedMessages([]);
+      return;
+    }
 
+    const fetchPinnedMessages = async () => {
+      console.log('[Pins] Fetching pinned messages for conversation:', selectedConversation.id);
+      
       const { data, error } = await supabase
         .from('message_pins')
         .select(`
@@ -285,13 +290,36 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         .eq('conversation_id', selectedConversation.id)
         .order('pinned_at', { ascending: false });
 
-      if (!error && data) {
-        setPinnedMessages(data.map((pin: any) => ({
+      if (error) {
+        console.error('[Pins] Error fetching pinned messages:', error);
+        
+        // Handle specific error cases
+        if (error.code === '42P01') {
+          console.warn('[Pins] message_pins table not found - feature not yet available');
+        } else if (error.code === 'PGRST116') {
+          console.warn('[Pins] Foreign key relationship issue - schema needs migration');
+        } else {
+          console.error('[Pins] Unexpected error:', error.message);
+        }
+        
+        // Don't crash the UI - just clear pins
+        setPinnedMessages([]);
+        return;
+      }
+
+      if (data) {
+        const mappedPins = data.map((pin: any) => ({
           id: pin.messages.id,
           content: pin.messages.content,
-          sender_name: pin.messages.sender_profile.display_name,
+          sender_name: pin.messages.sender_profile?.display_name || 'Unknown',
           created_at: pin.messages.created_at
-        })));
+        }));
+        
+        console.log('[Pins] Successfully fetched', mappedPins.length, 'pinned messages');
+        setPinnedMessages(mappedPins);
+      } else {
+        console.log('[Pins] No pinned messages found');
+        setPinnedMessages([]);
       }
     };
 
