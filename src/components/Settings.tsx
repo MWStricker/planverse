@@ -108,6 +108,10 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   const [customPrimaryColor, setCustomPrimaryColor] = useState('#3b82f6');
   const [customSecondaryColor, setCustomSecondaryColor] = useState('#8b5cf6');
   const [isChangingColor, setIsChangingColor] = useState(false);
+  
+  // Account type dialog state - MUST be at component top level
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showDowngradeDialog, setShowDowngradeDialog] = useState(false);
   const [showImageCropper, setShowImageCropper] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   
@@ -1845,9 +1849,6 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   );
 
   const renderAccountType = () => {
-    const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-    const [showDowngradeDialog, setShowDowngradeDialog] = useState(false);
-    
     const isProfessional = profile?.account_type?.startsWith('professional_');
     
     const handleUpgrade = async (accountType: 'professional_business' | 'professional_creator') => {
