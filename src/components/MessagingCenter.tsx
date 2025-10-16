@@ -500,12 +500,13 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       console.log('[MessagingCenter] Toggling pin for conversation:', conversationId, 'from', currentPinStatus, 'to', !currentPinStatus);
       
       const newPinnedStatus = !currentPinStatus;
+      const newDisplayOrder = newPinnedStatus ? -1 : 0;
+      
       const { error } = await supabase
         .from('conversations')
         .update({ 
           is_pinned: newPinnedStatus,
-          // Reset display_order when pinning to float to top
-          display_order: newPinnedStatus ? -1 : null
+          display_order: newDisplayOrder
         })
         .eq('id', conversationId);
 
@@ -515,7 +516,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       setConversations(prev =>
         prev.map(conv =>
           conv.id === conversationId
-            ? { ...conv, is_pinned: newPinnedStatus, display_order: newPinnedStatus ? -1 : null }
+            ? { ...conv, is_pinned: newPinnedStatus, display_order: newDisplayOrder }
             : conv
         )
       );
@@ -604,6 +605,19 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     if (oldIndex === -1 || newIndex === -1) return;
 
+    const movedConv = conversations[oldIndex];
+    const targetConv = conversations[newIndex];
+
+    // Don't allow dragging between pinned/unpinned sections
+    if (movedConv.is_pinned !== targetConv.is_pinned) {
+      toast({
+        title: "Cannot move",
+        description: "Cannot move between pinned and unpinned conversations",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Set flag to prevent sync from overwriting our changes
     isSavingOrder.current = true;
 
@@ -611,13 +625,25 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     const reorderedConversations = arrayMove(conversations, oldIndex, newIndex);
     setConversations(reorderedConversations);
     
-    // Prepare batch updates with new display_order for ALL conversations
-    const updates = reorderedConversations.map((conv, index) => ({
-      id: conv.id,
-      display_order: index,
-      user1_id: conv.user1_id,
-      user2_id: conv.user2_id
-    }));
+    // Separate pinned and unpinned conversations
+    const pinnedConvs = reorderedConversations.filter(c => c.is_pinned);
+    const unpinnedConvs = reorderedConversations.filter(c => !c.is_pinned);
+    
+    // Assign display_order: negatives for pinned, positives for unpinned
+    const updates = [
+      ...pinnedConvs.map((conv, index) => ({
+        id: conv.id,
+        display_order: -(index + 1), // -1, -2, -3, ...
+        user1_id: conv.user1_id,
+        user2_id: conv.user2_id
+      })),
+      ...unpinnedConvs.map((conv, index) => ({
+        id: conv.id,
+        display_order: index, // 0, 1, 2, ...
+        user1_id: conv.user1_id,
+        user2_id: conv.user2_id
+      }))
+    ];
 
     try {
       console.log('Saving conversation order:', updates);
