@@ -22,8 +22,15 @@ import { CreatePostDialog } from './CreatePostDialog';
 import { PostFilters } from './PostFilters';
 import { PublicProfile as PublicProfileComponent } from './PublicProfile';
 import { formatDistanceToNow } from 'date-fns';
+import { TrendingUp } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
 
-export const Connect = () => {
+interface ConnectProps {
+  onNavigateToAnalytics?: () => void;
+}
+
+export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
+  const { profile } = useProfile();
   const { user } = useAuth();
   const { posts, loading, createPost, deletePost, toggleLike, fetchComments, addComment, fetchPublicProfile } = useConnect();
   const { sendFriendRequest, checkFriendshipStatus } = useFriends();
@@ -360,6 +367,19 @@ export const Connect = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Student Connect</h1>
+        
+        {/* Analytics Button - Only for Professional Accounts */}
+        {profile?.account_type?.startsWith('professional_') && onNavigateToAnalytics && (
+          <Button 
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={onNavigateToAnalytics}
+          >
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">View Analytics</span>
+            <span className="sm:hidden">Analytics</span>
+          </Button>
+        )}
       </div>
 
       {/* Main Content Tabs */}

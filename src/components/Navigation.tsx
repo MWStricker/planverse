@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical, ChevronLeft, Menu, TrendingUp } from "lucide-react";
+import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical, ChevronLeft, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -151,17 +151,8 @@ export const Navigation = ({
       { id: 'upload', label: 'Image Upload', icon: Upload },
     ];
     
-    // Only add Analytics for professional accounts (business or creator)
-    if (profile?.account_type?.startsWith('professional_')) {
-      baseItems.push({ 
-        id: 'analytics', 
-        label: 'Analytics', 
-        icon: TrendingUp 
-      });
-    }
-    
     return baseItems;
-  }, [profile?.account_type]);
+  }, []);
 
   const {
     sensors,

@@ -206,7 +206,7 @@ const IndexContent = () => {
       case 'connect':
         return (
           <Suspense fallback={<PageLoader />}>
-            <Connect />
+            <Connect onNavigateToAnalytics={() => setCurrentPage('analytics')} />
           </Suspense>
         );
       case 'settings':

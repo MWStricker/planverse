@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Home, Users, Upload, Settings, User, TrendingUp } from "lucide-react";
+import { Home, Users, Upload, Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,24 +16,13 @@ export const BottomNav = ({ currentPage, onPageChange }: BottomNavProps) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const navItems = useMemo(() => {
-    const baseItems = [
+    return [
       { id: 'dashboard', icon: Home, label: 'Dashboard' },
       { id: 'connect', icon: Users, label: 'Connect' },
       { id: 'upload', icon: Upload, label: 'Upload' },
       { id: 'settings', icon: Settings, label: 'Settings' },
     ];
-    
-    // Insert Analytics before Settings for professional accounts (business or creator)
-    if (profile?.account_type?.startsWith('professional_')) {
-      baseItems.splice(3, 0, { 
-        id: 'analytics', 
-        icon: TrendingUp, 
-        label: 'Analytics' 
-      });
-    }
-    
-    return baseItems;
-  }, [profile?.account_type]);
+  }, []);
 
   return (
     <>
