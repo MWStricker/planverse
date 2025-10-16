@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, School, Upload, X, Lock, ShieldAlert } from 'lucide-react';
+import { Send, ArrowLeft, School, Upload, X } from 'lucide-react';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
@@ -76,41 +76,29 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         // Only add if it's part of this conversation
         if ((newMessage.sender_id === user.id && newMessage.receiver_id === selectedConversation.other_user?.id) ||
             (newMessage.receiver_id === user.id && newMessage.sender_id === selectedConversation.other_user?.id)) {
-          
           setLocalMessages(prev => {
             // Check if this is replacing a temp message
             const tempIndex = prev.findIndex(m => 
-              m.id.startsWith('temp-') && 
+              m.id.startsWith('temp-') &&
               m.sender_id === newMessage.sender_id &&
+              m.content === newMessage.content &&
               Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 5000
             );
             
             if (tempIndex !== -1) {
-              console.log('Replacing temp message with real message:', newMessage.id);
-              // Replace temp message with real one
-              // Keep the original content from the temp message if it was sent by us
-              if (prev[tempIndex].sender_id === user.id) {
-                const updated = [...prev];
-                updated[tempIndex] = {
-                  ...newMessage,
-                  content: prev[tempIndex].content // Keep original plain text
-                };
-                return updated;
-              }
-              // For received messages, use the new message content
+              console.log('Replacing temp message with real message:', prev[tempIndex].id, '->', newMessage.id);
+              // Replace temp with real message
               const updated = [...prev];
               updated[tempIndex] = newMessage;
               return updated;
             }
             
-            // Check if message already exists
-            const exists = prev.some(m => m.id === newMessage.id);
-            if (exists) {
-              console.log('Message already exists, skipping:', newMessage.id);
+            // Check for duplicate (already exists)
+            if (prev.some(m => m.id === newMessage.id)) {
               return prev;
             }
             
-            console.log('Adding new message from realtime:', newMessage.id);
+            // New message from other user
             return [...prev, newMessage];
           });
         }
@@ -321,14 +309,42 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     // Send in background, don't block UI
     sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl)
-      .catch(() => {
-        // Remove temp message on error
-        setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
-        toast({
-          title: "Error",
-          description: "Failed to send message",
-          variant: "destructive"
-        });
+      .then(async (success) => {
+        if (!success) {
+          // Only remove on failure
+          setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+          toast({
+            title: "Error",
+            description: "Failed to send message",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // SUCCESS: Fetch the latest message as fallback in case realtime doesn't fire
+        setTimeout(async () => {
+          const { data: latestMessages } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${selectedConversation.other_user.id}),and(sender_id.eq.${selectedConversation.other_user.id},receiver_id.eq.${user.id})`)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          if (latestMessages && latestMessages.length > 0) {
+            const realMessage = latestMessages[0];
+            setLocalMessages(prev => {
+              // Replace temp message with real one if it still exists
+              const tempIndex = prev.findIndex(m => m.id === tempMessage.id);
+              if (tempIndex !== -1) {
+                console.log('Fallback: Replacing temp message with fetched message');
+                const updated = [...prev];
+                updated[tempIndex] = realMessage;
+                return updated;
+              }
+              return prev;
+            });
+          }
+        }, 500); // Wait 500ms for database to process
       });
 
     // Set timeout to remove temp message if not replaced within 10 seconds
@@ -517,7 +533,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       handleProfileClick(selectedConversation.other_user.id);
                     }
                   }}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-1"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                 >
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={selectedConversation.other_user?.avatar_url} />
@@ -543,7 +559,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   </div>
                 </button>
               </div>
-              
             </div>
 
             {/* Messages */}

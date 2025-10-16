@@ -2,7 +2,6 @@ import { useState, useEffect, lazy, Suspense, memo, useMemo, useRef } from "reac
 import { useNavigate } from "react-router-dom";
 import { Loader2, Home, Users, Upload, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
 
 import { Navigation } from "@/components/Navigation";
 import { BottomNav } from "@/components/BottomNav";
@@ -41,11 +40,12 @@ const IndexContent = () => {
   const [settingsTab, setSettingsTab] = useState<string>('accounts');
   const [uploadTab, setUploadTab] = useState<string>('note-digitizer');
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(20);
   const [sidebarWidthPx, setSidebarWidthPx] = useState(240);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, loading } = useAuth();
-  const { profile, fetchProfile } = useProfile();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   
   // Initialize user preferences on app load
@@ -135,8 +135,12 @@ const IndexContent = () => {
     cancelReorder,
   } = useTabReorder(navItems);
 
-  // Check if user needs onboarding - directly in state, not in effect
-  const showOnboarding = profile && !profile.onboarding_completed;
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (!loading && user && profile) {
+      setShowOnboarding(!profile.onboarding_completed);
+    }
+  }, [user, loading, profile]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -145,46 +149,18 @@ const IndexContent = () => {
   }, [user, loading, navigate]);
 
   const handleOnboardingComplete = async () => {
-    if (!user) return;
-    
-    try {
-      // Verify that user_interests was actually created
-      const { data: interests } = await supabase
-        .from('user_interests')
-        .select('id')
+    setShowOnboarding(false);
+    // Refresh profile
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
         .eq('user_id', user.id)
         .single();
-
-      if (!interests) {
-        console.error('Onboarding completed but user_interests not found');
-        toast({
-          title: "Error",
-          description: "Please try completing the questionnaire again.",
-          variant: "destructive"
-        });
-        return;
+      if (data) {
+        // Profile will be refreshed through the ProfileProvider
       }
-
-      // Update the profile's onboarding status
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      // Force a profile refresh
-      await fetchProfile();
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete onboarding. Please try again.",
-        variant: "destructive"
-      });
     }
   };
 

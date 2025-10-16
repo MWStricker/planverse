@@ -106,11 +106,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('You must be logged in to complete onboarding.');
-        setLoading(false);
-        return;
-      }
+      if (!user) throw new Error('No user found');
 
       // Prepare the data
       const questionsAsked = selectedQuestions.map(q => q.id);
@@ -135,34 +131,31 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
         }
       });
 
-      // Insert user interests - this MUST succeed before calling onComplete
+      // Insert user interests
       const { error: interestsError } = await supabase
         .from('user_interests')
         .insert(interestData);
 
-      if (interestsError) {
-        console.error('Error saving user interests:', interestsError);
-        toast.error('Failed to save your answers. Please try again.');
-        setLoading(false);
-        return;
-      }
+      if (interestsError) throw interestsError;
 
-      // Set profile to public (onboarding_completed is set by parent)
+      // Update profile onboarding status and set to public
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ is_public: true })
+        .update({
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+          is_public: true
+        })
         .eq('user_id', user.id);
 
-      if (profileError) {
-        console.error('Error updating profile:', profileError);
-      }
+      if (profileError) throw profileError;
 
       toast.success('Welcome! Your profile is complete');
-      // Only call onComplete after successful save
       onComplete();
     } catch (error) {
       console.error('Error saving onboarding data:', error);
-      toast.error('Something went wrong. Please try again.');
+      toast.error('Failed to save your answers. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -268,7 +261,7 @@ export const OnboardingQuestionnaire = ({ onComplete }: OnboardingQuestionnaireP
                 Welcome to planverse
               </CardTitle>
               <CardDescription className="text-base mt-2">
-                Complete your profile to start connecting and messaging
+                Help us connect you with people who share your interests
               </CardDescription>
             </div>
           </div>

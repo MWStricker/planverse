@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './useAuth';
 
 export interface Message {
   id: string;
@@ -34,7 +33,6 @@ export interface Conversation {
 
 export const useMessaging = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +48,7 @@ export const useMessaging = () => {
       setLoading(true);
       console.log('useMessaging: Querying conversations table...');
       
-      // Single optimized query with PostgreSQL joins
+      // Single optimized query with PostgreSQL joins - fetches conversations and profiles in one go
       const { data, error } = await supabase
         .from('conversations')
         .select(`
@@ -65,6 +63,7 @@ export const useMessaging = () => {
 
       if (error) {
         console.error('useMessaging: Error fetching conversations:', error);
+        // Fail gracefully - set empty conversations instead of throwing
         setConversations([]);
         return;
       }
@@ -80,9 +79,11 @@ export const useMessaging = () => {
           ? conv.user2_profile 
           : conv.user1_profile;
         
+        // Determine the other user's ID with fallback
         const otherUserId = otherUserProfile?.user_id || 
           (conv.user1_id === user.id ? conv.user2_id : conv.user1_id);
         
+        // Transform profile to include 'id' field from 'user_id'
         const other_user = {
           id: otherUserId,
           display_name: otherUserProfile?.display_name || 'Unknown User',
@@ -104,6 +105,7 @@ export const useMessaging = () => {
       console.log('useMessaging: Set conversations:', conversationsWithProfiles);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      // Fail gracefully instead of crashing
       setConversations([]);
     } finally {
       setLoading(false);
@@ -115,77 +117,77 @@ export const useMessaging = () => {
 
     try {
       setLoading(true);
-
-      // Fetch messages with sender profile
-      const { data: messagesData, error } = await supabase
+      
+      // Fetch messages between current user and the specific conversation partner
+      const { data, error } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender_profile:profiles!messages_sender_id_fkey(display_name, avatar_url)
-        `)
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .or(`sender_id.eq.${otherUserId},receiver_id.eq.${otherUserId}`)
+        .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const processedMessages: Message[] = (messagesData || []).map(msg => ({
-        ...msg,
-        sender_profile: Array.isArray(msg.sender_profile) 
-          ? msg.sender_profile[0] 
-          : msg.sender_profile
-      } as Message));
+      if (!data || data.length === 0) {
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
 
-      setMessages(processedMessages);
+      // Get unique sender IDs and fetch profiles in batch
+      const senderIds = [...new Set(data.map(m => m.sender_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', senderIds);
+
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+      const messagesWithProfiles = data.map(message => ({
+        ...message,
+        sender_profile: profileMap.get(message.sender_id)
+      }));
+
+      setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error fetching messages:', error);
-      toast({
-        title: "Error loading messages",
-        description: "Could not fetch messages. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
   };
 
   const sendMessage = async (receiverId: string, content: string, imageUrl?: string) => {
-    if (!user) return;
+    if (!user || (!content.trim() && !imageUrl)) return false;
 
     try {
-      // Insert plain text message
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: user.id,
-          receiver_id: receiverId,
-          content: content, // Plain text content
-          image_url: imageUrl,
-          is_read: false
-        });
-
-      if (error) throw error;
-
       // Get or create conversation
       const { data: conversationId, error: convError } = await supabase
         .rpc('get_or_create_conversation', { other_user_id: receiverId });
 
       if (convError) throw convError;
-      
-      // Update conversation's last_message_at
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', conversationId);
 
-      await fetchConversations();
+      // Send message
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: receiverId,
+          content: content.trim() || '',
+          image_url: imageUrl
+        });
+
+      if (messageError) throw messageError;
+
+      // Update conversation last message time locally
+      setConversations(prev => prev.map(conv => 
+        conv.id === conversationId 
+          ? { ...conv, last_message_at: new Date().toISOString() }
+          : conv
+      ));
+
+      return true;
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        title: "Failed to send message",
-        description: "Please try again.",
-        variant: "destructive"
-      });
+      return false;
     }
   };
 

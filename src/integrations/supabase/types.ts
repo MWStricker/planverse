@@ -284,8 +284,12 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          is_encrypted: boolean | null
           is_read: boolean | null
+          message_counter: number | null
+          nonce: string | null
           receiver_id: string
+          sender_device_id: string | null
           sender_id: string
           updated_at: string
         }
@@ -294,8 +298,12 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_encrypted?: boolean | null
           is_read?: boolean | null
+          message_counter?: number | null
+          nonce?: string | null
           receiver_id: string
+          sender_device_id?: string | null
           sender_id: string
           updated_at?: string
         }
@@ -304,8 +312,12 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_encrypted?: boolean | null
           is_read?: boolean | null
+          message_counter?: number | null
+          nonce?: string | null
           receiver_id?: string
+          sender_device_id?: string | null
           sender_id?: string
           updated_at?: string
         }
@@ -587,13 +599,16 @@ export type Database = {
           bio: string | null
           campus_location: string | null
           created_at: string
+          device_id: string | null
           display_name: string | null
           graduation_year: number | null
           id: string
           is_public: boolean | null
+          key_fingerprint: string | null
           major: string | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
+          public_key: string | null
           school: string | null
           social_links: Json | null
           timezone: string | null
@@ -607,13 +622,16 @@ export type Database = {
           bio?: string | null
           campus_location?: string | null
           created_at?: string
+          device_id?: string | null
           display_name?: string | null
           graduation_year?: number | null
           id?: string
           is_public?: boolean | null
+          key_fingerprint?: string | null
           major?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
+          public_key?: string | null
           school?: string | null
           social_links?: Json | null
           timezone?: string | null
@@ -627,13 +645,16 @@ export type Database = {
           bio?: string | null
           campus_location?: string | null
           created_at?: string
+          device_id?: string | null
           display_name?: string | null
           graduation_year?: number | null
           id?: string
           is_public?: boolean | null
+          key_fingerprint?: string | null
           major?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
+          public_key?: string | null
           school?: string | null
           social_links?: Json | null
           timezone?: string | null
