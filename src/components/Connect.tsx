@@ -1,5 +1,4 @@
 import React, { useState, useMemo, memo, useRef } from 'react';
-import { useIntersectionObserver } from '@/lib/performance';
 import { PostCard } from './PostCard';
 import { Heart, MessageCircle, Share2, Plus, User, School, Trash2, MoreVertical, Users, Mail, Hash, Globe, GraduationCap, Calendar, ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
