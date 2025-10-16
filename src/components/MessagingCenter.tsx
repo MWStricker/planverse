@@ -660,8 +660,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       
       console.log('Conversation order saved successfully');
       
-      // Now it's safe to allow syncing again
-      isSavingOrder.current = false;
+      // Refetch in background, only clear flag after it completes
+      fetchConversations().finally(() => {
+        // Now it's safe to allow syncing again
+        isSavingOrder.current = false;
+      });
       
     } catch (error) {
       console.error('Error updating conversation order:', error);
