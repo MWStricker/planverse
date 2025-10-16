@@ -85,8 +85,8 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
             <AvatarFallback>
               {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
-            {/* Unread indicator - red dot */}
-            {conversation.unread_count && conversation.unread_count > 0 && (
+            {/* Unread indicator - only show if truly unread */}
+            {conversation.unread_count != null && conversation.unread_count > 0 && (
               <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-[10px] text-white font-bold">
                 {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
               </div>

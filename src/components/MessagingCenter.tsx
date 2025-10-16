@@ -552,6 +552,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     if (oldIndex === -1 || newIndex === -1) return;
 
+    // OPTIMISTIC UPDATE: Reorder immediately in UI
     const reorderedConversations = arrayMove(conversations, oldIndex, newIndex);
     
     const updates = reorderedConversations.map((conv, index) => ({
@@ -560,24 +561,25 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }));
 
     try {
+      // Update database in background - don't wait or show toast
       for (const update of updates) {
         await supabase
           .from('conversations')
           .update({ display_order: update.display_order })
           .eq('id', update.id);
       }
-
-      fetchConversations();
       
-      toast({
-        title: "Order saved",
-        description: "Conversation order has been updated",
-      });
+      // Silent success - no toast, no refetch
+      fetchConversations();
     } catch (error) {
       console.error('Error updating conversation order:', error);
+      
+      // Only refetch on error to revert
+      await fetchConversations();
+      
       toast({
         title: "Error",
-        description: "Failed to save conversation order",
+        description: "Failed to save conversation order. Reverted to last saved state.",
         variant: "destructive",
       });
     }
