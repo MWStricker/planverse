@@ -5,7 +5,7 @@ import { ReactionBar } from './ReactionBar';
 import { ReactionPill } from './ReactionPill';
 import { formatDistanceToNow } from 'date-fns';
 import { Check } from 'lucide-react';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { hapticFeedback } from '@/lib/haptics';
 
 interface MessageBubbleProps {
   message: Message;
@@ -43,18 +43,11 @@ export const MessageBubble = ({
     }
     
     setIsLongPressing(true);
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       console.log('[MessageBubble] Long press triggered for message:', message.id);
       
       // Trigger haptic feedback
-      try {
-        await Haptics.impact({ style: ImpactStyle.Medium });
-      } catch (error) {
-        // Fallback to navigator.vibrate
-        if ('vibrate' in navigator) {
-          navigator.vibrate(50);
-        }
-      }
+      hapticFeedback('medium');
       
       onLongPress(message);
       setIsLongPressing(false);
