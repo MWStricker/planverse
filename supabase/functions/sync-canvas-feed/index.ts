@@ -16,7 +16,7 @@ interface CalendarEvent {
   source_event_id: string;
 }
 
-function parseICS(icsContent: string): CalendarEvent[] {
+function parseICS(icsContent: string, userTimezone: string = 'America/New_York'): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   const lines = icsContent.split(/\r?\n/).map(line => line.trim());
   
@@ -25,7 +25,7 @@ function parseICS(icsContent: string): CalendarEvent[] {
   let multiLineProperty = '';
   let multiLineValue = '';
   
-  console.log(`Parsing ICS with ${lines.length} lines`);
+  console.log(`Parsing ICS with ${lines.length} lines for timezone ${userTimezone}`);
   
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -37,7 +37,7 @@ function parseICS(icsContent: string): CalendarEvent[] {
     } else if (multiLineProperty && multiLineValue) {
       // Process the completed multi-line property
       console.log(`Processing multi-line property ${multiLineProperty} with full value (length: ${multiLineValue.length})`);
-      processProperty(multiLineProperty, multiLineValue, currentEvent);
+      processProperty(multiLineProperty, multiLineValue, currentEvent, userTimezone);
       multiLineProperty = '';
       multiLineValue = '';
     }
@@ -82,7 +82,7 @@ function parseICS(icsContent: string): CalendarEvent[] {
       
       // Check if this might be a multi-line property
       if (value && !line.endsWith('\\')) {
-        processProperty(property, value, currentEvent);
+        processProperty(property, value, currentEvent, userTimezone);
       } else {
         multiLineProperty = property;
         multiLineValue = value;
@@ -94,7 +94,7 @@ function parseICS(icsContent: string): CalendarEvent[] {
   return events;
 }
 
-function processProperty(property: string, value: string, currentEvent: Partial<CalendarEvent>) {
+function processProperty(property: string, value: string, currentEvent: Partial<CalendarEvent>, userTimezone: string = 'America/New_York') {
   const cleanValue = value.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
   
   if (property.startsWith('SUMMARY')) {
@@ -104,15 +104,15 @@ function processProperty(property: string, value: string, currentEvent: Partial<
     currentEvent.description = cleanValue;
     console.log(`Description set (length ${cleanValue.length}): "${cleanValue.substring(0, 100)}${cleanValue.length > 100 ? '...' : ''}"`);
   } else if (property.startsWith('DTSTART')) {
-    currentEvent.start_time = parseICSDate(value);
+    currentEvent.start_time = parseICSDate(value, userTimezone);
   } else if (property.startsWith('DTEND')) {
-    currentEvent.end_time = parseICSDate(value);
+    currentEvent.end_time = parseICSDate(value, userTimezone);
   } else if (property.startsWith('DUE')) {
     // Canvas often uses DUE instead of DTSTART for assignments
     if (!currentEvent.start_time) {
-      currentEvent.start_time = parseICSDate(value);
+      currentEvent.start_time = parseICSDate(value, userTimezone);
     }
-    currentEvent.end_time = parseICSDate(value);
+    currentEvent.end_time = parseICSDate(value, userTimezone);
   } else if (property.startsWith('LOCATION')) {
     currentEvent.location = cleanValue;
   } else if (property.startsWith('UID')) {
@@ -125,8 +125,8 @@ function processProperty(property: string, value: string, currentEvent: Partial<
   }
 }
 
-function parseICSDate(dateStr: string): string {
-  console.log(`Parsing date: ${dateStr}`);
+function parseICSDate(dateStr: string, userTimezone: string = 'America/New_York'): string {
+  console.log(`Parsing date: ${dateStr} for timezone ${userTimezone}`);
   
   try {
     // Extract timezone info if present
@@ -215,8 +215,9 @@ function parseICSDate(dateStr: string): string {
       const month = cleanDateStr.substr(4, 2);
       const day = cleanDateStr.substr(6, 2);
       
-      // For date-only events, use end of day (11:59:59 PM)
-      const result = `${year}-${month}-${day}T23:59:59Z`;
+      // For date-only events (like Canvas assignments), create at 11:59:59 PM in user's timezone
+      // This ensures the assignment shows up at the correct time in their calendar view
+      const result = `${year}-${month}-${day}T23:59:59`;
       console.log(`Parsed date-only: ${result} (original: ${dateStr})`);
       return result;
     }
@@ -279,6 +280,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get the user's timezone preference
+    const { data: userProfile } = await supabaseClient
+      .from('profiles')
+      .select('timezone')
+      .eq('user_id', connection.user_id)
+      .single();
+    
+    const userTimezone = userProfile?.timezone || 'America/New_York';
+    console.log('Using user timezone:', userTimezone);
+
     const feedUrl = connection.sync_settings?.feed_url;
     if (!feedUrl) {
       console.error('No feed URL found in connection');
@@ -303,8 +314,8 @@ Deno.serve(async (req) => {
     const icsContent = await response.text();
     console.log('Fetched ICS content length:', icsContent.length);
 
-    // Parse the ICS content
-    const events = parseICS(icsContent);
+    // Parse the ICS content with user's timezone
+    const events = parseICS(icsContent, userTimezone);
     console.log('Parsed events count:', events.length);
 
     // Log first few characters of ICS content for debugging
