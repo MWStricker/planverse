@@ -445,6 +445,7 @@ const Auth = () => {
                         }`} />
                         <Input
                           id="signin-email"
+                          name="signin-email"
                           type="email"
                           placeholder="your@email.com"
                           value={email}
@@ -475,6 +476,7 @@ const Auth = () => {
                           }`} />
                           <Input
                             id="signin-phone"
+                            name="signin-phone"
                             type="tel"
                             placeholder="(555) 123-4567"
                             value={phone}

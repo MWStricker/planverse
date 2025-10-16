@@ -662,6 +662,8 @@ export const Tasks = () => {
                   <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
+                      id="task-search"
+                      name="task-search"
                       placeholder="Search current tasks..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}

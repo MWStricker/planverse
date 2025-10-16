@@ -330,12 +330,12 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Set up beforeunload handler
-    const handleBeforeUnload = () => {
+    // Set up pagehide handler (more reliable than beforeunload)
+    const handlePageHide = () => {
       updatePresence('offline');
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
 
     // Cleanup function
     return () => {
@@ -353,7 +353,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       }
       
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
       
       updatePresence('offline');
     };
