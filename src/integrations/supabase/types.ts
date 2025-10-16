@@ -809,6 +809,7 @@ export type Database = {
           payment_status: string
           post_id: string
           promotion_budget: number
+          promotion_config: Json | null
           promotion_duration_days: number
           starts_at: string | null
           status: string
@@ -835,6 +836,7 @@ export type Database = {
           payment_status?: string
           post_id: string
           promotion_budget: number
+          promotion_config?: Json | null
           promotion_duration_days?: number
           starts_at?: string | null
           status?: string
@@ -861,6 +863,7 @@ export type Database = {
           payment_status?: string
           post_id?: string
           promotion_budget?: number
+          promotion_config?: Json | null
           promotion_duration_days?: number
           starts_at?: string | null
           status?: string
