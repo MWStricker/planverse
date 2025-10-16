@@ -3,8 +3,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Pin, BellOff } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
 import { ConversationActionsMenu } from './ConversationActionsMenu';
+import { OnlineStatus } from '@/components/OnlineStatus';
 
 interface Conversation {
   id: string;
@@ -102,6 +102,11 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
                 {conversation.other_user?.display_name || 'Unknown User'}
               </h4>
               
+              {/* Online status indicator */}
+              {conversation.other_user?.id && (
+                <OnlineStatus userId={conversation.other_user.id} />
+              )}
+              
               {/* Visual badges for pinned and muted */}
               <div className="flex items-center gap-1">
                 {conversation.is_pinned && (
@@ -116,10 +121,6 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
                 )}
               </div>
             </div>
-            
-            <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
-            </p>
           </div>
         </div>
         

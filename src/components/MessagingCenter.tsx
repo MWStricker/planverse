@@ -60,6 +60,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const { conversations: hookConversations, messages, loading, fetchConversations, fetchMessages, sendMessage } = useMessaging();
   const [conversations, setConversations] = useState<Conversation[]>(hookConversations);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -433,14 +434,24 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     };
   }, [user, selectedConversation, fetchConversations]);
 
+  // Fetch messages when conversation is selected
+  useEffect(() => {
+    if (selectedConversation?.other_user) {
+      setLoadingMessages(true);
+      fetchMessages(selectedConversation.id, selectedConversation.other_user.id)
+        .finally(() => setLoadingMessages(false));
+    } else {
+      setLocalMessages([]);
+    }
+  }, [selectedConversation]);
+
   useEffect(() => {
     if (selectedUserId && conversations.length > 0 && !selectedConversation) {
       const conversation = conversations.find(c => 
         c.other_user?.id === selectedUserId
       );
-      if (conversation && conversation.other_user) {
+      if (conversation) {
         setSelectedConversation(conversation);
-        fetchMessages(conversation.id, conversation.other_user.id);
       }
     }
   }, [selectedUserId, conversations]);
@@ -491,8 +502,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
     
     console.log('[MessagingCenter] Selecting new conversation:', conversation.id);
+    // Instant UI update - conversation selection
     setSelectedConversation(conversation);
-    fetchMessages(conversation.id, conversation.other_user.id);
+    setNewMessagesCount(0);
+    setIsNearBottom(true);
+    // Messages will be fetched by the useEffect that watches selectedConversation
   };
 
   const handleToggleConversationPin = async (conversationId: string, currentPinStatus: boolean) => {
@@ -1155,61 +1169,72 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
             {/* Messages */}
             <ScrollArea ref={scrollContainerRef} className="flex-1 p-4 relative">
-              {/* Pinned Messages Banner */}
-              {pinnedMessages.length > 0 && (
-                <MessagePinsBanner
-                  pinnedMessages={pinnedMessages}
-                  onJumpToMessage={handleJumpToMessage}
-                  onUnpin={handleUnpinMessage}
-                  currentUserId={user?.id || ''}
-                  conversationCreatorId={selectedConversation?.user1_id || ''}
-                />
-              )}
-              
-              <div className="space-y-4">
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
+              {loadingMessages ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading messages...</p>
                   </div>
-                )}
-                {localMessages.map((message) => {
-                  const isOwn = message.sender_id === user?.id;
-                  const isTemp = message.id.startsWith('temp-');
-                  return (
-                    <div key={message.id} id={`message-${message.id}`}>
-                      <MessageBubble
-                        message={message}
-                        isOwn={isOwn}
-                        isTemp={isTemp}
-                        onImageClick={(url) => setViewerImage(url)}
-                        onLongPress={handleMessageLongPress}
-                        onReactionClick={(messageId) => {
-                          const msg = localMessages.find(m => m.id === messageId);
-                          if (msg) setReactionSheetMessage(msg);
-                        }}
-                        onPin={handlePinMessage}
-                        isPinned={pinnedMessages.some(p => p.id === message.id)}
-                      />
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
-              
-              {/* New Messages Pill */}
-              <NewMessagesPill
-                count={newMessagesCount}
-                onClick={() => {
-                  scrollToBottom();
-                  setNewMessagesCount(0);
-                }}
-              />
+                </div>
+              ) : (
+                <>
+                  {/* Pinned Messages Banner */}
+                  {pinnedMessages.length > 0 && (
+                    <MessagePinsBanner
+                      pinnedMessages={pinnedMessages}
+                      onJumpToMessage={handleJumpToMessage}
+                      onUnpin={handleUnpinMessage}
+                      currentUserId={user?.id || ''}
+                      conversationCreatorId={selectedConversation?.user1_id || ''}
+                    />
+                  )}
+                  
+                  <div className="space-y-4">
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-muted rounded-lg p-3">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {localMessages.map((message) => {
+                      const isOwn = message.sender_id === user?.id;
+                      const isTemp = message.id.startsWith('temp-');
+                      return (
+                        <div key={message.id} id={`message-${message.id}`}>
+                          <MessageBubble
+                            message={message}
+                            isOwn={isOwn}
+                            isTemp={isTemp}
+                            onImageClick={(url) => setViewerImage(url)}
+                            onLongPress={handleMessageLongPress}
+                            onReactionClick={(messageId) => {
+                              const msg = localMessages.find(m => m.id === messageId);
+                              if (msg) setReactionSheetMessage(msg);
+                            }}
+                            onPin={handlePinMessage}
+                            isPinned={pinnedMessages.some(p => p.id === message.id)}
+                          />
+                        </div>
+                      );
+                    })}
+                    <div ref={messagesEndRef} />
+                  </div>
+                  
+                  {/* New Messages Pill */}
+                  <NewMessagesPill
+                    count={newMessagesCount}
+                    onClick={() => {
+                      scrollToBottom();
+                      setNewMessagesCount(0);
+                    }}
+                  />
+                </>
+              )}
             </ScrollArea>
 
             {/* Message Input */}
