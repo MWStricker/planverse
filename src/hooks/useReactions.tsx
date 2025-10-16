@@ -31,11 +31,14 @@ export const useReactions = (messageId?: string) => {
         .from('reactions')
         .select(`
           *,
-          profiles:user_id(user_id, display_name, avatar_url)
+          profiles!reactions_user_id_fkey(user_id, display_name, avatar_url)
         `)
         .eq('message_id', msgId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching reactions:', error);
+        throw error;
+      }
 
       // Group by emoji
       const grouped = data?.reduce((acc: Record<string, ReactionCount>, reaction: any) => {
@@ -69,6 +72,8 @@ export const useReactions = (messageId?: string) => {
     if (!user) return;
 
     try {
+      console.log('Adding reaction:', { msgId, emoji, userId: user.id });
+      
       // Check if user already reacted to this message
       const { data: existing } = await supabase
         .from('reactions')
@@ -77,27 +82,44 @@ export const useReactions = (messageId?: string) => {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      console.log('Existing reaction:', existing);
+
       if (existing) {
         // Update existing reaction
         if (existing.emoji === emoji) {
           // Remove if same emoji
+          console.log('Removing reaction (same emoji)');
           await removeReaction(msgId);
         } else {
           // Change to new emoji
-          await supabase
+          console.log('Updating reaction to new emoji');
+          const { error } = await supabase
             .from('reactions')
             .update({ emoji })
             .eq('id', existing.id);
+          
+          if (error) {
+            console.error('Error updating reaction:', error);
+            throw error;
+          }
         }
       } else {
         // Add new reaction
-        await supabase
+        console.log('Inserting new reaction');
+        const { data, error } = await supabase
           .from('reactions')
           .insert({
             message_id: msgId,
             user_id: user.id,
             emoji
-          });
+          })
+          .select();
+        
+        if (error) {
+          console.error('Error inserting reaction:', error);
+          throw error;
+        }
+        console.log('Reaction inserted:', data);
       }
 
       await fetchReactions(msgId);
