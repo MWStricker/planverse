@@ -18,6 +18,8 @@ export interface UserProfile {
   onboarding_completed?: boolean;
   onboarding_completed_at?: string;
   social_links?: Record<string, string>;
+  account_type?: string;
+  upgraded_to_professional_at?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -575,6 +575,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
 
   const tabs = [
     { id: 'accounts', label: 'Account Linking', icon: Link },
+    { id: 'account-type', label: 'Account Type', icon: GraduationCap },
     { id: 'preferences', label: 'System Preferences', icon: Palette },
     { id: 'sleep', label: 'Sleep Schedule', icon: Clock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -1841,10 +1842,133 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
     </div>
   );
 
+  const renderAccountType = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Account Type</h2>
+        <p className="text-muted-foreground">
+          Upgrade to a professional account to access post promotion and analytics
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {profile?.account_type === 'professional' ? (
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Professional</Badge>
+            ) : (
+              <Badge variant="outline">Personal</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {profile?.account_type === 'professional' ? (
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  You have a professional account with access to advanced features.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <h4 className="font-semibold">Professional Features:</h4>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Promote posts to reach more students</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Detailed analytics dashboard for all posts</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Track impressions, engagement, and demographics</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Priority support</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-semibold">Upgrade to Professional</h4>
+                <p className="text-sm text-muted-foreground">
+                  Get access to powerful tools to grow your presence and reach more students.
+                </p>
+                <div className="space-y-2">
+                  <h5 className="text-sm font-medium">What you'll get:</h5>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Post Promotion:</strong> Boost your posts to reach thousands more students</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Analytics Dashboard:</strong> See detailed metrics on all your posts</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Advanced Insights:</strong> Understand your audience demographics</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Professional Badge:</strong> Stand out with a verified badge</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <Button 
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('profiles')
+                      .update({
+                        account_type: 'professional',
+                        upgraded_to_professional_at: new Date().toISOString()
+                      })
+                      .eq('user_id', user?.id);
+
+                    if (error) throw error;
+
+                    toast({
+                      title: "Upgraded to Professional!",
+                      description: "You now have access to all professional features."
+                    });
+
+                    // Refresh profile
+                    window.location.reload();
+                  } catch (error) {
+                    console.error('Error upgrading account:', error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to upgrade account. Please try again.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                className="w-full"
+              >
+                Upgrade to Professional (Free)
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                You can switch back to a personal account at any time
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'accounts':
         return renderAccountLinking();
+      case 'account-type':
+        return renderAccountType();
       case 'preferences':
         return renderSystemPreferences();
       case 'sleep':

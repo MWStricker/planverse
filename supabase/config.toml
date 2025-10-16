@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.transcribe-audio]
 verify_jwt = true
+
+[functions.create-promotion]
+verify_jwt = true
+
+[functions.moderate-promotion]
+verify_jwt = true
