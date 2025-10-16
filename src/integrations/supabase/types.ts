@@ -289,6 +289,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          client_msg_id: string | null
           content: string
           created_at: string
           deleted_at: string | null
@@ -301,10 +302,12 @@ export type Database = {
           receiver_id: string
           reply_to_message_id: string | null
           sender_id: string
+          seq_num: number
           status: Database["public"]["Enums"]["message_status"] | null
           updated_at: string
         }
         Insert: {
+          client_msg_id?: string | null
           content: string
           created_at?: string
           deleted_at?: string | null
@@ -317,10 +320,12 @@ export type Database = {
           receiver_id: string
           reply_to_message_id?: string | null
           sender_id: string
+          seq_num?: number
           status?: Database["public"]["Enums"]["message_status"] | null
           updated_at?: string
         }
         Update: {
+          client_msg_id?: string | null
           content?: string
           created_at?: string
           deleted_at?: string | null
@@ -333,6 +338,7 @@ export type Database = {
           receiver_id?: string
           reply_to_message_id?: string | null
           sender_id?: string
+          seq_num?: number
           status?: Database["public"]["Enums"]["message_status"] | null
           updated_at?: string
         }

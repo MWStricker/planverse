@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { toast } from 'sonner';
 
 export interface Reaction {
   id: string;
@@ -106,11 +107,12 @@ export const useReactions = (messageId?: string) => {
             .update({ emoji })
             .eq('id', existing.id);
           
-          if (error) {
-            console.error('❌ Error updating reaction:', error);
-            throw error;
-          }
-          console.log('✅ Reaction updated successfully');
+        if (error) {
+          console.error('❌ Error updating reaction:', error);
+          toast.error('Failed to update reaction');
+          throw error;
+        }
+        console.log('✅ Reaction updated successfully');
         }
       } else {
         // Add new reaction
@@ -127,6 +129,7 @@ export const useReactions = (messageId?: string) => {
         if (error) {
           console.error('❌ Error inserting reaction:', error);
           console.error('❌ Error details:', JSON.stringify(error, null, 2));
+          toast.error('Failed to add reaction. Please try again.');
           throw error;
         }
         console.log('✅ Reaction inserted successfully:', data);

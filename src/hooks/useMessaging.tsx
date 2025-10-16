@@ -119,11 +119,12 @@ export const useMessaging = () => {
       setLoading(true);
       
       // Fetch messages between current user and the specific conversation partner
+      // Sort by seq_num for authoritative ordering
       const { data, error } = await supabase
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
-        .order('created_at', { ascending: true });
+        .order('seq_num', { ascending: true });
 
       if (error) throw error;
 
@@ -163,6 +164,9 @@ export const useMessaging = () => {
   ) => {
     if (!user || (!content.trim() && !imageUrl)) return false;
 
+    // Generate client message ID for idempotency
+    const clientMsgId = crypto.randomUUID();
+
     try {
       // Get or create conversation
       const { data: conversationId, error: convError } = await supabase
@@ -170,10 +174,11 @@ export const useMessaging = () => {
 
       if (convError) throw convError;
 
-      // Send message
+      // Send message with client_msg_id for deduplication
       const { error: messageError } = await supabase
         .from('messages')
         .insert({
+          client_msg_id: clientMsgId,
           sender_id: user.id,
           receiver_id: receiverId,
           content: content.trim() || '',
@@ -182,7 +187,14 @@ export const useMessaging = () => {
           status: 'sent'
         });
 
-      if (messageError) throw messageError;
+      if (messageError) {
+        // Check if it's a duplicate (unique constraint violation)
+        if (messageError.code === '23505') {
+          console.log('Message already sent (idempotency check), skipping');
+          return true;
+        }
+        throw messageError;
+      }
 
       // Update conversation last message time locally
       setConversations(prev => prev.map(conv => 

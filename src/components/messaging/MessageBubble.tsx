@@ -54,7 +54,7 @@ export const MessageBubble = ({
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
     >
-      <div className={`max-w-[70%] w-fit relative ${isOwn ? 'order-2' : 'order-1'}`}>
+      <div className={`max-w-[70%] inline-block min-w-0 relative ${isOwn ? 'order-2' : 'order-1'}`}>
         {/* Reaction Bar */}
         {showReactionBar && (
           <div className={`absolute -top-12 ${isOwn ? 'right-0' : 'left-0'} z-10`}>
