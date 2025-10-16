@@ -5,7 +5,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Copy, Trash2, CornerUpLeft, Flag, XCircle } from 'lucide-react';
+import { Copy, Trash2, CornerUpLeft, Flag, XCircle, Pin, PinOff } from 'lucide-react';
 
 interface MessageActionSheetProps {
   open: boolean;
@@ -22,6 +22,9 @@ interface MessageActionSheetProps {
   onDelete: () => void;
   onUnsend?: () => void;
   onReport?: () => void;
+  onPin?: (messageId: string) => void;
+  isPinned?: boolean;
+  canPin?: boolean;
 }
 
 export const MessageActionSheet = ({
@@ -34,6 +37,9 @@ export const MessageActionSheet = ({
   onDelete,
   onUnsend,
   onReport,
+  onPin,
+  isPinned,
+  canPin = true,
 }: MessageActionSheetProps) => {
   const isOwnMessage = message.sender_id === currentUserId;
   const messageAge = Date.now() - new Date(message.created_at).getTime();
@@ -68,6 +74,26 @@ export const MessageActionSheet = ({
             <Copy className="h-4 w-4" />
             Copy text
           </Button>
+
+          {canPin && onPin && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3"
+              onClick={() => handleAction(() => onPin(message.id))}
+            >
+              {isPinned ? (
+                <>
+                  <PinOff className="h-4 w-4" />
+                  Unpin message
+                </>
+              ) : (
+                <>
+                  <Pin className="h-4 w-4" />
+                  Pin message
+                </>
+              )}
+            </Button>
+          )}
 
           {isOwnMessage && (
             <>

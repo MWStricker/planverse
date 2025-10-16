@@ -1038,6 +1038,16 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           onCopy={handleCopyMessage}
           onDelete={handleDeleteMessage}
           onUnsend={handleUnsendMessage}
+          onPin={(messageId) => {
+            const isPinned = pinnedMessages.some(p => p.id === messageId);
+            if (isPinned) {
+              handleUnpinMessage(messageId);
+            } else {
+              handlePinMessage(messageId);
+            }
+          }}
+          isPinned={pinnedMessages.some(p => p.id === actionSheetMessage.id)}
+          canPin={selectedConversation?.user1_id === user.id || selectedConversation?.user2_id === user.id}
         />
       )}
 
