@@ -585,7 +585,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     >
                       <div className={`max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}`}>
                         <div
-                          className={`rounded-lg p-3 inline-block ${
+                          className={`rounded-lg p-3 break-words ${
                             isOwn
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted text-foreground'
