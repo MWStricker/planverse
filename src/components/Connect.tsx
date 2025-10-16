@@ -72,14 +72,6 @@ export const Connect = () => {
     }
   }, [selectedChatUserId]);
 
-  // Clear selected chat when switching away from messages tab
-  React.useEffect(() => {
-    if (activeTab !== 'messages' && selectedChatUserId) {
-      console.log('[Connect] Clearing selected chat - switched away from messages tab');
-      setSelectedChatUserId(null);
-    }
-  }, [activeTab]);
-
   // Sync posts to local state
   React.useEffect(() => {
     setLocalPosts(posts);
