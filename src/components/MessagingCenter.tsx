@@ -447,22 +447,18 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   // Auto-select the top conversation when Messages tab is opened
   useEffect(() => {
-    // Only auto-select if:
-    // 1. We have conversations loaded
-    // 2. No conversation is currently selected
-    // 3. No selectedUserId prop is provided (to avoid conflicts)
-    // 4. Not currently loading
-    if (conversations.length > 0 && !selectedConversation && !selectedUserId && !loading) {
+    // Only run if we have conversations and no selectedUserId prop
+    if (conversations.length > 0 && !selectedUserId) {
       const topConversation = conversations[0];
       
       // Make sure it has a valid other_user
       if (topConversation.other_user) {
-        console.log('[MessagingCenter] Auto-selecting top conversation:', topConversation.id, topConversation.other_user.display_name);
+        console.log('[MessagingCenter] Auto-selecting top conversation on mount/update:', topConversation.id, topConversation.other_user.display_name);
         setSelectedConversation(topConversation);
         fetchMessages(topConversation.id, topConversation.other_user.id);
       }
     }
-  }, [conversations, selectedConversation, selectedUserId, loading]);
+  }, [conversations, selectedUserId]);
 
   // Create virtual conversation for new chats
   useEffect(() => {
