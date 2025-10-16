@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
+import { fromZonedTime } from 'npm:date-fns-tz@3.2.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -211,15 +212,21 @@ function parseICSDate(dateStr: string, userTimezone: string = 'America/New_York'
       }
     } else if (cleanDateStr.length >= 8) {
       // Date only format from Canvas: 20241201
-      // Canvas already accounts for timezone - NO CONVERSION NEEDED
+      // Represents "due by end of day" in user's timezone
       const year = cleanDateStr.substr(0, 4);
       const month = cleanDateStr.substr(4, 2);
       const day = cleanDateStr.substr(6, 2);
       
-      // Store as end of day - Canvas dates are already timezone-aware
-      const result = `${year}-${month}-${day}T23:59:59.000Z`;
+      // Create date at 11:59:59 PM in user's timezone
+      const dateStr = `${year}-${month}-${day}T23:59:59`;
       
-      console.log(`Parsed Canvas date-only: ${result} (original: ${dateStr})`);
+      // Convert from user's timezone to UTC
+      // Example: 11:59 PM Denver (UTC-7) → 6:59 AM UTC next day
+      const localDate = new Date(dateStr);
+      const utcDate = fromZonedTime(localDate, userTimezone);
+      const result = utcDate.toISOString();
+      
+      console.log(`Parsed Canvas date: ${dateStr} ${userTimezone} → ${result} UTC`);
       return result;
     }
     
