@@ -27,21 +27,43 @@ export const useReactions = (messageId?: string) => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch reactions
+      const { data: reactionsData, error: reactionsError } = await supabase
         .from('reactions')
-        .select(`
-          *,
-          profiles(user_id, display_name, avatar_url)
-        `)
+        .select('*')
         .eq('message_id', msgId);
 
-      if (error) {
-        console.error('Error fetching reactions:', error);
-        throw error;
+      if (reactionsError) {
+        console.error('Error fetching reactions:', reactionsError);
+        throw reactionsError;
       }
 
+      if (!reactionsData || reactionsData.length === 0) {
+        setReactions([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(reactionsData.map(r => r.user_id))];
+
+      // Fetch profiles for those users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Create a map of user_id to profile
+      const profileMap = new Map(
+        profilesData?.map(p => [p.user_id, p]) || []
+      );
+
       // Group by emoji
-      const grouped = data?.reduce((acc: Record<string, ReactionCount>, reaction: any) => {
+      const grouped = reactionsData.reduce((acc: Record<string, ReactionCount>, reaction) => {
         if (!acc[reaction.emoji]) {
           acc[reaction.emoji] = {
             emoji: reaction.emoji,
@@ -52,15 +74,17 @@ export const useReactions = (messageId?: string) => {
         }
         acc[reaction.emoji].count++;
         acc[reaction.emoji].userReacted = acc[reaction.emoji].userReacted || reaction.user_id === user?.id;
+        
+        const profile = profileMap.get(reaction.user_id);
         acc[reaction.emoji].users.push({
           id: reaction.user_id,
-          display_name: reaction.profiles?.display_name || 'Unknown',
-          avatar_url: reaction.profiles?.avatar_url
+          display_name: profile?.display_name || 'Unknown',
+          avatar_url: profile?.avatar_url
         });
         return acc;
       }, {});
 
-      setReactions(Object.values(grouped || {}));
+      setReactions(Object.values(grouped));
     } catch (error) {
       console.error('Error fetching reactions:', error);
     } finally {
