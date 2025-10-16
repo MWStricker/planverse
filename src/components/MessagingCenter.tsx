@@ -614,10 +614,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                           <div className="flex items-center gap-2">
                             <p className="text-sm break-words flex-1">{message.content}</p>
                             {message.is_encrypted && message.nonce && (
-                              <Lock className="h-3 w-3 text-green-500 flex-shrink-0" title="End-to-end encrypted" />
+                              <div title="End-to-end encrypted">
+                                <Lock className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              </div>
                             )}
                             {message.is_encrypted && !message.nonce && (
-                              <ShieldAlert className="h-3 w-3 text-yellow-500 flex-shrink-0" title="Legacy message (not encrypted)" />
+                              <div title="Legacy message (not encrypted)">
+                                <ShieldAlert className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+                              </div>
                             )}
                           </div>
                         </div>
