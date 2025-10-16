@@ -287,9 +287,9 @@ export type Database = {
           is_encrypted: boolean | null
           is_read: boolean | null
           message_counter: number | null
-          nonce: string | null
+          nonce: string
           receiver_id: string
-          sender_device_id: string | null
+          sender_device_id: string
           sender_id: string
           updated_at: string
         }
@@ -301,9 +301,9 @@ export type Database = {
           is_encrypted?: boolean | null
           is_read?: boolean | null
           message_counter?: number | null
-          nonce?: string | null
+          nonce: string
           receiver_id: string
-          sender_device_id?: string | null
+          sender_device_id: string
           sender_id: string
           updated_at?: string
         }
@@ -315,9 +315,9 @@ export type Database = {
           is_encrypted?: boolean | null
           is_read?: boolean | null
           message_counter?: number | null
-          nonce?: string | null
+          nonce?: string
           receiver_id?: string
-          sender_device_id?: string | null
+          sender_device_id?: string
           sender_id?: string
           updated_at?: string
         }
