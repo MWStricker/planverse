@@ -23,6 +23,9 @@ export interface Conversation {
   user2_id: string;
   last_message_at: string;
   is_pinned?: boolean;
+  is_muted?: boolean;
+  display_order?: number | null;
+  unread_count?: number;
   other_user?: {
     id: string;
     display_name: string;
@@ -30,7 +33,6 @@ export interface Conversation {
     school?: string;
     major?: string;
   };
-  unread_count?: number;
 }
 
 export const useMessaging = () => {
@@ -100,6 +102,9 @@ export const useMessaging = () => {
           user2_id: conv.user2_id,
           last_message_at: conv.last_message_at,
           is_pinned: conv.is_pinned || false,
+          is_muted: conv.is_muted || false,
+          display_order: conv.display_order || null,
+          unread_count: conv.unread_count || 0,
           other_user
         };
       });

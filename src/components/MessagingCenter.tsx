@@ -6,7 +6,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, School, Upload, X, Smile, Settings, Pin, PinOff } from 'lucide-react';
+import { Send, ArrowLeft, School, Upload, X, Smile, Settings } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableConversationItem } from './messaging/SortableConversationItem';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
@@ -70,6 +84,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Debug logging for action sheet state
   useEffect(() => {
@@ -444,7 +466,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
       if (error) throw error;
 
-      // Optimistically update local state
       fetchConversations();
 
       toast({
@@ -456,6 +477,107 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       toast({
         title: "Error",
         description: "Failed to update pin status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleConversationMute = async (conversationId: string, currentMutedStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({ is_muted: !currentMutedStatus })
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      fetchConversations();
+
+      toast({
+        title: currentMutedStatus ? "Conversation unmuted" : "Conversation muted",
+        description: currentMutedStatus 
+          ? "You will now receive notifications from this conversation" 
+          : "You will no longer receive notifications from this conversation",
+      });
+    } catch (error) {
+      console.error('Error toggling conversation mute:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update conversation mute status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkAsUnread = async (conversationId: string) => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('conversations')
+        .select('unread_count')
+        .eq('id', conversationId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({ unread_count: (data.unread_count || 0) + 1 })
+        .eq('id', conversationId);
+      
+      if (updateError) throw updateError;
+
+      fetchConversations();
+
+      toast({
+        title: "Marked as unread",
+        description: "This conversation will show as unread",
+      });
+    } catch (error) {
+      console.error('Error marking conversation as unread:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark conversation as unread",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = conversations.findIndex(c => c.id === active.id);
+    const newIndex = conversations.findIndex(c => c.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedConversations = arrayMove(conversations, oldIndex, newIndex);
+    
+    const updates = reorderedConversations.map((conv, index) => ({
+      id: conv.id,
+      display_order: index
+    }));
+
+    try {
+      for (const update of updates) {
+        await supabase
+          .from('conversations')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+      }
+
+      fetchConversations();
+      
+      toast({
+        title: "Order saved",
+        description: "Conversation order has been updated",
+      });
+    } catch (error) {
+      console.error('Error updating conversation order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save conversation order",
         variant: "destructive",
       });
     }
@@ -816,61 +938,49 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               No conversations yet
             </div>
           ) : (
-            [...conversations]
-              .sort((a, b) => {
-                // Sort pinned conversations first
-                if (a.is_pinned && !b.is_pinned) return -1;
-                if (!a.is_pinned && b.is_pinned) return 1;
-                // Within same pin status, sort by last_message_at
-                return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
-              })
-              .map((conversation) => (
-              <div
-                key={conversation.id}
-                className={`p-3 border-b transition-colors ${
-                  conversation.is_pinned ? 'bg-primary/5' : ''
-                } ${
-                  selectedConversation?.id === conversation.id ? 'bg-muted' : 'hover:bg-muted/50'
-                }`}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={[...conversations]
+                  .sort((a, b) => {
+                    if (a.display_order !== null && b.display_order !== null) {
+                      return a.display_order - b.display_order;
+                    }
+                    if (a.display_order !== null) return -1;
+                    if (b.display_order !== null) return 1;
+                    if (a.is_pinned && !b.is_pinned) return -1;
+                    if (!a.is_pinned && b.is_pinned) return 1;
+                    return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+                  }).map(c => c.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                    onClick={() => handleSelectConversation(conversation)}
-                  >
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={conversation.other_user?.avatar_url} />
-                      <AvatarFallback>
-                        {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-foreground truncate">
-                        {conversation.other_user?.display_name || 'Unknown User'}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleConversationPin(conversation.id, conversation.is_pinned || false);
-                    }}
-                  >
-                    {conversation.is_pinned ? (
-                      <PinOff className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Pin className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ))
+                {[...conversations]
+                  .sort((a, b) => {
+                    if (a.display_order !== null && b.display_order !== null) {
+                      return a.display_order - b.display_order;
+                    }
+                    if (a.display_order !== null) return -1;
+                    if (b.display_order !== null) return 1;
+                    if (a.is_pinned && !b.is_pinned) return -1;
+                    if (!a.is_pinned && b.is_pinned) return 1;
+                    return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+                  })
+                  .map((conversation) => (
+                    <SortableConversationItem
+                      key={conversation.id}
+                      conversation={conversation}
+                      isSelected={selectedConversation?.id === conversation.id}
+                      onSelect={handleSelectConversation}
+                      onPin={handleToggleConversationPin}
+                      onMute={handleToggleConversationMute}
+                      onMarkUnread={handleMarkAsUnread}
+                    />
+                  ))}
+              </SortableContext>
+            </DndContext>
           )}
         </ScrollArea>
       </div>

@@ -140,31 +140,37 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          display_order: number | null
           draft_message: string | null
           id: string
           is_muted: boolean | null
           is_pinned: boolean | null
           last_message_at: string | null
+          unread_count: number | null
           user1_id: string
           user2_id: string
         }
         Insert: {
           created_at?: string
+          display_order?: number | null
           draft_message?: string | null
           id?: string
           is_muted?: boolean | null
           is_pinned?: boolean | null
           last_message_at?: string | null
+          unread_count?: number | null
           user1_id: string
           user2_id: string
         }
         Update: {
           created_at?: string
+          display_order?: number | null
           draft_message?: string | null
           id?: string
           is_muted?: boolean | null
           is_pinned?: boolean | null
           last_message_at?: string | null
+          unread_count?: number | null
           user1_id?: string
           user2_id?: string
         }
