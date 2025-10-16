@@ -97,7 +97,7 @@ export const MessageBubble = ({
                 emoji={reaction.emoji}
                 count={reaction.count}
                 userReacted={reaction.userReacted}
-                onClick={() => onReactionClick(message.id)}
+                onClick={() => handleReact(reaction.emoji)}
               />
             ))}
           </div>
@@ -107,14 +107,6 @@ export const MessageBubble = ({
           {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
         </p>
 
-        {/* Hover reaction button */}
-        <button
-          className={`absolute -top-2 ${isOwn ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border rounded-full p-1 hover:bg-muted`}
-          onClick={() => setShowReactionBar(!showReactionBar)}
-          aria-label="Add reaction"
-        >
-          <span className="text-sm">😊</span>
-        </button>
       </div>
     </div>
   );

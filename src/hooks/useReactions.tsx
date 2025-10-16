@@ -69,43 +69,52 @@ export const useReactions = (messageId?: string) => {
   };
 
   const addReaction = async (msgId: string, emoji: string) => {
-    if (!user) return;
+    if (!user) {
+      console.error('❌ addReaction: No user logged in');
+      return;
+    }
 
     try {
-      console.log('Adding reaction:', { msgId, emoji, userId: user.id });
+      console.log('🔵 addReaction START:', { msgId, emoji, userId: user.id });
       
       // Check if user already reacted to this message
-      const { data: existing } = await supabase
+      const { data: existing, error: fetchError } = await supabase
         .from('reactions')
         .select('id, emoji')
         .eq('message_id', msgId)
         .eq('user_id', user.id)
         .maybeSingle();
 
-      console.log('Existing reaction:', existing);
+      if (fetchError) {
+        console.error('❌ Error fetching existing reaction:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('📋 Existing reaction:', existing);
 
       if (existing) {
         // Update existing reaction
         if (existing.emoji === emoji) {
           // Remove if same emoji
-          console.log('Removing reaction (same emoji)');
+          console.log('🗑️ Removing reaction (same emoji)');
           await removeReaction(msgId);
         } else {
           // Change to new emoji
-          console.log('Updating reaction to new emoji');
+          console.log('🔄 Updating reaction to new emoji');
           const { error } = await supabase
             .from('reactions')
             .update({ emoji })
             .eq('id', existing.id);
           
           if (error) {
-            console.error('Error updating reaction:', error);
+            console.error('❌ Error updating reaction:', error);
             throw error;
           }
+          console.log('✅ Reaction updated successfully');
         }
       } else {
         // Add new reaction
-        console.log('Inserting new reaction');
+        console.log('➕ Inserting new reaction:', { message_id: msgId, user_id: user.id, emoji });
         const { data, error } = await supabase
           .from('reactions')
           .insert({
@@ -116,15 +125,18 @@ export const useReactions = (messageId?: string) => {
           .select();
         
         if (error) {
-          console.error('Error inserting reaction:', error);
+          console.error('❌ Error inserting reaction:', error);
+          console.error('❌ Error details:', JSON.stringify(error, null, 2));
           throw error;
         }
-        console.log('Reaction inserted:', data);
+        console.log('✅ Reaction inserted successfully:', data);
       }
 
+      console.log('🔄 Fetching updated reactions...');
       await fetchReactions(msgId);
+      console.log('🔵 addReaction COMPLETE');
     } catch (error) {
-      console.error('Error adding reaction:', error);
+      console.error('❌ addReaction FAILED:', error);
     }
   };
 
