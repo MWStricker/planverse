@@ -222,6 +222,35 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     };
   }, [selectedConversation, user]);
 
+  // Reset unread count when conversation is selected
+  useEffect(() => {
+    if (!selectedConversation || !user) return;
+
+    // Optimistic UI update - clear badge immediately
+    setConversations(prev => 
+      prev.map(conv => 
+        conv.id === selectedConversation.id 
+          ? { ...conv, unread_count: 0 }
+          : conv
+      )
+    );
+
+    // Update database in background
+    const resetUnreadCount = async () => {
+      const { error } = await supabase
+        .from('conversations')
+        .update({ unread_count: 0 })
+        .eq('id', selectedConversation.id)
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+      
+      if (error) {
+        console.error('Error resetting unread count:', error);
+      }
+    };
+
+    resetUnreadCount();
+  }, [selectedConversation, user]);
+
   // Typing indicators with 2s TTL
   useEffect(() => {
     if (!selectedConversation || !user) return;
@@ -562,20 +591,30 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     const reorderedConversations = arrayMove(conversations, oldIndex, newIndex);
     setConversations(reorderedConversations);
     
+    // Prepare batch updates with new display_order for ALL conversations
     const updates = reorderedConversations.map((conv, index) => ({
       id: conv.id,
-      display_order: index
+      display_order: index,
+      // Include other required fields to avoid null errors
+      user1_id: conv.user1_id,
+      user2_id: conv.user2_id,
+      last_message_at: conv.last_message_at
     }));
 
     try {
-      // Update database in background - don't wait or show toast
-      for (const update of updates) {
-        await supabase
-          .from('conversations')
-          .update({ display_order: update.display_order })
-          .eq('id', update.id);
-      }
+      console.log('Saving conversation order:', updates);
       
+      // Batch update using upsert for atomic operation
+      const { error } = await supabase
+        .from('conversations')
+        .upsert(updates, { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        });
+      
+      if (error) throw error;
+      
+      console.log('Conversation order saved successfully');
       // Silent success - database updated, UI already updated
     } catch (error) {
       console.error('Error updating conversation order:', error);
