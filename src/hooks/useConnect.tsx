@@ -67,10 +67,15 @@ export const useConnect = () => {
     setLoading(true);
     try {
       // Fetch posts and initial data in parallel
+      // Order by promotion_priority first (promoted posts at top), then by date
       const [
         { data: postsData, error: postsError }
       ] = await Promise.all([
-        supabase.from('posts').select('*').order('created_at', { ascending: false })
+        supabase
+          .from('posts')
+          .select('*')
+          .order('promotion_priority', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
       ]);
 
       if (postsError) throw postsError;

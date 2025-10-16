@@ -17,11 +17,17 @@ import { usePromotedPosts } from '@/hooks/usePromotedPosts';
 import { useToast } from '@/hooks/use-toast';
 import { loadStripe } from '@stripe/stripe-js';
 
+interface Post {
+  id: string;
+  content: string;
+  image_url: string | null;
+  created_at: string;
+}
+
 interface PromotePostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  postId: string;
-  postContent: string;
+  post: Post;
 }
 
 const DURATION_OPTIONS = [
@@ -31,46 +37,39 @@ const DURATION_OPTIONS = [
   { days: 30, label: '30 Days' }
 ];
 
+const calculatePriorityScore = (budget: number, days: number): number => {
+  const budgetScore = Math.min((budget / 500) * 50, 50);
+  const durationScore = Math.min((days / 30) * 50, 50);
+  return Math.round(budgetScore + durationScore);
+};
+
 export const PromotePostDialog: React.FC<PromotePostDialogProps> = ({
   open,
   onOpenChange,
-  postId,
-  postContent
+  post
 }) => {
-  const [budget, setBudget] = useState([25]);
+  const [budget, setBudget] = useState([50]);
   const [durationDays, setDurationDays] = useState(7);
   const [processing, setProcessing] = useState(false);
   const { createPromotion } = usePromotedPosts();
   const { toast } = useToast();
 
-  // Estimate impressions based on budget
+  // Calculate metrics
   const estimatedImpressions = Math.floor(budget[0] * 100 * (1 + durationDays / 10));
   const costPerDay = (budget[0] / durationDays).toFixed(2);
+  const priorityScore = calculatePriorityScore(budget[0], durationDays);
 
   const handlePromote = async () => {
     setProcessing(true);
     try {
-      const result = await createPromotion(postId, budget[0], durationDays);
+      const result = await createPromotion(post.id, budget[0], durationDays, true); // skipPayment = true
 
-      if (result.success && result.clientSecret) {
+      if (result.success) {
         toast({
-          title: "Promotion Created",
-          description: "Redirecting to payment..."
+          title: "Promotion Activated!",
+          description: "Your post is now being promoted and will appear at the top of feeds."
         });
-
-        // Load Stripe and redirect to checkout
-        const stripe = await loadStripe(
-          'pk_test_51QU72yJhE1wqjfF4LF7iI6nwu0GqYb8fN1O8VIxVLgSzFRzp1vBZoFtjdG9xdNvKmQQQ2xGgKJPLWLNRa8L7ZJPY00YrzZ0Jz4'
-        );
-
-        if (stripe) {
-          // For now, show success message - actual Stripe integration will be added
-          toast({
-            title: "Promotion Pending",
-            description: "Your promotion is pending moderator approval. You'll be notified once it's approved."
-          });
-          onOpenChange(false);
-        }
+        onOpenChange(false);
       } else {
         throw new Error(result.error || 'Failed to create promotion');
       }
@@ -102,11 +101,20 @@ export const PromotePostDialog: React.FC<PromotePostDialogProps> = ({
         <div className="space-y-6">
           {/* Post Preview */}
           <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm line-clamp-3">{postContent}</p>
-              <Badge variant="outline" className="mt-2">
+            <CardContent className="pt-6 space-y-3">
+              {post.image_url && (
+                <div className="w-full h-48 rounded-lg overflow-hidden bg-muted">
+                  <img 
+                    src={post.image_url} 
+                    alt="Post preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <p className="text-sm">{post.content}</p>
+              <Badge variant="outline">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                Promoted
+                Will be promoted
               </Badge>
             </CardContent>
           </Card>
@@ -155,7 +163,7 @@ export const PromotePostDialog: React.FC<PromotePostDialogProps> = ({
           <Card className="bg-muted/50">
             <CardContent className="pt-6 space-y-4">
               <h4 className="font-semibold text-sm">Estimated Performance</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Eye className="h-4 w-4" />
@@ -177,18 +185,25 @@ export const PromotePostDialog: React.FC<PromotePostDialogProps> = ({
                   </div>
                   <p className="text-xl font-bold">${costPerDay}</p>
                 </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <TrendingUp className="h-4 w-4" />
+                    <span className="text-xs">Priority</span>
+                  </div>
+                  <p className="text-xl font-bold">{priorityScore}/100</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Important Info */}
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm">
-            <p className="font-medium mb-2">Before you promote:</p>
+            <p className="font-medium mb-2">How it works:</p>
             <ul className="space-y-1 text-muted-foreground">
-              <li>• All promoted posts require moderator approval</li>
-              <li>• You'll be notified once your promotion is approved</li>
-              <li>• Full refund if promotion is rejected</li>
-              <li>• Analytics will be available once promotion starts</li>
+              <li>• Your post will appear at the top of feeds based on priority score</li>
+              <li>• Higher budget + longer duration = higher priority</li>
+              <li>• Track impressions, clicks, and engagement in real-time</li>
+              <li>• Promotion will automatically end after the selected duration</li>
             </ul>
           </div>
         </div>
@@ -198,7 +213,7 @@ export const PromotePostDialog: React.FC<PromotePostDialogProps> = ({
             Cancel
           </Button>
           <Button onClick={handlePromote} disabled={processing}>
-            {processing ? 'Processing...' : `Pay $${budget[0]} & Promote`}
+            {processing ? 'Activating...' : 'Skip Payment & Activate'}
           </Button>
         </DialogFooter>
       </DialogContent>

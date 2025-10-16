@@ -33,9 +33,9 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { postId, budget, durationDays } = await req.json();
+    const { postId, budget, durationDays, skipPayment } = await req.json();
 
-    console.log('Creating promotion:', { postId, budget, durationDays, userId: user.id });
+    console.log('Creating promotion:', { postId, budget, durationDays, skipPayment, userId: user.id });
 
     // Validate inputs
     if (!postId || !budget || !durationDays) {
@@ -105,6 +105,53 @@ serve(async (req) => {
     }
 
     console.log('Promotion created successfully:', promotedPost.id);
+
+    // If skipPayment is true, activate immediately for testing
+    if (skipPayment) {
+      // Calculate priority score
+      const budgetScore = Math.min((budget / 500) * 50, 50);
+      const durationScore = Math.min((durationDays / 30) * 50, 50);
+      const priorityScore = Math.round(budgetScore + durationScore);
+
+      const now = new Date();
+      const endsAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+      // Update promotion to active
+      await supabaseClient
+        .from('promoted_posts')
+        .update({
+          payment_status: 'completed',
+          status: 'active',
+          moderation_status: 'approved',
+          starts_at: now.toISOString(),
+          ends_at: endsAt.toISOString(),
+        })
+        .eq('id', promotedPost.id);
+
+      // Update post with promotion priority
+      await supabaseClient
+        .from('posts')
+        .update({
+          is_promoted: true,
+          promotion_priority: priorityScore,
+        })
+        .eq('id', postId);
+
+      console.log('Promotion activated with priority:', priorityScore);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          promotionId: promotedPost.id,
+          message: 'Promotion activated successfully',
+          priorityScore
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
 
     // TODO: Create Stripe Payment Intent here
     // For now, return success without actual payment

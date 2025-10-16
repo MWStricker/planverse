@@ -70,14 +70,16 @@ export const usePromotedPosts = () => {
   const createPromotion = async (
     postId: string,
     budget: number,
-    durationDays: number
+    durationDays: number,
+    skipPayment: boolean = false
   ): Promise<{ success: boolean; clientSecret?: string; error?: string }> => {
     try {
       const { data, error } = await supabase.functions.invoke('create-promotion', {
         body: {
           postId,
           budget,
-          durationDays
+          durationDays,
+          skipPayment
         }
       });
 
