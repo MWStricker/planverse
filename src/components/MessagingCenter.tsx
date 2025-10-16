@@ -67,6 +67,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const { settings: messagingSettings, updateSetting } = useMessagingSettings();
   const [showChatSettings, setShowChatSettings] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
@@ -148,10 +149,36 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               return prev;
             }
             
+            // If this is a message TO us, mark it as delivered
+            if (newMessage.receiver_id === user.id && newMessage.status === 'sent') {
+              supabase
+                .from('messages')
+                .update({ status: 'delivered' })
+                .eq('id', newMessage.id)
+                .then(() => console.log(`Message ${newMessage.id} marked as delivered`));
+            }
+            
             // New message from other user
             return [...prev, newMessage];
           });
         }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages'
+      }, (payload) => {
+        console.log('Realtime message updated:', payload);
+        const updatedMessage = payload.new as Message;
+        
+        // Update status in local messages (for sender to see status changes)
+        setLocalMessages(prev => 
+          prev.map(m => 
+            m.id === updatedMessage.id 
+              ? { ...m, status: updatedMessage.status, is_read: updatedMessage.is_read }
+              : m
+          )
+        );
       })
       .subscribe((status) => {
         console.log('Realtime subscription status:', status);
@@ -191,8 +218,11 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       })
       .subscribe();
 
+    typingChannelRef.current = typingChannel; // Store the channel reference
+
     return () => {
       if (typingTimeoutId) clearTimeout(typingTimeoutId);
+      typingChannelRef.current = null;
       supabase.removeChannel(typingChannel);
     };
   }, [selectedConversation, user]);
@@ -405,7 +435,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       content: newMessage.trim() || '',
       image_url: imageUrl,
       is_read: false,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      status: 'sending'
     };
 
     setLocalMessages(prev => [...prev, tempMessage]);
@@ -645,11 +676,15 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   };
 
   const handleTyping = () => {
-    if (!selectedConversation || !user) return;
+    if (!selectedConversation || !user || !typingChannelRef.current) return;
+    
+    // Check if typing indicators are enabled
+    if (!messagingSettings.typing_indicators_enabled) return;
+    
     if (typingTimeout) clearTimeout(typingTimeout);
     
-    const channel = supabase.channel(`typing:${selectedConversation.id}`);
-    channel.send({
+    // Use the EXISTING channel from the ref
+    typingChannelRef.current.send({
       type: 'broadcast',
       event: 'typing',
       payload: { userId: user.id, conversationId: selectedConversation.id }
@@ -657,11 +692,13 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     
     // Send explicit stop after 2 seconds of no typing
     const timeout = setTimeout(() => {
-      channel.send({
-        type: 'broadcast',
-        event: 'typing_stop',
-        payload: { userId: user.id }
-      });
+      if (typingChannelRef.current) {
+        typingChannelRef.current.send({
+          type: 'broadcast',
+          event: 'typing_stop',
+          payload: { userId: user.id }
+        });
+      }
     }, 2000);
     setTypingTimeout(timeout);
   };
