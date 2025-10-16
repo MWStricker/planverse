@@ -575,6 +575,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     </div>
                   </div>
                 )}
+                {/* Screen reader announcer for new messages */}
+                <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                  {localMessages.length > 0 && `New message from ${localMessages[localMessages.length - 1]?.sender_id === user?.id ? 'you' : selectedConversation?.other_user?.display_name || 'user'}`}
+                </div>
                 {localMessages.map((message) => {
                   const isOwn = message.sender_id === user?.id;
                   const isTemp = message.id.startsWith('temp-');
@@ -582,10 +586,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     <div
                       key={message.id}
                       className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                      role="article"
+                      aria-label={`Message from ${isOwn ? 'you' : selectedConversation?.other_user?.display_name || 'user'}`}
+                      tabIndex={0}
+                      dir="auto"
                     >
-                      <div className={`max-w-[70%] w-fit ${isOwn ? 'order-2' : 'order-1'}`}>
+                      <div className={`max-w-[70%] inline-flex ${isOwn ? 'order-2' : 'order-1'}`}>
                         <div
-                          className={`rounded-lg p-3 break-words ${
+                          className={`rounded-lg px-3 py-2 break-words overflow-wrap-anywhere ${
                             isOwn
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted text-foreground'
@@ -593,7 +601,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                         >
                           {message.image_url && (
                             <div 
-                              className="cursor-pointer hover:opacity-90 transition-opacity"
+                              className="cursor-pointer hover:opacity-90 transition-opacity min-w-0"
                               onClick={() => setViewerImage(message.image_url!)}
                             >
                               <img
@@ -603,7 +611,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                               />
                             </div>
                           )}
-                          <p className="text-sm break-words">{message.content}</p>
+                          <p className="text-sm break-words hyphens-auto">{message.content}</p>
                         </div>
                         <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
                           {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
@@ -646,6 +654,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     handleTyping();
                   }}
                   placeholder="Type a message..."
+                  aria-label="Type a message"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
