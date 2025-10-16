@@ -23,6 +23,7 @@ import { ReactionSheet } from './messaging/ReactionSheet';
 import { MessageActionSheet } from './messaging/MessageActionSheet';
 import { ReplyPreview } from './messaging/ReplyPreview';
 import { useReactions } from '@/hooks/useReactions';
+import { MessageBubble } from './messaging/MessageBubble';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -47,8 +48,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicProfileType | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [showReactionBar, setShowReactionBar] = useState<string | null>(null);
-  const [reactionSheetMessage, setReactionSheetMessage] = useState<string | null>(null);
+  const [reactionSheetMessage, setReactionSheetMessage] = useState<Message | null>(null);
   const [actionSheetMessage, setActionSheetMessage] = useState<Message | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -626,67 +626,18 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   const isOwn = message.sender_id === user?.id;
                   const isTemp = message.id.startsWith('temp-');
                   return (
-                    <div key={message.id}>
-                      <div
-                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group relative`}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          handleMessageLongPress(message);
-                        }}
-                        onDoubleClick={() => setShowReactionBar(message.id)}
-                      >
-                        <div className={`max-w-[70%] w-fit relative ${isOwn ? 'order-2' : 'order-1'}`}>
-                          {/* Reaction Bar */}
-                          {showReactionBar === message.id && (
-                            <div className={`absolute -top-12 ${isOwn ? 'right-0' : 'left-0'} z-10`}>
-                              <ReactionBar
-                                onReact={(emoji) => {
-                                  const { addReaction } = useReactions(message.id);
-                                  addReaction(message.id, emoji);
-                                  setShowReactionBar(null);
-                                }}
-                                className="shadow-xl"
-                              />
-                            </div>
-                          )}
-
-                          <div
-                            className={`rounded-lg px-3 py-2 inline-flex flex-col break-words overflow-wrap-anywhere ${
-                              isOwn
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-foreground'
-                            } ${isTemp ? 'opacity-70' : ''}`}
-                          >
-                            {message.image_url && (
-                              <div 
-                                className="cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() => setViewerImage(message.image_url!)}
-                              >
-                                <img
-                                  src={message.image_url}
-                                  alt="Message attachment"
-                                  className="w-full rounded-md mb-2 max-h-48 object-cover hover:scale-[1.02] transition-transform"
-                                />
-                              </div>
-                            )}
-                            <p className="text-sm break-words overflow-wrap-anywhere hyphens-auto">{message.content}</p>
-                          </div>
-
-                          <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                            {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                          </p>
-
-                          {/* Hover reaction button */}
-                          <button
-                            className={`absolute -top-2 ${isOwn ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border rounded-full p-1 hover:bg-muted`}
-                            onClick={() => setShowReactionBar(showReactionBar === message.id ? null : message.id)}
-                            aria-label="Add reaction"
-                          >
-                            <Smile className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      isOwn={isOwn}
+                      isTemp={isTemp}
+                      onImageClick={(url) => setViewerImage(url)}
+                      onLongPress={handleMessageLongPress}
+                      onReactionClick={(messageId) => {
+                        const msg = localMessages.find(m => m.id === messageId);
+                        if (msg) setReactionSheetMessage(msg);
+                      }}
+                    />
                   );
                 })}
                 <div ref={messagesEndRef} />
@@ -807,6 +758,15 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           onCopy={handleCopyMessage}
           onDelete={handleDeleteMessage}
           onUnsend={handleUnsendMessage}
+        />
+      )}
+
+      {/* Reaction Sheet */}
+      {reactionSheetMessage && (
+        <ReactionSheet
+          open={!!reactionSheetMessage}
+          onOpenChange={(open) => !open && setReactionSheetMessage(null)}
+          reactions={useReactions(reactionSheetMessage.id).reactions}
         />
       )}
     </div>
