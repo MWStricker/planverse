@@ -83,24 +83,28 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             const tempIndex = prev.findIndex(m => 
               m.id.startsWith('temp-') &&
               m.sender_id === newMessage.sender_id &&
-              m.content === newMessage.content &&
               Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 5000
             );
             
             if (tempIndex !== -1) {
               console.log('Replacing temp message with real message:', prev[tempIndex].id, '->', newMessage.id);
-              // Replace temp with real message
+              // CRITICAL: For messages YOU sent, keep the plain text from temp message
+              if (newMessage.sender_id === user.id) {
+                const updated = [...prev];
+                updated[tempIndex] = {
+                  ...newMessage,
+                  content: prev[tempIndex].content // Keep plain text, don't show encrypted version
+                };
+                return updated;
+              }
+              // For received messages, use the new message (will be decrypted by fetchMessages)
               const updated = [...prev];
               updated[tempIndex] = newMessage;
               return updated;
             }
             
-            // Check for duplicate by ID or similar content/timestamp
-            const isDuplicate = prev.some(m => 
-              m.id === newMessage.id ||
-              (m.content === newMessage.content &&
-               Math.abs(new Date(m.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 2000)
-            );
+            // Check for duplicate by ID
+            const isDuplicate = prev.some(m => m.id === newMessage.id);
             
             if (isDuplicate) {
               console.log('Duplicate message detected, skipping:', newMessage.id);
@@ -108,7 +112,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             }
             
             console.log('Adding new message from realtime:', newMessage.id);
-            // New message from other user
             return [...prev, newMessage];
           });
         }
@@ -331,32 +334,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           return;
         }
         
-        // SUCCESS: Refresh messages with proper decryption if realtime doesn't fire
-        setTimeout(async () => {
-          console.log('Fallback: Refreshing messages to ensure proper decryption');
-          const refreshedMessages = await fetchMessages(
-            selectedConversation.id,
-            selectedConversation.other_user.id
-          );
-          
-          if (!refreshedMessages) return;
-          
-          // Replace temp message with decrypted real message
-          setLocalMessages(prev => {
-            const tempIndex = prev.findIndex(m => m.id === tempMessage.id);
-            if (tempIndex !== -1 && refreshedMessages.length > 0) {
-              console.log('Fallback: Replacing temp message with decrypted message');
-              // Find the newest message from refreshed list
-              const newestMessage = refreshedMessages[refreshedMessages.length - 1];
-              if (newestMessage) {
-                const updated = [...prev];
-                updated[tempIndex] = newestMessage;
-                return updated;
-              }
-            }
-            return prev;
-          });
-        }, 1000); // Wait 1s for database to process and encrypt
+        // Don't fetch from database - the temp message already has plain text
+        // Realtime subscription will replace temp with real message (keeping plain text)
+        console.log('Message sent successfully, temp message will be replaced by realtime');
       });
 
     // Set timeout to remove temp message if not replaced within 10 seconds

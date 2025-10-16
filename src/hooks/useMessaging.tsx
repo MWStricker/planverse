@@ -158,50 +158,57 @@ export const useMessaging = () => {
         // ONLY decrypt if BOTH is_encrypted flag AND nonce are present
         if (message.is_encrypted === true && message.nonce) {
           messageStatus = 'encrypted';
-          try {
-            const senderProfile = profileMap.get(message.sender_id);
-            if (senderProfile?.public_key && keyPair) {
-              console.log('🔓 Decrypting message:', {
-                messageId: message.id,
-                senderId: message.sender_id,
-                receiverId: message.receiver_id,
-                hasNonce: !!message.nonce,
-                nonceLength: message.nonce?.length,
-                ciphertextLength: message.content?.length,
-                senderPublicKeyPrefix: senderProfile.public_key.substring(0, 10),
-                recipientPublicKeyPrefix: encodeBase64(keyPair.publicKey).substring(0, 10),
-              });
+          
+          // CRITICAL: Only decrypt messages YOU received, not messages YOU sent
+          if (message.receiver_id === user.id) {
+            // You received this message - decrypt it using sender's public key
+            try {
+              const senderProfile = profileMap.get(message.sender_id);
+              if (senderProfile?.public_key && keyPair) {
+                console.log('🔓 Decrypting received message:', {
+                  messageId: message.id,
+                  senderId: message.sender_id,
+                  receiverId: message.receiver_id,
+                  senderPublicKeyPrefix: senderProfile.public_key.substring(0, 10),
+                  recipientPublicKeyPrefix: encodeBase64(keyPair.publicKey).substring(0, 10),
+                });
 
-              const encryptedData = {
-                ciphertext: message.content,
-                nonce: message.nonce,
-                senderPublicKey: senderProfile.public_key
-              };
-              
-              decryptedContent = decryptMessage(
-                encryptedData,
-                senderProfile.public_key,
-                keyPair
-              );
-              console.log('✅ Decryption successful for message:', message.id);
-            } else {
-              messageStatus = 'decrypt_failed_keys';
-              decryptedContent = "[Unable to decrypt - missing keys]";
-              console.error('❌ Decryption failed - Missing keys:', { 
-                messageId: message.id,
-                hasPublicKey: !!senderProfile?.public_key, 
-                hasKeyPair: !!keyPair,
-                keyPairPublicKey: keyPair ? encodeBase64(keyPair.publicKey).substring(0, 10) : 'none',
+                const encryptedData = {
+                  ciphertext: message.content,
+                  nonce: message.nonce,
+                  senderPublicKey: senderProfile.public_key
+                };
+                
+                decryptedContent = decryptMessage(
+                  encryptedData,
+                  senderProfile.public_key,
+                  keyPair
+                );
+                console.log('✅ Decryption successful for received message:', message.id);
+              } else {
+                messageStatus = 'decrypt_failed_keys';
+                decryptedContent = "[Unable to decrypt - missing keys]";
+                console.error('❌ Decryption failed - Missing keys:', { 
+                  messageId: message.id,
+                  hasPublicKey: !!senderProfile?.public_key, 
+                  hasKeyPair: !!keyPair,
+                });
+              }
+            } catch (error) {
+              messageStatus = 'decrypt_failed_error';
+              console.error('❌ Decryption error for message:', message.id, {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                nonceLength: message.nonce?.length,
+                contentLength: message.content?.length,
               });
+              decryptedContent = "[Unable to decrypt message]";
             }
-          } catch (error) {
-            messageStatus = 'decrypt_failed_error';
-            console.error('❌ Decryption error for message:', message.id, {
-              error: error instanceof Error ? error.message : 'Unknown error',
-              nonceLength: message.nonce?.length,
-              contentLength: message.content?.length,
-            });
-            decryptedContent = "[Unable to decrypt message]";
+          } else if (message.sender_id === user.id) {
+            // You SENT this message - it's encrypted for the recipient, you cannot decrypt it
+            // This should not be displayed in the UI anyway (UI keeps plain text)
+            messageStatus = 'sent_encrypted';
+            decryptedContent = message.content; // Keep encrypted (won't be shown in UI)
+            console.log('⏭️ Skipping decryption for sent message (encrypted for recipient):', message.id);
           }
         } else if (message.is_encrypted === true && !message.nonce) {
           // Legacy message: marked encrypted but missing nonce (never actually encrypted)
