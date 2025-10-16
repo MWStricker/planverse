@@ -194,33 +194,43 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     if (!selectedConversation || !user) return;
     let typingTimeoutId: NodeJS.Timeout | null = null;
 
+    console.log('[Typing] Initializing channel for conversation:', selectedConversation.id);
+
     const typingChannel = supabase
       .channel(`typing:${selectedConversation.id}`)
       .on('broadcast', { event: 'typing' }, (payload) => {
+        console.log('[Typing] Received typing event:', payload);
         if (payload.payload.userId !== user.id) {
           setIsTyping(true);
           
-          // Clear previous timeout
           if (typingTimeoutId) clearTimeout(typingTimeoutId);
           
-          // Set new timeout for 2 seconds
           typingTimeoutId = setTimeout(() => {
+            console.log('[Typing] Timeout expired, hiding indicator');
             setIsTyping(false);
             typingTimeoutId = null;
           }, 2000);
         }
       })
       .on('broadcast', { event: 'typing_stop' }, (payload) => {
+        console.log('[Typing] Received typing_stop event:', payload);
         if (payload.payload.userId !== user.id) {
           if (typingTimeoutId) clearTimeout(typingTimeoutId);
           setIsTyping(false);
         }
       })
-      .subscribe();
-
-    typingChannelRef.current = typingChannel; // Store the channel reference
+      .subscribe((status) => {
+        console.log('[Typing] Channel subscription status:', status);
+        
+        // Only set ref when fully subscribed
+        if (status === 'SUBSCRIBED') {
+          typingChannelRef.current = typingChannel;
+          console.log('[Typing] Channel reference stored');
+        }
+      });
 
     return () => {
+      console.log('[Typing] Cleaning up channel');
       if (typingTimeoutId) clearTimeout(typingTimeoutId);
       typingChannelRef.current = null;
       supabase.removeChannel(typingChannel);
@@ -676,10 +686,23 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   };
 
   const handleTyping = () => {
-    if (!selectedConversation || !user || !typingChannelRef.current) return;
+    if (!selectedConversation || !user) {
+      console.log('[Typing] Skipping: no conversation or user');
+      return;
+    }
+    
+    if (!typingChannelRef.current) {
+      console.log('[Typing] Skipping: channel not ready yet');
+      return;
+    }
     
     // Check if typing indicators are enabled
-    if (!messagingSettings.typing_indicators_enabled) return;
+    if (!messagingSettings.typing_indicators_enabled) {
+      console.log('[Typing] Skipping: typing indicators disabled');
+      return;
+    }
+    
+    console.log('[Typing] Sending typing event');
     
     if (typingTimeout) clearTimeout(typingTimeout);
     
@@ -693,6 +716,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     // Send explicit stop after 2 seconds of no typing
     const timeout = setTimeout(() => {
       if (typingChannelRef.current) {
+        console.log('[Typing] Sending typing_stop event');
         typingChannelRef.current.send({
           type: 'broadcast',
           event: 'typing_stop',
