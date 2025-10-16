@@ -27,16 +27,23 @@ export const MessageBubble = ({
 }: MessageBubbleProps) => {
   const [showReactionBar, setShowReactionBar] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isLongPressing, setIsLongPressing] = useState(false);
   const { reactions, addReaction } = useReactions(message.id);
 
   const handleMouseDown = () => {
+    console.log('[MessageBubble] Long press started for message:', message.id);
+    setIsLongPressing(true);
     const timer = setTimeout(() => {
+      console.log('[MessageBubble] Long press triggered for message:', message.id);
       onLongPress(message);
+      setIsLongPressing(false);
     }, 500);
     setLongPressTimer(timer);
   };
 
   const handleMouseUp = () => {
+    console.log('[MessageBubble] Long press cancelled/ended');
+    setIsLongPressing(false);
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
@@ -56,6 +63,8 @@ export const MessageBubble = ({
       onMouseLeave={handleMouseUp}
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
+      onTouchCancel={handleMouseUp}
+      onTouchMove={handleMouseUp}
     >
       <div className={`max-w-[70%] w-fit relative ${isOwn ? 'order-2' : 'order-1'}`}>
         {/* Reaction Bar */}
@@ -69,11 +78,11 @@ export const MessageBubble = ({
         )}
 
         <div
-          className={`rounded-lg px-3 py-2 inline-flex flex-col break-words overflow-wrap-anywhere ${
+          className={`rounded-lg px-3 py-2 inline-flex flex-col break-words overflow-wrap-anywhere transition-all ${
             isOwn
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted text-foreground'
-          } ${isTemp ? 'opacity-70' : ''}`}
+          } ${isTemp ? 'opacity-70' : ''} ${isLongPressing ? 'scale-95 opacity-80' : ''}`}
           onDoubleClick={() => setShowReactionBar(!showReactionBar)}
         >
           {message.image_url && (
