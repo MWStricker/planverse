@@ -389,11 +389,25 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "messages_reply_to_message_id_fkey"
             columns: ["reply_to_message_id"]
             isOneToOne: false
             referencedRelation: "messages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1159,6 +1173,10 @@ export type Database = {
       calculate_interest_match_score: {
         Args: { user1_id: string; user2_id: string }
         Returns: number
+      }
+      cleanup_stale_presence: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       decrement_likes_count: {
         Args: { post_id: string }

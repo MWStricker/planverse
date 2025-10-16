@@ -46,6 +46,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [userStatuses, setUserStatuses] = useState<Record<string, UserPresence>>({});
   const [currentUserStatus, setCurrentUserStatus] = useState<'online' | 'idle' | 'dnd' | 'offline'>('offline');
   const [hasManualStatus, setHasManualStatus] = useState(false);
+  const [heartbeatInterval, setHeartbeatInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Update user presence
   const updatePresence = async (status: 'online' | 'idle' | 'dnd' | 'offline') => {
@@ -69,6 +70,35 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
     }
   };
 
+  // Send heartbeat to keep presence fresh
+  const sendHeartbeat = async () => {
+    if (!user || currentUserStatus === 'offline') return;
+    
+    console.log('Sending presence heartbeat...');
+    
+    // Update last_seen timestamp
+    const { error } = await supabase
+      .from('user_presence')
+      .upsert({
+        user_id: user.id,
+        status: currentUserStatus,
+        last_seen: new Date().toISOString()
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
+      });
+
+    if (error) {
+      console.error('Error sending heartbeat:', error);
+    }
+    
+    // Also trigger cleanup of stale users
+    const { error: cleanupError } = await supabase.rpc('cleanup_stale_presence');
+    if (cleanupError) {
+      console.error('Error cleaning up stale presence:', cleanupError);
+    }
+  };
+
   // Load user's saved status preference
   const loadUserSavedStatus = async (): Promise<'online' | 'idle' | 'dnd' | 'offline' | null> => {
     if (!user) return null;
@@ -88,9 +118,21 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
     }
   };
 
-  // Get user status
+  // Get user status with freshness check
   const getUserStatus = (userId: string): 'online' | 'idle' | 'dnd' | 'offline' => {
-    return userStatuses[userId]?.status || 'offline';
+    const userPresence = userStatuses[userId];
+    if (!userPresence) return 'offline';
+    
+    // Check if last_seen is within 2 minutes
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const lastSeen = new Date(userPresence.last_seen);
+    
+    // If last seen is too old, consider offline regardless of stored status
+    if (lastSeen < twoMinutesAgo) {
+      return 'offline';
+    }
+    
+    return userPresence.status;
   };
 
   // Mark notification as read
@@ -260,6 +302,16 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       }
     });
 
+    // Start heartbeat interval (every 60 seconds)
+    const interval = setInterval(() => {
+      sendHeartbeat();
+    }, 60000); // 60 seconds
+
+    setHeartbeatInterval(interval);
+
+    // Send immediate heartbeat on mount
+    sendHeartbeat();
+
     // Load initial data
     loadOnlineUsers();
     loadUnreadCount();
@@ -295,6 +347,11 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       supabase.removeChannel(likesChannel);
       supabase.removeChannel(notificationsChannel);
       
+      // Clear heartbeat interval
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+      
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       
@@ -302,15 +359,15 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
     };
   }, [user]);
 
-  // Load online users
+  // Load online users - only consider users seen in last 2 minutes
   const loadOnlineUsers = async () => {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     
     const { data, error } = await supabase
       .from('user_presence')
       .select('user_id')
       .eq('status', 'online')
-      .gte('last_seen', fiveMinutesAgo);
+      .gte('last_seen', twoMinutesAgo);
 
     if (error) {
       console.error('Error loading online users:', error);
