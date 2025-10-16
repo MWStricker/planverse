@@ -24,7 +24,6 @@ import { MessageActionSheet } from './messaging/MessageActionSheet';
 import { ReplyPreview } from './messaging/ReplyPreview';
 import { useReactions } from '@/hooks/useReactions';
 import { MessageBubble } from './messaging/MessageBubble';
-import { NewMessagesPill } from './messaging/NewMessagesPill';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -52,45 +51,25 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [reactionSheetMessage, setReactionSheetMessage] = useState<Message | null>(null);
   const [actionSheetMessage, setActionSheetMessage] = useState<Message | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
-  const [newMessagesCount, setNewMessagesCount] = useState(0);
-  const [isNearBottom, setIsNearBottom] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
-  const scrollToBottom = (behavior: ScrollBehavior = 'instant') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
   };
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const element = e.currentTarget;
-    const isAtBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 100;
-    setIsNearBottom(isAtBottom);
-    
-    if (isAtBottom && newMessagesCount > 0) {
-      setNewMessagesCount(0);
-    }
-  };
-
-  // Sync messages to local state and track new messages
+  // Sync messages to local state
   useEffect(() => {
-    if (messages.length > localMessages.length && !isNearBottom) {
-      // New message arrived while scrolled up
-      setNewMessagesCount(prev => prev + (messages.length - localMessages.length));
-    }
     setLocalMessages(messages);
   }, [messages]);
 
   useEffect(() => {
     console.log('MessagingCenter: useEffect triggered - user:', user?.id, 'conversations:', conversations.length);
-    // Only auto-scroll if user is near bottom
-    if (isNearBottom) {
-      scrollToBottom();
-    }
-  }, [localMessages, isNearBottom]);
+    scrollToBottom();
+  }, [localMessages]);
 
   // Realtime subscription for new messages
   useEffect(() => {
@@ -163,7 +142,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     };
   }, [selectedConversation, user]);
 
-  // Mark messages as read with reduced debounce (100ms for faster read receipts)
+  // Mark messages as read with debouncing
   useEffect(() => {
     if (!selectedConversation || !localMessages.length || !user) return;
 
@@ -173,16 +152,12 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     if (unreadMessages.length > 0) {
       const timeoutId = setTimeout(() => {
-        // Batch update is_read and status to 'seen'
         supabase
           .from('messages')
-          .update({ 
-            is_read: true,
-            status: 'seen'
-          })
+          .update({ is_read: true })
           .in('id', unreadMessages.map(m => m.id))
-          .then(() => console.log('Messages marked as seen'));
-      }, 100);
+          .then(() => console.log('Messages marked as read'));
+      }, 500);
 
       return () => clearTimeout(timeoutId);
     }
@@ -521,25 +496,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   const handleTyping = () => {
     if (!selectedConversation || !user) return;
-    
-    const channel = supabase.channel(`typing:${selectedConversation.id}`);
-    channel.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { userId: user.id, isTyping: true }
-    });
-
-    // Clear previous timeout
     if (typingTimeout) clearTimeout(typingTimeout);
-    
-    // Send "stopped typing" after 1s of inactivity
-    const timeout = setTimeout(() => {
-      channel.send({
+    supabase.channel(`typing:${selectedConversation.id}`)
+      .send({
         type: 'broadcast',
         event: 'typing',
-        payload: { userId: user.id, isTyping: false }
+        payload: { userId: user.id, conversationId: selectedConversation.id }
       });
-    }, 1000);
+    const timeout = setTimeout(() => {}, 3000);
     setTypingTimeout(timeout);
   };
 
@@ -645,9 +609,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             </div>
 
             {/* Messages */}
-            <div className="flex-1 relative">
-              <ScrollArea className="h-full p-4" onScrollCapture={handleScroll}>
-                <div className="space-y-4">
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
                 {isTyping && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg p-3">
@@ -677,19 +640,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     />
                   );
                 })}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {/* New Messages Pill */}
-              <NewMessagesPill
-                count={newMessagesCount}
-                onClick={() => {
-                  setNewMessagesCount(0);
-                  scrollToBottom('smooth');
-                }}
-              />
-            </div>
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
 
             {/* Message Input */}
             <div className="p-4 border-t">
