@@ -176,13 +176,13 @@ export function FloatingActionPanelContent({
             initial={{ backdropFilter: "blur(0px)" }}
             animate={{ backdropFilter: "blur(4px)" }}
             exit={{ backdropFilter: "blur(0px)" }}
-            className="fixed inset-0 z-40 bg-black/5"
+            className="fixed inset-0 z-[9998] bg-black/5"
           />
           <motion.div
             ref={contentRef}
             layoutId={`floating-panel-${uniqueId}-${mode}`}
             className={cn(
-              "absolute z-50 min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white/100 shadow-xl outline-none backdrop-blur-md opacity-100 dark:border-zinc-800 dark:bg-zinc-950/100",
+              "fixed z-[9999] min-w-[200px] overflow-hidden rounded-lg border border-zinc-200 bg-white/100 shadow-xl outline-none backdrop-blur-md opacity-100 dark:border-zinc-800 dark:bg-zinc-950/100",
               className
             )}
             style={{

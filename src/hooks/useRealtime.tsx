@@ -45,6 +45,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [unreadCount, setUnreadCount] = useState(0);
   const [userStatuses, setUserStatuses] = useState<Record<string, UserPresence>>({});
   const [currentUserStatus, setCurrentUserStatus] = useState<'online' | 'idle' | 'dnd' | 'offline'>('offline');
+  const [hasManualStatus, setHasManualStatus] = useState(false);
 
   // Update user presence
   const updatePresence = async (status: 'online' | 'idle' | 'dnd' | 'offline') => {
@@ -65,6 +66,25 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       console.error('Error updating presence:', error);
     } else {
       setCurrentUserStatus(status);
+    }
+  };
+
+  // Load user's saved status preference
+  const loadUserSavedStatus = async (): Promise<'online' | 'idle' | 'dnd' | 'offline' | null> => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_presence')
+        .select('status_preference')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error || !data?.status_preference) return null;
+      return data.status_preference as 'online' | 'idle' | 'dnd' | 'offline';
+    } catch (error) {
+      console.error('Error loading saved status:', error);
+      return null;
     }
   };
 
@@ -230,20 +250,29 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       )
       .subscribe();
 
-    // Set user as online when component mounts
-    updatePresence('online');
+    // Load saved status preference first, then set user as online if no preference
+    loadUserSavedStatus().then(savedStatus => {
+      if (savedStatus) {
+        setHasManualStatus(true);
+        updatePresence(savedStatus);
+      } else {
+        updatePresence('online');
+      }
+    });
 
     // Load initial data
     loadOnlineUsers();
     loadUnreadCount();
     loadUserStatuses();
 
-    // Set up visibility change handler
+    // Set up visibility change handler - only if user hasn't manually set status
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        updatePresence('idle');
-      } else {
-        updatePresence('online');
+      if (!hasManualStatus) {
+        if (document.hidden) {
+          updatePresence('idle');
+        } else {
+          updatePresence('online');
+        }
       }
     };
 
