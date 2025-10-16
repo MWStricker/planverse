@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_type_history: {
+        Row: {
+          changed_at: string | null
+          id: string
+          new_account_type: string
+          previous_account_type: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string | null
+          id?: string
+          new_account_type: string
+          previous_account_type: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string | null
+          id?: string
+          new_account_type?: string
+          previous_account_type?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_connections: {
         Row: {
           access_token_enc: string | null

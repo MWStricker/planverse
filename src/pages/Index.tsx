@@ -116,8 +116,8 @@ const IndexContent = () => {
       { id: 'upload', label: 'Image Upload', icon: Upload },
     ];
     
-    // Only add Analytics for professional accounts
-    if (profile?.account_type === 'professional') {
+    // Only add Analytics for professional accounts (business or creator)
+    if (profile?.account_type?.startsWith('professional_')) {
       baseItems.push({ 
         id: 'analytics', 
         label: 'Analytics', 
@@ -217,7 +217,7 @@ const IndexContent = () => {
         );
       case 'analytics':
         // Only professional accounts can access analytics
-        if (profile?.account_type !== 'professional') {
+        if (!profile?.account_type?.startsWith('professional_')) {
           return (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">

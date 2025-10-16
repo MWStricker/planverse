@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar, RefreshCw, Share2 } from "lucide-react";
 import { ImageCropper } from "@/components/ImageCropper";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
+import { AccountTypeDialog } from "@/components/AccountTypeDialog";
+import { DowngradeAccountDialog } from "@/components/DowngradeAccountDialog";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1842,126 +1844,232 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
     </div>
   );
 
-  const renderAccountType = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Account Type</h2>
-        <p className="text-muted-foreground">
-          Upgrade to a professional account to access post promotion and analytics
-        </p>
-      </div>
+  const renderAccountType = () => {
+    const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+    const [showDowngradeDialog, setShowDowngradeDialog] = useState(false);
+    
+    const isProfessional = profile?.account_type?.startsWith('professional_');
+    
+    const handleUpgrade = async (accountType: 'professional_business' | 'professional_creator') => {
+      try {
+        // Track account change in history
+        await supabase.from('account_type_history').insert({
+          user_id: user?.id,
+          previous_account_type: profile?.account_type || 'personal',
+          new_account_type: accountType,
+          reason: 'User initiated upgrade'
+        });
+        
+        // Update profile
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            account_type: accountType,
+            upgraded_to_professional_at: new Date().toISOString()
+          })
+          .eq('user_id', user?.id);
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {profile?.account_type === 'professional' ? (
-              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Professional</Badge>
-            ) : (
-              <Badge variant="outline">Personal</Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {profile?.account_type === 'professional' ? (
-            <div className="space-y-4">
-              <Alert>
-                <AlertDescription>
-                  You have a professional account with access to advanced features.
-                </AlertDescription>
-              </Alert>
-              <div className="space-y-2">
-                <h4 className="font-semibold">Professional Features:</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Promote posts to reach more students</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Detailed analytics dashboard for all posts</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Track impressions, engagement, and demographics</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Priority support</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
+        if (error) throw error;
+
+        toast({
+          title: "Account Upgraded!",
+          description: `You now have a Professional ${accountType === 'professional_business' ? 'Business' : 'Creator'} account with access to all premium features.`
+        });
+        
+        setShowUpgradeDialog(false);
+      } catch (error) {
+        console.error('Error upgrading account:', error);
+        toast({
+          title: "Error",
+          description: "Failed to upgrade account. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    const handleDowngrade = async () => {
+      try {
+        // Pause all active promotions
+        await supabase
+          .from('promoted_posts')
+          .update({ status: 'paused' })
+          .eq('user_id', user?.id)
+          .eq('status', 'active');
+        
+        // Track downgrade in history
+        await supabase.from('account_type_history').insert({
+          user_id: user?.id,
+          previous_account_type: profile?.account_type || 'professional_creator',
+          new_account_type: 'personal',
+          reason: 'User initiated downgrade'
+        });
+        
+        // Update profile
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            account_type: 'personal',
+            upgraded_to_professional_at: null
+          })
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Account Downgraded",
+          description: "You've switched to a Personal account. You can upgrade again at any time."
+        });
+        
+        setShowDowngradeDialog(false);
+      } catch (error) {
+        console.error('Error downgrading account:', error);
+        toast({
+          title: "Error",
+          description: "Failed to switch account type. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Account Type</h2>
+          <p className="text-muted-foreground">
+            Manage your account type and access to professional features
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {isProfessional ? (
+                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">
+                  Professional {profile?.account_type === 'professional_business' ? 'Business' : 'Creator'}
+                </Badge>
+              ) : (
+                <Badge variant="outline">Personal</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isProfessional ? (
               <div className="space-y-4">
-                <h4 className="font-semibold">Upgrade to Professional</h4>
-                <p className="text-sm text-muted-foreground">
-                  Get access to powerful tools to grow your presence and reach more students.
-                </p>
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You have a Professional {profile?.account_type === 'professional_business' ? 'Business' : 'Creator'} account with access to advanced features.
+                  </AlertDescription>
+                </Alert>
+                
                 <div className="space-y-2">
-                  <h5 className="text-sm font-medium">What you'll get:</h5>
+                  <h4 className="font-semibold">Your Professional Features:</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Post Promotion:</strong> Boost your posts to reach thousands more students</span>
+                      <span>Promote posts to reach more students</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Analytics Dashboard:</strong> See detailed metrics on all your posts</span>
+                      <span>Detailed analytics dashboard for all posts</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Advanced Insights:</strong> Understand your audience demographics</span>
+                      <span>Track impressions, engagement, and demographics</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Professional Badge:</strong> Stand out with a verified badge</span>
+                      <span>Professional badge on your profile</span>
                     </li>
                   </ul>
                 </div>
+                
+                <Separator />
+                
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium">Want to switch back?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    You can switch to a Personal account at any time. Your posts and data will be preserved.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowDowngradeDialog(true)}
+                    className="w-full"
+                  >
+                    Switch to Personal Account
+                  </Button>
+                </div>
               </div>
-              <Button 
-                onClick={async () => {
-                  try {
-                    const { error } = await supabase
-                      .from('profiles')
-                      .update({
-                        account_type: 'professional',
-                        upgraded_to_professional_at: new Date().toISOString()
-                      })
-                      .eq('user_id', user?.id);
-
-                    if (error) throw error;
-
-                    toast({
-                      title: "Upgraded to Professional!",
-                      description: "You now have access to all professional features."
-                    });
-
-                    // Refresh profile
-                    window.location.reload();
-                  } catch (error) {
-                    console.error('Error upgrading account:', error);
-                    toast({
-                      title: "Error",
-                      description: "Failed to upgrade account. Please try again.",
-                      variant: "destructive"
-                    });
-                  }
-                }}
-                className="w-full"
-              >
-                Upgrade to Professional (Free)
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                You can switch back to a personal account at any time
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+            ) : (
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Upgrade to Professional</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Get access to powerful tools to grow your presence and reach more students.
+                  </p>
+                  
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card className="border-2">
+                      <CardHeader>
+                        <CardTitle className="text-base">Business / Organization</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <p className="text-muted-foreground">For clubs, events, and campus services</p>
+                        <ul className="space-y-1">
+                          <li>• Promote events</li>
+                          <li>• Campaign analytics</li>
+                          <li>• Engagement tracking</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-2">
+                      <CardHeader>
+                        <CardTitle className="text-base">Content Creator</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <p className="text-muted-foreground">For influencers and personal brands</p>
+                        <ul className="space-y-1">
+                          <li>• Boost content reach</li>
+                          <li>• Performance metrics</li>
+                          <li>• Audience insights</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={() => setShowUpgradeDialog(true)}
+                  className="w-full"
+                  size="lg"
+                >
+                  Choose Professional Account Type
+                </Button>
+                
+                <p className="text-xs text-center text-muted-foreground">
+                  Free upgrade • Switch back anytime • No credit card required
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <AccountTypeDialog 
+          open={showUpgradeDialog}
+          onClose={() => setShowUpgradeDialog(false)}
+          onConfirm={handleUpgrade}
+        />
+        
+        <DowngradeAccountDialog 
+          open={showDowngradeDialog}
+          onClose={() => setShowDowngradeDialog(false)}
+          onConfirm={handleDowngrade}
+          currentAccountType={profile?.account_type || 'professional_creator'}
+        />
+      </div>
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {

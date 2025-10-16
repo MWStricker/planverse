@@ -23,8 +23,8 @@ export const BottomNav = ({ currentPage, onPageChange }: BottomNavProps) => {
       { id: 'settings', icon: Settings, label: 'Settings' },
     ];
     
-    // Insert Analytics before Settings for professional accounts
-    if (profile?.account_type === 'professional') {
+    // Insert Analytics before Settings for professional accounts (business or creator)
+    if (profile?.account_type?.startsWith('professional_')) {
       baseItems.splice(3, 0, { 
         id: 'analytics', 
         icon: TrendingUp, 

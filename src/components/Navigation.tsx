@@ -151,8 +151,8 @@ export const Navigation = ({
       { id: 'upload', label: 'Image Upload', icon: Upload },
     ];
     
-    // Only add Analytics for professional accounts
-    if (profile?.account_type === 'professional') {
+    // Only add Analytics for professional accounts (business or creator)
+    if (profile?.account_type?.startsWith('professional_')) {
       baseItems.push({ 
         id: 'analytics', 
         label: 'Analytics', 

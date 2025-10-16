@@ -79,7 +79,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (!profile || profile.account_type !== 'professional') {
+    if (!profile || !profile.account_type?.startsWith('professional_')) {
       throw new Error('Professional account required to promote posts');
     }
 
