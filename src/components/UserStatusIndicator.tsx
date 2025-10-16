@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/floating-action-panel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 interface UserStatusIndicatorProps {
   status: 'online' | 'idle' | 'dnd' | 'offline';
@@ -74,6 +75,7 @@ export const UserStatusIndicator = ({
         .upsert({
           user_id: user.id,
           status: newStatus,
+          status_preference: newStatus,
           last_seen: new Date().toISOString()
         }, {
           onConflict: 'user_id'
@@ -81,6 +83,16 @@ export const UserStatusIndicator = ({
 
       if (error) {
         console.error('Error updating status:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update status. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Status Updated",
+          description: `Your status is now: ${getStatusLabel(newStatus)}`,
+        });
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -110,7 +122,7 @@ export const UserStatusIndicator = ({
             title="Change Status"
             mode="actions"
             className={compact 
-              ? "p-0.5 h-auto bg-transparent hover:bg-muted/30 rounded-full border-0 transition-all duration-200"
+              ? "p-1.5 h-auto min-w-[44px] min-h-[44px] flex items-center justify-center bg-transparent hover:bg-muted/30 rounded-full border-0 transition-all duration-200"
               : "p-1.5 h-auto bg-muted/20 hover:bg-muted/50 rounded-md border border-border/20 hover:border-border/40 transition-all duration-200"
             }
           >
