@@ -31,7 +31,7 @@ export const useReactions = (messageId?: string) => {
         .from('reactions')
         .select(`
           *,
-          profiles!user_id(user_id, display_name, avatar_url)
+          profiles(user_id, display_name, avatar_url)
         `)
         .eq('message_id', msgId);
 
