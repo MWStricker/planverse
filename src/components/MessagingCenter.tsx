@@ -453,9 +453,13 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       
       // Make sure it has a valid other_user
       if (topConversation.other_user) {
-        console.log('[MessagingCenter] Auto-selecting top conversation on mount/update:', topConversation.id, topConversation.other_user.display_name);
-        setSelectedConversation(topConversation);
-        fetchMessages(topConversation.id, topConversation.other_user.id);
+        // Only select if it's different from the currently selected conversation
+        // This prevents infinite loops from re-fetching the same conversation
+        if (!selectedConversation || selectedConversation.id !== topConversation.id) {
+          console.log('[MessagingCenter] Auto-selecting top conversation on mount/update:', topConversation.id, topConversation.other_user.display_name);
+          setSelectedConversation(topConversation);
+          fetchMessages(topConversation.id, topConversation.other_user.id);
+        }
       }
     }
   }, [conversations, selectedUserId]);
