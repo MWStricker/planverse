@@ -71,15 +71,17 @@ export const usePromotedPosts = () => {
     postId: string,
     budget: number,
     durationDays: number,
-    skipPayment: boolean = false
-  ): Promise<{ success: boolean; clientSecret?: string; error?: string }> => {
+    skipPayment: boolean = false,
+    promotionConfig?: any
+  ): Promise<{ success: boolean; clientSecret?: string; error?: string; priorityScore?: number }> => {
     try {
       const { data, error } = await supabase.functions.invoke('create-promotion', {
-        body: {
-          postId,
-          budget,
+        body: { 
+          postId, 
+          budget, 
           durationDays,
-          skipPayment
+          skipPayment,
+          promotionConfig 
         }
       });
 
@@ -87,7 +89,11 @@ export const usePromotedPosts = () => {
 
       if (data.success) {
         await fetchPromotedPosts();
-        return { success: true, clientSecret: data.clientSecret };
+        return { 
+          success: true, 
+          clientSecret: data.clientSecret,
+          priorityScore: data.priorityScore 
+        };
       }
 
       return { success: false, error: data.error };

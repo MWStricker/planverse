@@ -8,14 +8,19 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Eye, Users, DollarSign, Calendar } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePromotedPosts } from '@/hooks/usePromotedPosts';
 import { useToast } from '@/hooks/use-toast';
-import { loadStripe } from '@stripe/stripe-js';
+import { useAuth } from '@/hooks/useAuth';
+
+// Step Components
+import { GoalStep, PromotionGoal } from './promote/GoalStep';
+import { AudienceStep, AudienceConfig } from './promote/AudienceStep';
+import { PlacementsStep, Placement } from './promote/PlacementsStep';
+import { BudgetStep, BudgetConfig } from './promote/BudgetStep';
+import { EligibilityStep } from './promote/EligibilityStep';
+import { ReviewStep } from './promote/ReviewStep';
 
 interface Post {
   id: string;
@@ -30,46 +35,136 @@ interface PromotePostDialogProps {
   post: Post;
 }
 
-const DURATION_OPTIONS = [
-  { days: 3, label: '3 Days' },
-  { days: 7, label: '7 Days' },
-  { days: 14, label: '14 Days' },
-  { days: 30, label: '30 Days' }
-];
+interface PromotionConfig {
+  goal: PromotionGoal;
+  audience: AudienceConfig;
+  placements: Placement[];
+  budget: BudgetConfig;
+  metrics: {
+    primary: string;
+    primaryTarget: number;
+    secondary: string[];
+    guardrails: {
+      frequencyCap: number;
+      negativeFeedbackThreshold: number;
+      ctrThreshold: number;
+    };
+  };
+  reporting: {
+    dailyEmail: boolean;
+    inAppDashboard: boolean;
+  };
+}
 
-const calculatePriorityScore = (budget: number, days: number): number => {
-  const budgetScore = Math.min((budget / 500) * 50, 50);
-  const durationScore = Math.min((days / 30) * 50, 50);
-  return Math.round(budgetScore + durationScore);
-};
+const STEPS = [
+  { id: 1, title: 'Goal', description: 'What do you want to achieve?' },
+  { id: 2, title: 'Audience', description: 'Who should see this?' },
+  { id: 3, title: 'Placements', description: 'Where to show your post?' },
+  { id: 4, title: 'Budget', description: 'How much to spend?' },
+  { id: 5, title: 'Eligibility', description: 'Check your content' },
+  { id: 6, title: 'Review', description: 'Finalize your campaign' },
+];
 
 export const PromotePostDialog: React.FC<PromotePostDialogProps> = ({
   open,
   onOpenChange,
   post
 }) => {
-  const [budget, setBudget] = useState([50]);
-  const [durationDays, setDurationDays] = useState(7);
+  const [currentStep, setCurrentStep] = useState(1);
   const [processing, setProcessing] = useState(false);
   const { createPromotion } = usePromotedPosts();
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Calculate metrics
-  const estimatedImpressions = Math.floor(budget[0] * 100 * (1 + durationDays / 10));
-  const costPerDay = (budget[0] / durationDays).toFixed(2);
-  const priorityScore = calculatePriorityScore(budget[0], durationDays);
+  // Promotion Configuration State
+  const [promotionConfig, setPromotionConfig] = useState<PromotionConfig>({
+    goal: 'engagement',
+    audience: {
+      mode: 'automatic',
+      estimatedReach: 5000,
+      locations: [],
+      ageRange: [18, 24],
+      gender: 'all',
+      interests: []
+    },
+    placements: ['main_feed', 'explore'],
+    budget: {
+      type: 'daily',
+      amount: 10,
+      duration: 7,
+      totalBudget: 70
+    },
+    metrics: {
+      primary: 'cost_per_engagement',
+      primaryTarget: 0.15,
+      secondary: ['impressions', 'reach', 'ctr', 'frequency'],
+      guardrails: {
+        frequencyCap: 3,
+        negativeFeedbackThreshold: 0.05,
+        ctrThreshold: 0.01
+      }
+    },
+    reporting: {
+      dailyEmail: true,
+      inAppDashboard: true
+    }
+  });
+
+  // Get user's profile info for audience targeting
+  const [userProfile, setUserProfile] = React.useState<{ school?: string; major?: string }>({});
+
+  React.useEffect(() => {
+    if (user) {
+      // You could fetch this from the profiles table if needed
+      // For now, we'll leave it empty
+    }
+  }, [user]);
+
+  const handleNext = () => {
+    // Validation before moving to next step
+    if (currentStep === 2 && promotionConfig.audience.mode === 'manual' && promotionConfig.audience.interests.length < 3) {
+      toast({
+        title: "Add More Interests",
+        description: "Please add at least 3 interests for manual targeting",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (currentStep === 3 && promotionConfig.placements.length === 0) {
+      toast({
+        title: "Select Placements",
+        description: "Please select at least one placement",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+  };
+
+  const handleBack = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
 
   const handlePromote = async () => {
     setProcessing(true);
     try {
-      const result = await createPromotion(post.id, budget[0], durationDays, true); // skipPayment = true
+      const result = await createPromotion(
+        post.id,
+        promotionConfig.budget.totalBudget,
+        promotionConfig.budget.duration,
+        true, // skipPayment = true (for now)
+        promotionConfig // Pass full config
+      );
 
       if (result.success) {
         toast({
           title: "Promotion Activated!",
-          description: "Your post is now being promoted and will appear at the top of feeds."
+          description: `Your post is now being promoted with a priority score of ${result.priorityScore}/100`
         });
         onOpenChange(false);
+        setCurrentStep(1); // Reset for next time
       } else {
         throw new Error(result.error || 'Failed to create promotion');
       }
@@ -85,136 +180,117 @@ export const PromotePostDialog: React.FC<PromotePostDialogProps> = ({
     }
   };
 
+  const progress = (currentStep / STEPS.length) * 100;
+  const canGoNext = currentStep < STEPS.length;
+  const canGoBack = currentStep > 1;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      onOpenChange(isOpen);
+      if (!isOpen) setCurrentStep(1); // Reset on close
+    }}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
             Promote Your Post
           </DialogTitle>
           <DialogDescription>
-            Increase your post's visibility and reach more students
+            Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].description}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Post Preview */}
-          <Card>
-            <CardContent className="pt-6 space-y-3">
-              {post.image_url && (
-                <div className="w-full h-48 rounded-lg overflow-hidden bg-muted">
-                  <img 
-                    src={post.image_url} 
-                    alt="Post preview" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <p className="text-sm">{post.content}</p>
-              <Badge variant="outline">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                Will be promoted
-              </Badge>
-            </CardContent>
-          </Card>
-
-          {/* Budget Slider */}
-          <div className="space-y-4">
-            <Label className="text-base font-semibold">Promotion Budget</Label>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Amount</span>
-                <span className="text-2xl font-bold">${budget[0]}</span>
-              </div>
-              <Slider
-                value={budget}
-                onValueChange={setBudget}
-                min={5}
-                max={1000}
-                step={5}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>$5 (Min)</span>
-                <span>$1,000 (Max)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Duration Selection */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">Campaign Duration</Label>
-            <div className="grid grid-cols-4 gap-2">
-              {DURATION_OPTIONS.map((option) => (
-                <Button
-                  key={option.days}
-                  variant={durationDays === option.days ? 'default' : 'outline'}
-                  onClick={() => setDurationDays(option.days)}
-                  className="w-full"
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Estimated Metrics */}
-          <Card className="bg-muted/50">
-            <CardContent className="pt-6 space-y-4">
-              <h4 className="font-semibold text-sm">Estimated Performance</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Eye className="h-4 w-4" />
-                    <span className="text-xs">Impressions</span>
-                  </div>
-                  <p className="text-xl font-bold">{estimatedImpressions.toLocaleString()}</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span className="text-xs">Duration</span>
-                  </div>
-                  <p className="text-xl font-bold">{durationDays} days</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <DollarSign className="h-4 w-4" />
-                    <span className="text-xs">Per Day</span>
-                  </div>
-                  <p className="text-xl font-bold">${costPerDay}</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-xs">Priority</span>
-                  </div>
-                  <p className="text-xl font-bold">{priorityScore}/100</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Important Info */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm">
-            <p className="font-medium mb-2">How it works:</p>
-            <ul className="space-y-1 text-muted-foreground">
-              <li>• Your post will appear at the top of feeds based on priority score</li>
-              <li>• Higher budget + longer duration = higher priority</li>
-              <li>• Track impressions, clicks, and engagement in real-time</li>
-              <li>• Promotion will automatically end after the selected duration</li>
-            </ul>
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <Progress value={progress} className="h-2" />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            {STEPS.map((step, index) => (
+              <span
+                key={step.id}
+                className={`${
+                  currentStep === step.id ? 'text-primary font-medium' : ''
+                } ${currentStep > step.id ? 'text-muted-foreground' : ''}`}
+              >
+                {step.title}
+              </span>
+            ))}
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
-            Cancel
+        {/* Step Content */}
+        <div className="py-4">
+          {currentStep === 1 && (
+            <GoalStep
+              selectedGoal={promotionConfig.goal}
+              onGoalChange={(goal) => setPromotionConfig({ ...promotionConfig, goal })}
+            />
+          )}
+
+          {currentStep === 2 && (
+            <AudienceStep
+              audience={promotionConfig.audience}
+              onAudienceChange={(audience) => setPromotionConfig({ ...promotionConfig, audience })}
+              userSchool={userProfile.school}
+              userMajor={userProfile.major}
+            />
+          )}
+
+          {currentStep === 3 && (
+            <PlacementsStep
+              selectedPlacements={promotionConfig.placements}
+              onPlacementsChange={(placements) => setPromotionConfig({ ...promotionConfig, placements })}
+              hasImage={!!post.image_url}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <BudgetStep
+              budget={promotionConfig.budget}
+              onBudgetChange={(budget) => setPromotionConfig({ ...promotionConfig, budget })}
+            />
+          )}
+
+          {currentStep === 5 && (
+            <EligibilityStep post={post} />
+          )}
+
+          {currentStep === 6 && (
+            <ReviewStep
+              goal={promotionConfig.goal}
+              audience={promotionConfig.audience}
+              placements={promotionConfig.placements}
+              budget={promotionConfig.budget}
+              post={post}
+            />
+          )}
+        </div>
+
+        <DialogFooter className="flex justify-between sm:justify-between">
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            disabled={!canGoBack || processing}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back
           </Button>
-          <Button onClick={handlePromote} disabled={processing}>
-            {processing ? 'Activating...' : 'Skip Payment & Activate'}
-          </Button>
+
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={processing}>
+              Cancel
+            </Button>
+
+            {canGoNext ? (
+              <Button onClick={handleNext} disabled={processing}>
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            ) : (
+              <Button onClick={handlePromote} disabled={processing}>
+                {processing ? 'Activating...' : 'Activate Promotion'}
+              </Button>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

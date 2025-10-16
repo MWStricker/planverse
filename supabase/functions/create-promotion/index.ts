@@ -33,9 +33,9 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { postId, budget, durationDays, skipPayment } = await req.json();
+    const { postId, budget, durationDays, skipPayment, promotionConfig } = await req.json();
 
-    console.log('Creating promotion:', { postId, budget, durationDays, skipPayment, userId: user.id });
+    console.log('Creating promotion:', { postId, budget, durationDays, skipPayment, promotionConfig, userId: user.id });
 
     // Validate inputs
     if (!postId || !budget || !durationDays) {
@@ -95,6 +95,7 @@ serve(async (req) => {
         status: 'pending',
         moderation_status: 'pending',
         target_impressions: Math.floor(budget * 100 * (1 + durationDays / 10)),
+        promotion_config: promotionConfig || {},
       })
       .select()
       .single();
