@@ -190,11 +190,16 @@ export const loadDeviceIdentity = async (): Promise<DeviceIdentity | null> => {
   const stored = await get(DEVICE_IDENTITY_KEY);
   if (!stored) return null;
 
+  // ENSURE publicKey is Uint8Array, not regular Array from JSON
+  const publicKeyArray = stored.publicKey instanceof Uint8Array
+    ? stored.publicKey
+    : new Uint8Array(decodeBase64(stored.publicKey));
+
   return {
     deviceId: stored.deviceId,
     keyPair: {
-      publicKey: new Uint8Array(decodeBase64(stored.publicKey)),
-      secretKey: new Uint8Array(0) // Not loaded yet
+      publicKey: publicKeyArray,
+      secretKey: new Uint8Array(0) // Secret key loaded separately via unlockPrivateKey
     },
     fingerprint: stored.fingerprint,
     createdAt: stored.createdAt
@@ -222,9 +227,10 @@ export const unlockPrivateKey = async (sessionToken: string): Promise<KeyPair> =
   // Decrypt private key using session
   const secretKey = await decryptPrivateKey(encryptedKey, sessionToken, identity.deviceId);
 
+  // ENSURE both keys are Uint8Array
   return {
-    publicKey: identity.keyPair.publicKey,
-    secretKey
+    publicKey: identity.keyPair.publicKey, // Already Uint8Array from loadDeviceIdentity fix
+    secretKey: new Uint8Array(secretKey)
   };
 };
 

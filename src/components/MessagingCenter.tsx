@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, School, Upload, X, Lock } from 'lucide-react';
+import { Send, ArrowLeft, School, Upload, X, Lock, ShieldAlert } from 'lucide-react';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
@@ -613,7 +613,12 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                           )}
                           <div className="flex items-center gap-2">
                             <p className="text-sm break-words flex-1">{message.content}</p>
-                            {message.is_encrypted && <Lock className="h-3 w-3 text-green-500 flex-shrink-0" />}
+                            {message.is_encrypted && message.nonce && (
+                              <Lock className="h-3 w-3 text-green-500 flex-shrink-0" title="End-to-end encrypted" />
+                            )}
+                            {message.is_encrypted && !message.nonce && (
+                              <ShieldAlert className="h-3 w-3 text-yellow-500 flex-shrink-0" title="Legacy message (not encrypted)" />
+                            )}
                           </div>
                         </div>
                         <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>

@@ -89,6 +89,13 @@ export const encryptMessage = (
   recipientPublicKey: string,
   senderKeyPair: KeyPair
 ): EncryptedMessage => {
+  console.log('🔒 encryptMessage called:', {
+    messageLength: message.length,
+    hasRecipientKey: !!recipientPublicKey,
+    senderPublicKeyType: senderKeyPair.publicKey.constructor.name,
+    senderSecretKeyType: senderKeyPair.secretKey.constructor.name
+  });
+
   // Generate unique nonce for this message
   const nonce = nacl.randomBytes(nacl.box.nonceLength);
   
@@ -96,25 +103,42 @@ export const encryptMessage = (
   const encoder = new TextEncoder();
   const messageUint8 = encoder.encode(message);
   
-  // Decrypt recipient's public key
-  const recipientPubKey = new Uint8Array(decodeBase64(recipientPublicKey));
+  // Decode recipient's public key
+  const recipientPubKey = decodeBase64(recipientPublicKey);
+  
+  // ENSURE types are correct (handle both Uint8Array and regular Array from JSON)
+  const senderPublicKey = senderKeyPair.publicKey instanceof Uint8Array 
+    ? senderKeyPair.publicKey 
+    : new Uint8Array(senderKeyPair.publicKey);
+    
+  const senderSecretKey = senderKeyPair.secretKey instanceof Uint8Array 
+    ? senderKeyPair.secretKey 
+    : new Uint8Array(senderKeyPair.secretKey);
+  
+  console.log('🔐 Encrypting with NaCl box...');
   
   // Encrypt using NaCl box (X25519 + XSalsa20-Poly1305)
   const encrypted = nacl.box(
     messageUint8,
     nonce,
     recipientPubKey,
-    new Uint8Array(senderKeyPair.secretKey)
+    senderSecretKey
   );
   
   if (!encrypted) {
+    console.error('❌ Encryption failed - nacl.box returned null');
     throw new Error('Encryption failed');
   }
+  
+  console.log('✅ Encryption successful:', {
+    ciphertextLength: encrypted.length,
+    nonceLength: nonce.length
+  });
   
   return {
     ciphertext: encodeBase64(encrypted),
     nonce: encodeBase64(nonce),
-    senderPublicKey: encodeBase64(senderKeyPair.publicKey)
+    senderPublicKey: encodeBase64(senderPublicKey)
   };
 };
 

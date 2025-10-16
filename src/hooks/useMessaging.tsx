@@ -149,11 +149,14 @@ export const useMessaging = () => {
 
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
-      // Decrypt messages
+      // Decrypt messages with legacy message handling
       const messagesWithProfiles = data.map((message) => {
         let decryptedContent = message.content;
+        let messageStatus = 'plain'; // Track for debugging
 
-        if (message.is_encrypted && message.nonce) {
+        // ONLY decrypt if BOTH is_encrypted flag AND nonce are present
+        if (message.is_encrypted === true && message.nonce) {
+          messageStatus = 'encrypted';
           try {
             const senderProfile = profileMap.get(message.sender_id);
             if (senderProfile?.public_key && keyPair) {
@@ -163,19 +166,34 @@ export const useMessaging = () => {
                 senderPublicKey: senderProfile.public_key
               };
               
+              console.log('🔓 Decrypting message:', message.id);
               decryptedContent = decryptMessage(
                 encryptedData,
                 senderProfile.public_key,
                 keyPair
               );
+              console.log('✅ Decryption successful');
             } else {
+              messageStatus = 'decrypt_failed_keys';
               decryptedContent = "[Unable to decrypt - missing keys]";
+              console.warn('Missing keys for decryption:', { 
+                hasPublicKey: !!senderProfile?.public_key, 
+                hasKeyPair: !!keyPair 
+              });
             }
           } catch (error) {
-            console.error('Decryption failed:', error);
+            messageStatus = 'decrypt_failed_error';
+            console.error('Decryption failed for message:', message.id, error);
             decryptedContent = "[Unable to decrypt message]";
           }
+        } else if (message.is_encrypted === true && !message.nonce) {
+          // Legacy message: marked encrypted but missing nonce (never actually encrypted)
+          messageStatus = 'legacy_plain';
+          console.warn('Legacy unencrypted message detected:', message.id);
+          // Content is already plain text, just display it
         }
+
+        console.log(`Message ${message.id}: ${messageStatus}`);
 
         return {
           ...message,
@@ -195,8 +213,9 @@ export const useMessaging = () => {
   const sendMessage = async (receiverId: string, content: string, imageUrl?: string) => {
     if (!user || (!content.trim() && !imageUrl)) return false;
 
-    // Check if encryption is ready
-    if (!isUnlocked || !keyPair) {
+    // Check if encryption is ready - INCLUDING deviceId
+    if (!isUnlocked || !keyPair || !deviceId) {
+      console.error('❌ Encryption not ready:', { isUnlocked, hasKeyPair: !!keyPair, deviceId });
       toast({
         title: "Encryption Not Ready",
         description: "Please wait while we set up secure messaging...",
@@ -204,6 +223,13 @@ export const useMessaging = () => {
       });
       return false;
     }
+
+    console.log('✅ Encryption ready, sending message:', {
+      isUnlocked,
+      hasKeyPair: !!keyPair,
+      deviceId,
+      recipientId: receiverId
+    });
 
     try {
       // Get receiver's public key
@@ -224,11 +250,13 @@ export const useMessaging = () => {
 
       // Encrypt message content
       const messageText = content.trim() || '';
+      console.log('🔒 Encrypting message for recipient:', receiverId);
       const encryptedData = encryptMessage(
         messageText,
         receiverProfile.public_key,
         keyPair
       );
+      console.log('✅ Message encrypted successfully');
 
       // Get or create conversation
       const { data: conversationId, error: convError } = await supabase
