@@ -627,13 +627,56 @@ export const Courses = ({}: CoursesProps = {}) => {
           courseCode = courseCode.replace(/-\d{3}$/, '');
         }
         
-        console.log('Extracted course code:', courseCode, 'from title:', title);
-        return courseCode.toUpperCase();
+        const finalCode = courseCode.toUpperCase();
+        if (finalCode.includes('-L')) {
+          console.log('🧪 LAB COURSE EXTRACTED:', finalCode, 'from title:', title);
+        } else {
+          console.log('📚 Regular course extracted:', finalCode, 'from title:', title);
+        }
+        return finalCode;
       }
     }
     
-    console.log('No course code found in:', title);
+    console.log('❌ No course code found in:', title);
     return null;
+  };
+
+  const handleResetCourseOrder = async () => {
+    if (!user) return;
+    
+    try {
+      // Clear localStorage
+      localStorage.removeItem('courseOrder');
+      localStorage.removeItem(`customCourseColors-${user.id}`);
+      localStorage.removeItem(`customCourseIcons-${user.id}`);
+      
+      console.log('🔄 Cleared course localStorage - refreshing...');
+      
+      // Reset state
+      setCourseOrder([]);
+      setStoredColors({});
+      setCourseIcons_State({});
+      
+      // Reload courses
+      await fetchCoursesDataWithIcons();
+      
+      toast({
+        title: "Course Order Reset",
+        description: "All course settings have been cleared. The page will reload.",
+      });
+      
+      // Force full page refresh after a brief delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Error resetting course order:', error);
+      toast({
+        title: "Reset Failed",
+        description: "Could not reset course order.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Use the exact same color logic as Calendar component
@@ -926,6 +969,15 @@ export const Courses = ({}: CoursesProps = {}) => {
               >
                 <Settings className="h-4 w-4" />
                 Reorder Courses
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleResetCourseOrder}
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Reset All
               </Button>
             </>
           )}
