@@ -111,11 +111,48 @@ export const useBlockUser = () => {
     }
   };
 
+  const getBlockedUsersWithProfiles = async (): Promise<any[]> => {
+    if (!user) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('blocked_users')
+        .select(`
+          id,
+          blocked_id,
+          created_at,
+          profiles:blocked_id (
+            display_name,
+            avatar_url,
+            school,
+            major
+          )
+        `)
+        .eq('blocker_id', user.id);
+
+      if (error) throw error;
+
+      return (data || []).map((row: any) => ({
+        blockId: row.id,
+        userId: row.blocked_id,
+        displayName: row.profiles?.display_name,
+        avatarUrl: row.profiles?.avatar_url,
+        school: row.profiles?.school,
+        major: row.profiles?.major,
+        blockedAt: row.created_at,
+      }));
+    } catch (error) {
+      console.error('Error fetching blocked users with profiles:', error);
+      return [];
+    }
+  };
+
   return {
     blockUser,
     unblockUser,
     getBlockedUsers,
     isUserBlocked,
+    getBlockedUsersWithProfiles,
     loading,
   };
 };

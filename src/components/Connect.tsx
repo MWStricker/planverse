@@ -22,8 +22,9 @@ import { CreatePostDialog } from './CreatePostDialog';
 import { PostFilters } from './PostFilters';
 import { PublicProfile as PublicProfileComponent } from './PublicProfile';
 import { formatDistanceToNow } from 'date-fns';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Settings } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
+import { ConnectSettings } from './ConnectSettings';
 
 interface ConnectProps {
   onNavigateToAnalytics?: () => void;
@@ -406,18 +407,35 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Student Connect</h1>
         
-        {/* Analytics Button - Only for Professional Accounts */}
-        {profile?.account_type?.startsWith('professional_') && onNavigateToAnalytics && (
-          <Button 
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={onNavigateToAnalytics}
-          >
-            <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">View Analytics</span>
-            <span className="sm:hidden">Analytics</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Settings Button */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Connect Settings</DialogTitle>
+              </DialogHeader>
+              <ConnectSettings />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Analytics Button - Only for Professional Accounts */}
+          {profile?.account_type?.startsWith('professional_') && onNavigateToAnalytics && (
+            <Button 
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={onNavigateToAnalytics}
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">View Analytics</span>
+              <span className="sm:hidden">Analytics</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Main Content Tabs */}
