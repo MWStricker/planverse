@@ -215,6 +215,36 @@ export const ScheduleScanner = () => {
       
       const userTimezone = profile?.timezone || 'America/New_York';
 
+      // Map event types from AI to valid database values
+      const mapEventType = (aiType: string | undefined): string => {
+        if (!aiType) return 'class';
+        
+        const type = aiType.toLowerCase();
+        
+        // Map common class types to 'class'
+        if (type.includes('lecture') || type.includes('class') || 
+            type.includes('lab') || type.includes('discussion') || 
+            type.includes('recitation') || type.includes('tutorial')) {
+          return 'class';
+        }
+        
+        // Map assignment-related types
+        if (type.includes('assignment') || type.includes('homework') || 
+            type.includes('project')) {
+          return 'assignment';
+        }
+        
+        // Map exam-related types
+        if (type.includes('exam') || type.includes('test') || 
+            type.includes('quiz') || type.includes('midterm') || 
+            type.includes('final')) {
+          return 'exam';
+        }
+        
+        // Default to 'class' for scheduled events
+        return 'class';
+      };
+
       // Convert selected events to database format (filter out already added)
       const eventsToAdd = Array.from(selectedEvents)
         .filter(index => !addedEvents.has(index))
@@ -237,7 +267,7 @@ export const ScheduleScanner = () => {
           end_time: endTimeUTC.toISOString(),
           location: event.location || null,
           source_provider: 'schedule_scanner',
-          event_type: event.type || 'class',
+          event_type: mapEventType(event.type),
           is_all_day: false,
           // Add weekly recurrence for classes (15 weeks = typical semester)
           recurrence_rule: 'FREQ=WEEKLY;COUNT=15'
