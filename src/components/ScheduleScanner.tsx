@@ -108,10 +108,11 @@ export const ScheduleScanner = () => {
       }
 
       setScheduleAnalysis(data);
+      setIsProcessing(false); // Mark processing as complete
       setSelectedEvents(new Set()); // Reset selected events
       toast({
-        title: "Schedule analyzed successfully",
-        description: `Detected ${data.format} with ${data.events.length} events (${Math.round(data.confidence * 100)}% confidence)`,
+        title: "✓ Schedule analyzed successfully",
+        description: `Found ${data.events.length} events with ${Math.round(data.confidence * 100)}% confidence. Scroll down to review and select events.`,
       });
       
     } catch (error) {
@@ -386,6 +387,30 @@ export const ScheduleScanner = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Processing Complete Banner */}
+      {scheduleAnalysis && !isProcessing && (
+        <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                <Check className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-green-900 dark:text-green-100">
+                  Processing Complete!
+                </p>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  {scheduleAnalysis.events.length} events extracted from your schedule. Review and select events below to add to your calendar.
+                </p>
+              </div>
+              <Badge variant="default" className="bg-green-500">
+                {Math.round(scheduleAnalysis.confidence * 100)}% confidence
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Preview Image */}
       {selectedFile && (
