@@ -84,20 +84,24 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
     setOpen(!open);
   };
 
-  // Update position on scroll/resize
+  // Close on scroll, update position on resize
   useEffect(() => {
     if (!open) return;
 
-    const handleUpdate = () => {
+    const handleScroll = () => {
+      setOpen(false);
+    };
+
+    const handleResize = () => {
       updatePosition();
     };
 
-    window.addEventListener('scroll', handleUpdate, true);
-    window.addEventListener('resize', handleUpdate);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('scroll', handleUpdate, true);
-      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
     };
   }, [open, updatePosition]);
 
