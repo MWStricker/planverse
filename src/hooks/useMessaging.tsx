@@ -215,6 +215,36 @@ export const useMessaging = () => {
 
       if (messageError) throw messageError;
 
+      // Send notification to the receiver
+      try {
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+
+        const senderName = senderProfile?.display_name || 'Someone';
+        const messagePreview = content.trim() 
+          ? content.substring(0, 50) + (content.length > 50 ? '...' : '')
+          : 'Sent an image';
+
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            userId: receiverId,
+            type: 'new_message',
+            title: `New message from ${senderName}`,
+            message: messagePreview,
+            data: {
+              senderId: user.id,
+              conversationId: conversationId,
+              hasImage: !!imageUrl
+            }
+          }
+        });
+      } catch (notificationError) {
+        console.error('Error sending notification:', notificationError);
+      }
+
       // Update conversation last message time locally
       setConversations(prev => prev.map(conv => 
         conv.id === conversationId 
