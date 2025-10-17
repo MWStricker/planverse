@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { FloatingActionPanelRoot, FloatingActionPanelTrigger, FloatingActionPanelContent, FloatingActionPanelButton } from '@/components/ui/floating-action-panel';
+import { NativeDropdown, NativeDropdownItem } from '@/components/ui/native-dropdown';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useIntersectionObserver } from '@/lib/performance';
 import { Post } from '@/hooks/useConnect';
@@ -316,89 +316,63 @@ export const PostCard = memo(({ id, post, isOwner, onLike, onComment, onDelete, 
           </div>
           <div className="flex items-center gap-2">
             {isOwner && (
-              <FloatingActionPanelRoot>
-                {({ closePanel }) => (
-                  <>
-                    <FloatingActionPanelTrigger 
-                      title="Post Actions" 
-                      mode="actions"
-                      className="h-8 w-8 p-0 hover:bg-accent"
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <NativeDropdown
+                  trigger={<MoreVertical className="h-4 w-4" />}
+                  label="Post Actions"
+                  triggerClassName="h-8 w-8 p-0 hover:bg-accent rounded-md"
+                  align="end"
+                >
+                  <AlertDialogTrigger asChild>
+                    <NativeDropdownItem
+                      onClick={() => setDeleteDialogOpen(true)}
+                      destructive
                     >
-                      <MoreVertical className="h-4 w-4" />
-                    </FloatingActionPanelTrigger>
-                    
-                    <FloatingActionPanelContent>
-                      <div className="p-2 space-y-1">
-                        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                          <AlertDialogTrigger asChild>
-                            <FloatingActionPanelButton
-                              onClick={() => {
-                                setDeleteDialogOpen(true);
-                                closePanel();
-                              }}
-                              className="text-destructive hover:text-destructive w-full"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Post
-                            </FloatingActionPanelButton>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Post</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this post? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => {
-                                  onDelete(post.id);
-                                  setDeleteDialogOpen(false);
-                                }}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </FloatingActionPanelContent>
-                  </>
-                )}
-              </FloatingActionPanelRoot>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Post
+                    </NativeDropdownItem>
+                  </AlertDialogTrigger>
+                </NativeDropdown>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this post? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        onDelete(post.id);
+                        setDeleteDialogOpen(false);
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
             {!isOwner && (
-              <FloatingActionPanelRoot>
-                {({ closePanel }) => (
-                  <>
-                    <FloatingActionPanelTrigger 
-                      title="More Actions" 
-                      mode="actions"
-                      className="h-8 w-8 p-0 hover:bg-accent"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </FloatingActionPanelTrigger>
-                    
-                    <FloatingActionPanelContent>
-                      <div className="p-2">
-                        <FloatingActionPanelButton
-                          onClick={async () => {
-                            await blockUser(post.user_id);
-                            closePanel();
-                            window.location.reload(); // Refresh to hide blocked user's posts
-                          }}
-                          className="text-destructive hover:text-destructive w-full"
-                        >
-                          <Ban className="h-4 w-4 mr-2" />
-                          Block User
-                        </FloatingActionPanelButton>
-                      </div>
-                    </FloatingActionPanelContent>
-                  </>
-                )}
-              </FloatingActionPanelRoot>
+              <NativeDropdown
+                trigger={<MoreVertical className="h-4 w-4" />}
+                label="More Actions"
+                triggerClassName="h-8 w-8 p-0 hover:bg-accent rounded-md"
+                align="end"
+              >
+                <NativeDropdownItem
+                  onClick={async () => {
+                    await blockUser(post.user_id);
+                    window.location.reload();
+                  }}
+                  destructive
+                >
+                  <Ban className="h-4 w-4 mr-2" />
+                  Block User
+                </NativeDropdownItem>
+              </NativeDropdown>
             )}
           </div>
         </div>
