@@ -76,6 +76,14 @@ export const useConnect = () => {
         return;
       }
 
+      // Fetch list of users that the current user has blocked
+      const { data: blockedData } = await supabase
+        .from('blocked_users')
+        .select('blocked_id')
+        .eq('blocker_id', user?.id || '');
+
+      const blockedUserIds = new Set(blockedData?.map(b => b.blocked_id) || []);
+
       // OPTIMIZED: Single query with all joins
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
@@ -90,9 +98,6 @@ export const useConnect = () => {
           ),
           post_likes!left (
             user_id
-          ),
-          blocked_users!left (
-            blocked_id
           )
         `)
         .order('promotion_priority', { ascending: false, nullsFirst: false })
@@ -107,14 +112,7 @@ export const useConnect = () => {
 
       // Process and format posts
       const formattedPosts = postsData
-        .filter(post => {
-          // Filter out posts from blocked users
-          const blockedUsers = Array.isArray(post.blocked_users) ? post.blocked_users : [];
-          const isBlocked = blockedUsers.some((block: any) => 
-            block?.blocked_id === post.user_id && user?.id
-          );
-          return !isBlocked;
-        })
+        .filter(post => !blockedUserIds.has(post.user_id))
         .map(post => {
           const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
           const likes = Array.isArray(post.post_likes) ? post.post_likes : [];
