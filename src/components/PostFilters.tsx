@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  FloatingActionPanelRoot,
-  FloatingActionPanelTrigger,
-  FloatingActionPanelContent,
-  FloatingActionPanelButton,
-} from '@/components/ui/floating-action-panel';
+import { AccessibleDropdown, AccessibleDropdownItem } from '@/components/ui/accessible-dropdown';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, Hash, Users, GraduationCap, Globe, Calendar } from 'lucide-react';
@@ -129,59 +124,39 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         {/* Sort */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Sort By</label>
-            <FloatingActionPanelRoot>
-              {({ closePanel }) => (
-                <>
-                  <FloatingActionPanelTrigger title="Sort By" mode="actions" className="w-full justify-start">
-                    {SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
-                  </FloatingActionPanelTrigger>
-                  
-                  <FloatingActionPanelContent>
-                    <div className="space-y-1 p-2">
-                      {SORT_OPTIONS.map((option) => (
-                        <FloatingActionPanelButton
-                          key={option.value}
-                          onClick={() => { handleFilterUpdate({ sortBy: option.value }); closePanel(); }}
-                          className={selectedSort === option.value ? "bg-accent" : ""}
-                        >
-                          <option.icon className="h-4 w-4" />
-                          {option.label}
-                        </FloatingActionPanelButton>
-                      ))}
-                    </div>
-                  </FloatingActionPanelContent>
-                </>
-              )}
-            </FloatingActionPanelRoot>
+            <label htmlFor="sort-by" className="text-sm font-medium">Sort By</label>
+            <AccessibleDropdown
+              trigger={SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <AccessibleDropdownItem
+                  key={option.value}
+                  onClick={() => handleFilterUpdate({ sortBy: option.value })}
+                  selected={selectedSort === option.value}
+                  icon={option.icon}
+                >
+                  {option.label}
+                </AccessibleDropdownItem>
+              ))}
+            </AccessibleDropdown>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Post Type</label>
-            <FloatingActionPanelRoot>
-              {({ closePanel }) => (
-                <>
-                  <FloatingActionPanelTrigger title="Post Type" mode="actions" className="w-full justify-start">
-                    {POST_TYPES.find(t => t.value === selectedPostType)?.label || 'All Types'}
-                  </FloatingActionPanelTrigger>
-                  
-                  <FloatingActionPanelContent>
-                    <div className="space-y-1 p-2">
-                      {POST_TYPES.map((type) => (
-                        <FloatingActionPanelButton
-                          key={type.value}
-                          onClick={() => { handleFilterUpdate({ postType: type.value }); closePanel(); }}
-                          className={selectedPostType === type.value ? "bg-accent" : ""}
-                        >
-                          <type.icon className="h-4 w-4" />
-                          {type.label}
-                        </FloatingActionPanelButton>
-                      ))}
-                    </div>
-                  </FloatingActionPanelContent>
-                </>
-              )}
-            </FloatingActionPanelRoot>
+            <label htmlFor="post-type" className="text-sm font-medium">Post Type</label>
+            <AccessibleDropdown
+              trigger={POST_TYPES.find(t => t.value === selectedPostType)?.label || 'All Types'}
+            >
+              {POST_TYPES.map((type) => (
+                <AccessibleDropdownItem
+                  key={type.value}
+                  onClick={() => handleFilterUpdate({ postType: type.value })}
+                  selected={selectedPostType === type.value}
+                  icon={type.icon}
+                >
+                  {type.label}
+                </AccessibleDropdownItem>
+              ))}
+            </AccessibleDropdown>
           </div>
         </div>
 
@@ -189,73 +164,53 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         {isExpanded && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Filter by Major</label>
-              <FloatingActionPanelRoot>
-                {({ closePanel }) => (
-                  <>
-                    <FloatingActionPanelTrigger title="Filter by Major" mode="actions" className="w-full justify-start">
-                      {selectedMajor === 'all-majors' ? 'All majors' : selectedMajor}
-                    </FloatingActionPanelTrigger>
-                    
-                    <FloatingActionPanelContent className="w-[300px]">
-                      <ScrollArea className="h-[300px]">
-                        <div className="space-y-1 p-2">
-                          <FloatingActionPanelButton
-                            onClick={() => { handleFilterUpdate({ major: 'all-majors' }); closePanel(); }}
-                            className={selectedMajor === 'all-majors' ? "bg-accent" : ""}
-                          >
-                            All majors
-                          </FloatingActionPanelButton>
-                          {collegeMajors.map((major) => (
-                            <FloatingActionPanelButton
-                              key={major}
-                              onClick={() => { handleFilterUpdate({ major: major }); closePanel(); }}
-                              className={selectedMajor === major ? "bg-accent" : ""}
-                            >
-                              {major}
-                            </FloatingActionPanelButton>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </FloatingActionPanelContent>
-                  </>
-                )}
-              </FloatingActionPanelRoot>
+              <label htmlFor="filter-major" className="text-sm font-medium">Filter by Major</label>
+              <AccessibleDropdown
+                trigger={selectedMajor === 'all-majors' ? 'All majors' : selectedMajor}
+              >
+                <ScrollArea className="h-[300px]">
+                  <AccessibleDropdownItem
+                    onClick={() => handleFilterUpdate({ major: 'all-majors' })}
+                    selected={selectedMajor === 'all-majors'}
+                  >
+                    All majors
+                  </AccessibleDropdownItem>
+                  {collegeMajors.map((major) => (
+                    <AccessibleDropdownItem
+                      key={major}
+                      onClick={() => handleFilterUpdate({ major: major })}
+                      selected={selectedMajor === major}
+                    >
+                      {major}
+                    </AccessibleDropdownItem>
+                  ))}
+                </ScrollArea>
+              </AccessibleDropdown>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Filter by School</label>
-              <FloatingActionPanelRoot>
-                {({ closePanel }) => (
-                  <>
-                    <FloatingActionPanelTrigger title="Filter by School" mode="actions" className="w-full justify-start">
-                      {selectedSchool === 'all-schools' ? 'All schools' : selectedSchool}
-                    </FloatingActionPanelTrigger>
-                    
-                    <FloatingActionPanelContent className="w-[300px]">
-                      <ScrollArea className="h-[300px]">
-                        <div className="space-y-1 p-2">
-                          <FloatingActionPanelButton
-                            onClick={() => { handleFilterUpdate({ school: 'all-schools' }); closePanel(); }}
-                            className={selectedSchool === 'all-schools' ? "bg-accent" : ""}
-                          >
-                            All schools
-                          </FloatingActionPanelButton>
-                          {universities.map((university) => (
-                            <FloatingActionPanelButton
-                              key={university.id}
-                              onClick={() => { handleFilterUpdate({ school: university.name }); closePanel(); }}
-                              className={selectedSchool === university.name ? "bg-accent" : ""}
-                            >
-                              {university.name}
-                            </FloatingActionPanelButton>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </FloatingActionPanelContent>
-                  </>
-                )}
-              </FloatingActionPanelRoot>
+              <label htmlFor="filter-school" className="text-sm font-medium">Filter by School</label>
+              <AccessibleDropdown
+                trigger={selectedSchool === 'all-schools' ? 'All schools' : selectedSchool}
+              >
+                <ScrollArea className="h-[300px]">
+                  <AccessibleDropdownItem
+                    onClick={() => handleFilterUpdate({ school: 'all-schools' })}
+                    selected={selectedSchool === 'all-schools'}
+                  >
+                    All schools
+                  </AccessibleDropdownItem>
+                  {universities.map((university) => (
+                    <AccessibleDropdownItem
+                      key={university.id}
+                      onClick={() => handleFilterUpdate({ school: university.name })}
+                      selected={selectedSchool === university.name}
+                    >
+                      {university.name}
+                    </AccessibleDropdownItem>
+                  ))}
+                </ScrollArea>
+              </AccessibleDropdown>
             </div>
           </div>
         )}
