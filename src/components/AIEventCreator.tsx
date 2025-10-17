@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useId } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,7 @@ interface AIEventCreatorProps {
 }
 
 export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: AIEventCreatorProps) => {
+  const descriptionId = useId();
   const [description, setDescription] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -172,7 +173,7 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Event Description</Label>
+            <Label htmlFor={descriptionId}>Event Description</Label>
             
             <Button
               type="button"
@@ -210,6 +211,7 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
             )}
             
             <Textarea
+              id={descriptionId}
               name="description"
               placeholder="Describe your event... (e.g., 'Math exam tomorrow at 2pm')"
               value={description}

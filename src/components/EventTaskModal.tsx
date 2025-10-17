@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,8 @@ export const EventTaskModal = ({
   selectedDate,
   selectedHour
 }: EventTaskModalProps) => {
+  const titleId = useId();
+  const notesId = useId();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(event?.title || task?.title || "");
   const [editedNotes, setEditedNotes] = useState("");
@@ -354,12 +356,13 @@ export const EventTaskModal = ({
         <div className="space-y-6">
           {/* Title Section */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">
+            <Label htmlFor={titleId} className="text-sm font-medium">
               {event ? "Event" : "Task"} Title
             </Label>
             {isCreatingNew || isEditing ? (
               <Input
                 type="text"
+                id={titleId}
                 name="title"
                 value={editedTitle}
                 onChange={(e) => {
@@ -488,9 +491,10 @@ export const EventTaskModal = ({
 
           {/* Notes Section */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Notes</Label>
+            <Label htmlFor={notesId} className="text-sm font-medium">Notes</Label>
             {isCreatingNew || isEditing ? (
               <Textarea
+                id={notesId}
                 name="notes"
                 value={editedNotes}
                 onChange={(e) => {
