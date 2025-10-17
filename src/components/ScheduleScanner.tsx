@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, FileText, Calendar, Loader2, Clock, MapPin, User, BookOpen, RotateCcw } from "lucide-react";
+import { Upload, FileText, Calendar, Loader2, Clock, MapPin, User, BookOpen, RotateCcw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ export const ScheduleScanner = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [scheduleAnalysis, setScheduleAnalysis] = useState<ScheduleAnalysis | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
+  const [addedEvents, setAddedEvents] = useState<Set<number>>(new Set());
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -148,6 +149,7 @@ export const ScheduleScanner = () => {
     setSelectedFile(null);
     setScheduleAnalysis(null);
     setSelectedEvents(new Set());
+    setAddedEvents(new Set());
     setIsProcessing(false);
     setIsAddingToCalendar(false);
     
@@ -213,8 +215,10 @@ export const ScheduleScanner = () => {
       
       const userTimezone = profile?.timezone || 'America/New_York';
 
-      // Convert selected events to database format
-      const eventsToAdd = Array.from(selectedEvents).map(index => {
+      // Convert selected events to database format (filter out already added)
+      const eventsToAdd = Array.from(selectedEvents)
+        .filter(index => !addedEvents.has(index))
+        .map(index => {
         const event = scheduleAnalysis!.events[index];
         
         // Parse times to Date objects
@@ -256,15 +260,18 @@ export const ScheduleScanner = () => {
         return;
       }
 
+      const addedCount = eventsToAdd.length;
+      
       toast({
         title: "Events added successfully!",
-        description: `${selectedEvents.size} classes have been added to your calendar with weekly recurrence.`,
+        description: `${addedCount} classes have been added to your calendar with weekly recurrence.`,
       });
       
-      // Reset state
+      // Mark these events as added (keep the analysis visible)
+      setAddedEvents(new Set([...addedEvents, ...Array.from(selectedEvents).filter(i => !addedEvents.has(i))]));
+      
+      // Clear selection but keep the analysis and image visible
       setSelectedEvents(new Set());
-      setScheduleAnalysis(null);
-      setSelectedFile(null);
       
     } catch (error) {
       console.error('Error processing events:', error);
@@ -458,29 +465,43 @@ export const ScheduleScanner = () => {
                   {scheduleAnalysis.events.map((event, index) => (
                     <div 
                       key={index} 
-                      className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                        selectedEvents.has(index) 
-                          ? 'border-primary bg-primary/5 shadow-sm' 
-                          : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                      className={`p-4 border rounded-lg transition-all duration-200 ${
+                        addedEvents.has(index)
+                          ? 'border-green-500 bg-green-50 dark:bg-green-950/20 opacity-75'
+                          : selectedEvents.has(index) 
+                            ? 'border-primary bg-primary/5 shadow-sm cursor-pointer' 
+                            : 'border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer'
                       }`}
-                      onClick={() => toggleEventSelection(index)}
+                      onClick={() => !addedEvents.has(index) && toggleEventSelection(index)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                            selectedEvents.has(index) 
-                              ? 'border-primary bg-primary' 
-                              : 'border-muted-foreground'
+                            addedEvents.has(index)
+                              ? 'border-green-500 bg-green-500'
+                              : selectedEvents.has(index) 
+                                ? 'border-primary bg-primary' 
+                                : 'border-muted-foreground'
                           }`}>
-                            {selectedEvents.has(index) && (
-                              <div className="w-2 h-2 bg-white rounded-sm" />
+                            {(selectedEvents.has(index) || addedEvents.has(index)) && (
+                              addedEvents.has(index) 
+                                ? <Check className="w-3 h-3 text-white" />
+                                : <div className="w-2 h-2 bg-white rounded-sm" />
                             )}
                           </div>
                           <h4 className="font-medium text-foreground">{event.course}</h4>
                         </div>
-                        {event.type && (
-                          <Badge variant="outline">{event.type}</Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {addedEvents.has(index) && (
+                            <Badge className="bg-green-500 hover:bg-green-600">
+                              <Check className="h-3 w-3 mr-1" />
+                              Added to Calendar
+                            </Badge>
+                          )}
+                          {event.type && (
+                            <Badge variant="outline">{event.type}</Badge>
+                          )}
+                        </div>
                       </div>
                       <div className="ml-7 mt-2 grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
