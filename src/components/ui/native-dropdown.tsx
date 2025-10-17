@@ -20,6 +20,7 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
   label,
 }) => {
   const [open, setOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -125,7 +126,7 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
         {trigger}
       </button>
 
-      {open && createPortal(
+      {open && isMounted && typeof document !== 'undefined' && document.body && createPortal(
         <NativeDropdownMenu
           ref={menuRef}
           id={menuId.current}
