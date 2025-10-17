@@ -78,6 +78,37 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
     }
   }, [selectedChatUserId]);
 
+  // Handle hash-based navigation from notifications
+  React.useEffect(() => {
+    const handleHashNavigation = () => {
+      const hash = window.location.hash.slice(1);
+      
+      if (hash.startsWith('message:')) {
+        const conversationId = hash.split(':')[1];
+        setActiveTab('messages');
+        setSelectedChatUserId(conversationId);
+      } else if (hash.startsWith('post:')) {
+        const postId = hash.split(':')[1];
+        setActiveTab('feed');
+        // Scroll to post after render
+        setTimeout(() => {
+          const postElement = document.getElementById(`post-${postId}`);
+          postElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else if (hash.startsWith('tab:')) {
+        const tab = hash.split(':')[1];
+        setActiveTab(tab);
+      }
+      
+      // Clear hash after navigation
+      window.history.replaceState(null, '', window.location.pathname);
+    };
+
+    handleHashNavigation();
+    window.addEventListener('hashchange', handleHashNavigation);
+    return () => window.removeEventListener('hashchange', handleHashNavigation);
+  }, []);
+
   // Sync posts to local state
   React.useEffect(() => {
     setLocalPosts(posts);
@@ -436,6 +467,7 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
               filteredPosts.map((post) => (
                 <PostCard
                   key={post.id}
+                  id={`post-${post.id}`}
                   post={post}
                   isOwner={user?.id === post.user_id}
                   onLike={handleLike}

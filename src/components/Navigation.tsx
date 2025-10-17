@@ -328,7 +328,7 @@ export const Navigation = ({
         <div className="mt-1 relative isolate" style={{ isolation: 'isolate' }}>
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-1.5 overflow-visible relative z-50">
-              <NotificationCenter />
+              <NotificationCenter onPageChange={onPageChange} />
               <AnalogClock className="scale-90" />
               <Button 
                 variant="ghost" 
@@ -341,7 +341,7 @@ export const Navigation = ({
             </div>
           ) : (
             <div className="flex items-center justify-center gap-1 transition-all duration-200 overflow-visible relative z-50">
-              <NotificationCenter />
+              <NotificationCenter onPageChange={onPageChange} />
               <div className="flex-1">
                 <AnalogClock />
               </div>

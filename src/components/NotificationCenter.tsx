@@ -19,7 +19,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export const NotificationCenter: React.FC = () => {
+interface NotificationCenterProps {
+  onPageChange?: (page: string) => void;
+}
+
+export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onPageChange }) => {
   const {
     notifications,
     loading,
@@ -55,6 +59,43 @@ export const NotificationCenter: React.FC = () => {
   const handleDelete = async (notificationId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     await deleteNotification(notificationId);
+  };
+
+  const handleNotificationClick = async (notification: any) => {
+    // Mark as read first
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+
+    // Close the dialog
+    setIsOpen(false);
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'new_message':
+        if (notification.data?.conversationId) {
+          window.location.hash = `message:${notification.data.conversationId}`;
+          onPageChange?.('connect');
+        }
+        break;
+      
+      case 'post_like':
+      case 'post_comment':
+        if (notification.data?.postId) {
+          window.location.hash = `post:${notification.data.postId}`;
+          onPageChange?.('connect');
+        }
+        break;
+      
+      case 'friend_request':
+      case 'friend_accepted':
+        window.location.hash = 'tab:people';
+        onPageChange?.('connect');
+        break;
+      
+      default:
+        onPageChange?.('connect');
+    }
   };
 
   return (
@@ -111,9 +152,10 @@ export const NotificationCenter: React.FC = () => {
               notifications.map((notification) => (
                 <Card 
                   key={notification.id} 
-                  className={`cursor-pointer transition-colors ${
+                  className={`cursor-pointer transition-colors hover:bg-accent/50 ${
                     !notification.read ? 'bg-muted/50' : ''
                   }`}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start gap-3">

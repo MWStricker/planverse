@@ -16,6 +16,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useBlockUser } from '@/hooks/useBlockUser';
 
 interface PostCardProps {
+  id?: string;
   post: Post;
   isOwner: boolean;
   onLike: (postId: string) => void;
@@ -26,7 +27,7 @@ interface PostCardProps {
 }
 
 // Memoized PostCard for better performance
-export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onImageClick, onProfileClick }: PostCardProps) => {
+export const PostCard = memo(({ id, post, isOwner, onLike, onComment, onDelete, onImageClick, onProfileClick }: PostCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const { hasIntersected } = useIntersectionObserver(cardRef, { rootMargin: '100px' });
   const { user } = useAuth();
@@ -151,7 +152,7 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
   }
 
   return (
-    <Card ref={cardRef} className="animate-fade-in will-change-transform">
+    <Card id={id} ref={cardRef} className="animate-fade-in will-change-transform">
       <CardHeader>
         <div className="flex items-center gap-3">
           <Avatar 

@@ -60,6 +60,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const { conversations: hookConversations, messages, loading, fetchConversations, fetchMessages, sendMessage } = useMessaging();
   const [conversations, setConversations] = useState<Conversation[]>(hookConversations);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [targetConversationId, setTargetConversationId] = useState<string | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -456,6 +457,17 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       }
     }
   }, [selectedUserId, conversations]);
+
+  // Auto-select conversation when target is set (from notification)
+  useEffect(() => {
+    if (targetConversationId && conversations.length > 0) {
+      const targetConv = conversations.find(c => c.id === targetConversationId);
+      if (targetConv) {
+        setSelectedConversation(targetConv);
+        setTargetConversationId(null); // Clear after use
+      }
+    }
+  }, [targetConversationId, conversations]);
 
   // Create virtual conversation for new chats
   useEffect(() => {
