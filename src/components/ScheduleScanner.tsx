@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, FileText, Calendar, Loader2, Clock, MapPin, User, BookOpen } from "lucide-react";
+import { Upload, FileText, Calendar, Loader2, Clock, MapPin, User, BookOpen, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -142,6 +142,19 @@ export const ScheduleScanner = () => {
 
   const deselectAllEvents = () => {
     setSelectedEvents(new Set());
+  };
+
+  const resetScanner = () => {
+    setSelectedFile(null);
+    setScheduleAnalysis(null);
+    setSelectedEvents(new Set());
+    setIsProcessing(false);
+    setIsAddingToCalendar(false);
+    
+    toast({
+      title: "Scanner reset",
+      description: "You can now upload a new schedule image.",
+    });
   };
 
   // Convert time string like "8:00 AM" to Date object
@@ -415,6 +428,14 @@ export const ScheduleScanner = () => {
                     onClick={deselectAllEvents}
                   >
                     Deselect All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetScanner}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Start Over
                   </Button>
                   <div className="flex-1" />
                   <Button
