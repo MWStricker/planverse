@@ -12,7 +12,7 @@ const defaultSettings: ClockSettingsType = {
   theme: 'auto'
 };
 
-export const AnalogClock = () => {
+export const AnalogClock = ({ className }: { className?: string }) => {
   const [time, setTime] = useState(new Date());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<ClockSettingsType>(defaultSettings);
@@ -144,7 +144,7 @@ export const AnalogClock = () => {
   return (
     <>
       <div 
-        className={`${getContainerClasses()} ${getSizeClasses()}`}
+        className={`${getContainerClasses()} ${getSizeClasses()} ${className || ''}`}
         onClick={() => setIsSettingsOpen(true)}
         title="Click to customize clock"
       >

@@ -25,8 +25,8 @@ body {
   /* GPU acceleration for main scroll container */
   transform: translate3d(0, 0, 0);
   will-change: scroll-position;
-  /* Prevent layout shifts */
-  contain: layout style paint;
+  /* Prevent layout shifts - removed paint to allow badge overflow */
+  contain: layout style;
   /* Optimize font rendering for crisp text */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

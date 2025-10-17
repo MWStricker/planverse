@@ -325,13 +325,11 @@ export const Navigation = ({
         
         
         {/* Clock and Controls Section */}
-        <div className="mt-1">
+        <div className="mt-1 relative isolate" style={{ isolation: 'isolate' }}>
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-1.5 overflow-visible relative z-50">
               <NotificationCenter />
-              <div className="scale-90">
-                <AnalogClock />
-              </div>
+              <AnalogClock className="scale-90" />
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -351,7 +349,7 @@ export const Navigation = ({
                 variant="ghost" 
                 size="sm" 
                 onClick={() => onPageChange('settings')}
-                className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
+                className="hover:bg-muted/30 transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
               >
                 <Settings className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 ease-out" />
               </Button>
