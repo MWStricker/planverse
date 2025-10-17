@@ -1285,6 +1285,18 @@ export type Database = {
         Args: { user1_id: string; user2_id: string }
         Returns: boolean
       }
+      auth_email: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      auth_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      auth_uid: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       calculate_interest_match_score: {
         Args: { user1_id: string; user2_id: string }
         Returns: number
