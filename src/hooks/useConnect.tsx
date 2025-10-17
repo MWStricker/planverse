@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useModeration } from '@/hooks/useModeration';
+import { cache, CACHE_TTL } from '@/lib/cache';
 
 export interface Post {
   id: string;
@@ -62,23 +63,38 @@ export const useConnect = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch posts with profile information (OPTIMIZED: Parallel queries)
+  // Fetch posts with profile information (OPTIMIZED: Single consolidated query)
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      // Get blocked users first to filter them out
-      const blockedUsers: string[] = user ? await (async () => {
-        const { data } = await supabase
-          .from('blocked_users')
-          .select('blocked_id')
-          .eq('blocker_id', user.id);
-        return data?.map(row => row.blocked_id) || [];
-      })() : [];
+      // Check cache first
+      const cacheKey = `posts_${user?.id || 'anon'}`;
+      const cachedPosts = cache.get(cacheKey);
+      if (cachedPosts) {
+        setPosts(cachedPosts);
+        setLoading(false);
+        return;
+      }
 
-      // Fetch posts (RLS will handle privacy filtering)
+      // OPTIMIZED: Single query with all joins
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner (
+            user_id,
+            display_name,
+            avatar_url,
+            school,
+            major
+          ),
+          post_likes!left (
+            user_id
+          ),
+          blocked_users!left (
+            blocked_id
+          )
+        `)
         .order('promotion_priority', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
 
@@ -89,61 +105,50 @@ export const useConnect = () => {
         return;
       }
 
-      // Filter out blocked users client-side
-      const filteredPosts = postsData.filter(post => !blockedUsers.includes(post.user_id));
+      // Process and format posts
+      const formattedPosts = postsData
+        .filter(post => {
+          // Filter out posts from blocked users
+          const blockedUsers = Array.isArray(post.blocked_users) ? post.blocked_users : [];
+          const isBlocked = blockedUsers.some((block: any) => 
+            block?.blocked_id === post.user_id && user?.id
+          );
+          return !isBlocked;
+        })
+        .map(post => {
+          const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+          const likes = Array.isArray(post.post_likes) ? post.post_likes : [];
+          const userLiked = user ? likes.some((like: any) => like?.user_id === user.id) : false;
 
-      if (filteredPosts.length === 0) {
-        setPosts([]);
-        setLoading(false);
-        return;
-      }
+          return {
+            id: post.id,
+            user_id: post.user_id,
+            content: post.content,
+            image_url: post.image_url,
+            created_at: post.created_at,
+            updated_at: post.updated_at,
+            likes_count: post.likes_count || 0,
+            comments_count: post.comments_count || 0,
+            target_major: post.target_major,
+            target_community: post.target_community,
+            post_type: post.post_type,
+            visibility: post.visibility,
+            tags: post.tags || [],
+            moderation_status: post.moderation_status,
+            moderation_score: post.moderation_score,
+            moderation_flags: post.moderation_flags,
+            user_liked: userLiked,
+            profiles: {
+              display_name: profile?.display_name || 'Unknown User',
+              avatar_url: profile?.avatar_url,
+              school: profile?.school,
+              major: profile?.major,
+            }
+          };
+        });
 
-      const userIds = filteredPosts.map(post => post.user_id);
-      const postIds = filteredPosts.map(post => post.id);
-
-      // Fetch profiles and likes in parallel
-      const profilesPromise = supabase
-        .from('profiles')
-        .select('user_id, display_name, avatar_url, school, major')
-        .in('user_id', userIds);
-
-      const likesPromise = user
-        ? supabase.from('post_likes').select('post_id').eq('user_id', user.id).in('post_id', postIds)
-        : null;
-
-      const [profilesResult, likesResult] = await Promise.all([
-        profilesPromise,
-        likesPromise
-      ]);
-
-      const { data: profilesData, error: profilesError } = profilesResult;
-      if (profilesError) throw profilesError;
-
-      const profilesMap = new Map(profilesData?.map(profile => [profile.user_id, profile]) || []);
-      
-      let likedPostIds = new Set<string>();
-      if (likesResult) {
-        const { data: likes } = likesResult;
-        likedPostIds = new Set(likes?.map(like => like.post_id) || []);
-      }
-
-      // Combine posts with profiles
-      const formattedPosts = filteredPosts.map(post => {
-        const profile = profilesMap.get(post.user_id);
-        return {
-          ...post,
-          user_liked: likedPostIds.has(post.id),
-          likes_count: post.likes_count || 0,
-          comments_count: post.comments_count || 0,
-          profiles: {
-            display_name: profile?.display_name || 'Unknown User',
-            avatar_url: profile?.avatar_url,
-            school: profile?.school,
-            major: profile?.major,
-          }
-        };
-      });
-
+      // Cache results
+      cache.set(cacheKey, formattedPosts, CACHE_TTL.POSTS);
       setPosts(formattedPosts as Post[]);
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -189,7 +194,9 @@ export const useConnect = () => {
         description: "Post created successfully!",
       });
 
-      await fetchPosts(); // Refresh posts
+      // Invalidate cache and refresh
+      cache.clear('posts_');
+      await fetchPosts();
       return true;
     } catch (error) {
       console.error('Error creating post:', error);
@@ -424,7 +431,9 @@ export const useConnect = () => {
         description: "Post deleted successfully!",
       });
 
-      await fetchPosts(); // Refresh posts
+      // Invalidate cache and refresh
+      cache.clear('posts_');
+      await fetchPosts();
       return true;
     } catch (error) {
       console.error('Error deleting post:', error);
