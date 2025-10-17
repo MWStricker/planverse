@@ -443,11 +443,13 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
           
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Latest Posts</h2>
-            <CreatePostDialog
-              open={isPostDialogOpen}
-              onOpenChange={setIsPostDialogOpen}
-              onCreatePost={handleCreatePost}
-            />
+            {isPostDialogOpen && (
+              <CreatePostDialog
+                open={isPostDialogOpen}
+                onOpenChange={setIsPostDialogOpen}
+                onCreatePost={handleCreatePost}
+              />
+            )}
             <Button 
               className="flex items-center gap-2"
               onClick={() => setIsPostDialogOpen(true)}
