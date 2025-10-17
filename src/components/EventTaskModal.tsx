@@ -344,240 +344,232 @@ export const EventTaskModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {event && <Calendar className="h-5 w-5 text-primary" />}
-            {task && <AlertCircle className="h-5 w-5 text-warning" />}
-            {getModalTitle()}
-          </DialogTitle>
-        </DialogHeader>
+      {isOpen && (
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {event && <Calendar className="h-5 w-5 text-primary" />}
+              {task && <AlertCircle className="h-5 w-5 text-warning" />}
+              {getModalTitle()}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Title Section */}
-          <div className="space-y-2">
-            <Label htmlFor={titleId} className="text-sm font-medium">
-              {event ? "Event" : "Task"} Title
-            </Label>
-            {isCreatingNew || isEditing ? (
-              <Input
-                type="text"
-                id={titleId}
-                name="title"
-                value={editedTitle}
-                onChange={(e) => {
-                  console.log('Title input changed:', e.target.value);
-                  setEditedTitle(e.target.value);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.preventDefault();
-                }}
-                placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
-                className="text-lg font-medium"
-              />
-            ) : (
-              <h2 className="text-xl font-semibold text-foreground">
-                {event?.title || task?.title}
-              </h2>
-            )}
-          </div>
+          <div className="space-y-6">
+            {/* Title Section */}
+            <div className="space-y-2">
+              <Label htmlFor={titleId} className="text-sm font-medium">
+                {event ? "Event" : "Task"} Title
+              </Label>
+              {isCreatingNew || isEditing ? (
+                <Input
+                  type="text"
+                  id={titleId}
+                  name="title"
+                  value={editedTitle}
+                  onChange={(e) => {
+                    console.log('Title input changed:', e.target.value);
+                    setEditedTitle(e.target.value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.preventDefault();
+                  }}
+                  placeholder={isCreatingNew ? "Enter task title..." : "Enter title..."}
+                  className="text-lg font-medium"
+                />
+              ) : (
+                <h2 className="text-xl font-semibold text-foreground">
+                  {event?.title || task?.title}
+                </h2>
+              )}
+            </div>
 
-          {/* Event Details */}
-          {event && (
-            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Event Information</span>
+            {/* Event Details */}
+            {event && (
+              <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Event Information</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Date & Time</Label>
+                    <div className="text-sm">
+                      {event.start_time && (
+                        <>
+                          <div>{formatDateTime(event.start_time, event.source_provider).date}</div>
+                          <div className="text-muted-foreground">{formatDateTime(event.start_time, event.source_provider).time}</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Type</Label>
+                    <div className="mt-1">
+                      <Badge variant="secondary">
+                        {event.event_type}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {event.source_provider && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Source</Label>
+                    <div className="text-sm flex items-center gap-1 mt-1">
+                      <BookOpen className="h-3 w-3" />
+                      {formatSourceProvider(event.source_provider)}
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+            )}
+
+            {/* Task Details */}
+            {task && (
+              <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Task Information</span>
+                </div>
+                
                 <div>
-                  <Label className="text-xs text-muted-foreground">Date & Time</Label>
+                  <Label className="text-xs text-muted-foreground">Due Date</Label>
                   <div className="text-sm">
-                    {event.start_time && (
+                    {task.due_date && (
                       <>
-                        <div>{formatDateTime(event.start_time, event.source_provider).date}</div>
-                        <div className="text-muted-foreground">{formatDateTime(event.start_time, event.source_provider).time}</div>
+                        <div>{formatDateTime(task.due_date).date}</div>
+                        <div className="text-muted-foreground">{formatDateTime(task.due_date).time}</div>
                       </>
                     )}
                   </div>
                 </div>
-                
-                <div>
-                  <Label className="text-xs text-muted-foreground">Type</Label>
-                  <div className="mt-1">
-                    <Badge variant="secondary">
-                      {event.event_type}
+
+                {isCreatingNew || isEditing ? (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Priority</Label>
+                    <Select name="task-priority" value={editedPriority} onValueChange={setEditedPriority}>
+                      <SelectTrigger className="w-full mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">High (10)</SelectItem>
+                        <SelectItem value="7">Medium (7)</SelectItem>
+                        <SelectItem value="5">Normal (5)</SelectItem>
+                        <SelectItem value="3">Low (3)</SelectItem>
+                        <SelectItem value="1">Very Low (1)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Priority</Label>
+                    <Badge
+                      variant={
+                        (task.priority_score || 0) >= 8 ? "destructive" : 
+                        (task.priority_score || 0) >= 6 ? "default" : 
+                        "secondary"
+                      }
+                      className="mt-1"
+                    >
+                      {task.priority_score || "Not set"}
                     </Badge>
                   </div>
-                </div>
-              </div>
+                )}
 
-              {event.source_provider && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Source</Label>
-                  <div className="text-sm flex items-center gap-1 mt-1">
-                    <BookOpen className="h-3 w-3" />
-                    {formatSourceProvider(event.source_provider)}
+                {task.course_name && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Course</Label>
+                    <div className="text-sm flex items-center gap-1 mt-1">
+                      <BookOpen className="h-3 w-3" />
+                      {task.course_name}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Task Details */}
-          {task && (
-            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Task Information</span>
-              </div>
-              
-              <div>
-                <Label className="text-xs text-muted-foreground">Due Date</Label>
-                <div className="text-sm">
-                  {task.due_date && (
-                    <>
-                      <div>{formatDateTime(task.due_date).date}</div>
-                      <div className="text-muted-foreground">{formatDateTime(task.due_date).time}</div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {isCreatingNew || isEditing ? (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Priority</Label>
-                  <Select name="task-priority" value={editedPriority} onValueChange={setEditedPriority}>
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">High (10)</SelectItem>
-                      <SelectItem value="7">Medium (7)</SelectItem>
-                      <SelectItem value="5">Normal (5)</SelectItem>
-                      <SelectItem value="3">Low (3)</SelectItem>
-                      <SelectItem value="1">Very Low (1)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Priority</Label>
-                  <Badge
-                    variant={
-                      (task.priority_score || 0) >= 8 ? "destructive" : 
-                      (task.priority_score || 0) >= 6 ? "default" : 
-                      "secondary"
-                    }
-                    className="mt-1"
-                  >
-                    {task.priority_score || "Not set"}
-                  </Badge>
-                </div>
-              )}
-
-              {task.course_name && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Course</Label>
-                  <div className="text-sm flex items-center gap-1 mt-1">
-                    <BookOpen className="h-3 w-3" />
-                    {task.course_name}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Notes Section */}
-          <div className="space-y-2">
-            <Label htmlFor={notesId} className="text-sm font-medium">Notes</Label>
-            {isCreatingNew || isEditing ? (
-              <Textarea
-                id={notesId}
-                name="notes"
-                value={editedNotes}
-                onChange={(e) => {
-                  console.log('Notes input changed:', e.target.value);
-                  setEditedNotes(e.target.value);
-                }}
-                placeholder="Add notes or description..."
-                className="min-h-[80px]"
-              />
-            ) : (
-              <div className="p-3 bg-muted/30 rounded-md min-h-[100px]">
-                <p className="text-sm text-muted-foreground">
-                  {editedNotes || "No notes added yet. Click edit to add notes."}
-                </p>
+                )}
               </div>
             )}
+
+            {/* Notes Section */}
+            <div className="space-y-2">
+              <Label htmlFor={notesId} className="text-sm font-medium">Notes</Label>
+              {isCreatingNew || isEditing ? (
+                <Textarea
+                  id={notesId}
+                  name="notes"
+                  value={editedNotes}
+                  onChange={(e) => {
+                    console.log('Notes input changed:', e.target.value);
+                    setEditedNotes(e.target.value);
+                  }}
+                  placeholder="Add notes or description..."
+                  className="min-h-[100px]"
+                />
+              ) : (
+                <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md min-h-[100px]">
+                  {editedNotes || "No notes available"}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex justify-between pt-4 border-t">
             <div>
-              {!isEditing && !isCreatingNew && (task || event) && (
+              {(task || event) && !isCreatingNew && (
                 <Button
                   variant="destructive"
-                  onClick={() => {
-                    console.log('Delete button clicked');
-                    handleDelete();
-                  }}
-                  size="sm"
+                  onClick={handleDelete}
+                  disabled={isSaving}
                 >
+                  <X className="h-4 w-4 mr-2" />
                   Delete
                 </Button>
               )}
             </div>
-            
             <div className="flex gap-2">
-              {isCreatingNew ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={isSaving || !editedTitle.trim()}
-                  >
-                    {isSaving ? "Creating..." : "Create Task"}
-                  </Button>
-                </>
-              ) : isEditing ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditing(false)}
-                    size="sm"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    size="sm"
-                  >
-                    <Save className="h-4 w-4 mr-1" />
-                    Save Changes
-                  </Button>
-                </>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (isEditing || isCreatingNew) {
+                    setEditedTitle(event?.title || task?.title || "");
+                    setEditedNotes("");
+                    setIsEditing(false);
+                  }
+                  onClose();
+                }}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              
+              {isCreatingNew || isEditing ? (
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Save className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      {isCreatingNew ? "Create" : "Save Changes"}
+                    </>
+                  )}
+                </Button>
               ) : (
                 <Button
                   onClick={() => setIsEditing(true)}
-                  size="sm"
+                  variant="default"
                 >
-                  <Edit3 className="h-4 w-4 mr-1" />
+                  <Edit3 className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
               )}
             </div>
           </div>
-        </div>
-      </DialogContent>
+        </DialogContent>
+      )}
     </Dialog>
   );
 };

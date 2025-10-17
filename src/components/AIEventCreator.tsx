@@ -160,102 +160,104 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            AI Event Creator
-          </DialogTitle>
-          <DialogDescription>
-            Describe the event you want to create using text or voice dictation.
-          </DialogDescription>
-        </DialogHeader>
+      {open && (
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Event Creator
+            </DialogTitle>
+            <DialogDescription>
+              Describe the event you want to create using text or voice dictation.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor={descriptionId}>Event Description</Label>
-            
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor={descriptionId}>Event Description</Label>
+              
+              <Button
+                type="button"
+                size="lg"
+                variant={isRecording ? "destructive" : "outline"}
+                className={`w-full ${isRecording ? 'animate-pulse' : ''}`}
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isProcessing || isTranscribing}
+              >
+                {isTranscribing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Transcribing...
+                  </>
+                ) : isRecording ? (
+                  <>
+                    <MicOff className="mr-2 h-4 w-4" />
+                    Stop Recording
+                  </>
+                ) : (
+                  <>
+                    <Mic className="mr-2 h-4 w-4" />
+                    Start Voice Recording
+                  </>
+                )}
+              </Button>
+
+              {isRecording && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-md animate-pulse">
+                  <div className="h-3 w-3 bg-red-500 rounded-full" />
+                  <span className="text-sm font-medium text-red-700 dark:text-red-400">
+                    Recording... Speak your event details clearly
+                  </span>
+                </div>
+              )}
+              
+              <Textarea
+                id={descriptionId}
+                name="description"
+                placeholder="Describe your event... (e.g., 'Math exam tomorrow at 2pm')"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={5}
+                disabled={isProcessing || isRecording || isTranscribing}
+              />
+              
+              <p className="text-sm text-muted-foreground">
+                {isRecording 
+                  ? "🎤 Listening... Speak clearly" 
+                  : isTranscribing 
+                  ? "✍️ Converting speech to text..." 
+                  : "Type or use voice recording to describe your event"}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
             <Button
-              type="button"
-              size="lg"
-              variant={isRecording ? "destructive" : "outline"}
-              className={`w-full ${isRecording ? 'animate-pulse' : ''}`}
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing || isTranscribing}
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isProcessing}
             >
-              {isTranscribing ? (
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateEvent}
+              disabled={isProcessing || !description.trim() || isRecording || isTranscribing}
+            >
+              {isProcessing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Transcribing...
-                </>
-              ) : isRecording ? (
-                <>
-                  <MicOff className="mr-2 h-4 w-4" />
-                  Stop Recording
+                  Creating...
                 </>
               ) : (
                 <>
-                  <Mic className="mr-2 h-4 w-4" />
-                  Start Voice Recording
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Create Event
                 </>
               )}
             </Button>
-
-            {isRecording && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-md animate-pulse">
-                <div className="h-3 w-3 bg-red-500 rounded-full" />
-                <span className="text-sm font-medium text-red-700 dark:text-red-400">
-                  Recording... Speak your event details clearly
-                </span>
-              </div>
-            )}
-            
-            <Textarea
-              id={descriptionId}
-              name="description"
-              placeholder="Describe your event... (e.g., 'Math exam tomorrow at 2pm')"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
-              disabled={isProcessing || isRecording || isTranscribing}
-            />
-            
-            <p className="text-sm text-muted-foreground">
-              {isRecording 
-                ? "🎤 Listening... Speak clearly" 
-                : isTranscribing 
-                ? "✍️ Converting speech to text..." 
-                : "Type or use voice recording to describe your event"}
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isProcessing}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateEvent}
-            disabled={isProcessing || !description.trim() || isRecording || isTranscribing}
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Create Event
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          </DialogFooter>
+        </DialogContent>
+      )}
     </Dialog>
   );
 };
