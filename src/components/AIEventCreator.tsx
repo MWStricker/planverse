@@ -174,7 +174,7 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor={descriptionId}>Event Description</Label>
+              <Label htmlFor={"ai-event-desc-" + descriptionId}>Event Description</Label>
               
               <Button
                 type="button"
@@ -212,7 +212,7 @@ export const AIEventCreator = ({ open, onOpenChange, onEventCreated, userId }: A
               )}
               
               <Textarea
-                id={descriptionId}
+                id={"ai-event-desc-" + descriptionId}
                 name="description"
                 placeholder="Describe your event... (e.g., 'Math exam tomorrow at 2pm')"
                 value={description}

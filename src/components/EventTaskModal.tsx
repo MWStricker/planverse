@@ -357,13 +357,13 @@ export const EventTaskModal = ({
           <div className="space-y-6">
             {/* Title Section */}
             <div className="space-y-2">
-              <Label htmlFor={titleId} className="text-sm font-medium">
+              <Label htmlFor={"event-task-title-" + titleId} className="text-sm font-medium">
                 {event ? "Event" : "Task"} Title
               </Label>
               {isCreatingNew || isEditing ? (
                 <Input
                   type="text"
-                  id={titleId}
+                  id={"event-task-title-" + titleId}
                   name="title"
                   value={editedTitle}
                   onChange={(e) => {
@@ -492,10 +492,10 @@ export const EventTaskModal = ({
 
             {/* Notes Section */}
             <div className="space-y-2">
-              <Label htmlFor={notesId} className="text-sm font-medium">Notes</Label>
+              <Label htmlFor={"event-task-notes-" + notesId} className="text-sm font-medium">Notes</Label>
               {isCreatingNew || isEditing ? (
                 <Textarea
-                  id={notesId}
+                  id={"event-task-notes-" + notesId}
                   name="notes"
                   value={editedNotes}
                   onChange={(e) => {
