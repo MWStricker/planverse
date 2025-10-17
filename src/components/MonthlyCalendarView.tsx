@@ -333,14 +333,16 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
       </div>
 
       {/* Event/Task Modal */}
-      <EventTaskModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        event={selectedEvent || undefined}
-        task={selectedTask || undefined}
-        selectedDate={selectedDate || undefined}
-        selectedHour={selectedHour || undefined}
-      />
+      {isModalOpen && (
+        <EventTaskModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          event={selectedEvent || undefined}
+          task={selectedTask || undefined}
+          selectedDate={selectedDate || undefined}
+          selectedHour={selectedHour || undefined}
+        />
+      )}
     </div>
   );
 };
