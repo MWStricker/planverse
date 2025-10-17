@@ -17,6 +17,7 @@ import { ProfileEditingProvider } from "@/hooks/useProfileEditing";
 import { ProfileProvider, useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebouncedResize } from "@/lib/performance";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 
 // Lazy load heavy components for better initial load
 const Dashboard = lazy(() => import("@/components/Dashboard").then(m => ({ default: m.Dashboard })));
@@ -254,6 +255,7 @@ const IndexContent = () => {
       {showOnboarding && <OnboardingQuestionnaire onComplete={handleOnboardingComplete} />}
       
       <ProfileEditingProvider>
+        <ConnectionStatus />
         <div 
           className="flex bg-background overflow-hidden w-full" 
           style={{ 

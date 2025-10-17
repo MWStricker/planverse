@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/components/ui/use-toast';
+import { monitoring } from '@/lib/monitoring';
 
 interface UserPresence {
   user_id: string;
@@ -47,6 +48,17 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [currentUserStatus, setCurrentUserStatus] = useState<'online' | 'idle' | 'dnd' | 'offline'>('offline');
   const [hasManualStatus, setHasManualStatus] = useState(false);
   const [heartbeatInterval, setHeartbeatInterval] = useState<NodeJS.Timeout | null>(null);
+  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+  const [reconnectAttempts, setReconnectAttempts] = useState<Record<string, number>>({});
+  
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const BASE_RETRY_DELAY = 1000;
+  const IDLE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+
+  // Calculate exponential backoff delay
+  const getRetryDelay = (attempt: number): number => {
+    return Math.min(BASE_RETRY_DELAY * Math.pow(2, attempt), 30000); // Max 30 seconds
+  };
 
   // Update user presence
   const updatePresence = async (status: 'online' | 'idle' | 'dnd' | 'offline') => {
@@ -64,39 +76,100 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       });
 
     if (error) {
-      console.error('Error updating presence:', error);
+      monitoring.log('error', 'Error updating presence', { error: error.message });
     } else {
       setCurrentUserStatus(status);
     }
   };
 
-  // Send heartbeat to keep presence fresh
+  // Smart heartbeat - only update if active and visible
   const sendHeartbeat = async () => {
     if (!user || currentUserStatus === 'offline') return;
     
-    console.log('Sending presence heartbeat...');
+    // Only send heartbeat if tab is visible
+    if (document.hidden) {
+      console.log('⏸️ Skipping heartbeat - tab hidden');
+      return;
+    }
     
-    // Update last_seen timestamp
+    console.log('💓 Sending presence heartbeat...');
+    
+    // Update last_seen timestamp - only if status matches current
     const { error } = await supabase
       .from('user_presence')
-      .upsert({
-        user_id: user.id,
-        status: currentUserStatus,
+      .update({
         last_seen: new Date().toISOString()
-      }, {
-        onConflict: 'user_id',
-        ignoreDuplicates: false
-      });
+      })
+      .eq('user_id', user.id)
+      .eq('status', currentUserStatus);
 
     if (error) {
-      console.error('Error sending heartbeat:', error);
+      monitoring.log('error', 'Error sending heartbeat', { error: error.message });
     }
     
     // Also trigger cleanup of stale users
     const { error: cleanupError } = await supabase.rpc('cleanup_stale_presence');
     if (cleanupError) {
-      console.error('Error cleaning up stale presence:', cleanupError);
+      monitoring.log('warn', 'Error cleaning up stale presence', { error: cleanupError.message });
     }
+  };
+
+  // Channel setup with retry logic
+  const setupChannelWithRetry = async (
+    channelName: string,
+    setupFn: () => any,
+    maxAttempts = MAX_RECONNECT_ATTEMPTS
+  ) => {
+    const attemptConnection = async (attempt: number = 0): Promise<any> => {
+      try {
+        console.log(`🔌 Connecting ${channelName} (attempt ${attempt + 1}/${maxAttempts})`);
+        
+        const channel = setupFn();
+        
+        // Listen for channel errors
+        channel.on('system', {}, (payload: any) => {
+          if (payload.status === 'error') {
+            monitoring.log('error', `Channel ${channelName} error`, { payload });
+            
+            if (attempt < maxAttempts - 1) {
+              const delay = getRetryDelay(attempt);
+              console.log(`⏱️ Retrying ${channelName} in ${delay}ms...`);
+              
+              setTimeout(() => {
+                attemptConnection(attempt + 1);
+              }, delay);
+            } else {
+              monitoring.log('error', `Max reconnection attempts reached for ${channelName}`);
+              toast({
+                title: "Connection Issue",
+                description: "Lost connection to real-time updates. Please refresh the page.",
+                variant: "destructive"
+              });
+            }
+          }
+        });
+        
+        // Track successful connection
+        setReconnectAttempts(prev => ({ ...prev, [channelName]: 0 }));
+        return channel;
+        
+      } catch (error) {
+        monitoring.log('error', `Error setting up ${channelName}`, { error });
+        
+        if (attempt < maxAttempts - 1) {
+          const delay = getRetryDelay(attempt);
+          console.log(`⏱️ Retrying ${channelName} in ${delay}ms...`);
+          setReconnectAttempts(prev => ({ ...prev, [channelName]: attempt + 1 }));
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return attemptConnection(attempt + 1);
+        }
+        
+        throw error;
+      }
+    };
+    
+    return attemptConnection();
   };
 
   // Load user's saved status preference
@@ -113,7 +186,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       if (error || !data?.status_preference) return null;
       return data.status_preference as 'online' | 'idle' | 'dnd' | 'offline';
     } catch (error) {
-      console.error('Error loading saved status:', error);
+      monitoring.log('warn', 'Error loading saved status', { error });
       return null;
     }
   };
@@ -143,154 +216,132 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       .eq('id', notificationId);
 
     if (error) {
-      console.error('Error marking notification as read:', error);
+      monitoring.log('error', 'Error marking notification as read', { error: error.message });
     }
   };
 
-  // Set up realtime subscriptions
+  // Set up realtime subscriptions with consolidated channels
   useEffect(() => {
     if (!user) return;
 
     console.log('Setting up realtime subscriptions...');
+    monitoring.log('info', 'Setting up realtime subscriptions', { userId: user.id });
 
-    // Subscribe to user presence changes
-    const presenceChannel = supabase
-      .channel('user-presence')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_presence'
-        },
-        (payload) => {
-          console.log('Presence change:', payload);
-          const presence = payload.new as UserPresence;
-          if (presence) {
-            setUserStatuses(prev => ({
-              ...prev,
-              [presence.user_id]: presence
-            }));
-            
-            // Update current user status if this is their presence change
-            if (presence.user_id === user.id) {
-              setCurrentUserStatus(presence.status);
-            }
-          }
-          // Refresh online users list
-          loadOnlineUsers();
-        }
-      )
-      .subscribe();
+    let mainChannel: any;
+    let socialChannel: any;
 
-    // Subscribe to new messages
-    const messagesChannel = supabase
-      .channel('realtime-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `receiver_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('New message received:', payload);
-          toast({
-            title: "New Message",
-            description: "You have received a new message",
-          });
-          loadUnreadCount();
-        }
-      )
-      .subscribe();
+    const initializeChannels = async () => {
+      try {
+        // Main channel: presence, messages, notifications
+        mainChannel = await setupChannelWithRetry(
+          'main-realtime',
+          () => supabase
+            .channel('main-realtime')
+            // Presence changes
+            .on('postgres_changes', {
+              event: '*',
+              schema: 'public',
+              table: 'user_presence'
+            }, (payload) => {
+              console.log('Presence change:', payload);
+              const presence = payload.new as UserPresence;
+              if (presence) {
+                setUserStatuses(prev => ({
+                  ...prev,
+                  [presence.user_id]: presence
+                }));
+                
+                if (presence.user_id === user.id) {
+                  setCurrentUserStatus(presence.status);
+                }
+              }
+              loadOnlineUsers();
+            })
+            // New messages
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages',
+              filter: `receiver_id=eq.${user.id}`
+            }, (payload) => {
+              console.log('New message received:', payload);
+              toast({
+                title: "New Message",
+                description: "You have received a new message",
+              });
+              loadUnreadCount();
+            })
+            // Notifications
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${user.id}`
+            }, (payload) => {
+              console.log('New notification:', payload);
+              loadUnreadCount();
+              
+              const notification = payload.new;
+              toast({
+                title: notification.title,
+                description: notification.message,
+              });
+            })
+            .subscribe()
+        );
 
-    // Subscribe to friend requests
-    const friendRequestsChannel = supabase
-      .channel('realtime-friend-requests')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'friend_requests',
-          filter: `receiver_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('New friend request:', payload);
-          toast({
-            title: "New Friend Request",
-            description: "Someone wants to be your friend!",
-          });
-          loadUnreadCount();
-        }
-      )
-      .subscribe();
+        // Social channel: friend requests, likes
+        socialChannel = await setupChannelWithRetry(
+          'social-realtime',
+          () => supabase
+            .channel('social-realtime')
+            // Friend requests
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'friend_requests',
+              filter: `receiver_id=eq.${user.id}`
+            }, (payload) => {
+              console.log('New friend request:', payload);
+              toast({
+                title: "New Friend Request",
+                description: "Someone wants to be your friend!",
+              });
+              loadUnreadCount();
+            })
+            // Friend request responses
+            .on('postgres_changes', {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'friend_requests',
+              filter: `sender_id=eq.${user.id}`
+            }, (payload) => {
+              console.log('Friend request response:', payload);
+              if (payload.new.status === 'accepted') {
+                toast({
+                  title: "Friend Request Accepted",
+                  description: "Your friend request was accepted!",
+                });
+              }
+            })
+            // Post likes
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'post_likes'
+            }, (payload) => {
+              console.log('New like:', payload);
+            })
+            .subscribe()
+        );
 
-    // Subscribe to friend request responses
-    const friendResponsesChannel = supabase
-      .channel('realtime-friend-responses')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'friend_requests',
-          filter: `sender_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Friend request response:', payload);
-          if (payload.new.status === 'accepted') {
-            toast({
-              title: "Friend Request Accepted",
-              description: "Your friend request was accepted!",
-            });
-          }
-        }
-      )
-      .subscribe();
+        monitoring.log('info', 'Realtime channels connected successfully');
+      } catch (error) {
+        monitoring.log('error', 'Failed to initialize realtime channels', { error });
+      }
+    };
 
-    // Subscribe to post likes
-    const likesChannel = supabase
-      .channel('realtime-likes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'post_likes'
-        },
-        (payload) => {
-          console.log('New like:', payload);
-          // You could add notification logic here for post authors
-        }
-      )
-      .subscribe();
-
-    // Subscribe to notifications
-    const notificationsChannel = supabase
-      .channel('realtime-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('New notification:', payload);
-          loadUnreadCount();
-          
-          // Show toast for new notifications
-          const notification = payload.new;
-          toast({
-            title: notification.title,
-            description: notification.message,
-          });
-        }
-      )
-      .subscribe();
+    initializeChannels();
 
     // Load saved status preference first, then set user as online if no preference
     loadUserSavedStatus().then(savedStatus => {
@@ -302,9 +353,26 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       }
     });
 
-    // Start heartbeat interval (every 60 seconds)
+    // Activity tracking
+    const updateActivity = () => {
+      setLastActivityTime(Date.now());
+    };
+
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('click', updateActivity);
+    window.addEventListener('scroll', updateActivity);
+
+    // Smart heartbeat interval with activity detection
     const interval = setInterval(() => {
-      sendHeartbeat();
+      const timeSinceActivity = Date.now() - lastActivityTime;
+      
+      if (timeSinceActivity > IDLE_THRESHOLD && currentUserStatus !== 'idle' && !hasManualStatus) {
+        // Auto-transition to idle after 5 minutes of inactivity
+        updatePresence('idle');
+      } else {
+        sendHeartbeat();
+      }
     }, 60000); // 60 seconds
 
     setHeartbeatInterval(interval);
@@ -330,7 +398,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Set up pagehide handler (more reliable than beforeunload)
+    // Set up pagehide handler
     const handlePageHide = () => {
       updatePresence('offline');
     };
@@ -340,18 +408,19 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
     // Cleanup function
     return () => {
       console.log('Cleaning up realtime subscriptions...');
-      supabase.removeChannel(presenceChannel);
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(friendRequestsChannel);
-      supabase.removeChannel(friendResponsesChannel);
-      supabase.removeChannel(likesChannel);
-      supabase.removeChannel(notificationsChannel);
+      monitoring.log('info', 'Cleaning up realtime subscriptions');
       
-      // Clear heartbeat interval
+      if (mainChannel) supabase.removeChannel(mainChannel);
+      if (socialChannel) supabase.removeChannel(socialChannel);
+      
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
       }
       
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('click', updateActivity);
+      window.removeEventListener('scroll', updateActivity);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
       
@@ -370,7 +439,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       .gte('last_seen', twoMinutesAgo);
 
     if (error) {
-      console.error('Error loading online users:', error);
+      monitoring.log('error', 'Error loading online users', { error: error.message });
     } else {
       setOnlineUsers(data.map(item => item.user_id));
     }
@@ -406,7 +475,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       .select('*');
     
     if (error) {
-      console.error('Error loading user statuses:', error);
+      monitoring.log('error', 'Error loading user statuses', { error: error.message });
     } else if (data) {
       const statusMap = data.reduce((acc, presence) => {
         const userPresence: UserPresence = {
@@ -419,7 +488,6 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       }, {} as Record<string, UserPresence>);
       setUserStatuses(statusMap);
       
-      // Set current user status if found
       if (user?.id && statusMap[user.id]) {
         setCurrentUserStatus(statusMap[user.id].status);
       }
