@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 interface NativeDropdownProps {
@@ -19,6 +20,7 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
   label,
 }) => {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useRef(`menu-${Math.random().toString(36).substr(2, 9)}`);
@@ -57,9 +59,41 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
     }
   }, [open]);
 
+  // Calculate position when opening
+  const updatePosition = useCallback(() => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 6,
+        left: rect.left,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, []);
+
   const handleToggle = () => {
+    if (!open) {
+      updatePosition();
+    }
     setOpen(!open);
   };
+
+  // Update position on scroll/resize
+  useEffect(() => {
+    if (!open) return;
+
+    const handleUpdate = () => {
+      updatePosition();
+    };
+
+    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
+
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
+    };
+  }, [open, updatePosition]);
 
   const handleButtonKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
@@ -91,17 +125,19 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
         {trigger}
       </button>
 
-      {open && (
+      {open && createPortal(
         <NativeDropdownMenu
           ref={menuRef}
           id={menuId.current}
           labelledBy={btnId.current}
           className={className}
           align={align}
+          position={position}
           onClose={() => setOpen(false)}
         >
           {children}
-        </NativeDropdownMenu>
+        </NativeDropdownMenu>,
+        document.body
       )}
     </div>
   );
@@ -113,11 +149,12 @@ interface NativeDropdownMenuProps {
   children: React.ReactNode;
   className?: string;
   align?: 'start' | 'end' | 'center';
+  position: { top: number; left: number; right: number };
   onClose: () => void;
 }
 
 const NativeDropdownMenu = React.forwardRef<HTMLDivElement, NativeDropdownMenuProps>(
-  ({ id, labelledBy, children, className, align = 'end', onClose }, ref) => {
+  ({ id, labelledBy, children, className, align = 'end', position, onClose }, ref) => {
     const items = useRef<HTMLElement[]>([]);
 
     useEffect(() => {
@@ -174,10 +211,21 @@ const NativeDropdownMenu = React.forwardRef<HTMLDivElement, NativeDropdownMenuPr
       }
     };
 
-    const alignmentClasses = {
-      start: 'left-0',
-      end: 'right-0',
-      center: 'left-1/2 -translate-x-1/2',
+    const getAlignmentStyle = () => {
+      switch (align) {
+        case 'start':
+          return { top: position.top, left: position.left };
+        case 'end':
+          return { top: position.top, right: position.right };
+        case 'center':
+          return { 
+            top: position.top, 
+            left: position.left + (window.innerWidth - position.left - position.right) / 2,
+            transform: 'translateX(-50%)'
+          };
+        default:
+          return { top: position.top, right: position.right };
+      }
     };
 
     return (
@@ -186,12 +234,13 @@ const NativeDropdownMenu = React.forwardRef<HTMLDivElement, NativeDropdownMenuPr
         id={id}
         role="menu"
         aria-labelledby={labelledBy}
+        style={getAlignmentStyle()}
         className={cn(
-          "absolute top-[calc(100%+6px)] min-w-[180px]",
+          "fixed min-w-[180px]",
           "bg-popover border border-border rounded-md shadow-md",
-          "p-1.5 z-50",
+          "p-1.5 z-[100]",
           "animate-in fade-in-0 zoom-in-95",
-          alignmentClasses[align],
+          "pointer-events-auto",
           className
         )}
         onKeyDown={handleKeyDown}
