@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Instagram, Tv, Github, Twitter, Youtube, Linkedin, Check, X } from 'lucide-react';
+import { Instagram, Tv, Github, Twitter, Youtube, Check, X } from 'lucide-react';
 
 interface SocialLinksEditorProps {
   initialLinks?: Record<string, string>;
@@ -16,7 +16,6 @@ const platforms = [
   { id: 'github', label: 'GitHub', icon: Github, placeholder: 'https://github.com/username' },
   { id: 'twitter', label: 'Twitter/X', icon: Twitter, placeholder: 'https://twitter.com/username' },
   { id: 'youtube', label: 'YouTube', icon: Youtube, placeholder: 'https://youtube.com/@username' },
-  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, placeholder: 'https://linkedin.com/in/username' },
 ];
 
 const urlPatterns: Record<string, RegExp> = {
@@ -25,7 +24,6 @@ const urlPatterns: Record<string, RegExp> = {
   github: /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9-]+\/?$/,
   twitter: /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/?$/,
   youtube: /^https?:\/\/(www\.)?(youtube\.com\/(c\/|channel\/|user\/|@)?[a-zA-Z0-9_-]+|youtu\.be\/[a-zA-Z0-9_-]+)\/?$/,
-  linkedin: /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-]+\/?$/,
 };
 
 const extractUsername = (url: string, platform: string): string | null => {
@@ -35,7 +33,6 @@ const extractUsername = (url: string, platform: string): string | null => {
     github: /github\.com\/([a-zA-Z0-9-]+)/,
     twitter: /(twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/,
     youtube: /youtube\.com\/(c\/|channel\/|user\/|@)?([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+)/,
-    linkedin: /linkedin\.com\/in\/([a-zA-Z0-9-]+)/,
   };
   
   const match = url.match(patterns[platform]);
