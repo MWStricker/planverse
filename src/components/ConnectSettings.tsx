@@ -285,25 +285,6 @@ export const ConnectSettings = () => {
               disabled={settingsLoading}
             />
           </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="show-promoted">Show promoted posts</Label>
-              <p className="text-sm text-muted-foreground">
-                Display promoted content in your feed
-              </p>
-            </div>
-            <Switch
-              id="show-promoted"
-              checked={settings.contentFilters.showPromotedPosts}
-              onCheckedChange={(checked) =>
-                updateSettings({
-                  contentFilters: { ...settings.contentFilters, showPromotedPosts: checked },
-                })
-              }
-              disabled={settingsLoading}
-            />
-          </div>
         </div>
       </TabsContent>
     </Tabs>

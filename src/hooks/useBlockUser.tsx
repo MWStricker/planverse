@@ -115,32 +115,44 @@ export const useBlockUser = () => {
     if (!user) return [];
 
     try {
-      const { data, error } = await supabase
+      // First, get all blocked user IDs
+      const { data: blockedData, error: blockedError } = await supabase
         .from('blocked_users')
-        .select(`
-          id,
-          blocked_id,
-          created_at,
-          profiles:blocked_id (
-            display_name,
-            avatar_url,
-            school,
-            major
-          )
-        `)
+        .select('id, blocked_id, created_at')
         .eq('blocker_id', user.id);
 
-      if (error) throw error;
+      if (blockedError) throw blockedError;
+      if (!blockedData || blockedData.length === 0) return [];
 
-      return (data || []).map((row: any) => ({
-        blockId: row.id,
-        userId: row.blocked_id,
-        displayName: row.profiles?.display_name,
-        avatarUrl: row.profiles?.avatar_url,
-        school: row.profiles?.school,
-        major: row.profiles?.major,
-        blockedAt: row.created_at,
-      }));
+      // Extract the blocked user IDs
+      const blockedUserIds = blockedData.map(row => row.blocked_id);
+
+      // Fetch profiles for all blocked users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url, school, major')
+        .in('user_id', blockedUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to profile data for easy lookup
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.user_id, profile])
+      );
+
+      // Combine blocked users with their profile data
+      return blockedData.map(row => {
+        const profile = profilesMap.get(row.blocked_id);
+        return {
+          blockId: row.id,
+          userId: row.blocked_id,
+          displayName: profile?.display_name || null,
+          avatarUrl: profile?.avatar_url || null,
+          school: profile?.school || null,
+          major: profile?.major || null,
+          blockedAt: row.created_at,
+        };
+      });
     } catch (error) {
       console.error('Error fetching blocked users with profiles:', error);
       return [];

@@ -16,7 +16,6 @@ export interface ConnectSettings {
   };
   contentFilters: {
     hidePostsWithoutImages: boolean;
-    showPromotedPosts: boolean;
     hideMajors: string[];
     hideSchools: string[];
   };
@@ -35,7 +34,6 @@ const defaultSettings: ConnectSettings = {
   },
   contentFilters: {
     hidePostsWithoutImages: false,
-    showPromotedPosts: true,
     hideMajors: [],
     hideSchools: [],
   },
