@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, getHours } from "date-fns";
@@ -109,25 +109,54 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const handleCellClick = (day: Date, hour: number) => {
+  // Memoize filtered events and tasks by day and hour to prevent re-filtering on every render
+  const itemsByDayAndHour = useMemo(() => {
+    const map = new Map<string, { events: Event[]; tasks: Task[] }>();
+    
+    weekDays.forEach(day => {
+      TIME_SLOTS.forEach(timeSlot => {
+        const key = `${format(day, 'yyyy-MM-dd')}-${timeSlot.hour}`;
+        
+        const dayEvents = events.filter(event => {
+          if (!event.start_time) return false;
+          const eventDate = toUserTimezone(event.start_time, userTimezone);
+          const eventHour = eventDate.getHours();
+          return isSameDay(eventDate, day) && eventHour === timeSlot.hour;
+        });
+        
+        const dayTasks = tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = toUserTimezone(task.due_date, userTimezone);
+          const taskHour = taskDate.getHours();
+          return isSameDay(taskDate, day) && taskHour === timeSlot.hour;
+        });
+        
+        map.set(key, { events: dayEvents, tasks: dayTasks });
+      });
+    });
+    
+    return map;
+  }, [events, tasks, weekDays, userTimezone]);
+
+  const handleCellClick = useCallback((day: Date, hour: number) => {
     setSelectedDate(day);
     setSelectedHour(hour);
     setSelectedEvent(null);
     setSelectedTask(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEventClick = (event: Event) => {
+  const handleEventClick = useCallback((event: Event) => {
     setSelectedEvent(event);
     setSelectedTask(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = useCallback((task: Task) => {
     setSelectedTask(task);
     setSelectedEvent(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -137,37 +166,22 @@ export const WeeklyCalendarView = ({ events, tasks, currentWeek, setCurrentWeek 
     setSelectedHour(null);
   };
   
-  const getItemsForTimeSlot = (day: Date, hour: number) => {
-    const dayEvents = events.filter(event => {
-      if (!event.start_time) return false;
-      // Convert UTC timestamp to user's timezone
-      const eventDate = toUserTimezone(event.start_time, userTimezone);
-      const eventHour = eventDate.getHours();
-      return isSameDay(eventDate, day) && eventHour === hour;
-    });
-    
-    const dayTasks = tasks.filter(task => {
-      if (!task.due_date) return false;
-      // Convert UTC timestamp to user's timezone
-      const taskDate = toUserTimezone(task.due_date, userTimezone);
-      const taskHour = taskDate.getHours();
-      return isSameDay(taskDate, day) && taskHour === hour;
-    });
-    
-    return { events: dayEvents, tasks: dayTasks };
-  };
+  const getItemsForTimeSlot = useCallback((day: Date, hour: number) => {
+    const key = `${format(day, 'yyyy-MM-dd')}-${hour}`;
+    return itemsByDayAndHour.get(key) || { events: [], tasks: [] };
+  }, [itemsByDayAndHour]);
 
-  const handlePrevWeek = () => {
+  const handlePrevWeek = useCallback(() => {
     setCurrentWeek(subWeeks(currentWeek, 1));
-  };
+  }, [currentWeek]);
 
-  const handleNextWeek = () => {
+  const handleNextWeek = useCallback(() => {
     setCurrentWeek(addWeeks(currentWeek, 1));
-  };
+  }, [currentWeek]);
 
-  const handleToday = () => {
+  const handleToday = useCallback(() => {
     setCurrentWeek(new Date());
-  };
+  }, []);
 
   const isCurrentWeek = () => {
     const today = new Date();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock, BookOpen, CheckCircle, Calendar as CalendarIcon } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, isToday, isSameMonth, addMonths, subMonths } from "date-fns";
@@ -102,29 +102,54 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
   const calendarEnd = endOfWeek(monthEnd);
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   
-  const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const handleToday = () => setCurrentMonth(new Date());
+  // Memoize filtered events and tasks by day to prevent re-filtering on every render
+  const itemsByDay = useMemo(() => {
+    const map = new Map<string, { events: Event[]; tasks: Task[] }>();
+    
+    calendarDays.forEach(day => {
+      const key = format(day, 'yyyy-MM-dd');
+      
+      const dayEvents = events.filter(event => {
+        if (!event.start_time) return false;
+        const eventDate = toUserTimezone(event.start_time, userTimezone);
+        return isSameDay(eventDate, day);
+      });
+      
+      const dayTasks = tasks.filter(task => {
+        if (!task.due_date) return false;
+        const taskDate = toUserTimezone(task.due_date, userTimezone);
+        return isSameDay(taskDate, day);
+      });
+      
+      map.set(key, { events: dayEvents, tasks: dayTasks });
+    });
+    
+    return map;
+  }, [events, tasks, calendarDays, userTimezone]);
+  
+  const handlePrevMonth = useCallback(() => setCurrentMonth(subMonths(currentMonth, 1)), [currentMonth]);
+  const handleNextMonth = useCallback(() => setCurrentMonth(addMonths(currentMonth, 1)), [currentMonth]);
+  const handleToday = useCallback(() => setCurrentMonth(new Date()), []);
 
-  const handleCellClick = (day: Date) => {
+  const handleCellClick = useCallback((day: Date) => {
     setSelectedDate(day);
     setSelectedHour(null);
     setSelectedEvent(null);
     setSelectedTask(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEventClick = (event: Event) => {
+  const handleEventClick = useCallback((event: Event) => {
     setSelectedEvent(event);
     setSelectedTask(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = useCallback((task: Task) => {
     setSelectedTask(task);
     setSelectedEvent(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -134,23 +159,10 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
     setSelectedHour(null);
   };
   
-  const getItemsForDay = (day: Date) => {
-    const dayEvents = events.filter(event => {
-      if (!event.start_time) return false;
-      // Convert UTC timestamp to user's timezone
-      const eventDate = toUserTimezone(event.start_time, userTimezone);
-      return isSameDay(eventDate, day);
-    });
-    
-    const dayTasks = tasks.filter(task => {
-      if (!task.due_date) return false;
-      // Convert UTC timestamp to user's timezone
-      const taskDate = toUserTimezone(task.due_date, userTimezone);
-      return isSameDay(taskDate, day);
-    });
-    
-    return { events: dayEvents, tasks: dayTasks };
-  };
+  const getItemsForDay = useCallback((day: Date) => {
+    const key = format(day, 'yyyy-MM-dd');
+    return itemsByDay.get(key) || { events: [], tasks: [] };
+  }, [itemsByDay]);
 
   return (
     <div className="w-full">
@@ -242,11 +254,13 @@ export const MonthlyCalendarView = ({ events, tasks, currentMonth, setCurrentMon
                   <div className={`space-y-1 max-h-[80px] pr-1 ${
                     (dayEvents.length + dayTasks.length) > 1 ? 'force-scrollbar-always' : 'custom-scrollbar'
                   }`} style={{
-                    overflowY: 'scroll',
+                    overflowY: 'auto',
                     WebkitOverflowScrolling: 'touch',
                     overscrollBehavior: 'contain',
                     transform: 'translate3d(0, 0, 0)',
-                    backfaceVisibility: 'hidden'
+                    backfaceVisibility: 'hidden',
+                    willChange: 'scroll-position',
+                    contain: 'layout style paint'
                   }}>{/* Show scrollbar when multiple items */}
                     {/* Events */}
                     {dayEvents.map((event, eventIndex) => (
