@@ -34,6 +34,8 @@ interface WeeklyCalendarViewProps {
 }
 
 const TIME_SLOTS = [
+  { label: "4am", hour: 4 },
+  { label: "5am", hour: 5 },
   { label: "8am", hour: 8 },
   { label: "9am", hour: 9 },
   { label: "10am", hour: 10 },
