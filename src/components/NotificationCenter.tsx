@@ -60,7 +60,7 @@ export const NotificationCenter: React.FC = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
+        <Button variant="ghost" size="sm" className="relative overflow-visible">
           {unreadCount > 0 ? (
             <BellRing className="h-5 w-5" />
           ) : (
