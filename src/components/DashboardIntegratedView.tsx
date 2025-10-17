@@ -1,8 +1,6 @@
-import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import { Calendar as CalendarIcon, Clock, BookOpen, Target, CheckCircle, AlertCircle, Brain, TrendingUp, Plus, ChevronDown, ChevronRight, Settings, FileText, GraduationCap, Palette, Trash2, AlertTriangle } from "lucide-react";
-import { cache, CACHE_TTL } from "@/lib/cache";
-import { debounce } from "@/lib/performance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,15 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { WeeklyCalendarView } from "@/components/WeeklyCalendarView";
 import { DailyCalendarView } from "@/components/DailyCalendarView";
 import { MonthlyCalendarView } from "@/components/MonthlyCalendarView";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EventTaskModal } from "@/components/EventTaskModal";
 import { CanvasIntegration } from "@/components/CanvasIntegration";
 import { AIEventCreator } from "@/components/AIEventCreator";
-import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
-import { DashboardCalendar } from "@/components/dashboard/DashboardCalendar";
-import { DashboardCourses } from "@/components/dashboard/DashboardCourses";
 import { getCourseIconById, courseIcons } from "@/data/courseIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -124,6 +118,7 @@ export const DashboardIntegratedView = memo(() => {
   
   // State for both calendar and courses
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('week');
   const [activeTab, setActiveTab] = useState("overview");
   
   // Calendar data
@@ -214,22 +209,12 @@ export const DashboardIntegratedView = memo(() => {
     };
   }, [user]);
 
-  // Debounced data reload for real-time updates
-  const debouncedLoadData = useMemo(
-    () => debounce(() => {
-      if (user?.id) {
-        loadAllData();
-      }
-    }, 300),
-    [user?.id]
-  );
-
-  // Real-time listeners with combined channel and debouncing (Phase 5)
+  // Real-time listeners for events and tasks (Phase 1)
   useEffect(() => {
     if (!user?.id) return;
 
-    const channel = supabase
-      .channel('dashboard-realtime')
+    const eventsChannel = supabase
+      .channel('dashboard-events-realtime')
       .on(
         'postgres_changes',
         { 
@@ -240,9 +225,13 @@ export const DashboardIntegratedView = memo(() => {
         },
         (payload) => {
           console.log('Dashboard: Real-time event change:', payload);
-          debouncedLoadData();
+          loadAllData();
         }
       )
+      .subscribe();
+
+    const tasksChannel = supabase
+      .channel('dashboard-tasks-realtime')
       .on(
         'postgres_changes',
         { 
@@ -253,33 +242,19 @@ export const DashboardIntegratedView = memo(() => {
         },
         (payload) => {
           console.log('Dashboard: Real-time task change:', payload);
-          debouncedLoadData();
+          loadAllData();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(eventsChannel);
+      supabase.removeChannel(tasksChannel);
     };
-  }, [user?.id, debouncedLoadData]);
+  }, [user?.id]);
 
-  const loadAllData = useCallback(async () => {
+  const loadAllData = async () => {
     if (!user?.id) return;
-    
-    // Phase 1: Check cache first
-    const cacheKey = `dashboard_data_${user.id}`;
-    const cachedData = cache.get(cacheKey);
-    
-    if (cachedData) {
-      console.log('Dashboard: Using cached data');
-      setEvents(cachedData.events);
-      setTasks(cachedData.tasks);
-      setCourses(cachedData.courses);
-      setStoredColors(cachedData.storedColors);
-      setCourseIcons_State(cachedData.courseIcons);
-      setLoading(false);
-      return;
-    }
     
     setLoading(true);
     try {
@@ -313,15 +288,15 @@ export const DashboardIntegratedView = memo(() => {
         setCourseIcons_State(loadedIcons);
       }
 
-      // Phase 2: Optimize queries - only fetch needed columns
+      // Load events and tasks
       const [eventsResult, tasksResult] = await Promise.all([
         supabase
           .from('events')
-          .select('id, title, start_time, end_time, is_completed, event_type, source_provider, description')
+          .select('*')
           .eq('user_id', user.id),
         supabase
           .from('tasks')
-          .select('id, title, due_date, priority_score, completion_status, course_name, source_provider')
+          .select('*')
           .eq('user_id', user.id)
       ]);
 
@@ -394,15 +369,6 @@ export const DashboardIntegratedView = memo(() => {
       setCourses(processedCourses);
       setCollapsedCourses(new Set(processedCourses.map(course => course.code)));
 
-      // Phase 1: Cache the loaded data
-      cache.set(cacheKey, {
-        events: allEvents,
-        tasks: allTasks,
-        courses: processedCourses,
-        storedColors: colorMap,
-        courseIcons: loadedIcons
-      }, CACHE_TTL.COURSE_COLORS);
-
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -413,10 +379,9 @@ export const DashboardIntegratedView = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, toast]);
+  };
 
-  // Phase 3: Memoize icon lookup
-  const getCourseIconWithLoadedIcons = useCallback((courseCode: string, loadedIcons: Record<string, string>) => {
+  const getCourseIconWithLoadedIcons = (courseCode: string, loadedIcons: Record<string, string>) => {
     const customIconId = loadedIcons[courseCode];
     if (customIconId) {
       return getCourseIconById(customIconId);
@@ -430,10 +395,9 @@ export const DashboardIntegratedView = memo(() => {
     if (code.includes('mu') || code.includes('music')) return BookOpen;
     
     return BookOpen;
-  }, []);
+  };
 
-  // Phase 3: Memoize event toggle handler
-  const handleEventToggle = useCallback(async (eventId: string, isCompleted: boolean) => {
+  const handleEventToggle = async (eventId: string, isCompleted: boolean) => {
     try {
       const { error } = await supabase
         .from('events')
@@ -450,9 +414,6 @@ export const DashboardIntegratedView = memo(() => {
         });
         return;
       }
-
-      // Optimistic update with cache invalidation
-      cache.invalidate(`dashboard_data_${user?.id}`);
 
       // Update local state
       setEvents(prevEvents => 
@@ -478,10 +439,9 @@ export const DashboardIntegratedView = memo(() => {
     } catch (error) {
       console.error('Error toggling event completion:', error);
     }
-  }, [user?.id, toast]);
+  };
 
-  // Phase 3: Memoize toggle handler
-  const toggleCourse = useCallback((courseCode: string) => {
+  const toggleCourse = (courseCode: string) => {
     setCollapsedCourses(prev => {
       const newSet = new Set(prev);
       if (newSet.has(courseCode)) {
@@ -491,9 +451,9 @@ export const DashboardIntegratedView = memo(() => {
       }
       return newSet;
     });
-  }, []);
+  };
 
-  // Phase 3: Quick stats calculations with optimized memoization
+  // Quick stats calculations
   const dashboardStats = useMemo(() => {
     const today = new Date();
     const todayEvents = events.filter(event => {
@@ -518,29 +478,29 @@ export const DashboardIntegratedView = memo(() => {
       completedToday,
       progressPercentage: totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0
     };
-  }, [events, tasks, courses.length]);
+  }, [events, tasks, courses]);
 
-  // Phase 3: Memoize modal handlers
-  const openEventModal = useCallback((event: any) => {
+  // Modal handlers
+  const openEventModal = (event: any) => {
     setSelectedEvent(event);
     setSelectedTask(null);
     setIsModalOpen(true);
-  }, []);
+  };
 
-  const openTaskModal = useCallback((task: any) => {
+  const openTaskModal = (task: any) => {
     setSelectedTask(task);
     setSelectedEvent(null);
     setIsModalOpen(true);
-  }, []);
+  };
 
-  const closeModal = useCallback(() => {
+  const closeModal = () => {
     setIsModalOpen(false);
     setSelectedEvent(null);
     setSelectedTask(null);
-  }, []);
+  };
 
-  // Clear calendar data function with cache invalidation
-  const clearAllData = useCallback(async () => {
+  // Clear calendar data function
+  const clearAllData = async () => {
     if (!user?.id) return;
 
     try {
@@ -568,9 +528,6 @@ export const DashboardIntegratedView = memo(() => {
       }
 
       console.log('Calendar data clear finished successfully');
-
-      // Invalidate cache
-      cache.invalidate(`dashboard_data_${user.id}`);
 
       // Clear local state immediately
       setEvents([]);
@@ -600,7 +557,7 @@ export const DashboardIntegratedView = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, toast]);
+  };
 
   if (loading) {
     return (
@@ -681,35 +638,306 @@ export const DashboardIntegratedView = memo(() => {
         )}
 
         <TabsContent value="overview" className="space-y-6">
-          <DashboardOverview
-            events={events}
-            tasks={tasks}
-            courses={courses}
-            dashboardStats={dashboardStats}
-            onEventToggle={handleEventToggle}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Today's Schedule */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Today's Schedule
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {events
+                  .filter(event => isToday(new Date(event.start_time)))
+                  .slice(0, 5)
+                  .map(event => (
+                    <div key={event.id} className="flex items-center justify-between p-2 border rounded">
+                      <div className="flex items-center gap-2">
+                        <Checkbox 
+                          checked={event.is_completed || false}
+                          onCheckedChange={(checked) => handleEventToggle(event.id, checked as boolean)}
+                        />
+                        <span 
+                          className={`cursor-pointer hover:text-primary ${event.is_completed ? 'line-through text-muted-foreground' : ''}`}
+                          onClick={() => openEventModal(event)}
+                        >
+                          {event.title}
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(event.start_time), 'h:mm a')}
+                      </span>
+                    </div>
+                  ))}
+                {events.filter(event => isToday(new Date(event.start_time))).length === 0 && (
+                  <p className="text-muted-foreground text-center py-4">No events scheduled for today</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Course Progress */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Course Progress
+                </CardTitle>
+              </CardHeader>
+               <CardContent className="space-y-3">
+                 {courses.slice(0, 4).map(course => (
+                   <div 
+                     key={course.code} 
+                     className="space-y-2 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+                     onClick={() => setActiveTab("courses")}
+                   >
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{course.code}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {course.completedAssignments}/{course.totalAssignments}
+                        </span>
+                      </div>
+                   </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
-          <DashboardCalendar
-            events={events}
-            tasks={tasks}
-            storedColors={storedColors}
-            currentDate={currentDate}
-            setCurrentDate={setCurrentDate}
-            onClearAllData={clearAllData}
-          />
+          {/* Calendar View Mode Toggle and Action Buttons */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === 'day' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('day')}
+              >
+                Day
+              </Button>
+              <Button
+                variant={viewMode === 'week' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('week')}
+              >
+                Week
+              </Button>
+              <Button
+                variant={viewMode === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('month')}
+              >
+                Month
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+
+              {/* Clear All Button */}
+              <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Clear All Data
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Clear Calendar Data
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>All events (Canvas and manually added)</li>
+                      <li>All tasks and assignments</li>
+                    </ul>
+                    <p className="mt-2 text-sm text-muted-foreground">Your preferences, color settings, and other configurations will be preserved.</p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={clearAllData}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Clear Calendar Data
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+
+          {/* Calendar Navigation - Date Display Only */}
+          <div className="flex items-center justify-center">
+            <h2 className="text-xl font-semibold">
+              {format(currentDate, viewMode === 'month' ? 'MMMM yyyy' : 'MMM d, yyyy')}
+            </h2>
+          </div>
+
+          {/* Calendar Component */}
+          <div className="border rounded-lg">
+            {viewMode === 'day' && (
+              <DailyCalendarView
+                events={events}
+                tasks={tasks}
+                storedColors={storedColors}
+                currentDay={currentDate}
+                setCurrentDay={setCurrentDate}
+              />
+            )}
+            {viewMode === 'week' && (
+              <WeeklyCalendarView
+                events={events}
+                tasks={tasks}
+                currentWeek={currentDate}
+                setCurrentWeek={setCurrentDate}
+              />
+            )}
+            {viewMode === 'month' && (
+              <MonthlyCalendarView
+                events={events}
+                tasks={tasks}
+                currentMonth={currentDate}
+                setCurrentMonth={setCurrentDate}
+              />
+            )}
+          </div>
+
+
+          {/* Canvas Integration */}
+          <div className="mt-6">
+            <CanvasIntegration />
+          </div>
         </TabsContent>
 
         <TabsContent value="courses" className="space-y-4">
-          <DashboardCourses
-            courses={courses}
-            collapsedCourses={collapsedCourses}
-            onToggleCourse={toggleCourse}
-            onEventClick={openEventModal}
-            onTaskClick={openTaskModal}
-            onEventToggle={handleEventToggle}
-          />
+          <div className="grid gap-4">
+            {courses.map(course => {
+              const IconComponent = course.icon;
+              const isCollapsed = collapsedCourses.has(course.code);
+              
+              return (
+                <Card key={course.code}>
+                  <Collapsible
+                    open={!isCollapsed}
+                    onOpenChange={() => toggleCourse(course.code)}
+                  >
+                     <CollapsibleTrigger asChild>
+                       <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                         <div className="flex items-center justify-between">
+                           <div className="flex items-center space-x-3">
+                             <div 
+                               className="p-2 rounded-lg"
+                               style={{ 
+                                 backgroundColor: typeof course.color === 'string' ? `${course.color}20` : undefined,
+                                 border: typeof course.color === 'string' ? `1px solid ${course.color}40` : undefined
+                               }}
+                             >
+                               <IconComponent className="h-5 w-5" style={{ color: course.color }} />
+                             </div>
+                             <div>
+                               <CardTitle className="text-lg">{course.code}</CardTitle>
+                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                 <span>{course.totalAssignments} total assignments</span>
+                                 <span>{course.completedAssignments} completed</span>
+                                 <span>{course.upcomingAssignments} upcoming</span>
+                               </div>
+                             </div>
+                           </div>
+                           <div className="flex items-center gap-2">
+                             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                           </div>
+                         </div>
+                       </CardHeader>
+                     </CollapsibleTrigger>
+                     
+                     <CollapsibleContent>
+                       <CardContent className="pt-0">
+                         {/* All Assignments - Scrollable, Sorted by Date */}
+                         <div className="max-h-96 overflow-y-auto space-y-2">
+                           {[...course.events, ...course.tasks]
+                             .filter((item: any) => {
+                               // Filter out assignments that are more than 3 weeks past due
+                               const itemDate = new Date((item as any).end_time || (item as any).start_time || (item as any).due_date || '');
+                               const today = new Date();
+                               const threeWeeksAgo = new Date(today.getTime() - (21 * 24 * 60 * 60 * 1000)); // 3 weeks in milliseconds
+                               
+                               // Keep the assignment if it's not older than 3 weeks past due
+                               return itemDate >= threeWeeksAgo;
+                             })
+                             .sort((a, b) => {
+                               // Get dates for comparison - handle both events and tasks
+                               const dateA = new Date((a as any).end_time || (a as any).start_time || (a as any).due_date || '');
+                               const dateB = new Date((b as any).end_time || (b as any).start_time || (b as any).due_date || '');
+                               
+                               // Sort by closest to today's date
+                               const today = new Date();
+                               const diffA = Math.abs(dateA.getTime() - today.getTime());
+                               const diffB = Math.abs(dateB.getTime() - today.getTime());
+                               
+                               return diffA - diffB;
+                             })
+                             .map((item: any) => {
+                               const isEvent = 'start_time' in item;
+                               return (
+                                 <div 
+                                   key={item.id} 
+                                   className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                                   onClick={() => isEvent ? openEventModal(item) : openTaskModal(item)}
+                                 >
+                                   <div className="flex items-center gap-2">
+                                     <Checkbox 
+                                       checked={isEvent ? (item.is_completed || false) : (item.completion_status === 'completed')}
+                                       onCheckedChange={(checked) => {
+                                         if (isEvent) {
+                                           handleEventToggle(item.id, checked as boolean);
+                                         }
+                                         // Handle task toggle here if needed for tasks
+                                       }}
+                                       onClick={(e) => e.stopPropagation()}
+                                     />
+                                     <span className={
+                                       (isEvent ? item.is_completed : item.completion_status === 'completed') 
+                                         ? 'line-through text-muted-foreground' 
+                                         : ''
+                                     }>
+                                       {item.title}
+                                     </span>
+                                   </div>
+                                   <span className="text-sm text-muted-foreground">
+                                     {(item.end_time || item.start_time || item.due_date) && 
+                                       format(new Date(item.end_time || item.start_time || item.due_date), 'MMM d')
+                                     }
+                                   </span>
+                                 </div>
+                               );
+                             })
+                           }
+                           {([...course.events, ...course.tasks]).length === 0 && (
+                             <p className="text-muted-foreground text-center py-4">No assignments found</p>
+                           )}
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              );
+            })}
+            {courses.length === 0 && (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-8">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No courses found</h3>
+                  <p className="text-muted-foreground text-center">
+                    Connect your Canvas account to see your courses here.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 
