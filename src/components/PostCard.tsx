@@ -24,10 +24,11 @@ interface PostCardProps {
   onDelete: (postId: string) => void;
   onImageClick: (imageUrl: string) => void;
   onProfileClick?: (userId: string) => void;
+  onMaximize?: (post: Post) => void;
 }
 
 // Memoized PostCard for better performance
-export const PostCard = memo(({ id, post, isOwner, onLike, onComment, onDelete, onImageClick, onProfileClick }: PostCardProps) => {
+export const PostCard = memo(({ id, post, isOwner, onLike, onComment, onDelete, onImageClick, onProfileClick, onMaximize }: PostCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const { hasIntersected } = useIntersectionObserver(cardRef, { rootMargin: '100px' });
   const { user } = useAuth();
@@ -152,7 +153,23 @@ export const PostCard = memo(({ id, post, isOwner, onLike, onComment, onDelete, 
   }
 
   return (
-    <Card id={id} ref={cardRef} className="animate-fade-in will-change-transform">
+    <Card 
+      id={id} 
+      ref={cardRef} 
+      className="animate-fade-in will-change-transform cursor-pointer hover:shadow-md transition-shadow"
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        const isInteractive = 
+          target.closest('button') || 
+          target.closest('a') || 
+          target.closest('[role="button"]') ||
+          target.closest('img');
+        
+        if (!isInteractive && onMaximize) {
+          onMaximize(post);
+        }
+      }}
+    >
       <CardHeader>
         <div className="flex items-center gap-3">
           <Avatar 
@@ -395,7 +412,8 @@ export const PostCard = memo(({ id, post, isOwner, onLike, onComment, onDelete, 
     prevProps.post.likes_count === nextProps.post.likes_count &&
     prevProps.post.comments_count === nextProps.post.comments_count &&
     prevProps.post.user_liked === nextProps.post.user_liked &&
-    prevProps.isOwner === nextProps.isOwner
+    prevProps.isOwner === nextProps.isOwner &&
+    prevProps.onMaximize === nextProps.onMaximize
   );
 });
 

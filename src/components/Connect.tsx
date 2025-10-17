@@ -63,6 +63,8 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
   });
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicProfile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [maximizedPostOpen, setMaximizedPostOpen] = useState(false);
+  const [maximizedPost, setMaximizedPost] = useState<Post | null>(null);
 
   // Persist active tab to localStorage
   React.useEffect(() => {
@@ -346,6 +348,11 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
     }
   };
 
+  const handleMaximizePost = (post: Post) => {
+    setMaximizedPost(post);
+    setMaximizedPostOpen(true);
+  };
+
   // Memoize filtered posts to prevent unnecessary recalculations
   const filteredPosts = useMemo(() => {
     return localPosts.filter(post => {
@@ -465,17 +472,18 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
               </Card>
             ) : (
               filteredPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  id={`post-${post.id}`}
-                  post={post}
-                  isOwner={user?.id === post.user_id}
-                  onLike={handleLike}
-                  onComment={handleViewComments}
-                  onDelete={deletePost}
-                  onImageClick={handleOpenImage}
-                  onProfileClick={handleViewProfile}
-                />
+                  <PostCard
+                    key={post.id}
+                    id={`post-${post.id}`}
+                    post={post}
+                    isOwner={user?.id === post.user_id}
+                    onLike={handleLike}
+                    onComment={handleViewComments}
+                    onDelete={deletePost}
+                    onImageClick={handleOpenImage}
+                    onProfileClick={handleViewProfile}
+                    onMaximize={handleMaximizePost}
+                  />
               ))
             )}
           </div>
@@ -694,6 +702,174 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
                 }
               }}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Maximized Post Dialog */}
+      <Dialog open={maximizedPostOpen} onOpenChange={setMaximizedPostOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Post Details</DialogTitle>
+          </DialogHeader>
+          
+          {maximizedPost && (
+            <div className="space-y-4">
+              {/* Author Info */}
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <Avatar 
+                  className="h-12 w-12 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => {
+                    handleViewProfile(maximizedPost.user_id);
+                    setMaximizedPostOpen(false);
+                  }}
+                >
+                  <AvatarImage src={maximizedPost.profiles.avatar_url} />
+                  <AvatarFallback>
+                    {maximizedPost.profiles.display_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 
+                      className="font-semibold text-lg cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => {
+                        handleViewProfile(maximizedPost.user_id);
+                        setMaximizedPostOpen(false);
+                      }}
+                    >
+                      {maximizedPost.profiles.display_name}
+                    </h3>
+                    {maximizedPost.profiles.school && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <School className="h-3 w-3" />
+                        {maximizedPost.profiles.school}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {maximizedPost.profiles.major && (
+                      <span>{maximizedPost.profiles.major}</span>
+                    )}
+                    <span>•</span>
+                    <span>{formatTimeAgo(maximizedPost.created_at)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Post Type and Visibility Badges */}
+              <div className="flex flex-wrap gap-2">
+                {(maximizedPost.post_type || 'general') !== 'general' && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    {(maximizedPost.post_type || 'general') === 'academic' && <GraduationCap className="h-3 w-3" />}
+                    {(maximizedPost.post_type || 'general') === 'social' && <Users className="h-3 w-3" />}
+                    {(maximizedPost.post_type || 'general') === 'announcement' && <Hash className="h-3 w-3" />}
+                    {(maximizedPost.post_type || 'general') === 'question' && <Hash className="h-3 w-3" />}
+                    {(maximizedPost.post_type || 'general') === 'study-group' && <Users className="h-3 w-3" />}
+                    {(maximizedPost.post_type || 'general').charAt(0).toUpperCase() + (maximizedPost.post_type || 'general').slice(1)}
+                  </Badge>
+                )}
+                {(maximizedPost.visibility || 'public') !== 'public' && (
+                  <Badge variant="outline">
+                    {(maximizedPost.visibility || 'public') === 'school-only' && 'School Only'}
+                    {(maximizedPost.visibility || 'public') === 'major-only' && 'Major Only'}
+                    {(maximizedPost.visibility || 'public') === 'friends-only' && 'Friends Only'}
+                  </Badge>
+                )}
+                {maximizedPost.target_major && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <GraduationCap className="h-3 w-3" />
+                    {maximizedPost.target_major}
+                  </Badge>
+                )}
+                {maximizedPost.target_community && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <School className="h-3 w-3" />
+                    {maximizedPost.target_community}
+                  </Badge>
+                )}
+                {(maximizedPost.tags || []).map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
+
+              {/* Post Content */}
+              <div className="prose prose-sm max-w-none">
+                <p className="text-foreground whitespace-pre-wrap text-base leading-relaxed">
+                  {maximizedPost.content}
+                </p>
+              </div>
+
+              {/* Post Image */}
+              {maximizedPost.image_url && (
+                <div className="rounded-lg overflow-hidden border">
+                  <img 
+                    src={maximizedPost.image_url} 
+                    alt="Post image" 
+                    className="w-full cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      handleOpenImage(maximizedPost.image_url!);
+                      setMaximizedPostOpen(false);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Engagement Stats and Actions */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="ghost"
+                    size="default"
+                    onClick={async () => {
+                      await handleLike(maximizedPost.id);
+                      setMaximizedPost({
+                        ...maximizedPost,
+                        user_liked: !maximizedPost.user_liked,
+                        likes_count: maximizedPost.user_liked 
+                          ? maximizedPost.likes_count - 1 
+                          : maximizedPost.likes_count + 1
+                      });
+                    }}
+                    className={`flex items-center gap-2 ${
+                      maximizedPost.user_liked ? 'text-red-500 hover:text-red-600' : ''
+                    }`}
+                  >
+                    <Heart className={`h-5 w-5 ${maximizedPost.user_liked ? 'fill-current' : ''}`} />
+                    <span className="font-medium">{maximizedPost.likes_count}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="default"
+                    onClick={() => {
+                      setMaximizedPostOpen(false);
+                      handleViewComments(maximizedPost);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                    <span className="font-medium">{maximizedPost.comments_count}</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Comment Section */}
+              <div className="pt-4 border-t">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setMaximizedPostOpen(false);
+                    handleViewComments(maximizedPost);
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  View All Comments
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
