@@ -41,6 +41,27 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       calendar_connections: {
         Row: {
           access_token_enc: string | null
@@ -663,6 +684,7 @@ export type Database = {
           comments_count: number | null
           content: string
           created_at: string
+          edited_at: string | null
           id: string
           image_url: string | null
           is_promoted: boolean | null
@@ -687,6 +709,7 @@ export type Database = {
           comments_count?: number | null
           content: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           image_url?: string | null
           is_promoted?: boolean | null
@@ -711,6 +734,7 @@ export type Database = {
           comments_count?: number | null
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           image_url?: string | null
           is_promoted?: boolean | null
@@ -1226,6 +1250,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      are_friends: {
+        Args: { user1_id: string; user2_id: string }
+        Returns: boolean
+      }
       calculate_interest_match_score: {
         Args: { user1_id: string; user2_id: string }
         Returns: number

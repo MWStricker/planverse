@@ -1,5 +1,5 @@
 import React, { memo, useRef, useState, useEffect } from 'react';
-import { Heart, MessageCircle, School, Users, GraduationCap, Hash, Trash2, MoreVertical, ShieldAlert, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Heart, MessageCircle, School, Users, GraduationCap, Hash, Trash2, MoreVertical, ShieldAlert, AlertTriangle, CheckCircle, Ban } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +13,7 @@ import { hapticSelection } from '@/lib/haptics';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useBlockUser } from '@/hooks/useBlockUser';
 
 interface PostCardProps {
   post: Post;
@@ -30,6 +31,7 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
   const { hasIntersected } = useIntersectionObserver(cardRef, { rootMargin: '100px' });
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { blockUser } = useBlockUser();
   const [hasTrackedView, setHasTrackedView] = useState(false);
   
   const formatTimeAgo = (dateString: string) => {
@@ -331,7 +333,7 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
                     </FloatingActionPanelTrigger>
                     
                     <FloatingActionPanelContent>
-                      <div className="p-2">
+                      <div className="p-2 space-y-1">
                         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                           <AlertDialogTrigger asChild>
                             <FloatingActionPanelButton
@@ -366,6 +368,37 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                      </div>
+                    </FloatingActionPanelContent>
+                  </>
+                )}
+              </FloatingActionPanelRoot>
+            )}
+            {!isOwner && (
+              <FloatingActionPanelRoot>
+                {({ closePanel }) => (
+                  <>
+                    <FloatingActionPanelTrigger 
+                      title="More Actions" 
+                      mode="actions"
+                      className="h-8 w-8 p-0 hover:bg-accent"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </FloatingActionPanelTrigger>
+                    
+                    <FloatingActionPanelContent>
+                      <div className="p-2">
+                        <FloatingActionPanelButton
+                          onClick={async () => {
+                            await blockUser(post.user_id);
+                            closePanel();
+                            window.location.reload(); // Refresh to hide blocked user's posts
+                          }}
+                          className="text-destructive hover:text-destructive w-full"
+                        >
+                          <Ban className="h-4 w-4 mr-2" />
+                          Block User
+                        </FloatingActionPanelButton>
                       </div>
                     </FloatingActionPanelContent>
                   </>

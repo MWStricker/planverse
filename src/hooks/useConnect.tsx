@@ -66,17 +66,21 @@ export const useConnect = () => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      // Fetch posts and initial data in parallel
-      // Order by promotion_priority first (promoted posts at top), then by date
-      const [
-        { data: postsData, error: postsError }
-      ] = await Promise.all([
-        supabase
-          .from('posts')
-          .select('*')
-          .order('promotion_priority', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false })
-      ]);
+      // Get blocked users first to filter them out
+      const blockedUsers: string[] = user ? await (async () => {
+        const { data } = await supabase
+          .from('blocked_users')
+          .select('blocked_id')
+          .eq('blocker_id', user.id);
+        return data?.map(row => row.blocked_id) || [];
+      })() : [];
+
+      // Fetch posts (RLS will handle privacy filtering)
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .order('promotion_priority', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
       if (!postsData || postsData.length === 0) {
@@ -85,8 +89,17 @@ export const useConnect = () => {
         return;
       }
 
-      const userIds = postsData.map(post => post.user_id);
-      const postIds = postsData.map(post => post.id);
+      // Filter out blocked users client-side
+      const filteredPosts = postsData.filter(post => !blockedUsers.includes(post.user_id));
+
+      if (filteredPosts.length === 0) {
+        setPosts([]);
+        setLoading(false);
+        return;
+      }
+
+      const userIds = filteredPosts.map(post => post.user_id);
+      const postIds = filteredPosts.map(post => post.id);
 
       // Fetch profiles and likes in parallel
       const profilesPromise = supabase
@@ -115,7 +128,7 @@ export const useConnect = () => {
       }
 
       // Combine posts with profiles
-      const formattedPosts = postsData.map(post => {
+      const formattedPosts = filteredPosts.map(post => {
         const profile = profilesMap.get(post.user_id);
         return {
           ...post,
@@ -236,6 +249,26 @@ export const useConnect = () => {
 
         // Update likes count
         await supabase.rpc('increment_likes_count', { post_id: postId });
+
+        // Send notification to post owner (if not self-like)
+        const post = posts.find(p => p.id === postId);
+        if (post && post.user_id !== user.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('user_id', user.id)
+            .single();
+
+          await supabase.functions.invoke('send-notification', {
+            body: {
+              userId: post.user_id,
+              type: 'post_like',
+              title: 'New Like',
+              message: `${profile?.display_name || 'Someone'} liked your post`,
+              data: { postId }
+            }
+          });
+        }
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -325,6 +358,26 @@ export const useConnect = () => {
 
       // Update comments count
       await supabase.rpc('increment_comments_count', { post_id: postId });
+
+      // Send notification to post owner (if not self-comment)
+      const post = posts.find(p => p.id === postId);
+      if (post && post.user_id !== user.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            userId: post.user_id,
+            type: 'post_comment',
+            title: 'New Comment',
+            message: `${profile?.display_name || 'Someone'} commented on your post`,
+            data: { postId, commentContent: content.substring(0, 50) }
+          }
+        });
+      }
 
       toast({
         title: "Success",

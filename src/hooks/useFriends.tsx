@@ -245,6 +245,23 @@ export const useFriends = () => {
 
       if (error) throw error;
 
+      // Send notification to receiver
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          userId: receiverId,
+          type: 'friend_request',
+          title: 'New Friend Request',
+          message: `${profile?.display_name || 'Someone'} sent you a friend request`,
+          data: { senderId: user.id }
+        }
+      });
+
       // Force refetch (bypass cache) after user action
       setLastFetchTime(0);
       await fetchFriendRequests();

@@ -29,6 +29,7 @@ import { collegeMajors } from '@/data/collegeMajors';
 import { universities } from '@/data/universities';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { fileToDataURL } from '@/lib/utils';
 
@@ -69,6 +70,7 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { toast } = useToast();
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('general');
   const [visibility, setVisibility] = useState('public');
@@ -79,6 +81,8 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Update defaults when profile loads
   React.useEffect(() => {
@@ -136,26 +140,98 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
     setImagePreview(null);
   };
 
+  // Helper function to compress images
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d')!;
+          
+          // Calculate new dimensions (max 1920px width)
+          let width = img.width;
+          let height = img.height;
+          if (width > 1920) {
+            height = (height / width) * 1920;
+            width = 1920;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => {
+              resolve(new File([blob!], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              }));
+            },
+            'image/jpeg',
+            0.85 // 85% quality
+          );
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const uploadImage = async (file: File): Promise<string | null> => {
     if (!user) return null;
     
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    setUploadProgress(0);
+    setUploadError(null);
     
-    const { data, error } = await supabase.storage
-      .from('post-images')
-      .upload(fileName, file);
-    
-    if (error) {
-      console.error('Error uploading image:', error);
+    try {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Image too large. Max size is 10MB.');
+      }
+      
+      // Compress image if needed
+      let fileToUpload = file;
+      if (file.size > 2 * 1024 * 1024) { // > 2MB
+        console.log('Compressing image...');
+        fileToUpload = await compressImage(file);
+        console.log(`Compressed ${file.size} → ${fileToUpload.size}`);
+      }
+      
+      const fileExt = fileToUpload.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      // Upload with progress tracking (simulated since Supabase storage doesn't support progress)
+      setUploadProgress(30);
+      
+      const { data, error } = await supabase.storage
+        .from('post-images')
+        .upload(fileName, fileToUpload);
+      
+      if (error) throw error;
+      
+      setUploadProgress(80);
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('post-images')
+        .getPublicUrl(data.path);
+      
+      setUploadProgress(100);
+      return publicUrl;
+      
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setUploadError(error.message || 'Failed to upload image');
+      
+      toast({
+        title: "Upload Failed",
+        description: error.message || 'Failed to upload image',
+        variant: "destructive",
+      });
+      
       return null;
     }
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('post-images')
-      .getPublicUrl(data.path);
-    
-    return publicUrl;
   };
 
   const handleCreatePost = async () => {

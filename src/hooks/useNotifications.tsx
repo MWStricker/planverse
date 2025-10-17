@@ -117,6 +117,48 @@ export const useNotifications = () => {
     fetchNotifications();
   }, [user]);
 
+  // Realtime subscription for new notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('user-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('New notification received:', payload);
+          
+          // Add new notification to state
+          setNotifications(prev => [payload.new as Notification, ...prev]);
+          
+          // Show toast notification
+          if (typeof window !== 'undefined') {
+            const notification = payload.new as Notification;
+            
+            // Create a toast
+            const event = new CustomEvent('notification-toast', {
+              detail: {
+                title: notification.title,
+                description: notification.message,
+              }
+            });
+            window.dispatchEvent(event);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return {

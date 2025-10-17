@@ -52,6 +52,14 @@ export const useMessaging = () => {
       setLoading(true);
       console.log('useMessaging: Querying conversations table...');
       
+      // Get blocked users first
+      const { data: blockedData } = await supabase
+        .from('blocked_users')
+        .select('blocked_id')
+        .eq('blocker_id', user.id);
+
+      const blockedUserIds = new Set(blockedData?.map(row => row.blocked_id) || []);
+
       // Single optimized query with PostgreSQL joins - fetches conversations and profiles in one go
       const { data, error } = await supabase
         .from('conversations')
@@ -78,42 +86,47 @@ export const useMessaging = () => {
         return;
       }
 
-      // Map to determine which profile is the other user's profile
-      const conversationsWithProfiles = data.map((conv: any) => {
-        const otherUserProfile = conv.user1_id === user.id 
-          ? conv.user2_profile 
-          : conv.user1_profile;
-        
-        // Determine the other user's ID with fallback
-        const otherUserId = otherUserProfile?.user_id || 
-          (conv.user1_id === user.id ? conv.user2_id : conv.user1_id);
-        
-        // Transform profile to include 'id' field from 'user_id'
-        const other_user = {
-          id: otherUserId,
-          display_name: otherUserProfile?.display_name || 'Unknown User',
-          avatar_url: otherUserProfile?.avatar_url,
-          school: otherUserProfile?.school,
-          major: otherUserProfile?.major
-        };
+      // Map to determine which profile is the other user's profile, filtering blocked users
+      const conversationsWithProfiles = data
+        .filter((conv: any) => {
+          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
+          return !blockedUserIds.has(otherUserId);
+        })
+        .map((conv: any) => {
+          const otherUserProfile = conv.user1_id === user.id 
+            ? conv.user2_profile 
+            : conv.user1_profile;
+          
+          // Determine the other user's ID with fallback
+          const otherUserId = otherUserProfile?.user_id || 
+            (conv.user1_id === user.id ? conv.user2_id : conv.user1_id);
+          
+          // Transform profile to include 'id' field from 'user_id'
+          const other_user = {
+            id: otherUserId,
+            display_name: otherUserProfile?.display_name || 'Unknown User',
+            avatar_url: otherUserProfile?.avatar_url,
+            school: otherUserProfile?.school,
+            major: otherUserProfile?.major
+          };
 
-        // Determine user-specific pin/mute status based on who the current user is
-        const isUser1 = conv.user1_id === user.id;
-        const is_pinned = isUser1 ? (conv.user1_is_pinned || false) : (conv.user2_is_pinned || false);
-        const is_muted = isUser1 ? (conv.user1_is_muted || false) : (conv.user2_is_muted || false);
+          // Determine user-specific pin/mute status based on who the current user is
+          const isUser1 = conv.user1_id === user.id;
+          const is_pinned = isUser1 ? (conv.user1_is_pinned || false) : (conv.user2_is_pinned || false);
+          const is_muted = isUser1 ? (conv.user1_is_muted || false) : (conv.user2_is_muted || false);
 
-        return {
-          id: conv.id,
-          user1_id: conv.user1_id,
-          user2_id: conv.user2_id,
-          last_message_at: conv.last_message_at,
-          is_pinned,
-          is_muted,
-          display_order: conv.display_order || null,
-          unread_count: conv.unread_count || 0,
-          other_user
-        };
-      });
+          return {
+            id: conv.id,
+            user1_id: conv.user1_id,
+            user2_id: conv.user2_id,
+            last_message_at: conv.last_message_at,
+            is_pinned,
+            is_muted,
+            display_order: conv.display_order || null,
+            unread_count: conv.unread_count || 0,
+            other_user
+          };
+        });
 
       setConversations(conversationsWithProfiles);
       console.log('useMessaging: Set conversations:', conversationsWithProfiles);
