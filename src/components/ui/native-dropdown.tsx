@@ -27,6 +27,11 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
   const menuId = useRef(`menu-${Math.random().toString(36).substr(2, 9)}`);
   const btnId = useRef(`menu-button-${Math.random().toString(36).substr(2, 9)}`);
 
+  // Set mounted state for client-side rendering
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Close on outside click
   useEffect(() => {
     if (!open) return;
