@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { fileToDataURL } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { fromUserTimezone } from "@/lib/timezone-utils";
 
 interface ScheduleEvent {
   course: string;
@@ -30,7 +32,9 @@ export const ScheduleScanner = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [scheduleAnalysis, setScheduleAnalysis] = useState<ScheduleAnalysis | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
+  const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -140,7 +144,41 @@ export const ScheduleScanner = () => {
     setSelectedEvents(new Set());
   };
 
-  const addSelectedToCalendar = () => {
+  // Convert time string like "8:00 AM" to Date object
+  const parseTimeToDate = (dateStr: string, timeStr: string): Date => {
+    const date = new Date(dateStr); // YYYY-MM-DD
+    
+    // Parse time (H:MM AM/PM)
+    const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+    if (!timeMatch) {
+      throw new Error(`Invalid time format: ${timeStr}`);
+    }
+    
+    let hours = parseInt(timeMatch[1]);
+    const minutes = parseInt(timeMatch[2]);
+    const period = timeMatch[3].toUpperCase();
+    
+    // Convert to 24-hour format
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  const addSelectedToCalendar = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to add events to your calendar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (selectedEvents.size === 0) {
       toast({
         title: "No events selected",
@@ -150,11 +188,81 @@ export const ScheduleScanner = () => {
       return;
     }
 
-    // TODO: Implement actual calendar integration
-    toast({
-      title: "Events added to calendar",
-      description: `${selectedEvents.size} events have been added to your calendar.`,
-    });
+    setIsAddingToCalendar(true);
+
+    try {
+      // Get user's timezone from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('timezone')
+        .eq('user_id', user.id)
+        .single();
+      
+      const userTimezone = profile?.timezone || 'America/New_York';
+
+      // Convert selected events to database format
+      const eventsToAdd = Array.from(selectedEvents).map(index => {
+        const event = scheduleAnalysis!.events[index];
+        
+        // Parse times to Date objects
+        const startDate = parseTimeToDate(event.day, event.startTime);
+        const endDate = parseTimeToDate(event.day, event.endTime);
+        
+        // Convert to UTC using user's timezone
+        const startTimeUTC = fromUserTimezone(startDate, userTimezone);
+        const endTimeUTC = fromUserTimezone(endDate, userTimezone);
+        
+        return {
+          user_id: user.id,
+          title: event.course,
+          description: event.type ? `${event.type} session` : 'Scheduled class',
+          start_time: startTimeUTC.toISOString(),
+          end_time: endTimeUTC.toISOString(),
+          location: event.location || null,
+          source_provider: 'schedule_scanner',
+          event_type: event.type || 'class',
+          is_all_day: false,
+          // Add weekly recurrence for classes (15 weeks = typical semester)
+          recurrence_rule: 'FREQ=WEEKLY;COUNT=15'
+        };
+      });
+
+      console.log('Adding events to calendar:', eventsToAdd);
+
+      const { error } = await supabase
+        .from('events')
+        .insert(eventsToAdd);
+
+      if (error) {
+        console.error('Error adding events:', error);
+        toast({
+          title: "Error adding events",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Events added successfully!",
+        description: `${selectedEvents.size} classes have been added to your calendar with weekly recurrence.`,
+      });
+      
+      // Reset state
+      setSelectedEvents(new Set());
+      setScheduleAnalysis(null);
+      setSelectedFile(null);
+      
+    } catch (error) {
+      console.error('Error processing events:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add events to calendar",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingToCalendar(false);
+    }
   };
 
   return (
@@ -311,10 +419,17 @@ export const ScheduleScanner = () => {
                   <div className="flex-1" />
                   <Button
                     onClick={addSelectedToCalendar}
-                    disabled={selectedEvents.size === 0}
+                    disabled={selectedEvents.size === 0 || isAddingToCalendar}
                     className="ml-auto"
                   >
-                    Add Selected to Calendar ({selectedEvents.size})
+                    {isAddingToCalendar ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      `Add Selected to Calendar (${selectedEvents.size})`
+                    )}
                   </Button>
                 </div>
                 

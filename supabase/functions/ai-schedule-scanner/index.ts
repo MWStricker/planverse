@@ -148,11 +148,11 @@ serve(async (req) => {
 
     console.log('Combined extracted text length:', combinedText.length);
 
-    // Use OpenAI to analyze and structure the schedule data
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
+    // Use Lovable AI with Gemini 2.5 Flash for structured schedule extraction
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
       return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        JSON.stringify({ error: 'Lovable API key not configured' }),
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -160,104 +160,153 @@ serve(async (req) => {
       );
     }
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Get current date for smart semester detection
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-11
+    
+    // Determine academic year and semester
+    const academicYear = currentMonth >= 8 ? currentYear : currentYear - 1; // Aug+ = current year
+    const nextYear = academicYear + 1;
+    const semester = currentMonth >= 1 && currentMonth <= 5 ? 'Spring' : 'Fall';
+    
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
-            content: `You are a schedule analysis expert. Extract ONLY real scheduled events with proper names, dates, and times.
+            content: `You are an expert at extracting class schedules from text. Current context: ${semester} ${academicYear}-${nextYear}.
 
-CRITICAL FILTERING - IGNORE THESE COMPLETELY:
-- Document titles, headers, page titles
-- Navigation text: "Schedule", "Filter", "Go To", "See Schedule", "My Site"
-- Location headers: "North Dakota", "Area", site names
-- Month/year labels: "June 2013", calendar navigation
-- UI elements: buttons, dropdowns, form fields
-- Date numbers by themselves (26, 27, 28) without associated events
+EXTRACT ONLY real scheduled classes/events. IGNORE:
+- UI elements ("Schedule", "Filter", "My Courses")
+- Headers and titles
+- Navigation text
+- Empty date cells
 
-WHAT COUNTS AS A REAL EVENT:
-- Must have a descriptive activity name (not just a location or UI element)
-- Must have time information (like "8:00 AM - 11:00 AM")
-- Must be something someone would actually attend
+FOR EACH CLASS/EVENT, EXTRACT:
+1. Course name (e.g., "PSY 100", "Air Pack Safety")
+2. Day/Date - Convert to ISO format YYYY-MM-DD:
+   - If you see "Monday", "Tuesday", etc. → find next occurrence in ${semester} ${academicYear}
+   - If you see day numbers (26, 27) → assume current month or next month
+   - Default year: ${academicYear}
+3. Time - Keep as "H:MM AM" or "H:MM PM" format:
+   - Split ranges: "8:00 AM - 11:00 AM" → start: "8:00 AM", end: "11:00 AM"
+   - Single time → use for both start and end
+4. Location (if present)
+5. Instructor (if present)
+6. Type: "lecture", "lab", "discussion", "training", etc.
 
-STEP-BY-STEP EXTRACTION PROCESS:
+VALIDATION:
+- Start time MUST be before end time
+- Events must have a descriptive name (not generic UI text)
+- Dates must be reasonable (within ${academicYear}-${nextYear} academic year)
 
-1. FIND EVENT PATTERNS:
-Look for text patterns like: "DATE EVENT_NAME TIME"
-Example: "26 Air Pack Safety 8:00 AM - 11:00 AM"
-
-2. EXTRACT COMPONENTS:
-- Date: "26" → convert to "2025-06-26" (use 2025 if year unclear)
-- Event Name: "Air Pack Safety" (text between date and time)
-- Time: "8:00 AM - 11:00 AM" (keep original format with AM/PM)
-
-3. VALIDATE EACH EVENT:
-Before including, verify:
-✅ Has descriptive event name (not "Schedule", "Filter", etc.)
-✅ Has specific time information
-✅ Is positioned near a date number
-❌ Is NOT a UI element or header
-
-4. EXTRACT TIMES PROPERLY:
-- Keep original format: "8:00 AM - 11:00 AM" 
-- Split into startTime: "8:00 AM" and endTime: "11:00 AM"
-- If only one time given, use it for both start and end
-- Do NOT convert to military time
-
-PARSING EXAMPLES:
-
-✅ CORRECT:
-Text: "26 Air Pack Safety 8:00 AM - 11:00 AM 27 Microsoft Office 2:00 PM - 4:00 PM"
-Extract:
-- Date: 2025-06-26, Event: "Air Pack Safety", Start: "8:00 AM", End: "11:00 AM"
-- Date: 2025-06-27, Event: "Microsoft Office", Start: "2:00 PM", End: "4:00 PM"
-
-❌ WRONG - DON'T EXTRACT:
-Text: "Schedule Filter Site Name North Dakota"
-These are UI elements, not events.
-
-CONFIDENCE SCORING:
-- High (0.8-1.0): Clear events with names, dates, and times
-- Medium (0.5-0.79): Most events clear, some minor issues
-- Low (0.0-0.49): Poor extraction, many UI elements detected
-
-Return ONLY valid JSON with this structure:
-{
-  "format": "Calendar View Format",
-  "events": [
-    {
-      "course": "exact event name from text",
-      "day": "YYYY-MM-DD",
-      "startTime": "H:MM AM/PM format",
-      "endTime": "H:MM AM/PM format",
-      "location": "",
-      "instructor": "",
-      "type": "Training"
-    }
-  ],
-  "rawText": "original extracted text",
-  "confidence": 0.85
-}`
+Return confidence score:
+- 0.9-1.0: Clear schedule with all info
+- 0.7-0.89: Most events clear, minor gaps
+- 0.5-0.69: Some uncertainty
+- Below 0.5: Poor quality/unclear schedule`
           },
           {
             role: 'user',
-            content: `Extract ONLY real scheduled events. Ignore UI text completely. For each real event, extract: date number → event name → time range. Keep times in AM/PM format. Split time ranges into separate startTime and endTime. Each date should have different event names. Here's the text:\n\n${combinedText}`
+            content: `Extract the class schedule from this text. Current semester: ${semester} ${academicYear}. Convert all dates to YYYY-MM-DD format. Keep times in AM/PM format.\n\n${combinedText}`
           }
         ],
-        temperature: 0.1,
-        max_tokens: 2000
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_schedule",
+              description: "Extract structured schedule data from text",
+              parameters: {
+                type: "object",
+                properties: {
+                  format: {
+                    type: "string",
+                    description: "Type of schedule format detected (e.g., 'Weekly Grid', 'Calendar View', 'List Format')"
+                  },
+                  events: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        course: {
+                          type: "string",
+                          description: "Course or event name"
+                        },
+                        day: {
+                          type: "string",
+                          description: "Date in YYYY-MM-DD format"
+                        },
+                        startTime: {
+                          type: "string",
+                          description: "Start time in 'H:MM AM/PM' format"
+                        },
+                        endTime: {
+                          type: "string",
+                          description: "End time in 'H:MM AM/PM' format"
+                        },
+                        location: {
+                          type: "string",
+                          description: "Location/room (optional)"
+                        },
+                        instructor: {
+                          type: "string",
+                          description: "Instructor name (optional)"
+                        },
+                        type: {
+                          type: "string",
+                          description: "Event type: lecture, lab, discussion, training, etc."
+                        }
+                      },
+                      required: ["course", "day", "startTime", "endTime"]
+                    }
+                  },
+                  rawText: {
+                    type: "string",
+                    description: "Original extracted text for reference"
+                  },
+                  confidence: {
+                    type: "number",
+                    description: "Confidence score from 0.0 to 1.0"
+                  }
+                },
+                required: ["format", "events", "rawText", "confidence"]
+              }
+            }
+          }
+        ],
+        tool_choice: {
+          type: "function",
+          function: { name: "extract_schedule" }
+        }
       }),
     });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API error:', errorText);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI error:', errorText);
+      
+      // Handle rate limiting and payment errors
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'AI rate limit exceeded. Please try again in a moment.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'AI credits depleted. Please add credits to continue.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: 'Failed to analyze schedule with AI' }),
         { 
@@ -267,26 +316,49 @@ Return ONLY valid JSON with this structure:
       );
     }
 
-    const openaiData = await openaiResponse.json();
-    const analysisContent = openaiData.choices[0].message.content;
-    
-    console.log('OpenAI analysis response:', analysisContent);
+    const aiData = await aiResponse.json();
+    console.log('AI response:', JSON.stringify(aiData, null, 2));
 
     let scheduleAnalysis: ScheduleAnalysis;
     try {
-      // Handle cases where OpenAI wraps JSON in markdown code blocks
-      let jsonContent = analysisContent.trim();
-      if (jsonContent.startsWith('```json')) {
-        jsonContent = jsonContent.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-      } else if (jsonContent.startsWith('```')) {
-        jsonContent = jsonContent.replace(/^```\n?/, '').replace(/\n?```$/, '');
+      // Extract from tool call response
+      const toolCall = aiData.choices[0].message.tool_calls?.[0];
+      if (toolCall && toolCall.function.name === 'extract_schedule') {
+        scheduleAnalysis = JSON.parse(toolCall.function.arguments);
+        console.log('Parsed schedule from tool call:', scheduleAnalysis);
+      } else {
+        // Fallback to content parsing (shouldn't happen with tool_choice)
+        const analysisContent = aiData.choices[0].message.content || '{}';
+        scheduleAnalysis = JSON.parse(analysisContent);
       }
       
-      scheduleAnalysis = JSON.parse(jsonContent);
-      console.log('Parsed schedule analysis:', scheduleAnalysis);
+      // Validate and fix events
+      scheduleAnalysis.events = scheduleAnalysis.events.filter(event => {
+        // Validate required fields
+        if (!event.course || !event.day || !event.startTime || !event.endTime) {
+          console.log('Skipping invalid event:', event);
+          return false;
+        }
+        
+        // Validate date format (YYYY-MM-DD)
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(event.day)) {
+          console.log('Invalid date format:', event.day);
+          return false;
+        }
+        
+        // Validate time format (H:MM AM/PM)
+        if (!/^\d{1,2}:\d{2}\s?(AM|PM)$/i.test(event.startTime) || 
+            !/^\d{1,2}:\d{2}\s?(AM|PM)$/i.test(event.endTime)) {
+          console.log('Invalid time format:', event.startTime, event.endTime);
+          return false;
+        }
+        
+        return true;
+      });
+      
     } catch (parseError) {
-      console.error('Failed to parse AI response as JSON:', parseError);
-      console.error('Raw response:', analysisContent);
+      console.error('Failed to parse AI response:', parseError);
+      console.error('Raw AI data:', aiData);
       // Fallback response
       scheduleAnalysis = {
         format: "Unknown Format",
