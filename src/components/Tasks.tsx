@@ -496,15 +496,16 @@ export const Tasks = () => {
                   Add Task
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add New Task</DialogTitle>
-                  <DialogDescription>
-                    Create a new task with due date, time, and priority level.
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4" autoComplete="off">
+              {isAddDialogOpen && (
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add New Task</DialogTitle>
+                    <DialogDescription>
+                      Create a new task with due date, time, and priority level.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmitTask)} className="space-y-4" autoComplete="off">
                     <FormField
                       control={form.control}
                       name="title"
@@ -651,6 +652,7 @@ export const Tasks = () => {
                   </form>
                 </Form>
               </DialogContent>
+              )}
             </Dialog>
           </div>
 
