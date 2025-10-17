@@ -61,11 +61,7 @@ export const NotificationCenter: React.FC = () => {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="relative overflow-visible hover:bg-transparent p-2 group">
-          {unreadCount > 0 ? (
-            <BellRing className="h-5 w-5 group-hover:animate-[swing_0.5s_ease-in-out] transition-transform" />
-          ) : (
-            <Bell className="h-5 w-5 group-hover:animate-[swing_0.5s_ease-in-out] transition-transform" />
-          )}
+          <Bell className="h-5 w-5 group-hover:animate-[bell-swing_0.6s_ease-in-out] group-hover:origin-top transition-transform" />
           {unreadCount > 0 && (
         <Badge 
           variant="destructive" 

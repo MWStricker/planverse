@@ -222,16 +222,25 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" }
         },
-        "swing": {
-          "0%, 100%": { transform: "rotate(0deg)" },
-          "10%, 30%, 50%, 70%, 90%": { transform: "rotate(15deg)" },
-          "20%, 40%, 60%, 80%": { transform: "rotate(-15deg)" }
+        "bell-swing": {
+          "0%, 100%": { 
+            transform: "rotate(0deg)",
+            transformOrigin: "top center"
+          },
+          "10%, 30%, 50%, 70%, 90%": { 
+            transform: "rotate(8deg)",
+            transformOrigin: "top center"
+          },
+          "20%, 40%, 60%, 80%": { 
+            transform: "rotate(-8deg)",
+            transformOrigin: "top center"
+          }
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "swing": "swing 0.5s ease-in-out",
+        "bell-swing": "bell-swing 0.6s ease-in-out",
         "spin-slow": "spin-slow 8s linear infinite",
         "pulse-subtle": "pulse-subtle 3s ease-in-out infinite",
         "scroll-text": "scroll-text 3s linear infinite",
