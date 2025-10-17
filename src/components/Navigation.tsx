@@ -327,7 +327,7 @@ export const Navigation = ({
         {/* Clock and Controls Section */}
         <div className="mt-1">
           {isCollapsed ? (
-            <div className="flex flex-col items-center gap-1.5 overflow-visible">
+            <div className="flex flex-col items-center gap-1.5 overflow-visible relative z-50">
               <NotificationCenter />
               <div className="scale-90">
                 <AnalogClock />
@@ -342,7 +342,7 @@ export const Navigation = ({
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-1 transition-all duration-200 overflow-visible">
+            <div className="flex items-center justify-center gap-1 transition-all duration-200 overflow-visible relative z-50">
               <NotificationCenter />
               <div className="flex-1">
                 <AnalogClock />
