@@ -189,7 +189,7 @@ export const Navigation = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 min-h-0 overflow-hidden">
+      <nav className="flex-1 min-h-0 overflow-visible">
         <div className="h-full overflow-y-auto p-4 space-y-6">
         <DndContext
           sensors={sensors}
@@ -257,7 +257,7 @@ export const Navigation = ({
       </div>
 
       {/* User Section */}
-      <div className="flex-shrink-0 p-2 border-t border-border">
+      <div className="flex-shrink-0 p-2 border-t border-border overflow-visible">
         {isCollapsed ? (
           <div className="flex justify-center mb-2 px-1">
             <div className="relative">
@@ -297,7 +297,7 @@ export const Navigation = ({
                  user?.email?.charAt(0)?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0 overflow-hidden transition-all duration-200">
+            <div className="flex-1 min-w-0 overflow-visible transition-all duration-200">
               <div className="flex items-center gap-1">
                 <p className="text-sm font-medium text-foreground truncate leading-tight">
                   {profile?.display_name || user?.email?.split('@')[0] || 'User'}
