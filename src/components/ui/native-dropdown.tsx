@@ -294,8 +294,8 @@ export const NativeDropdownItem: React.FC<NativeDropdownItemProps> = ({
       className={cn(
         "flex items-center w-full text-left px-2 py-2 text-sm rounded-sm",
         "transition-colors cursor-pointer outline-none",
-        "hover:bg-accent hover:text-accent-foreground",
-        "focus:bg-accent focus:text-accent-foreground",
+        "hover:bg-muted/50",
+        "focus:bg-muted/50",
         destructive && "text-destructive hover:text-destructive focus:text-destructive",
         className
       )}
