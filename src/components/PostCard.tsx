@@ -206,27 +206,19 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
               )}
             </div>
           </div>
-          {/* Moderation status badge for post owners - only show if flagged/hidden */}
-          {isOwner && (post.moderation_status === 'auto_hidden' || post.moderation_status === 'flagged') && (
+          {/* Moderation status badge for post owners - only show if hidden */}
+          {isOwner && post.moderation_status === 'auto_hidden' && (
             <div className="ml-auto">
-              {post.moderation_status === 'auto_hidden' && (
-                <Badge variant="destructive" className="flex items-center gap-1">
-                  <ShieldAlert className="h-3 w-3" />
-                  Hidden from others
-                </Badge>
-              )}
-              {post.moderation_status === 'flagged' && (
-                <Badge variant="default" className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600">
-                  <AlertTriangle className="h-3 w-3" />
-                  Under review
-                </Badge>
-              )}
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <ShieldAlert className="h-3 w-3" />
+                Hidden from others
+              </Badge>
             </div>
           )}
         </div>
       </CardHeader>
       <CardContent>
-        {/* Moderation warning for hidden/flagged posts */}
+        {/* Moderation warning for hidden posts */}
         {isOwner && post.moderation_status === 'auto_hidden' && (
           <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <div className="flex items-start gap-2">
@@ -242,21 +234,6 @@ export const PostCard = memo(({ post, isOwner, onLike, onComment, onDelete, onIm
                     ))}
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {isOwner && post.moderation_status === 'flagged' && (
-          <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="font-semibold text-yellow-700 text-sm">Under review by moderators</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Your post has been flagged for review. It's still visible to others.
-                  {post.moderation_score && ` (Score: ${post.moderation_score}/100)`}
-                </p>
               </div>
             </div>
           </div>

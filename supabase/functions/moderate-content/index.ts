@@ -98,11 +98,9 @@ Scoring:
     const reasoning = parsed.reasoning || 'No reasoning provided';
 
     // Determine moderation status
-    let status: 'approved' | 'flagged' | 'auto_hidden';
+    let status: 'approved' | 'auto_hidden';
     if (score > 80) {
       status = 'auto_hidden';
-    } else if (score > 50) {
-      status = 'flagged';
     } else {
       status = 'approved';
     }
