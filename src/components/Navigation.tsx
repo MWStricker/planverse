@@ -338,7 +338,7 @@ export const Navigation = ({
                 onClick={() => onPageChange('settings')}
                 className="hover:bg-muted/30 transition-all duration-200 ease-out group w-8 h-8 p-0"
               >
-                <Settings className="h-3.5 w-3.5 group-hover:rotate-90 transition-transform duration-300 ease-out" />
+                <Settings className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 ease-out" />
               </Button>
             </div>
           ) : (
@@ -353,7 +353,7 @@ export const Navigation = ({
                 onClick={() => onPageChange('settings')}
                 className="hover:bg-muted/30 hover:scale-[1.05] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
               >
-                <Settings className="h-3 w-3 group-hover:rotate-90 transition-transform duration-300 ease-out" />
+                <Settings className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 ease-out" />
               </Button>
             </div>
           )}
