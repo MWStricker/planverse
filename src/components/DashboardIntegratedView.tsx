@@ -714,20 +714,24 @@ export const DashboardIntegratedView = memo(() => {
       </Tabs>
 
       {/* Event/Task Modal */}
-      <EventTaskModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        event={selectedEvent || undefined}
-        task={selectedTask || undefined}
-      />
+      {isModalOpen && (
+        <EventTaskModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          event={selectedEvent || undefined}
+          task={selectedTask || undefined}
+        />
+      )}
 
       {/* AI Event Creator Dialog */}
-      <AIEventCreator
-        open={isAIEventDialogOpen}
-        onOpenChange={setIsAIEventDialogOpen}
-        onEventCreated={loadAllData}
-        userId={user?.id || ''}
-      />
+      {isAIEventDialogOpen && (
+        <AIEventCreator
+          open={isAIEventDialogOpen}
+          onOpenChange={setIsAIEventDialogOpen}
+          onEventCreated={loadAllData}
+          userId={user?.id || ''}
+        />
+      )}
     </div>
   );
 });
