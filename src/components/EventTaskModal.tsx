@@ -354,13 +354,12 @@ export const EventTaskModal = ({
         <div className="space-y-6">
           {/* Title Section */}
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">
+            <Label className="text-sm font-medium">
               {event ? "Event" : "Task"} Title
             </Label>
             {isCreatingNew || isEditing ? (
               <Input
                 type="text"
-                id="title"
                 name="title"
                 value={editedTitle}
                 onChange={(e) => {
@@ -447,7 +446,7 @@ export const EventTaskModal = ({
                 <div>
                   <Label className="text-xs text-muted-foreground">Priority</Label>
                   <Select name="task-priority" value={editedPriority} onValueChange={setEditedPriority}>
-                    <SelectTrigger id="task-priority" className="w-full mt-1">
+                    <SelectTrigger className="w-full mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -489,10 +488,9 @@ export const EventTaskModal = ({
 
           {/* Notes Section */}
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
+            <Label className="text-sm font-medium">Notes</Label>
             {isCreatingNew || isEditing ? (
               <Textarea
-                id="notes"
                 name="notes"
                 value={editedNotes}
                 onChange={(e) => {
