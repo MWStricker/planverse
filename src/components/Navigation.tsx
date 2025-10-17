@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calendar, Home, Upload, Settings, Target, Bell, Users, BookOpen, ChevronRight, X, MoreVertical, ChevronLeft, Menu } from "lucide-react";
+import { Calendar, Home, Upload, Settings, Target, Users, BookOpen, ChevronRight, X, MoreVertical, ChevronLeft, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,7 +36,7 @@ export const Navigation = ({
   onCancelReorder,
   sidebarWidth
 }: NavigationProps) => {
-  const [notifications] = useState(0);
+  
   const [courses, setCourses] = useState<any[]>([]);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user } = useAuth();
@@ -208,7 +208,7 @@ export const Navigation = ({
                   item={item}
                   isActive={currentPage === item.id}
                   isReorderMode={isReorderMode}
-                  notifications={item.id === 'tasks' ? notifications : 0}
+                  notifications={0}
                   onClick={() => onPageChange(item.id)}
                   isCollapsed={isCollapsed}
                 />
@@ -328,13 +328,7 @@ export const Navigation = ({
         <div className="mt-1">
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-1.5">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="hover:bg-muted/30 transition-all duration-200 ease-out w-8 h-8 p-0"
-              >
-                <Bell className="h-3.5 w-3.5" />
-              </Button>
+              <NotificationCenter />
               <div className="scale-90">
                 <AnalogClock />
               </div>
@@ -349,13 +343,7 @@ export const Navigation = ({
             </div>
           ) : (
             <div className="flex items-center justify-center gap-1 transition-all duration-200">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="hover:bg-muted/30 hover:scale-[1.02] transition-all duration-200 ease-out group w-8 h-8 p-0 flex-shrink-0"
-              >
-                <Bell className="h-3 w-3 transition-all duration-200 ease-out" />
-              </Button>
+              <NotificationCenter />
               <div className="flex-1">
                 <AnalogClock />
               </div>
