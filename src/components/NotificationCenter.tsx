@@ -69,7 +69,8 @@ export const NotificationCenter: React.FC = () => {
           {unreadCount > 0 && (
         <Badge 
           variant="destructive" 
-          className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs font-semibold border-2 border-background"
+          className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] font-bold bg-[#FF3040] text-white border-0 shadow-sm"
+          style={{ borderRadius: '50%' }}
         >
           {unreadCount > 99 ? '99+' : unreadCount}
         </Badge>
