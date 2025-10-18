@@ -64,8 +64,6 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
       ref={setNodeRef}
       style={style}
       className={`group relative p-2 border-b transition-colors ${
-        conversation.is_pinned ? 'bg-primary/5' : ''
-      } ${
         isSelected ? 'bg-muted' : 'hover:bg-muted/50'
       } ${
         isDragging ? 'cursor-grabbing' : ''
