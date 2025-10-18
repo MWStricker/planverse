@@ -82,7 +82,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
   const activeFiltersCount = [selectedPostType === 'all-types' ? '' : selectedPostType, selectedMajor === 'all-majors' ? '' : selectedMajor, selectedSchool === 'all-schools' ? '' : selectedSchool].filter(Boolean).length;
 
   return (
-    <Card className="mb-6">
+    <Card className="mb-8">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -108,7 +108,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pb-6">
         {/* Search */}
         <div className="space-y-2">
           <Input
