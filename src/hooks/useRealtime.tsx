@@ -341,14 +341,29 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
           'conversations-realtime',
           () => supabase
             .channel('conversations-realtime')
-            // Listen for conversation changes (new convos, updates, deletes)
+            // Listen for conversations where user is user1
             .on('postgres_changes', {
               event: '*',
               schema: 'public',
               table: 'conversations',
-              filter: `or(user1_id.eq.${user.id},user2_id.eq.${user.id})`
+              filter: `user1_id=eq.${user.id}`
             }, (payload) => {
-              console.log('💬 Conversation change:', payload.eventType, payload);
+              console.log('💬 Conversation change (user1):', payload.eventType, payload);
+              window.dispatchEvent(new CustomEvent('conversations-changed', { 
+                detail: { 
+                  eventType: payload.eventType,
+                  conversation: payload.new || payload.old 
+                } 
+              }));
+            })
+            // Listen for conversations where user is user2
+            .on('postgres_changes', {
+              event: '*',
+              schema: 'public',
+              table: 'conversations',
+              filter: `user2_id=eq.${user.id}`
+            }, (payload) => {
+              console.log('💬 Conversation change (user2):', payload.eventType, payload);
               window.dispatchEvent(new CustomEvent('conversations-changed', { 
                 detail: { 
                   eventType: payload.eventType,
@@ -371,26 +386,50 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
                 }
               }));
             })
-            // Listen for message updates (read status, edits, reactions)
+            // Listen for message updates where user is sender
             .on('postgres_changes', {
               event: 'UPDATE',
               schema: 'public',
               table: 'messages',
-              filter: `or(sender_id.eq.${user.id},receiver_id.eq.${user.id})`
+              filter: `sender_id=eq.${user.id}`
             }, (payload) => {
-              console.log('✏️ Message updated:', payload);
+              console.log('✏️ Message updated (sent):', payload);
               window.dispatchEvent(new CustomEvent('message-updated', {
                 detail: { message: payload.new }
               }));
             })
-            // Listen for message deletes (unsends)
+            // Listen for message updates where user is receiver
+            .on('postgres_changes', {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'messages',
+              filter: `receiver_id=eq.${user.id}`
+            }, (payload) => {
+              console.log('✏️ Message updated (received):', payload);
+              window.dispatchEvent(new CustomEvent('message-updated', {
+                detail: { message: payload.new }
+              }));
+            })
+            // Listen for message deletes where user is sender
             .on('postgres_changes', {
               event: 'DELETE',
               schema: 'public',
               table: 'messages',
-              filter: `or(sender_id.eq.${user.id},receiver_id.eq.${user.id})`
+              filter: `sender_id=eq.${user.id}`
             }, (payload) => {
-              console.log('🗑️ Message deleted:', payload);
+              console.log('🗑️ Message deleted (sent):', payload);
+              window.dispatchEvent(new CustomEvent('message-deleted', {
+                detail: { messageId: payload.old.id }
+              }));
+            })
+            // Listen for message deletes where user is receiver
+            .on('postgres_changes', {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'messages',
+              filter: `receiver_id=eq.${user.id}`
+            }, (payload) => {
+              console.log('🗑️ Message deleted (received):', payload);
               window.dispatchEvent(new CustomEvent('message-deleted', {
                 detail: { messageId: payload.old.id }
               }));
