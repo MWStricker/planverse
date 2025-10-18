@@ -122,13 +122,13 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         </div>
 
         {/* Sort */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="sort-by" className="text-sm font-medium">Sort By</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <label htmlFor="sort-by" className="text-sm font-medium text-muted-foreground">Sort By</label>
             <NativeDropdown
               trigger={SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
               label="Select sort order"
-              triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
+              triggerClassName="w-full justify-start border border-input bg-background px-4 py-2.5 rounded-md hover:bg-accent text-sm font-medium min-h-[40px]"
             >
               {SORT_OPTIONS.map((option) => (
                 <NativeDropdownItem
@@ -143,12 +143,12 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
             </NativeDropdown>
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="post-type" className="text-sm font-medium">Post Type</label>
+          <div className="space-y-3">
+            <label htmlFor="post-type" className="text-sm font-medium text-muted-foreground">Post Type</label>
             <NativeDropdown
               trigger={POST_TYPES.find(t => t.value === selectedPostType)?.label || 'All Types'}
               label="Select post type"
-              triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
+              triggerClassName="w-full justify-start border border-input bg-background px-4 py-2.5 rounded-md hover:bg-accent text-sm font-medium min-h-[40px]"
             >
               {POST_TYPES.map((type) => (
                 <NativeDropdownItem
@@ -166,13 +166,13 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
 
         {/* Expanded Filters */}
         {isExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-            <div className="space-y-2">
-              <label htmlFor="filter-major" className="text-sm font-medium">Filter by Major</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+            <div className="space-y-3">
+              <label htmlFor="filter-major" className="text-sm font-medium text-muted-foreground">Filter by Major</label>
               <NativeDropdown
                 trigger={selectedMajor === 'all-majors' ? 'All majors' : selectedMajor}
                 label="Select major filter"
-                triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
+                triggerClassName="w-full justify-start border border-input bg-background px-4 py-2.5 rounded-md hover:bg-accent text-sm font-medium min-h-[40px]"
               >
                 <ScrollArea className="h-[300px]">
                   <NativeDropdownItem
@@ -194,12 +194,12 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
               </NativeDropdown>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="filter-school" className="text-sm font-medium">Filter by School</label>
+            <div className="space-y-3">
+              <label htmlFor="filter-school" className="text-sm font-medium text-muted-foreground">Filter by School</label>
               <NativeDropdown
                 trigger={selectedSchool === 'all-schools' ? 'All schools' : selectedSchool}
                 label="Select school filter"
-                triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
+                triggerClassName="w-full justify-start border border-input bg-background px-4 py-2.5 rounded-md hover:bg-accent text-sm font-medium min-h-[40px]"
               >
                 <ScrollArea className="h-[300px]">
                   <NativeDropdownItem
