@@ -203,7 +203,7 @@ export const Navigation = ({
                 variant="ghost"
                 size="sm"
                 onClick={onToggleReorder}
-                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
+                className="h-7 px-2 hover:bg-muted/30 text-xs"
               >
                 <MoreVertical className="h-4 w-4 mr-1" />
                 {!isCollapsed && <span>Reorder</span>}
@@ -213,7 +213,7 @@ export const Navigation = ({
                 variant="ghost"
                 size="sm"
                 onClick={onCancelReorder}
-                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
+                className="h-7 px-2 hover:bg-muted/30 text-xs"
               >
                 <X className="h-4 w-4 mr-1" />
                 {!isCollapsed && <span>Cancel</span>}
