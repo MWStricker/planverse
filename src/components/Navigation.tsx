@@ -177,14 +177,49 @@ export const Navigation = ({
       }}
     >
 
-      {/* Logo - Centered */}
-      <div className="p-4 pt-1">
-        <div className={`flex items-center justify-center`}>
+      {/* Logo and Reorder Button - Centered */}
+      <div className="p-4 pt-1 pb-2 border-b border-border">
+        {/* Logo */}
+        <div className={`flex items-center justify-center mb-2`}>
           <img 
             src={planverseLogoSidebar} 
             alt="Planverse Logo" 
             className={`object-contain transition-all duration-200 ${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded`}
           />
+        </div>
+
+        {/* Reorder Button - Centered below logo */}
+        <div className="flex flex-col gap-2">
+          {isReorderMode && (
+            <div className="p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20">
+              <p className="text-xs text-foreground font-medium text-center">
+                Drag tabs to reorder
+              </p>
+            </div>
+          )}
+          <div className="flex justify-center">
+            {!isReorderMode ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleReorder}
+                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
+              >
+                <MoreVertical className="h-4 w-4 mr-1" />
+                {!isCollapsed && <span>Reorder</span>}
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancelReorder}
+                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
+              >
+                <X className="h-4 w-4 mr-1" />
+                {!isCollapsed && <span>Cancel</span>}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -219,42 +254,6 @@ export const Navigation = ({
         </div>
       </nav>
 
-
-      {/* Reorder Button */}
-      <div className="flex-shrink-0 p-2 border-t border-border">
-        <div className="flex flex-col gap-2">
-          {isReorderMode && (
-            <div className="p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20">
-              <p className="text-xs text-foreground font-medium text-center">
-                Drag tabs to reorder
-              </p>
-            </div>
-          )}
-          <div className="flex justify-center">
-            {!isReorderMode ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggleReorder}
-                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
-              >
-                <MoreVertical className="h-4 w-4 mr-1" />
-                {!isCollapsed && <span>Reorder</span>}
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onCancelReorder}
-                className="h-7 px-2 hover:bg-muted/30 text-xs w-full"
-              >
-                <X className="h-4 w-4 mr-1" />
-                {!isCollapsed && <span>Cancel</span>}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* User Section */}
       <div className="flex-shrink-0 p-2 border-t border-border overflow-visible">
