@@ -188,39 +188,6 @@ export const Navigation = ({
           />
         </div>
 
-        {/* Reorder Button - Centered below logo */}
-        <div className="flex flex-col gap-2">
-          {isReorderMode && (
-            <div className="p-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded border border-primary/20">
-              <p className="text-xs text-foreground font-medium text-center">
-                Drag tabs to reorder
-              </p>
-            </div>
-          )}
-          <div className="flex justify-center">
-            {!isReorderMode ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggleReorder}
-                className="h-7 px-2 hover:bg-muted/30 text-xs"
-              >
-                <MoreVertical className="h-4 w-4 mr-1" />
-                {!isCollapsed && <span>Reorder</span>}
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onCancelReorder}
-                className="h-7 px-2 hover:bg-muted/30 text-xs"
-              >
-                <X className="h-4 w-4 mr-1" />
-                {!isCollapsed && <span>Cancel</span>}
-              </Button>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Navigation */}

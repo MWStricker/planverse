@@ -60,6 +60,14 @@ export const useMessaging = () => {
 
       const blockedUserIds = new Set(blockedData?.map(row => row.blocked_id) || []);
 
+      // Get hidden conversations
+      const { data: hiddenData } = await supabase
+        .from('hidden_conversations')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      const hiddenConversationIds = new Set(hiddenData?.map(h => h.conversation_id) || []);
+
       // Single optimized query with PostgreSQL joins - fetches conversations and profiles in one go
       const { data, error } = await supabase
         .from('conversations')
@@ -86,11 +94,11 @@ export const useMessaging = () => {
         return;
       }
 
-      // Map to determine which profile is the other user's profile, filtering blocked users
+      // Map to determine which profile is the other user's profile, filtering blocked users and hidden conversations
       const conversationsWithProfiles = data
         .filter((conv: any) => {
           const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
-          return !blockedUserIds.has(otherUserId);
+          return !blockedUserIds.has(otherUserId) && !hiddenConversationIds.has(conv.id);
         })
         .map((conv: any) => {
           const otherUserProfile = conv.user1_id === user.id 

@@ -341,6 +341,35 @@ export type Database = {
         }
         Relationships: []
       }
+      hidden_conversations: {
+        Row: {
+          conversation_id: string
+          hidden_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          hidden_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          hidden_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hidden_conversations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_pins: {
         Row: {
           conversation_id: string

@@ -7,20 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Send, ArrowLeft, School, Upload, X, Smile, Settings } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { SortableConversationItem } from './messaging/SortableConversationItem';
+import { SwipeableConversationItem } from './messaging/SwipeableConversationItem';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { useMessaging, Conversation, Message } from '@/hooks/useMessaging';
 import { useAuth } from '@/hooks/useAuth';
@@ -106,13 +93,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   }, [hookConversations]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
 
   // Debug logging for action sheet state
   useEffect(() => {
@@ -665,89 +645,33 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = conversations.findIndex(c => c.id === active.id);
-    const newIndex = conversations.findIndex(c => c.id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const movedConv = conversations[oldIndex];
-    const targetConv = conversations[newIndex];
-
-    // Don't allow dragging between pinned/unpinned sections
-    if (movedConv.is_pinned !== targetConv.is_pinned) {
-      toast({
-        title: "Cannot move",
-        description: "Cannot move between pinned and unpinned conversations",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Set flag to prevent sync from overwriting our changes
-    isSavingOrder.current = true;
-
-    // OPTIMISTIC UPDATE: Reorder immediately in UI
-    const reorderedConversations = arrayMove(conversations, oldIndex, newIndex);
-    setConversations(reorderedConversations);
-    
-    // Separate pinned and unpinned conversations
-    const pinnedConvs = reorderedConversations.filter(c => c.is_pinned);
-    const unpinnedConvs = reorderedConversations.filter(c => !c.is_pinned);
-    
-    // Assign display_order: negatives for pinned, positives for unpinned
-    const updates = [
-      ...pinnedConvs.map((conv, index) => ({
-        id: conv.id,
-        display_order: -(index + 1), // -1, -2, -3, ...
-        user1_id: conv.user1_id,
-        user2_id: conv.user2_id
-      })),
-      ...unpinnedConvs.map((conv, index) => ({
-        id: conv.id,
-        display_order: index, // 0, 1, 2, ...
-        user1_id: conv.user1_id,
-        user2_id: conv.user2_id
-      }))
-    ];
+  const handleDismissConversation = async (conversationId: string) => {
+    if (!user?.id) return;
 
     try {
-      console.log('Saving conversation order:', updates);
-      
-      // Batch update using upsert for atomic operation
+      // Add to hidden_conversations table
       const { error } = await supabase
-        .from('conversations')
-        .upsert(updates, { 
-          onConflict: 'id',
-          ignoreDuplicates: false 
+        .from('hidden_conversations')
+        .insert({
+          user_id: user.id,
+          conversation_id: conversationId,
         });
-      
+
       if (error) throw error;
-      
-      console.log('Conversation order saved successfully');
-      
-      // Refetch in background, only clear flag after it completes
-      fetchConversations().finally(() => {
-        // Now it's safe to allow syncing again
-        isSavingOrder.current = false;
+
+      // Remove from local state with animation
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+
+      toast({
+        title: "Conversation dismissed",
+        description: "You can unhide it in settings",
+        duration: 3000,
       });
-      
     } catch (error) {
-      console.error('Error updating conversation order:', error);
-      
-      // Clear flag immediately on error so we can revert
-      isSavingOrder.current = false;
-      
-      // Refetch to revert to last known good state
-      await fetchConversations();
-      
+      console.error('Error dismissing conversation:', error);
       toast({
         title: "Error",
-        description: "Failed to save conversation order. Reverted to last saved state.",
+        description: "Failed to dismiss conversation",
         variant: "destructive",
       });
     }
@@ -1108,59 +1032,29 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               No conversations yet
             </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={[...conversations]
-                  .sort((a, b) => {
-                    // Pinned conversations ALWAYS go first
-                    if (a.is_pinned && !b.is_pinned) return -1;
-                    if (!a.is_pinned && b.is_pinned) return 1;
-                    
-                    // Among pinned (or among unpinned), sort by display_order
-                    if (a.display_order !== null && b.display_order !== null) {
-                      return a.display_order - b.display_order;
-                    }
-                    if (a.display_order !== null) return -1;
-                    if (b.display_order !== null) return 1;
-                    
-                    // Fallback to chronological
-                    return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
-                  }).map(c => c.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {[...conversations]
-                  .sort((a, b) => {
-                    // Pinned conversations ALWAYS go first
-                    if (a.is_pinned && !b.is_pinned) return -1;
-                    if (!a.is_pinned && b.is_pinned) return 1;
-                    
-                    // Among pinned (or among unpinned), sort by display_order
-                    if (a.display_order !== null && b.display_order !== null) {
-                      return a.display_order - b.display_order;
-                    }
-                    if (a.display_order !== null) return -1;
-                    if (b.display_order !== null) return 1;
-                    
-                    // Fallback to chronological
-                    return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
-                  })
-                  .map((conversation) => (
-                    <SortableConversationItem
-                      key={conversation.id}
-                      conversation={conversation}
-                      isSelected={selectedConversation?.id === conversation.id}
-                      onSelect={handleSelectConversation}
-                      onPin={handleToggleConversationPin}
-                      onMute={handleToggleConversationMute}
-                      onMarkUnread={handleMarkAsUnread}
-                    />
-                  ))}
-              </SortableContext>
-            </DndContext>
+            <>
+              {[...conversations]
+                .sort((a, b) => {
+                  // Pinned conversations ALWAYS go first
+                  if (a.is_pinned && !b.is_pinned) return -1;
+                  if (!a.is_pinned && b.is_pinned) return 1;
+                  
+                  // Fallback to chronological
+                  return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+                })
+                .map((conversation) => (
+                  <SwipeableConversationItem
+                    key={conversation.id}
+                    conversation={conversation}
+                    isSelected={selectedConversation?.id === conversation.id}
+                    onSelect={handleSelectConversation}
+                    onPin={handleToggleConversationPin}
+                    onMute={handleToggleConversationMute}
+                    onMarkUnread={handleMarkAsUnread}
+                    onDismiss={handleDismissConversation}
+                  />
+                ))}
+            </>
           )}
         </ScrollArea>
       </div>
