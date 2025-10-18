@@ -664,7 +664,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
       toast({
         title: "Conversation dismissed",
-        description: "You can unhide it in settings",
+        description: "Go to Connect Settings → Messages to restore it.",
         duration: 3000,
       });
     } catch (error) {
