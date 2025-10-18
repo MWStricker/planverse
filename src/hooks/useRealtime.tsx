@@ -229,6 +229,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
 
     let mainChannel: any;
     let socialChannel: any;
+    let conversationsChannel: any;
 
     const initializeChannels = async () => {
       try {
@@ -335,6 +336,68 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
             .subscribe()
         );
 
+        // Conversations channel: conversations, hidden_conversations, message updates
+        conversationsChannel = await setupChannelWithRetry(
+          'conversations-realtime',
+          () => supabase
+            .channel('conversations-realtime')
+            // Listen for conversation changes (new convos, updates, deletes)
+            .on('postgres_changes', {
+              event: '*',
+              schema: 'public',
+              table: 'conversations',
+              filter: `or(user1_id.eq.${user.id},user2_id.eq.${user.id})`
+            }, (payload) => {
+              console.log('💬 Conversation change:', payload.eventType, payload);
+              window.dispatchEvent(new CustomEvent('conversations-changed', { 
+                detail: { 
+                  eventType: payload.eventType,
+                  conversation: payload.new || payload.old 
+                } 
+              }));
+            })
+            // Listen for hidden_conversations changes
+            .on('postgres_changes', {
+              event: '*',
+              schema: 'public',
+              table: 'hidden_conversations',
+              filter: `user_id.eq.${user.id}`
+            }, (payload) => {
+              console.log('🙈 Hidden conversation change:', payload.eventType, payload);
+              window.dispatchEvent(new CustomEvent('hidden-conversations-changed', { 
+                detail: {
+                  eventType: payload.eventType,
+                  hiddenConversation: payload.new || payload.old
+                }
+              }));
+            })
+            // Listen for message updates (read status, edits, reactions)
+            .on('postgres_changes', {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'messages',
+              filter: `or(sender_id.eq.${user.id},receiver_id.eq.${user.id})`
+            }, (payload) => {
+              console.log('✏️ Message updated:', payload);
+              window.dispatchEvent(new CustomEvent('message-updated', {
+                detail: { message: payload.new }
+              }));
+            })
+            // Listen for message deletes (unsends)
+            .on('postgres_changes', {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'messages',
+              filter: `or(sender_id.eq.${user.id},receiver_id.eq.${user.id})`
+            }, (payload) => {
+              console.log('🗑️ Message deleted:', payload);
+              window.dispatchEvent(new CustomEvent('message-deleted', {
+                detail: { messageId: payload.old.id }
+              }));
+            })
+            .subscribe()
+        );
+
         monitoring.log('info', 'Realtime channels connected successfully');
       } catch (error) {
         monitoring.log('error', 'Failed to initialize realtime channels', { error });
@@ -412,6 +475,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       
       if (mainChannel) supabase.removeChannel(mainChannel);
       if (socialChannel) supabase.removeChannel(socialChannel);
+      if (conversationsChannel) supabase.removeChannel(conversationsChannel);
       
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);

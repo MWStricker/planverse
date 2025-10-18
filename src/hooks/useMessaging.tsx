@@ -288,6 +288,48 @@ export const useMessaging = () => {
     }
   }, [user]);
 
+  // Real-time conversation updates
+  useEffect(() => {
+    if (!user) return;
+
+    let debounceTimer: NodeJS.Timeout | null = null;
+
+    const handleConversationsChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('useMessaging: Conversations changed event received', customEvent.detail);
+      
+      // Debounce refetch to prevent excessive queries
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        console.log('useMessaging: Refetching conversations due to real-time update');
+        fetchConversations();
+      }, 300);
+    };
+
+    const handleHiddenConversationsChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('useMessaging: Hidden conversations changed', customEvent.detail);
+      
+      // Immediate refetch for hide/unhide actions
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        console.log('useMessaging: Refetching after hide/unhide');
+        fetchConversations();
+      }, 100);
+    };
+
+    // Add event listeners
+    window.addEventListener('conversations-changed', handleConversationsChanged);
+    window.addEventListener('hidden-conversations-changed', handleHiddenConversationsChanged);
+
+    // Cleanup
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      window.removeEventListener('conversations-changed', handleConversationsChanged);
+      window.removeEventListener('hidden-conversations-changed', handleHiddenConversationsChanged);
+    };
+  }, [user, fetchConversations]);
+
   return {
     conversations,
     messages,
