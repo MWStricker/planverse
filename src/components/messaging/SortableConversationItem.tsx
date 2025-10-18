@@ -63,7 +63,7 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative p-3 border-b transition-colors ${
+      className={`group relative p-2 border-b transition-colors ${
         conversation.is_pinned ? 'bg-primary/5' : ''
       } ${
         isSelected ? 'bg-muted' : 'hover:bg-muted/50'
@@ -82,11 +82,11 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
       
       {/* Conversation content */}
       <div 
-        className="flex items-center gap-3 w-full cursor-pointer"
+        className="flex items-center gap-2 w-full cursor-pointer"
         onClick={() => onSelect(conversation)}
       >
         <div className="relative">
-          <Avatar className="h-12 w-12">
+          <Avatar className="h-10 w-10">
             <AvatarImage src={conversation.other_user?.avatar_url} />
             <AvatarFallback>
               {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
@@ -95,7 +95,7 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
           
           {/* Unread indicator - positioned outside avatar */}
           {conversation.unread_count != null && conversation.unread_count > 0 && (
-            <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-[10px] text-white font-bold border-2 border-background">
+            <div className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-destructive rounded-full flex items-center justify-center text-[9px] text-white font-bold border-2 border-background">
               {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
             </div>
           )}
@@ -103,7 +103,7 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="font-medium text-foreground truncate">
+            <h4 className="font-medium text-sm text-foreground truncate">
               {conversation.other_user?.display_name || 'Unknown User'}
             </h4>
             
@@ -118,12 +118,12 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
             {/* Visual badges for pinned and muted */}
             <div className="flex items-center gap-1">
               {conversation.is_pinned && (
-                <Badge variant="secondary" className="h-5 px-1.5 py-0 text-[10px]">
+                <Badge variant="secondary" className="h-4 px-1.5 py-0 text-[9px]">
                   <Pin className="h-3 w-3" />
                 </Badge>
               )}
               {conversation.is_muted && (
-                <Badge variant="secondary" className="h-5 px-1.5 py-0 text-[10px]">
+                <Badge variant="secondary" className="h-4 px-1.5 py-0 text-[9px]">
                   <BellOff className="h-3 w-3" />
                 </Badge>
               )}
