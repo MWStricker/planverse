@@ -104,7 +104,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     if (currentIds !== newIds) {
       setConversations(hookConversations);
     }
-  }, [hookConversations, conversations]);
+  }, [hookConversations]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
