@@ -1098,7 +1098,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     <div className="h-[600px] flex bg-background border rounded-lg overflow-hidden">
       {/* Conversations List */}
       <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 flex-col border-r`}>
-        <div className="p-4 border-b">
+        <div className="p-4">
           <h3 className="font-semibold text-foreground">Messages</h3>
         </div>
         
