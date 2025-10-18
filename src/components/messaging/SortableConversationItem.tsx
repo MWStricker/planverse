@@ -82,7 +82,7 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
       
       {/* Conversation content */}
       <div 
-        className="flex items-center gap-2 w-full cursor-pointer"
+        className="flex items-center gap-2 w-full cursor-pointer pl-7"
         onClick={() => onSelect(conversation)}
       >
         <div className="relative">
@@ -130,18 +130,18 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
             </div>
           </div>
         </div>
+        
+        {/* Actions menu - now inside flex container */}
+        <ConversationActionsMenu
+          conversationId={conversation.id}
+          isPinned={conversation.is_pinned || false}
+          isMuted={conversation.is_muted || false}
+          hasUnread={(conversation.unread_count || 0) > 0}
+          onPin={onPin}
+          onMute={onMute}
+          onMarkUnread={onMarkUnread}
+        />
       </div>
-      
-      {/* Actions menu */}
-      <ConversationActionsMenu
-        conversationId={conversation.id}
-        isPinned={conversation.is_pinned || false}
-        isMuted={conversation.is_muted || false}
-        hasUnread={(conversation.unread_count || 0) > 0}
-        onPin={onPin}
-        onMute={onMute}
-        onMarkUnread={onMarkUnread}
-      />
     </div>
   );
 };
