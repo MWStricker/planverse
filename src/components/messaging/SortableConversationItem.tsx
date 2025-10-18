@@ -63,7 +63,7 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
     <div
       ref={setNodeRef}
       style={style}
-      className={`group p-3 border-b transition-colors ${
+      className={`group relative p-3 border-b transition-colors ${
         conversation.is_pinned ? 'bg-primary/5' : ''
       } ${
         isSelected ? 'bg-muted' : 'hover:bg-muted/50'
@@ -71,79 +71,77 @@ export const SortableConversationItem: React.FC<SortableConversationItemProps> =
         isDragging ? 'cursor-grabbing' : ''
       }`}
     >
-      <div className="flex items-center gap-3">
-        {/* Drag handle - visible on hover */}
-        <div 
-          {...attributes} 
-          {...listeners} 
-          className="cursor-grab hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-        >
-          <GripVertical className="h-5 w-5 text-muted-foreground" />
+      {/* Drag handle - positioned absolutely, overlays on hover */}
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="absolute left-1 top-1/2 -translate-y-1/2 cursor-grab hover:text-primary transition-colors opacity-0 group-hover:opacity-100 z-10"
+      >
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      </div>
+      
+      {/* Conversation content */}
+      <div 
+        className="flex items-center gap-3 w-full cursor-pointer"
+        onClick={() => onSelect(conversation)}
+      >
+        <div className="relative">
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={conversation.other_user?.avatar_url} />
+            <AvatarFallback>
+              {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          
+          {/* Unread indicator - positioned outside avatar */}
+          {conversation.unread_count != null && conversation.unread_count > 0 && (
+            <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-[10px] text-white font-bold border-2 border-background">
+              {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
+            </div>
+          )}
         </div>
         
-        {/* Conversation content */}
-        <div 
-          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-          onClick={() => onSelect(conversation)}
-        >
-          <div className="relative">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={conversation.other_user?.avatar_url} />
-              <AvatarFallback>
-                {conversation.other_user?.display_name?.charAt(0)?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h4 className="font-medium text-foreground truncate">
+              {conversation.other_user?.display_name || 'Unknown User'}
+            </h4>
             
-            {/* Unread indicator - positioned outside avatar */}
-            {conversation.unread_count != null && conversation.unread_count > 0 && (
-              <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-[10px] text-white font-bold border-2 border-background">
-                {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
-              </div>
-            )}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h4 className="font-medium text-foreground truncate">
-                {conversation.other_user?.display_name || 'Unknown User'}
-              </h4>
-              
-              {/* Status indicator */}
-              <UserStatusIndicator 
-                status={userStatus}
-                isCurrentUser={false}
-                size="sm"
-                compact
-              />
-              
-              {/* Visual badges for pinned and muted */}
-              <div className="flex items-center gap-1">
-                {conversation.is_pinned && (
-                  <Badge variant="secondary" className="h-5 px-1.5 py-0 text-[10px]">
-                    <Pin className="h-3 w-3" />
-                  </Badge>
-                )}
-                {conversation.is_muted && (
-                  <Badge variant="secondary" className="h-5 px-1.5 py-0 text-[10px]">
-                    <BellOff className="h-3 w-3" />
-                  </Badge>
-                )}
-              </div>
+            {/* Status indicator */}
+            <UserStatusIndicator 
+              status={userStatus}
+              isCurrentUser={false}
+              size="sm"
+              compact
+            />
+            
+            {/* Visual badges for pinned and muted */}
+            <div className="flex items-center gap-1">
+              {conversation.is_pinned && (
+                <Badge variant="secondary" className="h-5 px-1.5 py-0 text-[10px]">
+                  <Pin className="h-3 w-3" />
+                </Badge>
+              )}
+              {conversation.is_muted && (
+                <Badge variant="secondary" className="h-5 px-1.5 py-0 text-[10px]">
+                  <BellOff className="h-3 w-3" />
+                </Badge>
+              )}
             </div>
           </div>
         </div>
-        
-        {/* Actions menu */}
-        <ConversationActionsMenu
-          conversationId={conversation.id}
-          isPinned={conversation.is_pinned || false}
-          isMuted={conversation.is_muted || false}
-          hasUnread={(conversation.unread_count || 0) > 0}
-          onPin={onPin}
-          onMute={onMute}
-          onMarkUnread={onMarkUnread}
-        />
       </div>
+      
+      {/* Actions menu */}
+      <ConversationActionsMenu
+        conversationId={conversation.id}
+        isPinned={conversation.is_pinned || false}
+        isMuted={conversation.is_muted || false}
+        hasUnread={(conversation.unread_count || 0) > 0}
+        onPin={onPin}
+        onMute={onMute}
+        onMarkUnread={onMarkUnread}
+      />
     </div>
   );
 };
