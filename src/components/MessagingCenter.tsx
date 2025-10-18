@@ -1152,7 +1152,13 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       </div>
                     )}
                     {localMessages.map((message) => {
-                      const isOwn = message.sender_id === user?.id;
+                      console.log('Message alignment check:', {
+                        messageId: message.id,
+                        senderId: message.sender_id,
+                        userId: user?.id,
+                        comparison: message.sender_id === user?.id
+                      });
+                      const isOwn = String(message.sender_id) === String(user?.id);
                       const isTemp = message.id.startsWith('temp-');
                       return (
                         <div key={message.id} id={`message-${message.id}`}>
