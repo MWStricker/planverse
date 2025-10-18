@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from "react";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
+import { useStreak } from "@/hooks/useStreak";
 import { Calendar as CalendarIcon, Clock, BookOpen, Target, CheckCircle, AlertCircle, Brain, TrendingUp, Plus, ChevronDown, ChevronRight, Settings, FileText, GraduationCap, Palette, Trash2, AlertTriangle } from "lucide-react";
 import { cache, CACHE_TTL } from "@/lib/cache";
 import { debounce } from "@/lib/performance";
@@ -21,6 +22,9 @@ import { AIEventCreator } from "@/components/AIEventCreator";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { DashboardCalendar } from "@/components/dashboard/DashboardCalendar";
 import { DashboardCourses } from "@/components/dashboard/DashboardCourses";
+import { StreakBadge } from "@/components/gamification/StreakBadge";
+import { DailyProgress } from "@/components/gamification/DailyProgress";
+import { CelebrationConfetti } from "@/components/gamification/CelebrationConfetti";
 import { getCourseIconById, courseIcons } from "@/data/courseIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -121,10 +125,12 @@ export const DashboardIntegratedView = memo(() => {
   
   const { user } = useAuth();
   const { toast } = useToast();
+  const { currentStreak, updateStreak } = useStreak();
   
   // State for both calendar and courses
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState("overview");
+  const [showConfetti, setShowConfetti] = useState(false);
   
   // Calendar data
   const [events, setEvents] = useState<Event[]>([]);
@@ -470,6 +476,23 @@ export const DashboardIntegratedView = memo(() => {
         }))
       );
 
+      // Update streak when completing a task
+      if (isCompleted) {
+        await updateStreak();
+        
+        // Check if all tasks for today are completed and show confetti
+        const updatedEvents = events.map(event => 
+          event.id === eventId ? { ...event, is_completed: true } : event
+        );
+        const todayEvents = updatedEvents.filter(event => isToday(new Date(event.start_time)));
+        const allCompleted = todayEvents.length > 0 && todayEvents.every(event => event.is_completed);
+        
+        if (allCompleted) {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 2000);
+        }
+      }
+
       toast({
         title: isCompleted ? "Assignment completed" : "Assignment uncompleted",
         description: "Status updated successfully",
@@ -478,7 +501,7 @@ export const DashboardIntegratedView = memo(() => {
     } catch (error) {
       console.error('Error toggling event completion:', error);
     }
-  }, [user?.id, toast]);
+  }, [user?.id, toast, updateStreak, events]);
 
   // Phase 3: Memoize toggle handler
   const toggleCourse = useCallback((courseCode: string) => {
@@ -612,49 +635,23 @@ export const DashboardIntegratedView = memo(() => {
 
   return (
     <div className="space-y-6">
-      {/* Dashboard Header */}
+      <CelebrationConfetti show={showConfetti} />
+      
+      {/* Dashboard Header with Gamification */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Your integrated calendar and courses overview</p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <StreakBadge streak={currentStreak} />
+          </div>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">Your integrated calendar and courses overview</p>
+            <DailyProgress 
+              completed={dashboardStats.completedToday} 
+              total={dashboardStats.totalItemsToday} 
+            />
+          </div>
         </div>
-      </div>
-
-      {/* Quick Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Today's Items</p>
-                <p className="text-2xl font-bold">{dashboardStats.totalItemsToday}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{dashboardStats.completedToday}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Active Courses</p>
-                <p className="text-2xl font-bold">{dashboardStats.totalCoursesActive}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Content Tabs */}

@@ -174,52 +174,6 @@ export const DashboardOverview = memo(({
         </CardContent>
       </Card>
 
-      {/* Course Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            Course Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {courses.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No courses to display</p>
-          ) : (
-            <div className="space-y-3">
-              {courses.slice(0, 5).map(course => {
-                const CourseIcon = course.icon;
-                const completionRate = course.totalAssignments > 0 
-                  ? Math.round((course.completedAssignments / course.totalAssignments) * 100)
-                  : 0;
-                
-                return (
-                  <div 
-                    key={course.code}
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex-shrink-0">
-                      <CourseIcon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{course.code}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{course.completedAssignments}/{course.totalAssignments} completed</span>
-                        <span>•</span>
-                        <span>{course.upcomingAssignments} upcoming</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{completionRate}%</Badge>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 });
