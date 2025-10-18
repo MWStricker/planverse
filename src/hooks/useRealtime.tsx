@@ -376,7 +376,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
               event: '*',
               schema: 'public',
               table: 'hidden_conversations',
-              filter: `user_id.eq.${user.id}`
+              filter: `user_id=eq.${user.id}`
             }, (payload) => {
               console.log('🙈 Hidden conversation change:', payload.eventType, payload);
               window.dispatchEvent(new CustomEvent('hidden-conversations-changed', { 
