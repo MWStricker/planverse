@@ -455,7 +455,7 @@ export const Connect = ({ onNavigateToAnalytics }: ConnectProps = {}) => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="feed" className="space-y-8 mt-4">
+        <TabsContent value="feed" className="space-y-6">
           {/* Post Filters */}
           <PostFilters onFilterChange={setPostFilters} />
           
