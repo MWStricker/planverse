@@ -268,6 +268,8 @@ interface NativeDropdownItemProps {
   onClick?: () => void;
   className?: string;
   destructive?: boolean;
+  checked?: boolean;
+  disabled?: boolean;
 }
 
 export const NativeDropdownItem: React.FC<NativeDropdownItemProps> = ({
@@ -275,15 +277,21 @@ export const NativeDropdownItem: React.FC<NativeDropdownItemProps> = ({
   onClick,
   className,
   destructive = false,
+  checked = false,
+  disabled = false,
 }) => {
   const handleClick = () => {
-    onClick?.();
+    if (!disabled) {
+      onClick?.();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onClick?.();
+      if (!disabled) {
+        onClick?.();
+      }
     }
   };
 
@@ -291,19 +299,26 @@ export const NativeDropdownItem: React.FC<NativeDropdownItemProps> = ({
     <button
       role="menuitem"
       type="button"
+      aria-checked={checked ? 'true' : undefined}
+      aria-disabled={disabled}
       className={cn(
-        "flex items-center w-full text-left px-2 py-2 text-sm rounded-sm",
-        "transition-colors cursor-pointer outline-none",
-        "hover:bg-muted/50",
-        "focus:bg-muted/50",
-        destructive && "text-destructive hover:text-destructive focus:text-destructive",
+        "flex items-center gap-2 w-full text-left px-2 py-2 text-sm rounded-sm",
+        "transition-colors outline-none",
+        !disabled && "cursor-pointer hover:bg-muted/50 focus:bg-muted/50",
+        disabled && "opacity-50 cursor-not-allowed",
+        destructive && !disabled && "text-destructive hover:text-destructive focus:text-destructive",
         className
       )}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={-1}
+      disabled={disabled}
     >
       {children}
     </button>
   );
 };
+
+export const NativeDropdownSeparator: React.FC<{ className?: string }> = ({ className }) => (
+  <hr className={cn("my-1 border-t border-border", className)} role="separator" />
+);

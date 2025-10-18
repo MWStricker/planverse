@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AccessibleDropdown, AccessibleDropdownItem } from '@/components/ui/accessible-dropdown';
+import { NativeDropdown, NativeDropdownItem } from '@/components/ui/native-dropdown';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -317,25 +317,27 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
           {/* Post Type */}
           <div className="space-y-2">
             <Label htmlFor="post-type">Post Type</Label>
-            <AccessibleDropdown
+            <NativeDropdown
               trigger={
                 <>
                   {selectedPostType && <selectedPostType.icon className="h-4 w-4" />}
                   {selectedPostType?.label}
                 </>
               }
+              label="Select post type"
+              triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
             >
               {POST_TYPES.map((type) => (
-                <AccessibleDropdownItem
+                <NativeDropdownItem
                   key={type.value}
                   onClick={() => setPostType(type.value)}
-                  selected={postType === type.value}
-                  icon={type.icon}
+                  checked={postType === type.value}
                 >
+                  <type.icon className="h-4 w-4" />
                   {type.label}
-                </AccessibleDropdownItem>
+                </NativeDropdownItem>
               ))}
-            </AccessibleDropdown>
+            </NativeDropdown>
           </div>
 
           {/* Target Audience */}
@@ -343,60 +345,64 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
             {/* Target Major */}
             <div className="space-y-2">
               <Label htmlFor="target-major">Target Major (Optional)</Label>
-              <AccessibleDropdown
+              <NativeDropdown
                 trigger={targetMajor === 'all-majors' ? 'All majors' : targetMajor}
+                label="Select target major"
+                triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
               >
                 <ScrollArea className="h-[300px]">
-                  <AccessibleDropdownItem
+                  <NativeDropdownItem
                     onClick={() => setTargetMajor('all-majors')}
-                    selected={targetMajor === 'all-majors'}
+                    checked={targetMajor === 'all-majors'}
                   >
                     All majors
-                  </AccessibleDropdownItem>
+                  </NativeDropdownItem>
                   {collegeMajors.map((major) => (
-                    <AccessibleDropdownItem
+                    <NativeDropdownItem
                       key={major}
                       onClick={() => setTargetMajor(major)}
-                      selected={targetMajor === major}
+                      checked={targetMajor === major}
                     >
                       {major}
-                    </AccessibleDropdownItem>
+                    </NativeDropdownItem>
                   ))}
                 </ScrollArea>
-              </AccessibleDropdown>
+              </NativeDropdown>
             </div>
 
             {/* Target Community/School */}
             <div className="space-y-2">
               <Label htmlFor="target-school">Target School (Optional)</Label>
-              <AccessibleDropdown
+              <NativeDropdown
                 trigger={targetCommunity === 'all-schools' ? 'All schools' : targetCommunity}
+                label="Select target school"
+                triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
               >
                 <ScrollArea className="h-[300px]">
-                  <AccessibleDropdownItem
+                  <NativeDropdownItem
                     onClick={() => setTargetCommunity('all-schools')}
-                    selected={targetCommunity === 'all-schools'}
+                    checked={targetCommunity === 'all-schools'}
                   >
                     All schools
-                  </AccessibleDropdownItem>
+                  </NativeDropdownItem>
                   {universities.map((university) => (
-                    <AccessibleDropdownItem
+                    <NativeDropdownItem
                       key={university.id}
                       onClick={() => setTargetCommunity(university.name)}
-                      selected={targetCommunity === university.name}
+                      checked={targetCommunity === university.name}
                     >
                       {university.name}
-                    </AccessibleDropdownItem>
+                    </NativeDropdownItem>
                   ))}
                 </ScrollArea>
-              </AccessibleDropdown>
+              </NativeDropdown>
             </div>
           </div>
 
           {/* Visibility */}
           <div className="space-y-2">
             <Label htmlFor="visibility">Who can see this post?</Label>
-            <AccessibleDropdown
+            <NativeDropdown
               trigger={
                 <>
                   {selectedVisibility && <selectedVisibility.icon className="h-4 w-4" />}
@@ -408,21 +414,23 @@ export const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                   </div>
                 </>
               }
+              label="Select post visibility"
+              triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
             >
               {VISIBILITY_OPTIONS.map((option) => (
-                <AccessibleDropdownItem
+                <NativeDropdownItem
                   key={option.value}
                   onClick={() => setVisibility(option.value)}
-                  selected={visibility === option.value}
+                  checked={visibility === option.value}
                 >
                   <option.icon className="h-4 w-4" />
                   <div>
                     <div className="font-medium">{option.label}</div>
                     <div className="text-sm text-muted-foreground">{option.description}</div>
                   </div>
-                </AccessibleDropdownItem>
+                </NativeDropdownItem>
               ))}
-            </AccessibleDropdown>
+            </NativeDropdown>
           </div>
 
           {/* Tags */}

@@ -1,12 +1,6 @@
 import { MoreVertical, Pin, PinOff, BellOff, Bell, CircleDot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+import { NativeDropdown, NativeDropdownItem, NativeDropdownSeparator } from '@/components/ui/native-dropdown';
 
 interface ConversationActionsMenuProps {
   conversationId: string;
@@ -28,69 +22,60 @@ export const ConversationActionsMenu: React.FC<ConversationActionsMenuProps> = (
   onMarkUnread,
 }) => {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 h-8 w-8"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <MoreVertical className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onPin(conversationId, isPinned);
-          }}
-        >
-          {isPinned ? (
-            <>
-              <PinOff className="mr-2 h-4 w-4" />
-              Unpin conversation
-            </>
-          ) : (
-            <>
-              <Pin className="mr-2 h-4 w-4" />
-              Pin conversation
-            </>
-          )}
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onMute(conversationId, isMuted);
-          }}
-        >
-          {isMuted ? (
-            <>
-              <Bell className="mr-2 h-4 w-4" />
-              Unmute conversation
-            </>
-          ) : (
-            <>
-              <BellOff className="mr-2 h-4 w-4" />
-              Mute conversation
-            </>
-          )}
-        </DropdownMenuItem>
-        
-        <DropdownMenuSeparator />
-        
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onMarkUnread(conversationId);
-          }}
-          disabled={hasUnread}
-        >
-          <CircleDot className="mr-2 h-4 w-4" />
-          Mark as unread
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <NativeDropdown
+      trigger={<MoreVertical className="h-4 w-4 text-muted-foreground" />}
+      label="Conversation actions"
+      align="end"
+      className="w-48"
+      triggerClassName="shrink-0 h-8 w-8 border-0 bg-transparent hover:bg-muted/50"
+    >
+      <NativeDropdownItem
+        onClick={() => {
+          onPin(conversationId, isPinned);
+        }}
+      >
+        {isPinned ? (
+          <>
+            <PinOff className="h-4 w-4" />
+            Unpin conversation
+          </>
+        ) : (
+          <>
+            <Pin className="h-4 w-4" />
+            Pin conversation
+          </>
+        )}
+      </NativeDropdownItem>
+      
+      <NativeDropdownItem
+        onClick={() => {
+          onMute(conversationId, isMuted);
+        }}
+      >
+        {isMuted ? (
+          <>
+            <Bell className="h-4 w-4" />
+            Unmute conversation
+          </>
+        ) : (
+          <>
+            <BellOff className="h-4 w-4" />
+            Mute conversation
+          </>
+        )}
+      </NativeDropdownItem>
+      
+      <NativeDropdownSeparator />
+      
+      <NativeDropdownItem
+        onClick={() => {
+          onMarkUnread(conversationId);
+        }}
+        disabled={hasUnread}
+      >
+        <CircleDot className="h-4 w-4" />
+        Mark as unread
+      </NativeDropdownItem>
+    </NativeDropdown>
   );
 };

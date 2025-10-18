@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AccessibleDropdown, AccessibleDropdownItem } from '@/components/ui/accessible-dropdown';
+import { NativeDropdown, NativeDropdownItem } from '@/components/ui/native-dropdown';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, Hash, Users, GraduationCap, Globe, Calendar } from 'lucide-react';
@@ -125,38 +125,42 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label htmlFor="sort-by" className="text-sm font-medium">Sort By</label>
-            <AccessibleDropdown
+            <NativeDropdown
               trigger={SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
+              label="Select sort order"
+              triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
             >
               {SORT_OPTIONS.map((option) => (
-                <AccessibleDropdownItem
+                <NativeDropdownItem
                   key={option.value}
                   onClick={() => handleFilterUpdate({ sortBy: option.value })}
-                  selected={selectedSort === option.value}
-                  icon={option.icon}
+                  checked={selectedSort === option.value}
                 >
+                  <option.icon className="h-4 w-4" />
                   {option.label}
-                </AccessibleDropdownItem>
+                </NativeDropdownItem>
               ))}
-            </AccessibleDropdown>
+            </NativeDropdown>
           </div>
 
           <div className="space-y-2">
             <label htmlFor="post-type" className="text-sm font-medium">Post Type</label>
-            <AccessibleDropdown
+            <NativeDropdown
               trigger={POST_TYPES.find(t => t.value === selectedPostType)?.label || 'All Types'}
+              label="Select post type"
+              triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
             >
               {POST_TYPES.map((type) => (
-                <AccessibleDropdownItem
+                <NativeDropdownItem
                   key={type.value}
                   onClick={() => handleFilterUpdate({ postType: type.value })}
-                  selected={selectedPostType === type.value}
-                  icon={type.icon}
+                  checked={selectedPostType === type.value}
                 >
+                  <type.icon className="h-4 w-4" />
                   {type.label}
-                </AccessibleDropdownItem>
+                </NativeDropdownItem>
               ))}
-            </AccessibleDropdown>
+            </NativeDropdown>
           </div>
         </div>
 
@@ -165,52 +169,56 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
             <div className="space-y-2">
               <label htmlFor="filter-major" className="text-sm font-medium">Filter by Major</label>
-              <AccessibleDropdown
+              <NativeDropdown
                 trigger={selectedMajor === 'all-majors' ? 'All majors' : selectedMajor}
+                label="Select major filter"
+                triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
               >
                 <ScrollArea className="h-[300px]">
-                  <AccessibleDropdownItem
+                  <NativeDropdownItem
                     onClick={() => handleFilterUpdate({ major: 'all-majors' })}
-                    selected={selectedMajor === 'all-majors'}
+                    checked={selectedMajor === 'all-majors'}
                   >
                     All majors
-                  </AccessibleDropdownItem>
+                  </NativeDropdownItem>
                   {collegeMajors.map((major) => (
-                    <AccessibleDropdownItem
+                    <NativeDropdownItem
                       key={major}
                       onClick={() => handleFilterUpdate({ major: major })}
-                      selected={selectedMajor === major}
+                      checked={selectedMajor === major}
                     >
                       {major}
-                    </AccessibleDropdownItem>
+                    </NativeDropdownItem>
                   ))}
                 </ScrollArea>
-              </AccessibleDropdown>
+              </NativeDropdown>
             </div>
 
             <div className="space-y-2">
               <label htmlFor="filter-school" className="text-sm font-medium">Filter by School</label>
-              <AccessibleDropdown
+              <NativeDropdown
                 trigger={selectedSchool === 'all-schools' ? 'All schools' : selectedSchool}
+                label="Select school filter"
+                triggerClassName="w-full justify-start border border-input bg-background px-3 py-2 rounded-md hover:bg-accent"
               >
                 <ScrollArea className="h-[300px]">
-                  <AccessibleDropdownItem
+                  <NativeDropdownItem
                     onClick={() => handleFilterUpdate({ school: 'all-schools' })}
-                    selected={selectedSchool === 'all-schools'}
+                    checked={selectedSchool === 'all-schools'}
                   >
                     All schools
-                  </AccessibleDropdownItem>
+                  </NativeDropdownItem>
                   {universities.map((university) => (
-                    <AccessibleDropdownItem
+                    <NativeDropdownItem
                       key={university.id}
                       onClick={() => handleFilterUpdate({ school: university.name })}
-                      selected={selectedSchool === university.name}
+                      checked={selectedSchool === university.name}
                     >
                       {university.name}
-                    </AccessibleDropdownItem>
+                    </NativeDropdownItem>
                   ))}
                 </ScrollArea>
-              </AccessibleDropdown>
+              </NativeDropdown>
             </div>
           </div>
         )}
