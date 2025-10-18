@@ -22,13 +22,14 @@ export const ConversationActionsMenu: React.FC<ConversationActionsMenuProps> = (
   onMarkUnread,
 }) => {
   return (
-    <NativeDropdown
-      trigger={<MoreVertical className="h-4 w-4 text-muted-foreground" />}
-      label="Conversation actions"
-      align="end"
-      className="w-48"
-      triggerClassName="shrink-0 h-8 w-8 border-0 bg-transparent hover:bg-muted/50"
-    >
+    <div onClick={(e) => e.stopPropagation()}>
+      <NativeDropdown
+        trigger={<MoreVertical className="h-4 w-4 text-muted-foreground" />}
+        label="Conversation actions"
+        align="end"
+        className="w-48"
+        triggerClassName="shrink-0 h-8 w-8 border-0 bg-transparent hover:bg-muted/50"
+      >
       <NativeDropdownItem
         onClick={() => {
           onPin(conversationId, isPinned);
@@ -77,5 +78,6 @@ export const ConversationActionsMenu: React.FC<ConversationActionsMenuProps> = (
         Mark as unread
       </NativeDropdownItem>
     </NativeDropdown>
+    </div>
   );
 };
