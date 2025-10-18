@@ -107,7 +107,7 @@ export const MessageBubble = ({
       onTouchCancel={handleMouseUp}
       onTouchMove={handleTouchMove}
     >
-      <div className={`max-w-[70%] w-fit relative ${isOwn ? 'order-2' : 'order-1'}`}>
+      <div className={`max-w-[70%] relative ${isOwn ? 'order-2' : 'order-1'}`}>
         {/* Reaction Bar */}
         {showReactionBar && (
           <div className={`absolute -top-12 ${isOwn ? 'right-0' : 'left-0'} z-10`}>
@@ -119,7 +119,7 @@ export const MessageBubble = ({
         )}
 
         <div
-          className={`rounded-lg px-3 py-2 inline-flex flex-col break-words overflow-wrap-anywhere transition-all ${
+          className={`rounded-lg px-3 py-2 flex flex-col w-fit break-words overflow-wrap-anywhere transition-all ${
             isOwn
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted text-foreground'
