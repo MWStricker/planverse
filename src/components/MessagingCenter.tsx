@@ -96,8 +96,15 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       console.log('Skipping conversation sync - save in progress');
       return;
     }
-    setConversations(hookConversations);
-  }, [hookConversations]);
+    
+    // Only update if conversations actually changed (deep equality check on IDs)
+    const currentIds = conversations.map(c => c.id).sort().join(',');
+    const newIds = hookConversations.map(c => c.id).sort().join(',');
+    
+    if (currentIds !== newIds) {
+      setConversations(hookConversations);
+    }
+  }, [hookConversations, conversations]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -233,6 +240,12 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   // Reset unread count when conversation is selected
   useEffect(() => {
     if (!selectedConversation || !user) return;
+    
+    // Skip if this is a virtual conversation
+    if (!selectedConversation.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      console.log('Skipping DB operation for virtual conversation');
+      return;
+    }
 
     // Optimistic UI update - clear badge immediately
     setConversations(prev => 
@@ -292,10 +305,12 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       .subscribe((status) => {
         console.log('[Typing] Channel subscription status:', status);
         
-        // Only set ref when fully subscribed
         if (status === 'SUBSCRIBED') {
           typingChannelRef.current = typingChannel;
           console.log('[Typing] Channel reference stored');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('[Typing] Channel timed out, will retry on next conversation change');
+          typingChannelRef.current = null;
         }
       });
 
@@ -338,6 +353,13 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   // Fetch pinned messages
   useEffect(() => {
     if (!selectedConversation) {
+      setPinnedMessages([]);
+      return;
+    }
+    
+    // Skip if this is a virtual conversation
+    if (selectedConversation.id.startsWith('temp-')) {
+      console.log('[Pins] Skipping pins for virtual conversation');
       setPinnedMessages([]);
       return;
     }
@@ -397,8 +419,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   }, [selectedConversation]);
 
   // Global realtime subscription for all incoming messages
+  const globalSubRef = useRef<any>(null);
+  
   useEffect(() => {
-    if (!user) return;
+    if (!user || globalSubRef.current) return;
 
     console.log('Setting up global message subscription for user:', user.id);
     
@@ -429,12 +453,17 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         }
       })
       .subscribe();
+    
+    globalSubRef.current = channel;
 
     return () => {
       console.log('Cleaning up global message subscription');
-      supabase.removeChannel(channel);
+      if (globalSubRef.current) {
+        supabase.removeChannel(globalSubRef.current);
+        globalSubRef.current = null;
+      }
     };
-  }, [user, selectedConversation, fetchConversations]);
+  }, [user?.id, selectedConversation, fetchConversations]);
 
   // Fetch messages when conversation is selected
   useEffect(() => {
@@ -487,7 +516,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
         .then(({ data: profile }) => {
           if (profile) {
             const virtualConv: Conversation = {
-              id: 'new',
+              id: `temp-${crypto.randomUUID()}`,
               user1_id: user.id,
               user2_id: selectedUserId,
               last_message_at: new Date().toISOString(),

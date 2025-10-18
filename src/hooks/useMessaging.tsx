@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -41,7 +41,7 @@ export const useMessaging = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!user) {
       console.log('useMessaging: No user, skipping fetchConversations');
       setLoading(false);
@@ -137,9 +137,9 @@ export const useMessaging = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const fetchMessages = async (conversationId: string, otherUserId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string, otherUserId: string) => {
     if (!user) return;
 
     try {
@@ -180,7 +180,7 @@ export const useMessaging = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const sendMessage = async (
     receiverId: string, 
