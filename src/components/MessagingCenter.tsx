@@ -170,7 +170,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               // Replace temp with real message
               const updated = [...prev];
               updated[tempIndex] = newMessage;
-              return updated;
+              return updated.sort((a, b) => (a as any).seq_num - (b as any).seq_num);
             }
             
             // Check for duplicate (already exists)
@@ -187,8 +187,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 .then(() => console.log(`Message ${newMessage.id} marked as delivered`));
             }
             
-            // New message from other user
-            return [...prev, newMessage];
+            // New message from other user - sort by seq_num
+            return [...prev, newMessage].sort((a, b) => (a as any).seq_num - (b as any).seq_num);
           });
         }
       })
@@ -429,7 +429,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             if (prev.some(m => m.id === newMessage.id)) {
               return prev;
             }
-            return [...prev, newMessage];
+            // Sort by seq_num for guaranteed order
+            return [...prev, newMessage].sort((a, b) => (a as any).seq_num - (b as any).seq_num);
           });
         }
       })
