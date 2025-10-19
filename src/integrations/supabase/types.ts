@@ -407,6 +407,13 @@ export type Database = {
             referencedRelation: "messages"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "message_pins_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "messages_app"
+            referencedColumns: ["id"]
+          },
         ]
       }
       messages: {
@@ -477,6 +484,13 @@ export type Database = {
             columns: ["reply_to_message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages_app"
             referencedColumns: ["id"]
           },
           {
@@ -1002,6 +1016,13 @@ export type Database = {
             referencedRelation: "messages"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages_app"
+            referencedColumns: ["id"]
+          },
         ]
       }
       study_sessions: {
@@ -1334,7 +1355,92 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      messages_app: {
+        Row: {
+          client_msg_id: string | null
+          content: string | null
+          created_at: string | null
+          deleted_at: string | null
+          expires_at: string | null
+          id: string | null
+          image_url: string | null
+          is_ephemeral: boolean | null
+          is_read: boolean | null
+          payload: Json | null
+          receiver_id: string | null
+          reply_to_message_id: string | null
+          sender_id: string | null
+          seq_num: number | null
+          status: Database["public"]["Enums"]["message_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_msg_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_ephemeral?: boolean | null
+          is_read?: boolean | null
+          payload?: Json | null
+          receiver_id?: string | null
+          reply_to_message_id?: string | null
+          sender_id?: string | null
+          seq_num?: number | null
+          status?: Database["public"]["Enums"]["message_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_msg_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_ephemeral?: boolean | null
+          is_read?: boolean | null
+          payload?: Json | null
+          receiver_id?: string | null
+          reply_to_message_id?: string | null
+          sender_id?: string | null
+          seq_num?: number | null
+          status?: Database["public"]["Enums"]["message_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       are_friends: {
@@ -1434,6 +1540,37 @@ export type Database = {
       increment_likes_count: {
         Args: { post_id: string }
         Returns: undefined
+      }
+      mark_thread_read: {
+        Args: { p_user: string }
+        Returns: undefined
+      }
+      send_message: {
+        Args: {
+          p_client_id?: string
+          p_content?: string
+          p_image_url?: string
+          p_receiver: string
+          p_reply_to?: string
+        }
+        Returns: {
+          client_msg_id: string | null
+          content: string
+          created_at: string
+          deleted_at: string | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_ephemeral: boolean | null
+          is_read: boolean | null
+          payload: Json | null
+          receiver_id: string
+          reply_to_message_id: string | null
+          sender_id: string
+          seq_num: number
+          status: Database["public"]["Enums"]["message_status"] | null
+          updated_at: string
+        }
       }
       test_auth_uid: {
         Args: Record<PropertyKey, never>

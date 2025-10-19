@@ -153,9 +153,9 @@ export const useMessaging = () => {
     try {
       setLoading(true);
       
-      // Fetch messages between current user and the specific conversation partner
+      // Use messages_app view which filters expired/soft-deleted messages
       const { data, error } = await supabase
-        .from('messages')
+        .from('messages_app')
         .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('seq_num', { ascending: true });
@@ -208,17 +208,14 @@ export const useMessaging = () => {
 
       if (convError) throw convError;
 
-      // Send message with client_msg_id for deduplication
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: user.id,
-          receiver_id: receiverId,
-          content: content.trim() || '',
-          image_url: imageUrl,
-          reply_to_message_id: replyToMessageId,
-          client_msg_id: clientMsgId,
-          status: 'sent'
+      // Use send_message RPC for idempotent sending with deduplication
+      const { data: sentMessage, error: messageError } = await supabase
+        .rpc('send_message', {
+          p_receiver: receiverId,
+          p_content: content.trim() || '',
+          p_image_url: imageUrl,
+          p_client_id: clientMsgId,
+          p_reply_to: replyToMessageId
         });
 
       if (messageError) throw messageError;
@@ -281,6 +278,30 @@ export const useMessaging = () => {
     }
   };
 
+  const markThreadRead = async (otherUserId: string) => {
+    if (!user) return;
+
+    try {
+      await supabase.rpc('mark_thread_read', { p_user: otherUserId });
+    } catch (error) {
+      console.error('Error marking thread as read:', error);
+    }
+  };
+
+  const softDeleteMessage = async (messageId: string) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from('messages')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', messageId)
+        .eq('sender_id', user.id);
+    } catch (error) {
+      console.error('Error soft deleting message:', error);
+    }
+  };
+
   useEffect(() => {
     console.log('useMessaging: useEffect triggered - user:', user?.id);
     if (user) {
@@ -337,6 +358,8 @@ export const useMessaging = () => {
     fetchConversations,
     fetchMessages,
     sendMessage,
-    markAsRead
+    markAsRead,
+    markThreadRead,
+    softDeleteMessage
   };
 };
