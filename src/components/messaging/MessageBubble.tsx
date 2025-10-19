@@ -102,7 +102,7 @@ export const MessageBubble = ({
 
   return (
     <div
-      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
+      className={`w-full flex items-start gap-2 py-1 ${isOwn ? 'flex-row-reverse' : ''}`}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -111,36 +111,33 @@ export const MessageBubble = ({
       onTouchCancel={handleMouseUp}
       onTouchMove={handleTouchMove}
     >
-      <div className={`flex items-end gap-2 max-w-[75%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-        {/* Avatar for incoming messages */}
-        {!isOwn && showAvatar && (
-          <img
-            src={message.sender_profile?.avatar_url || '/placeholder.svg'}
-            alt={message.sender_profile?.display_name || 'User'}
-            className="w-8 h-8 rounded-full shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={onAvatarClick}
-          />
-        )}
+      {/* Avatar - only for incoming messages */}
+      {!isOwn && showAvatar && (
+        <img
+          src={message.sender_profile?.avatar_url || '/placeholder.svg'}
+          alt={message.sender_profile?.display_name || 'User'}
+          className="w-8 h-8 rounded-full shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={onAvatarClick}
+        />
+      )}
 
-        <div className={`relative ${isOwn ? 'order-2' : 'order-1'}`}>
-        {/* Reaction Bar */}
+      {/* Bubble container - holds reaction bar, bubble, reactions, and metadata */}
+      <div className="relative max-w-[75%]">
+        {/* Reaction Bar (absolutely positioned above bubble) */}
         {showReactionBar && (
           <div className={`absolute -top-12 ${isOwn ? 'right-0' : 'left-0'} z-10`}>
-            <ReactionBar
-              onReact={handleReact}
-              className="shadow-xl"
-            />
+            <ReactionBar onReact={handleReact} className="shadow-xl" />
           </div>
         )}
 
+        {/* The actual message bubble */}
         <div
-          className={`rounded-lg px-3 py-2 flex flex-col w-fit break-words overflow-wrap-anywhere transition-all ${
-            isOwn
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-foreground'
+          className={`rounded-2xl px-3 py-2 break-words transition-all ${
+            isOwn ? 'bg-[#11c4e9] text-white' : 'bg-gray-200 text-gray-900'
           } ${isTemp ? 'opacity-70' : ''} ${isLongPressing ? 'scale-95 opacity-80' : ''}`}
           onDoubleClick={() => setShowReactionBar(!showReactionBar)}
         >
+          {/* Image attachment */}
           {message.image_url && (
             <div 
               className="cursor-pointer hover:opacity-90 transition-opacity"
@@ -149,14 +146,18 @@ export const MessageBubble = ({
               <img
                 src={message.image_url}
                 alt="Message attachment"
-                className="w-full rounded-md mb-2 max-h-48 object-cover hover:scale-[1.02] transition-transform"
+                className="rounded-xl max-w-full h-auto mb-2 max-h-48 object-cover hover:scale-[1.02] transition-transform"
               />
             </div>
           )}
-          <p className="text-sm break-words overflow-wrap-anywhere hyphens-auto">{message.content}</p>
+          
+          {/* Text content */}
+          <p className="text-sm break-words overflow-wrap-anywhere hyphens-auto">
+            {message.content}
+          </p>
         </div>
 
-        {/* Reactions */}
+        {/* Reaction pills */}
         {reactions.length > 0 && (
           <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
             {reactions.map((reaction) => (
@@ -171,12 +172,13 @@ export const MessageBubble = ({
           </div>
         )}
 
+        {/* Timestamp + Read Receipts */}
         <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
           <p className="text-xs text-muted-foreground">
             {isTemp ? 'Sending...' : formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
           </p>
           
-          {/* Read Receipt Indicators (only show for own messages) */}
+          {/* Read Receipt Indicators (only for own messages) */}
           {isOwn && !isTemp && (
             <div className="flex items-center gap-0.5">
               {message.status === 'sent' && (
@@ -197,9 +199,10 @@ export const MessageBubble = ({
             </div>
           )}
         </div>
-
-        </div>
       </div>
+
+      {/* Ghost spacer for own messages to maintain alignment */}
+      {isOwn && <div className="w-8 shrink-0" />}
     </div>
   );
 };

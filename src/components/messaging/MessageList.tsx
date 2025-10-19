@@ -59,28 +59,23 @@ export function MessageList({
         const showAvatar = shouldShowAvatar(messages, index, currentUserId);
         
         return (
-          <div 
-            key={message.id} 
-            className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}
+          <motion.div
+            key={message.id}
+            initial={{ opacity: 0, x: isMe ? 24 : -24, scale: 0.98 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 420, damping: 32 }}
           >
-            <motion.div
-              initial={{ opacity: 0, x: isMe ? 24 : -24, scale: 0.98 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 420, damping: 32 }}
-              className="w-full"
-            >
-              <MessageBubble
-                message={message}
-                isOwn={isMe}
-                isTemp={false}
-                onLongPress={() => onMessageLongPress(message, {} as any)}
-                onImageClick={onImageClick}
-                onReactionClick={onReactionClick}
-                showAvatar={showAvatar}
-                onAvatarClick={() => onProfileClick(message.sender_id)}
-              />
-            </motion.div>
-          </div>
+            <MessageBubble
+              message={message}
+              isOwn={isMe}
+              isTemp={false}
+              onLongPress={() => onMessageLongPress(message, {} as any)}
+              onImageClick={onImageClick}
+              onReactionClick={onReactionClick}
+              showAvatar={showAvatar}
+              onAvatarClick={() => onProfileClick(message.sender_id)}
+            />
+          </motion.div>
         );
       })}
     </div>
