@@ -123,8 +123,8 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
 
         {/* Sort */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <label htmlFor="sort-by" className="text-sm font-medium text-muted-foreground">Sort By</label>
+          <div className="flex items-center gap-4">
+            <label htmlFor="sort-by" className="text-sm font-medium text-muted-foreground whitespace-nowrap">Sort By</label>
             <NativeDropdown
               trigger={SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
               label="Select sort order"
@@ -143,8 +143,8 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
             </NativeDropdown>
           </div>
 
-          <div className="space-y-4">
-            <label htmlFor="post-type" className="text-sm font-medium text-muted-foreground">Post Type</label>
+          <div className="flex items-center gap-4">
+            <label htmlFor="post-type" className="text-sm font-medium text-muted-foreground whitespace-nowrap">Post Type</label>
             <NativeDropdown
               trigger={POST_TYPES.find(t => t.value === selectedPostType)?.label || 'All Types'}
               label="Select post type"
@@ -167,8 +167,8 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
         {/* Expanded Filters */}
         {isExpanded && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
-            <div className="space-y-4">
-              <label htmlFor="filter-major" className="text-sm font-medium text-muted-foreground">Filter by Major</label>
+            <div className="flex items-center gap-4">
+              <label htmlFor="filter-major" className="text-sm font-medium text-muted-foreground whitespace-nowrap">Filter by Major</label>
               <NativeDropdown
                 trigger={selectedMajor === 'all-majors' ? 'All majors' : selectedMajor}
                 label="Select major filter"
@@ -194,8 +194,8 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
               </NativeDropdown>
             </div>
 
-            <div className="space-y-4">
-              <label htmlFor="filter-school" className="text-sm font-medium text-muted-foreground">Filter by School</label>
+            <div className="flex items-center gap-4">
+              <label htmlFor="filter-school" className="text-sm font-medium text-muted-foreground whitespace-nowrap">Filter by School</label>
               <NativeDropdown
                 trigger={selectedSchool === 'all-schools' ? 'All schools' : selectedSchool}
                 label="Select school filter"
