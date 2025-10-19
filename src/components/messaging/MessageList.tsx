@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
+import { useScrollToBottomOnOwnSend } from "@/hooks/useScrollToBottomOnOwnSend";
 
 interface MessageListProps {
   messages: any[];
   currentUserId: string;
+  containerRef: React.RefObject<HTMLDivElement>;
   onMessageLongPress: (message: any, event: React.TouchEvent | React.MouseEvent) => void;
   onImageClick: (url: string) => void;
   onProfileClick: (userId: string) => void;
@@ -35,24 +36,17 @@ const shouldShowAvatar = (messages: any[], index: number, currentUserId: string)
 export function MessageList({ 
   messages, 
   currentUserId,
+  containerRef,
   onMessageLongPress,
   onImageClick,
   onProfileClick,
   onReactionClick,
   onReplyClick
 }: MessageListProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Smooth scroll to bottom when new messages arrive
-    ref.current?.lastElementChild?.scrollIntoView({ 
-      behavior: "smooth", 
-      block: "end" 
-    });
-  }, [messages.length]);
+  const { endRef } = useScrollToBottomOnOwnSend(containerRef, messages, currentUserId);
 
   return (
-    <div ref={ref} className="flex flex-col gap-1 px-4 py-2">
+    <div className="flex flex-col gap-1 px-4 py-2">
       {messages.map((message, index) => {
         const isMe = message.sender_id === currentUserId;
         const isDeleted = message.deleted_at !== null;
@@ -61,6 +55,7 @@ export function MessageList({
         return (
           <motion.div
             key={message.id}
+            data-mid={message.id}
             initial={{ opacity: 0, x: isMe ? 24 : -24, scale: 0.98 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 420, damping: 32 }}
@@ -78,6 +73,7 @@ export function MessageList({
           </motion.div>
         );
       })}
+      <div ref={endRef} />
     </div>
   );
 }
