@@ -898,7 +898,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const handleUnsendMessage = async () => {
     if (!actionSheetMessage) return;
     try {
-      await supabase.from('messages').delete().eq('id', actionSheetMessage.id);
+      const { error } = await supabase.from('messages').delete().eq('id', actionSheetMessage.id);
+      
+      if (error) throw error;
+      
       setLocalMessages(prev => prev.filter(m => m.id !== actionSheetMessage.id));
       toast({
         title: "Unsent",

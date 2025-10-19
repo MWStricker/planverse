@@ -9,7 +9,7 @@ interface DailyProgressProps {
 export const DailyProgress = ({ completed, total, className }: DailyProgressProps) => {
   if (total === 0) return null;
 
-  const percentage = Math.round((completed / total) * 100);
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
   
   // Color coding: green > 50%, yellow 25-50%, red < 25%
   const getColor = () => {

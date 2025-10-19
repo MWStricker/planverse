@@ -188,7 +188,7 @@ const IndexContent = () => {
       case 'upload':
         return (
           <Suspense fallback={<PageLoader />}>
-            <div className="p-6">
+            <div id="main-content" className="p-6">
               <Tabs value={uploadTab} onValueChange={setUploadTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="note-digitizer">Note Digitizer</TabsTrigger>
@@ -207,13 +207,17 @@ const IndexContent = () => {
       case 'connect':
         return (
           <Suspense fallback={<PageLoader />}>
-            <Connect onNavigateToAnalytics={() => setCurrentPage('analytics')} />
+            <div id="main-content">
+              <Connect onNavigateToAnalytics={() => setCurrentPage('analytics')} />
+            </div>
           </Suspense>
         );
       case 'settings':
         return (
           <Suspense fallback={<PageLoader />}>
-            <Settings defaultTab={settingsTab} />
+            <div id="main-content">
+              <Settings defaultTab={settingsTab} />
+            </div>
           </Suspense>
         );
       case 'analytics':
@@ -238,13 +242,17 @@ const IndexContent = () => {
         
         return (
           <Suspense fallback={<PageLoader />}>
-            <AnalyticsDashboard />
+            <div id="main-content">
+              <AnalyticsDashboard />
+            </div>
           </Suspense>
         );
       default:
         return (
           <Suspense fallback={<PageLoader />}>
-            <Dashboard />
+            <div id="main-content">
+              <Dashboard />
+            </div>
           </Suspense>
         );
     }

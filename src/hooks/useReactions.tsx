@@ -168,11 +168,13 @@ export const useReactions = (messageId?: string) => {
     if (!user) return;
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('reactions')
         .delete()
         .eq('message_id', msgId)
         .eq('user_id', user.id);
+
+      if (error) throw error;
 
       await fetchReactions(msgId);
     } catch (error) {

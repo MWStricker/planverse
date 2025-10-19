@@ -100,6 +100,8 @@ export const useNotifications = () => {
         .delete()
         .eq('id', notificationId)
         .eq('user_id', user.id);
+      
+      if (error) throw error;
 
       if (error) {
         console.error('Error deleting notification:', error);
