@@ -1,0 +1,111 @@
+:root {
+  --fab-size: 56px;
+  --fab-online: hsl(142 71% 45%);
+  --fab-offline: hsl(0 84% 60%);
+}
+
+.status-fab {
+  position: fixed;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: hsl(var(--primary));
+  border: 0;
+  box-shadow: 0 8px 20px hsl(0 0% 0% / 0.25);
+  cursor: pointer;
+  z-index: 60;
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: box-shadow 200ms ease;
+}
+
+.status-fab:hover {
+  box-shadow: 0 12px 24px hsl(0 0% 0% / 0.3);
+}
+
+.status-fab:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.status-fab .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.6) inset;
+  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.status-fab.is-online .dot {
+  background: var(--fab-online);
+}
+
+.status-fab.is-offline .dot {
+  background: var(--fab-offline);
+}
+
+/* Click animation - no reflow */
+.status-fab.pulse .dot {
+  animation: dot-bounce 250ms ease;
+}
+
+@keyframes dot-bounce {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.6) inset;
+  }
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.9) inset;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.6) inset;
+  }
+}
+
+/* Ripple effect - no layout shift */
+.status-fab::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(1);
+  pointer-events: none;
+  background: hsl(0 0% 100% / 0.2);
+}
+
+.status-fab:active::after {
+  animation: ripple 250ms ease;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.18;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .status-fab .dot,
+  .status-fab.pulse .dot,
+  .status-fab:active::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Mobile layout adjustments */
+@media (max-width: 768px) {
+  .status-fab {
+    --fab-size: 48px;
+  }
+}

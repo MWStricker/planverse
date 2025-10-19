@@ -1444,6 +1444,17 @@ export type Database = {
           },
         ]
       }
+      user_settings_latest: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          settings_data: Json | null
+          settings_type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       are_friends: {
@@ -1822,6 +1833,10 @@ export type Database = {
           status: Database["public"]["Enums"]["message_status"] | null
           updated_at: string
         }
+      }
+      set_my_status: {
+        Args: { p_offset: number; p_online: boolean; p_position: string }
+        Returns: undefined
       }
       test_auth_uid: {
         Args: Record<PropertyKey, never>

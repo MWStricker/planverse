@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar, RefreshCw, Share2 } from "lucide-react";
+import { Settings as SettingsIcon, Link, CheckCircle, AlertCircle, ExternalLink, Shield, Bell, User, Palette, LogOut, Monitor, Type, Zap, Camera, Upload, Save, GraduationCap, Clock, Target, Calendar, RefreshCw, Share2, Circle } from "lucide-react";
 import { ImageCropper } from "@/components/ImageCropper";
 import { IntegrationSetup } from "@/components/IntegrationSetup";
 import { AccountTypeDialog } from "@/components/AccountTypeDialog";
@@ -25,6 +25,8 @@ import { collegeMajors } from "@/data/collegeMajors";
 import { supabase } from "@/integrations/supabase/client";
 import { courseIcons, getCourseIconCategories } from "@/data/courseIcons";
 import { SocialLinksEditor } from "@/components/SocialLinksEditor";
+import { useStatusFab, type PositionCorner } from "@/hooks/useStatusFab";
+import { Slider } from "@/components/ui/slider";
 
 interface AccountIntegration {
   id: string;
@@ -87,6 +89,7 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
   const { preferences, updatePreference } = usePreferences();
   const { profile, loading: profileLoading, uploading, updateProfile, uploadAvatar } = useProfile();
   const { updateLiveProfile } = useProfileEditing();
+  const { settings: fabSettings, updateStatus: updateFabSettings } = useStatusFab();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Local state for profile editing
@@ -1025,6 +1028,61 @@ export const Settings = ({ defaultTab = 'accounts' }: { defaultTab?: string } = 
                 </p>
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Status Button Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Circle className="h-5 w-5" />
+            Status Button
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <h4 className="font-medium text-foreground mb-2">Position</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Choose where the status button appears on your screen
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {(['tl', 'tr', 'bl', 'br'] as const).map((pos) => (
+              <Button
+                key={pos}
+                variant={fabSettings.position === pos ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => updateFabSettings(undefined, pos)}
+                className="w-full"
+              >
+                {pos === 'tl' && 'Top Left'}
+                {pos === 'tr' && 'Top Right'}
+                {pos === 'bl' && 'Bottom Left'}
+                {pos === 'br' && 'Bottom Right'}
+              </Button>
+            ))}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-foreground">Offset from edges</h4>
+              <span className="text-sm text-muted-foreground">{fabSettings.offset}px</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Adjust the distance from screen edges
+            </p>
+            <Slider
+              value={[fabSettings.offset]}
+              onValueChange={([value]) => updateFabSettings(undefined, undefined, value)}
+              min={8}
+              max={48}
+              step={4}
+              className="w-full"
+            />
           </div>
         </CardContent>
       </Card>

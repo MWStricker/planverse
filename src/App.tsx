@@ -14,6 +14,7 @@ import { TermsOfService } from "./pages/TermsOfService";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import { ModerationDashboard } from "./components/ModerationDashboard";
+import { StatusFab } from "./components/StatusFab";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => {
               </a>
               <Toaster />
               <Sonner />
+              <StatusFab />
               <BrowserRouter>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
