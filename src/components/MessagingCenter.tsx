@@ -32,6 +32,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MessagePinsBanner } from './messaging/MessagePinsBanner';
+import { sendMessage as sendMessageUtil } from '@/lib/messaging/sendMessage';
 
 interface MessagingCenterProps {
   selectedUserId?: string;
@@ -689,46 +690,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       return;
     }
 
-    let imageUrl = '';
-    
-    if (imageFile) {
-      setUploading(true);
-      try {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `messages/${user!.id}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('Uploads')
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('Uploads')
-          .getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast({
-          title: "Upload Error",
-          description: "Failed to upload image",
-          variant: "destructive",
-        });
-        setUploading(false);
-        return;
-      }
-      setUploading(false);
-    }
-
-    // Optimistic update - add message immediately
+    // Optimistic update - add message immediately with temp image preview
+    const tempImagePreview = imageFile ? URL.createObjectURL(imageFile) : '';
     const tempMessage: Message = {
       id: `temp-${Date.now()}`,
       sender_id: user!.id,
       receiver_id: selectedConversation.other_user.id,
-      content: newMessage.trim() || '',
-      image_url: imageUrl,
+      content: newMessage.trim() || null,
+      image_url: tempImagePreview,
       is_read: false,
       created_at: new Date().toISOString(),
       status: 'sending'
@@ -737,60 +706,63 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     setLocalMessages(prev => [...prev, tempMessage]);
     const messageContent = newMessage;
     setNewMessage('');
+    const fileToSend = imageFile;
     setImageFile(null);
+    setUploading(true);
 
-    // Send in background, don't block UI
-    sendMessage(selectedConversation.other_user.id, messageContent.trim() || '', imageUrl, replyToMessage?.id)
-      .then(async (success) => {
-        setReplyToMessage(null);
-        if (!success) {
-          // Only remove on failure
-          setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
-          toast({
-            title: "Error",
-            description: "Failed to send message",
-            variant: "destructive",
-          });
-          return;
-        }
+    // Send using new utility function
+    try {
+      await sendMessageUtil({
+        text: messageContent,
+        file: fileToSend,
+        senderId: user!.id,
+        receiverId: selectedConversation.other_user.id,
+        replyToMessageId: replyToMessage?.id
+      });
+      
+      setReplyToMessage(null);
+      
+      // SUCCESS: Fetch the latest message as fallback in case realtime doesn't fire
+      setTimeout(async () => {
+        const { data: latestMessages } = await supabase
+          .from('messages')
+          .select('*')
+          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${selectedConversation.other_user.id}),and(sender_id.eq.${selectedConversation.other_user.id},receiver_id.eq.${user.id})`)
+          .order('created_at', { ascending: false })
+          .limit(1);
         
-        // SUCCESS: Fetch the latest message as fallback in case realtime doesn't fire
-        setTimeout(async () => {
-          const { data: latestMessages } = await supabase
-            .from('messages')
-            .select('*')
-            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${selectedConversation.other_user.id}),and(sender_id.eq.${selectedConversation.other_user.id},receiver_id.eq.${user.id})`)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          
-          if (latestMessages && latestMessages.length > 0) {
-            const realMessage = latestMessages[0];
-            setLocalMessages(prev => {
-              // Replace temp message with real one if it still exists
-              const tempIndex = prev.findIndex(m => m.id === tempMessage.id);
-              if (tempIndex !== -1) {
-                console.log('Fallback: Replacing temp message with fetched message');
-                const updated = [...prev];
-                updated[tempIndex] = realMessage;
-                return updated;
-              }
-              return prev;
-            });
-          }
-        }, 500); // Wait 500ms for database to process
-      });
-
-    // Set timeout to remove temp message if not replaced within 10 seconds
-    setTimeout(() => {
-      setLocalMessages(prev => {
-        const stillTemp = prev.find(m => m.id === tempMessage.id);
-        if (stillTemp) {
-          console.warn('Temp message not replaced after 10s, removing:', tempMessage.id);
-          return prev.filter(m => m.id !== tempMessage.id);
+        if (latestMessages && latestMessages.length > 0) {
+          const realMessage = latestMessages[0];
+          setLocalMessages(prev => {
+            // Replace temp message with real one if it still exists
+            const tempIndex = prev.findIndex(m => m.id === tempMessage.id);
+            if (tempIndex !== -1) {
+              console.log('Fallback: Replacing temp message with fetched message');
+              const updated = [...prev];
+              updated[tempIndex] = realMessage;
+              return updated;
+            }
+            return prev;
+          });
         }
-        return prev;
+      }, 500);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Remove temp message on failure
+      setLocalMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
       });
-    }, 10000);
+    } finally {
+      setUploading(false);
+    }
+
+    // Cleanup temp image preview
+    if (tempImagePreview) {
+      setTimeout(() => URL.revokeObjectURL(tempImagePreview), 10000);
+    }
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

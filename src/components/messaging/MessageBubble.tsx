@@ -6,6 +6,7 @@ import { ReactionPill } from './ReactionPill';
 import { formatDistanceToNow } from 'date-fns';
 import { Check } from 'lucide-react';
 import { hapticFeedback } from '@/lib/haptics';
+import { getImageUrl } from '@/lib/getImageUrl';
 
 interface MessageBubbleProps {
   message: Message;
@@ -56,7 +57,7 @@ export const MessageBubble = ({
       >
         {message.image_url ? (
           <img
-            src={message.image_url}
+            src={getImageUrl(message.image_url) || message.image_url}
             alt=""
             className="rounded-xl max-w-full h-auto block"
           />

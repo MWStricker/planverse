@@ -419,7 +419,7 @@ export type Database = {
       messages: {
         Row: {
           client_msg_id: string | null
-          content: string
+          content: string | null
           created_at: string
           deleted_at: string | null
           expires_at: string | null
@@ -437,7 +437,7 @@ export type Database = {
         }
         Insert: {
           client_msg_id?: string | null
-          content: string
+          content?: string | null
           created_at?: string
           deleted_at?: string | null
           expires_at?: string | null
@@ -455,7 +455,7 @@ export type Database = {
         }
         Update: {
           client_msg_id?: string | null
-          content?: string
+          content?: string | null
           created_at?: string
           deleted_at?: string | null
           expires_at?: string | null
@@ -1555,7 +1555,7 @@ export type Database = {
         }
         Returns: {
           client_msg_id: string | null
-          content: string
+          content: string | null
           created_at: string
           deleted_at: string | null
           expires_at: string | null
