@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { fetchConversations as fetchConversationsData } from '@/data/messaging';
 
 export interface Message {
   id: string;
@@ -57,14 +58,12 @@ export const useMessaging = () => {
 
     try {
       setLoading(true);
-      console.log('useMessaging: Calling get_conversations RPC...');
       
-      // Get blocked users first
+      // Get blocked users
       const { data: blockedData } = await supabase
         .from('blocked_users')
         .select('blocked_id')
         .eq('blocker_id', user.id);
-
       const blockedUserIds = new Set(blockedData?.map(row => row.blocked_id) || []);
 
       // Get hidden conversations
@@ -72,41 +71,18 @@ export const useMessaging = () => {
         .from('hidden_conversations')
         .select('conversation_id')
         .eq('user_id', user.id);
-
       const hiddenConversationIds = new Set(hiddenData?.map(h => h.conversation_id) || []);
 
-      // Call the RPC function for efficient conversation list
-      const { data: rpcData, error } = await supabase
-        .rpc('get_conversations');
+      // Call data layer with built-in fallback
+      const { rows, profiles } = await fetchConversationsData();
+      
+      console.log('useMessaging: Got', rows.length, 'conversations from data layer');
 
-      console.log('useMessaging: RPC result:', { rpcData, error });
-
-      if (error) {
-        console.error('useMessaging: Error fetching conversations:', error);
-        setConversations([]);
-        return;
-      }
-
-      if (!rpcData || rpcData.length === 0) {
-        setConversations([]);
-        return;
-      }
-
-      // Fetch profiles for all peers in parallel
-      const peerIds = rpcData
-        .filter((conv: any) => !blockedUserIds.has(conv.peer_id))
-        .map((conv: any) => conv.peer_id);
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, avatar_url, school, major')
-        .in('user_id', peerIds);
-
-      const profileMap = new Map(
-        profiles?.map(p => [p.user_id, p]) || []
-      );
+      // Filter blocked users and transform to Conversation interface
+      const filteredRows = rows.filter(conv => !blockedUserIds.has(conv.peer_id));
 
       // Get pin/mute status from conversations table
+      const peerIds = filteredRows.map(conv => conv.peer_id);
       const { data: convSettings } = await supabase
         .from('conversations')
         .select('id, user1_id, user2_id, user1_is_pinned, user2_is_pinned, user1_is_muted, user2_is_muted')
@@ -127,14 +103,13 @@ export const useMessaging = () => {
         }) || []
       );
 
-      // Transform RPC results to match existing Conversation interface
-      const conversationsWithProfiles = rpcData
-        .filter((conv: any) => !blockedUserIds.has(conv.peer_id))
-        .map((conv: any) => {
-          const profile = profileMap.get(conv.peer_id);
+      // Transform to Conversation interface
+      const conversationsWithProfiles = filteredRows
+        .map(conv => {
+          const profile = profiles[conv.peer_id];
           const settings = settingsMap.get(conv.peer_id);
           
-          // Generate preview text with proper handling
+          // Generate preview text
           const lastText = conv.last_content?.trim() 
             ? conv.last_content 
             : (conv.last_image_url ? '[photo]' : '');
@@ -164,10 +139,10 @@ export const useMessaging = () => {
             }
           };
         })
-        .filter((conv: any) => !hiddenConversationIds.has(conv.id));
+        .filter(conv => !hiddenConversationIds.has(conv.id));
 
       setConversations(conversationsWithProfiles);
-      console.log('useMessaging: Set conversations:', conversationsWithProfiles);
+      console.log('useMessaging: Set', conversationsWithProfiles.length, 'conversations');
     } catch (error) {
       console.error('Error fetching conversations:', error);
       setConversations([]);
