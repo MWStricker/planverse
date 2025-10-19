@@ -52,7 +52,7 @@ export function MessageList({
   }, [messages.length]);
 
   return (
-    <div ref={ref} className="flex flex-col gap-1 p-3">
+    <div ref={ref} className="flex flex-col gap-1 px-4 py-2">
       {messages.map((message, index) => {
         const isMe = message.sender_id === currentUserId;
         const isDeleted = message.deleted_at !== null;
