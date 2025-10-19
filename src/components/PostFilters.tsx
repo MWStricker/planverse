@@ -128,7 +128,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
             <NativeDropdown
               trigger={SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
               label="Select sort order"
-              triggerClassName="w-full justify-start bg-success text-success-foreground hover:bg-success/90 px-4 py-2.5 rounded-lg font-medium shadow-sm h-11"
+              triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-4 py-2.5 rounded-lg font-medium border-0 h-11"
             >
               {SORT_OPTIONS.map((option) => (
                 <NativeDropdownItem
