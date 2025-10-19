@@ -13,6 +13,13 @@ interface Conversation {
   is_pinned?: boolean;
   is_muted?: boolean;
   unread_count?: number;
+  last_message?: {
+    id: string;
+    content: string | null;
+    image_url: string | null;
+    sender_id: string;
+    created_at: string;
+  };
   other_user?: {
     id: string;
     display_name: string;
@@ -127,6 +134,16 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
                 )}
               </div>
             </div>
+            
+            {/* Last message preview */}
+            {conversation.last_message && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                {conversation.last_message.sender_id === conversation.other_user?.id
+                  ? conversation.last_message.content || (conversation.last_message.image_url ? '📷 Photo' : '')
+                  : `You: ${conversation.last_message.content || (conversation.last_message.image_url ? '📷 Photo' : '')}`
+                }
+              </p>
+            )}
           </div>
           
           {/* Actions menu */}

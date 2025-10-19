@@ -1484,6 +1484,18 @@ export type Database = {
           impressions: number
         }[]
       }
+      get_conversations: {
+        Args: { me: string }
+        Returns: {
+          image_url: string
+          last_at: string
+          last_message_id: string
+          last_sender_id: string
+          last_text: string
+          peer_id: string
+          unread_count: number
+        }[]
+      }
       get_individual_post_analytics: {
         Args: { p_limit?: number; p_user_id: string }
         Returns: {

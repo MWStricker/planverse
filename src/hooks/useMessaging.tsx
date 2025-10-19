@@ -26,6 +26,13 @@ export interface Conversation {
   is_muted?: boolean;
   display_order?: number | null;
   unread_count?: number;
+  last_message?: {
+    id: string;
+    content: string | null;
+    image_url: string | null;
+    sender_id: string;
+    created_at: string;
+  };
   other_user?: {
     id: string;
     display_name: string;
@@ -50,7 +57,7 @@ export const useMessaging = () => {
 
     try {
       setLoading(true);
-      console.log('useMessaging: Querying conversations table...');
+      console.log('useMessaging: Calling get_conversations RPC...');
       
       // Get blocked users first
       const { data: blockedData } = await supabase
@@ -68,79 +75,96 @@ export const useMessaging = () => {
 
       const hiddenConversationIds = new Set(hiddenData?.map(h => h.conversation_id) || []);
 
-      // Single optimized query with PostgreSQL joins - fetches conversations and profiles in one go
-      const { data, error } = await supabase
-        .from('conversations')
-        .select(`
-          *,
-          user1_profile:profiles!user1_id(user_id, display_name, avatar_url, school, major),
-          user2_profile:profiles!user2_id(user_id, display_name, avatar_url, school, major)
-        `)
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .order('display_order', { ascending: true, nullsFirst: false })
-        .order('last_message_at', { ascending: false });
+      // Call the RPC function for efficient conversation list
+      const { data: rpcData, error } = await supabase
+        .rpc('get_conversations', { me: user.id });
 
-      console.log('useMessaging: Conversations query result:', { data, error });
+      console.log('useMessaging: RPC result:', { rpcData, error });
 
       if (error) {
         console.error('useMessaging: Error fetching conversations:', error);
-        // Fail gracefully - set empty conversations instead of throwing
         setConversations([]);
         return;
       }
 
-      if (!data || data.length === 0) {
+      if (!rpcData || rpcData.length === 0) {
         setConversations([]);
         return;
       }
 
-      // Map to determine which profile is the other user's profile, filtering blocked users and hidden conversations
-      const conversationsWithProfiles = data
-        .filter((conv: any) => {
-          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
-          return !blockedUserIds.has(otherUserId) && !hiddenConversationIds.has(conv.id);
-        })
+      // Fetch profiles for all peers in parallel
+      const peerIds = rpcData
+        .filter((conv: any) => !blockedUserIds.has(conv.peer_id))
+        .map((conv: any) => conv.peer_id);
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url, school, major')
+        .in('user_id', peerIds);
+
+      const profileMap = new Map(
+        profiles?.map(p => [p.user_id, p]) || []
+      );
+
+      // Get pin/mute status from conversations table
+      const { data: convSettings } = await supabase
+        .from('conversations')
+        .select('id, user1_id, user2_id, user1_is_pinned, user2_is_pinned, user1_is_muted, user2_is_muted')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+      const settingsMap = new Map(
+        convSettings?.map(c => {
+          const peerId = c.user1_id === user.id ? c.user2_id : c.user1_id;
+          const isUser1 = c.user1_id === user.id;
+          return [
+            peerId,
+            {
+              id: c.id,
+              is_pinned: isUser1 ? c.user1_is_pinned : c.user2_is_pinned,
+              is_muted: isUser1 ? c.user1_is_muted : c.user2_is_muted,
+            }
+          ];
+        }) || []
+      );
+
+      // Transform RPC results to match existing Conversation interface
+      const conversationsWithProfiles = rpcData
+        .filter((conv: any) => !blockedUserIds.has(conv.peer_id))
         .map((conv: any) => {
-          const otherUserProfile = conv.user1_id === user.id 
-            ? conv.user2_profile 
-            : conv.user1_profile;
+          const profile = profileMap.get(conv.peer_id);
+          const settings = settingsMap.get(conv.peer_id);
           
-          // Determine the other user's ID with fallback
-          const otherUserId = otherUserProfile?.user_id || 
-            (conv.user1_id === user.id ? conv.user2_id : conv.user1_id);
-          
-          // Transform profile to include 'id' field from 'user_id'
-          const other_user = {
-            id: otherUserId,
-            display_name: otherUserProfile?.display_name || 'Unknown User',
-            avatar_url: otherUserProfile?.avatar_url,
-            school: otherUserProfile?.school,
-            major: otherUserProfile?.major
-          };
-
-          // Determine user-specific pin/mute status based on who the current user is
-          const isUser1 = conv.user1_id === user.id;
-          const is_pinned = isUser1 ? (conv.user1_is_pinned || false) : (conv.user2_is_pinned || false);
-          const is_muted = isUser1 ? (conv.user1_is_muted || false) : (conv.user2_is_muted || false);
-
           return {
-            id: conv.id,
-            user1_id: conv.user1_id,
-            user2_id: conv.user2_id,
-            last_message_at: conv.last_message_at,
-            is_pinned,
-            is_muted,
-            display_order: conv.display_order || null,
-            unread_count: conv.unread_count || 0,
-            other_user
+            id: settings?.id || `temp-${conv.peer_id}`,
+            user1_id: user.id < conv.peer_id ? user.id : conv.peer_id,
+            user2_id: user.id < conv.peer_id ? conv.peer_id : user.id,
+            last_message_at: conv.last_at,
+            is_pinned: settings?.is_pinned || false,
+            is_muted: settings?.is_muted || false,
+            display_order: null,
+            unread_count: conv.unread_count,
+            last_message: {
+              id: conv.last_message_id,
+              content: conv.last_text,
+              image_url: conv.image_url,
+              sender_id: conv.last_sender_id,
+              created_at: conv.last_at,
+            },
+            other_user: {
+              id: conv.peer_id,
+              display_name: profile?.display_name || 'Unknown User',
+              avatar_url: profile?.avatar_url,
+              school: profile?.school,
+              major: profile?.major,
+            }
           };
-        });
+        })
+        .filter((conv: any) => !hiddenConversationIds.has(conv.id));
 
       setConversations(conversationsWithProfiles);
       console.log('useMessaging: Set conversations:', conversationsWithProfiles);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      // Fail gracefully instead of crashing
       setConversations([]);
     } finally {
       setLoading(false);
