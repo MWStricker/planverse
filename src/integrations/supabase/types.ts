@@ -733,14 +733,14 @@ export type Database = {
       }
       posts: {
         Row: {
-          comments_count: number | null
+          comments_count: number
           content: string
           created_at: string
           edited_at: string | null
           id: string
           image_url: string | null
           is_promoted: boolean | null
-          likes_count: number | null
+          likes_count: number
           moderated_at: string | null
           moderated_by: string | null
           moderation_flags: Json | null
@@ -758,14 +758,14 @@ export type Database = {
           visibility: string | null
         }
         Insert: {
-          comments_count?: number | null
+          comments_count?: number
           content: string
           created_at?: string
           edited_at?: string | null
           id?: string
           image_url?: string | null
           is_promoted?: boolean | null
-          likes_count?: number | null
+          likes_count?: number
           moderated_at?: string | null
           moderated_by?: string | null
           moderation_flags?: Json | null
@@ -783,14 +783,14 @@ export type Database = {
           visibility?: string | null
         }
         Update: {
-          comments_count?: number | null
+          comments_count?: number
           content?: string
           created_at?: string
           edited_at?: string | null
           id?: string
           image_url?: string | null
           is_promoted?: boolean | null
-          likes_count?: number | null
+          likes_count?: number
           moderated_at?: string | null
           moderated_by?: string | null
           moderation_flags?: Json | null
@@ -1356,6 +1356,10 @@ export type Database = {
       calculate_interest_match_score: {
         Args: { user1_id: string; user2_id: string }
         Returns: number
+      }
+      can_view_post: {
+        Args: { author: string; viewer: string; visibility: string }
+        Returns: boolean
       }
       cleanup_stale_presence: {
         Args: Record<PropertyKey, never>

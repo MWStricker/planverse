@@ -234,26 +234,24 @@ export const useConnect = () => {
       }));
 
       if (isUnlike) {
-        // Unlike
-        await supabase
+        // Unlike - trigger handles count automatically
+        const { error } = await supabase
           .from('post_likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
-
-        // Update likes count
-        await supabase.rpc('decrement_likes_count', { post_id: postId });
+        
+        if (error) throw error;
       } else {
-        // Like
-        await supabase
+        // Like - trigger handles count automatically
+        const { error } = await supabase
           .from('post_likes')
           .insert({
             post_id: postId,
             user_id: user.id,
           });
-
-        // Update likes count
-        await supabase.rpc('increment_likes_count', { post_id: postId });
+        
+        if (error) throw error;
 
         // Send notification to post owner (if not self-like)
         const post = posts.find(p => p.id === postId);
@@ -361,9 +359,8 @@ export const useConnect = () => {
         await moderateContent(content, 'comment', data.id);
       }
 
-      // Update comments count
-      await supabase.rpc('increment_comments_count', { post_id: postId });
-
+      // Comments count is automatically updated by database trigger
+      
       // Send notification to post owner (if not self-comment)
       const post = posts.find(p => p.id === postId);
       if (post && post.user_id !== user.id) {
