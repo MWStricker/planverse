@@ -102,7 +102,7 @@ export const MessageBubble = ({
 
   return (
     <div
-      className="w-full flex items-start gap-2 py-1 group"
+      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -111,18 +111,18 @@ export const MessageBubble = ({
       onTouchCancel={handleMouseUp}
       onTouchMove={handleTouchMove}
     >
-      {/* Avatar for incoming messages */}
-      {!isOwn && showAvatar && (
-        <img
-          src={message.sender_profile?.avatar_url || '/placeholder.svg'}
-          alt={message.sender_profile?.display_name || 'User'}
-          className="w-8 h-8 rounded-full shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={onAvatarClick}
-        />
-      )}
+      <div className={`flex items-end gap-2 max-w-[75%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* Avatar for incoming messages */}
+        {!isOwn && showAvatar && (
+          <img
+            src={message.sender_profile?.avatar_url || '/placeholder.svg'}
+            alt={message.sender_profile?.display_name || 'User'}
+            className="w-8 h-8 rounded-full shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={onAvatarClick}
+          />
+        )}
 
-      {/* Bubble container with auto margins for alignment */}
-      <div className={`relative max-w-[75%] ${isOwn ? 'ml-auto' : 'mr-auto'}`}>
+        <div className={`relative ${isOwn ? 'order-2' : 'order-1'}`}>
         {/* Reaction Bar */}
         {showReactionBar && (
           <div className={`absolute -top-12 ${isOwn ? 'right-0' : 'left-0'} z-10`}>
@@ -134,7 +134,7 @@ export const MessageBubble = ({
         )}
 
         <div
-          className={`rounded-2xl px-3 py-2 flex flex-col w-fit break-words overflow-wrap-anywhere transition-all ${
+          className={`rounded-lg px-3 py-2 flex flex-col w-fit break-words overflow-wrap-anywhere transition-all ${
             isOwn
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted text-foreground'
@@ -196,6 +196,8 @@ export const MessageBubble = ({
               )}
             </div>
           )}
+        </div>
+
         </div>
       </div>
     </div>
