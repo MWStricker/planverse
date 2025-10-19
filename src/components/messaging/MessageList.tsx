@@ -1,11 +1,15 @@
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
 import { useScrollToBottomOnOwnSend } from "@/hooks/useScrollToBottomOnOwnSend";
+import { useScrollOnConversationOpen } from "@/hooks/useScrollOnConversationOpen";
 
 interface MessageListProps {
   messages: any[];
   currentUserId: string;
   containerRef: React.RefObject<HTMLDivElement>;
+  selectedConversationId?: string | null;
+  pageBottomOffset?: number;
   onMessageLongPress: (message: any, event: React.TouchEvent | React.MouseEvent) => void;
   onImageClick: (url: string) => void;
   onProfileClick: (userId: string) => void;
@@ -37,13 +41,27 @@ export function MessageList({
   messages, 
   currentUserId,
   containerRef,
+  selectedConversationId,
+  pageBottomOffset = 80,
   onMessageLongPress,
   onImageClick,
   onProfileClick,
   onReactionClick,
   onReplyClick
 }: MessageListProps) {
-  const { endRef } = useScrollToBottomOnOwnSend(containerRef, messages, currentUserId);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll when user sends a message
+  const { endRef: ownSendRef } = useScrollToBottomOnOwnSend(containerRef, messages, currentUserId);
+
+  // Scroll when conversation opens
+  useScrollOnConversationOpen({
+    selectedConversationId,
+    messagesCount: messages.length,
+    containerRef,
+    bottomRef,
+    pageBottomOffset,
+  });
 
   return (
     <div className="flex flex-col gap-1 px-4 py-2">
@@ -73,7 +91,11 @@ export function MessageList({
           </motion.div>
         );
       })}
-      <div ref={endRef} />
+      {/* Single sentinel for both hooks */}
+      <div ref={(el) => {
+        if (bottomRef) bottomRef.current = el;
+        if (ownSendRef) ownSendRef.current = el;
+      }} style={{ height: 1 }} />
     </div>
   );
 }

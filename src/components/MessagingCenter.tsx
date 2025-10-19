@@ -1092,6 +1092,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     containerRef={scrollContainerRef}
                     messages={localMessages}
                     currentUserId={user?.id || ''}
+                    selectedConversationId={selectedConversation?.id}
+                    pageBottomOffset={80}
                     onMessageLongPress={handleMessageLongPress}
                     onImageClick={(url) => setViewerImage(url)}
                     onProfileClick={handleProfileClick}
