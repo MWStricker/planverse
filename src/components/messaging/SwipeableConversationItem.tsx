@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { motion, PanInfo } from 'framer-motion';
+import { useState, useRef } from 'react';
 import { Trash2, Pin, BellOff } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -46,49 +45,61 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
   onMarkUnread,
   onDismiss,
 }) => {
-  const [dragX, setDragX] = useState(0);
+  const [open, setOpen] = useState(false);
+  const startX = useRef<number | null>(null);
   const { getUserStatus } = useRealtime();
   const userStatus = conversation.other_user?.id 
     ? getUserStatus(conversation.other_user.id) 
     : 'offline';
 
-  const SWIPE_THRESHOLD = 120;
-
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (Math.abs(info.offset.x) > SWIPE_THRESHOLD) {
-      // Trigger dismiss
-      onDismiss(conversation.id);
-    } else {
-      // Reset position
-      setDragX(0);
-    }
-  };
-
-  const showDeleteButton = Math.abs(dragX) > 40;
-
   return (
-    <div className="relative overflow-hidden">
-      {/* Delete background */}
-      <div className="absolute inset-0 bg-destructive flex items-center justify-end px-6">
-        <Trash2 className="h-5 w-5 text-destructive-foreground" />
+    <div 
+      className="relative overflow-hidden group"
+      data-open={open ? 'true' : 'false'}
+      onPointerDown={(e) => { 
+        startX.current = e.clientX ?? (e as any).touches?.[0]?.clientX; 
+      }}
+      onPointerMove={(e) => {
+        if (startX.current == null) return;
+        const x = e.clientX ?? (e as any).touches?.[0]?.clientX;
+        if (x == null) return;
+        const dx = startX.current - x;
+        if (dx > 24) setOpen(true);        // swipe left to open
+        if (dx < -24) setOpen(false);      // swipe right to close
+      }}
+      onPointerUp={() => { startX.current = null; }}
+      onPointerCancel={() => { startX.current = null; }}
+    >
+      {/* Actions layer (revealed only when open) */}
+      <div className="absolute inset-y-0 right-0 flex items-stretch gap-2 p-2">
+        <button
+          onClick={() => onDismiss(conversation.id)}
+          className="
+            rounded-xl px-4 text-white bg-rose-500 hover:bg-rose-600
+            opacity-0 pointer-events-none
+            group-data-[open=true]:opacity-100
+            group-data-[open=true]:pointer-events-auto
+            transition-opacity duration-200
+            flex items-center justify-center"
+          aria-label="Delete conversation"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Swipeable conversation */}
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: -200, right: 0 }}
-        dragElastic={0.1}
-        onDrag={(_event, info) => setDragX(info.offset.x)}
-        onDragEnd={handleDragEnd}
-        style={{ x: dragX }}
-        className={`relative bg-background p-2 border-b transition-colors ${
-          isSelected ? 'bg-muted' : 'hover:bg-muted/50'
-        }`}
+      {/* Content layer (slides left when open) */}
+      <div
+        className={`
+          relative bg-background p-2 border-b
+          transition-transform will-change-transform duration-200
+          group-data-[open=true]:translate-x-[-72px]
+          ${isSelected ? 'bg-muted' : 'hover:bg-muted/50'}
+        `}
       >
         {/* Conversation content */}
         <div 
           className="flex items-center gap-2 w-full cursor-pointer"
-          onClick={() => !showDeleteButton && onSelect(conversation)}
+          onClick={() => !open && onSelect(conversation)}
         >
           <div className="relative">
             <Avatar className="h-10 w-10">
@@ -147,7 +158,7 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
           </div>
           
           {/* Actions menu */}
-          {!showDeleteButton && (
+          {!open && (
             <ConversationActionsMenu
               conversationId={conversation.id}
               isPinned={conversation.is_pinned || false}
@@ -159,7 +170,7 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
             />
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
