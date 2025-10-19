@@ -77,7 +77,7 @@ export const useMessaging = () => {
 
       // Call the RPC function for efficient conversation list
       const { data: rpcData, error } = await supabase
-        .rpc('get_conversations', { me: user.id });
+        .rpc('get_conversations');
 
       console.log('useMessaging: RPC result:', { rpcData, error });
 
@@ -134,21 +134,26 @@ export const useMessaging = () => {
           const profile = profileMap.get(conv.peer_id);
           const settings = settingsMap.get(conv.peer_id);
           
+          // Generate preview text with proper handling
+          const lastText = conv.last_content?.trim() 
+            ? conv.last_content 
+            : (conv.last_image_url ? '[photo]' : '');
+          
           return {
             id: settings?.id || `temp-${conv.peer_id}`,
             user1_id: user.id < conv.peer_id ? user.id : conv.peer_id,
             user2_id: user.id < conv.peer_id ? conv.peer_id : user.id,
-            last_message_at: conv.last_at,
+            last_message_at: conv.last_created_at,
             is_pinned: settings?.is_pinned || false,
             is_muted: settings?.is_muted || false,
             display_order: null,
             unread_count: conv.unread_count,
             last_message: {
-              id: conv.last_message_id,
-              content: conv.last_text,
-              image_url: conv.image_url,
-              sender_id: conv.last_sender_id,
-              created_at: conv.last_at,
+              id: `msg-${conv.last_seq}`,
+              content: lastText,
+              image_url: conv.last_image_url,
+              sender_id: conv.last_sender,
+              created_at: conv.last_created_at,
             },
             other_user: {
               id: conv.peer_id,
