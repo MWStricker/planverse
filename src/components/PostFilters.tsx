@@ -128,7 +128,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
             <NativeDropdown
               trigger={SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'Newest First'}
               label="Select sort order"
-              triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-4 py-2.5 rounded-lg font-medium border-0 h-11"
+              triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-3 py-2 rounded-lg text-sm font-medium border-0 h-9"
             >
               {SORT_OPTIONS.map((option) => (
                 <NativeDropdownItem
@@ -148,7 +148,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
             <NativeDropdown
               trigger={POST_TYPES.find(t => t.value === selectedPostType)?.label || 'All Types'}
               label="Select post type"
-              triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-4 py-2.5 rounded-lg font-medium border-0 h-11"
+              triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-3 py-2 rounded-lg text-sm font-medium border-0 h-9"
             >
               {POST_TYPES.map((type) => (
                 <NativeDropdownItem
@@ -172,7 +172,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
               <NativeDropdown
                 trigger={selectedMajor === 'all-majors' ? 'All majors' : selectedMajor}
                 label="Select major filter"
-                triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-4 py-2.5 rounded-lg font-medium border-0 h-11"
+                triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-3 py-2 rounded-lg text-sm font-medium border-0 h-9"
               >
                 <ScrollArea className="h-[300px]">
                   <NativeDropdownItem
@@ -199,7 +199,7 @@ export const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
               <NativeDropdown
                 trigger={selectedSchool === 'all-schools' ? 'All schools' : selectedSchool}
                 label="Select school filter"
-                triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-4 py-2.5 rounded-lg font-medium border-0 h-11"
+                triggerClassName="w-full justify-start bg-muted/50 hover:bg-muted text-foreground px-3 py-2 rounded-lg text-sm font-medium border-0 h-9"
               >
                 <ScrollArea className="h-[300px]">
                   <NativeDropdownItem
