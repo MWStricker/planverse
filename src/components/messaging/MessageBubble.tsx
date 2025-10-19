@@ -18,6 +18,8 @@ interface MessageBubbleProps {
   isPinned?: boolean;
   forceShowReactionBar?: boolean;
   onReactionBarClose?: () => void;
+  showAvatar?: boolean;
+  onAvatarClick?: () => void;
 }
 
 export const MessageBubble = ({
@@ -28,7 +30,9 @@ export const MessageBubble = ({
   onLongPress,
   onReactionClick,
   forceShowReactionBar = false,
-  onReactionBarClose
+  onReactionBarClose,
+  showAvatar = false,
+  onAvatarClick
 }: MessageBubbleProps) => {
   const [showReactionBar, setShowReactionBar] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -107,7 +111,18 @@ export const MessageBubble = ({
       onTouchCancel={handleMouseUp}
       onTouchMove={handleTouchMove}
     >
-      <div className={`max-w-[70%] relative ${isOwn ? 'order-2' : 'order-1'}`}>
+      <div className={`flex items-end gap-2 max-w-[75%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* Avatar for incoming messages */}
+        {!isOwn && showAvatar && (
+          <img
+            src={message.sender_profile?.avatar_url || '/placeholder.svg'}
+            alt={message.sender_profile?.display_name || 'User'}
+            className="w-8 h-8 rounded-full shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={onAvatarClick}
+          />
+        )}
+
+        <div className={`relative ${isOwn ? 'order-2' : 'order-1'}`}>
         {/* Reaction Bar */}
         {showReactionBar && (
           <div className={`absolute -top-12 ${isOwn ? 'right-0' : 'left-0'} z-10`}>
@@ -183,6 +198,7 @@ export const MessageBubble = ({
           )}
         </div>
 
+        </div>
       </div>
     </div>
   );
