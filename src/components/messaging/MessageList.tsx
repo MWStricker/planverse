@@ -1,15 +1,13 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
-import { useScrollToBottomOnOwnSend } from "@/hooks/useScrollToBottomOnOwnSend";
-import { useScrollOnConversationOpen } from "@/hooks/useScrollOnConversationOpen";
+import { useScrollChatToBottom } from "@/hooks/useScrollChatToBottom";
 
 interface MessageListProps {
   messages: any[];
   currentUserId: string;
   containerRef: React.RefObject<HTMLDivElement>;
-  selectedConversationId?: string | null;
-  pageBottomOffset?: number;
+  justSentClientMsgId?: string | null;
   onMessageLongPress: (message: any, event: React.TouchEvent | React.MouseEvent) => void;
   onImageClick: (url: string) => void;
   onProfileClick: (userId: string) => void;
@@ -41,8 +39,7 @@ export function MessageList({
   messages, 
   currentUserId,
   containerRef,
-  selectedConversationId,
-  pageBottomOffset = 80,
+  justSentClientMsgId,
   onMessageLongPress,
   onImageClick,
   onProfileClick,
@@ -50,17 +47,21 @@ export function MessageList({
   onReplyClick
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  
-  // Scroll when user sends a message
-  const { endRef: ownSendRef } = useScrollToBottomOnOwnSend(containerRef, messages, currentUserId);
 
-  // Scroll when conversation opens
-  useScrollOnConversationOpen({
-    selectedConversationId,
-    messagesCount: messages.length,
+  // Trigger scroll only when last message was sent by me
+  const lastActionKey = useMemo(() => {
+    const last = messages[messages.length - 1];
+    if (!last) return "";
+    // Prefer justSentClientMsgId for immediate triggering
+    return justSentClientMsgId ?? (last.sender_id === currentUserId ? last.id : "");
+  }, [messages, currentUserId, justSentClientMsgId]);
+
+  useScrollChatToBottom({
     containerRef,
     bottomRef,
-    pageBottomOffset,
+    lastActionKey,
+    enable: !!lastActionKey,
+    pageBottomOffset: 80,
   });
 
   return (
@@ -91,11 +92,7 @@ export function MessageList({
           </motion.div>
         );
       })}
-      {/* Single sentinel for both hooks */}
-      <div ref={(el) => {
-        if (bottomRef) bottomRef.current = el;
-        if (ownSendRef) ownSendRef.current = el;
-      }} style={{ height: 1 }} />
+      <div ref={bottomRef} style={{ height: 1 }} />
     </div>
   );
 }

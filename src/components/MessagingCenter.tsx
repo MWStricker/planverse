@@ -71,6 +71,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const isSavingOrder = useRef(false);
+  const [justSentClientMsgId, setJustSentClientMsgId] = useState<string | null>(null);
 
   console.log('MessagingCenter: Render - loading:', loading, 'conversations:', conversations.length);
 
@@ -672,13 +673,17 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     // Send using new utility function
     try {
-      await sendMessageUtil({
+      const { clientMsgId } = await sendMessageUtil({
         text: messageContent,
         file: fileToSend,
         senderId: user!.id,
         receiverId: selectedConversation.other_user.id,
         replyToMessageId: replyToMessage?.id
       });
+      
+      // Trigger scroll by setting client ID
+      setJustSentClientMsgId(clientMsgId);
+      setTimeout(() => setJustSentClientMsgId(null), 500);
       
       setReplyToMessage(null);
       
@@ -1092,8 +1097,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     containerRef={scrollContainerRef}
                     messages={localMessages}
                     currentUserId={user?.id || ''}
-                    selectedConversationId={selectedConversation?.id}
-                    pageBottomOffset={80}
+                    justSentClientMsgId={justSentClientMsgId}
                     onMessageLongPress={handleMessageLongPress}
                     onImageClick={(url) => setViewerImage(url)}
                     onProfileClick={handleProfileClick}
