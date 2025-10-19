@@ -1,13 +1,11 @@
-import { useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
-import { useScrollChatToBottom } from "@/hooks/useScrollChatToBottom";
+import { useScrollToBottomOnOwnSend } from "@/hooks/useScrollToBottomOnOwnSend";
 
 interface MessageListProps {
   messages: any[];
   currentUserId: string;
   containerRef: React.RefObject<HTMLDivElement>;
-  justSentClientMsgId?: string | null;
   onMessageLongPress: (message: any, event: React.TouchEvent | React.MouseEvent) => void;
   onImageClick: (url: string) => void;
   onProfileClick: (userId: string) => void;
@@ -39,30 +37,13 @@ export function MessageList({
   messages, 
   currentUserId,
   containerRef,
-  justSentClientMsgId,
   onMessageLongPress,
   onImageClick,
   onProfileClick,
   onReactionClick,
   onReplyClick
 }: MessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  // Trigger scroll only when last message was sent by me
-  const lastActionKey = useMemo(() => {
-    const last = messages[messages.length - 1];
-    if (!last) return "";
-    // Prefer justSentClientMsgId for immediate triggering
-    return justSentClientMsgId ?? (last.sender_id === currentUserId ? last.id : "");
-  }, [messages, currentUserId, justSentClientMsgId]);
-
-  useScrollChatToBottom({
-    containerRef,
-    bottomRef,
-    lastActionKey,
-    enable: !!lastActionKey,
-    pageBottomOffset: 80,
-  });
+  const { endRef } = useScrollToBottomOnOwnSend(containerRef, messages, currentUserId);
 
   return (
     <div className="flex flex-col gap-1 px-4 py-2">
@@ -92,7 +73,7 @@ export function MessageList({
           </motion.div>
         );
       })}
-      <div ref={bottomRef} style={{ height: 1 }} />
+      <div ref={endRef} />
     </div>
   );
 }
