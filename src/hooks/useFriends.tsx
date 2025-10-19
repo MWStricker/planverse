@@ -6,8 +6,9 @@ export interface FriendRequest {
   id: string;
   sender_id: string;
   receiver_id: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'declined' | 'canceled';
   created_at: string;
+  responded_at?: string;
   sender_profile?: {
     display_name: string;
     avatar_url?: string;
@@ -22,6 +23,12 @@ export interface FriendRequest {
     major?: string;
     user_id?: string;
   };
+}
+
+export interface FriendRequestCounts {
+  incoming: number;
+  outgoing: number;
+  total: number;
 }
 
 export interface Friend {
@@ -64,6 +71,11 @@ export const useFriends = () => {
   const [friends, setFriends] = useState<Friend[]>(initialCache.friends);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(initialCache.friendRequests);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>(initialCache.sentRequests);
+  const [requestCounts, setRequestCounts] = useState<FriendRequestCounts>({
+    incoming: 0,
+    outgoing: 0,
+    total: 0
+  });
   const [loading, setLoading] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const [isFetching, setIsFetching] = useState(false);
@@ -188,7 +200,7 @@ export const useFriends = () => {
       // Map incoming requests with sender profiles
       const incomingWithProfiles = incomingData.map(request => ({
         ...request,
-        status: request.status as 'pending' | 'accepted' | 'rejected',
+        status: request.status as 'pending' | 'accepted' | 'declined' | 'canceled',
         sender_profile: profiles?.find(p => p.user_id === request.sender_id) || {
           display_name: 'Unknown User',
           avatar_url: null,
@@ -201,7 +213,7 @@ export const useFriends = () => {
       // Map outgoing requests with receiver profiles
       const outgoingWithProfiles = outgoingData.map(request => ({
         ...request,
-        status: request.status as 'pending' | 'accepted' | 'rejected',
+        status: request.status as 'pending' | 'accepted' | 'declined' | 'canceled',
         receiver_profile: profiles?.find(p => p.user_id === request.receiver_id) || {
           display_name: 'Unknown User',
           avatar_url: null,
@@ -228,6 +240,26 @@ export const useFriends = () => {
       }
     } catch (error) {
       console.error('Error fetching friend requests:', error);
+    }
+  };
+
+  const fetchRequestCounts = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('rpc_get_friend_request_counts');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setRequestCounts({
+          incoming: Number(data[0].incoming) || 0,
+          outgoing: Number(data[0].outgoing) || 0,
+          total: Number(data[0].total) || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching request counts:', error);
     }
   };
 
@@ -276,7 +308,7 @@ export const useFriends = () => {
     if (!user) return false;
 
     try {
-      const status = accept ? 'accepted' : 'rejected';
+      const status = accept ? 'accepted' : 'declined';
       
       const { data, error } = await supabase
         .from('friend_requests')
@@ -337,6 +369,26 @@ export const useFriends = () => {
     }
   };
 
+  const cancelFriendRequest = async (receiverId: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase.rpc('rpc_cancel_friend_request', {
+        target_user_id: receiverId
+      });
+
+      if (error) throw error;
+
+      // Force refetch
+      setLastFetchTime(0);
+      await Promise.all([fetchFriendRequests(), fetchRequestCounts()]);
+      return true;
+    } catch (error) {
+      console.error('Error canceling friend request:', error);
+      return false;
+    }
+  };
+
   const checkFriendshipStatus = async (otherUserId: string) => {
     if (!user || otherUserId === user.id) return 'none';
 
@@ -390,7 +442,7 @@ export const useFriends = () => {
       
       if (!isCacheValid) {
         setLoading(true);
-        Promise.all([fetchFriends(), fetchFriendRequests()]).finally(() => {
+        Promise.all([fetchFriends(), fetchFriendRequests(), fetchRequestCounts()]).finally(() => {
           setLoading(false);
         });
       }
@@ -449,6 +501,7 @@ export const useFriends = () => {
           console.log('🔄 Friend request change detected (sender)');
           setLastFetchTime(0);
           fetchFriendRequests();
+          fetchRequestCounts();
         }
       )
       .on(
@@ -463,6 +516,7 @@ export const useFriends = () => {
           console.log('🔄 Friend request change detected (receiver)');
           setLastFetchTime(0);
           fetchFriendRequests();
+          fetchRequestCounts();
         }
       )
       .subscribe();
@@ -476,14 +530,17 @@ export const useFriends = () => {
     friends,
     friendRequests,
     sentRequests,
+    requestCounts,
     loading,
     sendFriendRequest,
     respondToFriendRequest,
+    cancelFriendRequest,
     removeFriend,
     checkFriendshipStatus,
     refetch: () => {
       fetchFriends();
       fetchFriendRequests();
+      fetchRequestCounts();
     }
   };
 };

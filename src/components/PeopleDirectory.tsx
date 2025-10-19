@@ -21,13 +21,15 @@ import {
   Users,
   UserCheck,
   Clock,
-  X
+  X,
+  XCircle
 } from 'lucide-react';
 import { usePeople, Person } from '@/hooks/usePeople';
 import { useFriends } from '@/hooks/useFriends';
 import { PublicProfile } from './PublicProfile';
 import { SuggestedConnections } from './SuggestedConnections';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { OnlineStatus } from './OnlineStatus';
@@ -54,8 +56,10 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
     friends, 
     friendRequests, 
     sentRequests,
+    requestCounts,
     sendFriendRequest, 
     respondToFriendRequest,
+    cancelFriendRequest,
     checkFriendshipStatus 
   } = useFriends();
 
@@ -284,7 +288,12 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
           </TabsTrigger>
           <TabsTrigger value="requests" className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
-            Requests ({friendRequests.length})
+            Requests
+            {requestCounts.incoming > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 rounded-full px-1.5">
+                {requestCounts.incoming}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="suggested" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -655,10 +664,57 @@ export const PeopleDirectory: React.FC<PeopleDirectoryProps> = ({ onStartChat })
                         <p className="text-sm text-muted-foreground">Request pending</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Pending
-                    </Badge>
+                    
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                      </Badge>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel Friend Request?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel your friend request to{' '}
+                              <span className="font-medium">{request.receiver_profile?.display_name}</span>?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={async () => {
+                                const success = await cancelFriendRequest(request.receiver_id);
+                                if (success) {
+                                  toast({
+                                    title: "Request Canceled",
+                                    description: `Friend request to ${request.receiver_profile?.display_name} has been canceled.`,
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to cancel friend request. Please try again.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                            >
+                              Yes, cancel it
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 ))}
               </CardContent>
