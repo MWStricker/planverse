@@ -566,7 +566,13 @@ const Auth = () => {
                   )}
                   
                   {error && (
-                    <Alert variant="destructive" className="animate-fade-in rounded-xl border-2">
+                    <Alert 
+                      id="authMsg" 
+                      variant="destructive" 
+                      className="animate-fade-in rounded-xl border-2"
+                      aria-live="assertive"
+                      aria-atomic="true"
+                    >
                       <AlertCircle className="h-5 w-5" />
                       <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
                     </Alert>
@@ -781,7 +787,13 @@ const Auth = () => {
                   )}
                   
                   {error && (
-                    <Alert variant="destructive" className="animate-fade-in rounded-xl border-2">
+                    <Alert 
+                      id="authMsg" 
+                      variant="destructive" 
+                      className="animate-fade-in rounded-xl border-2"
+                      aria-live="assertive"
+                      aria-atomic="true"
+                    >
                       <AlertCircle className="h-5 w-5" />
                       <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
                     </Alert>
