@@ -25,7 +25,7 @@ import { MessageActionSheet } from './messaging/MessageActionSheet';
 import { ReplyPreview } from './messaging/ReplyPreview';
 import { useReactions } from '@/hooks/useReactions';
 import { MessageBubble } from './messaging/MessageBubble';
-import { NewMessagesPill } from './messaging/NewMessagesPill';
+import { MessageList } from './messaging/MessageList';
 import { useMessagingSettings } from '@/hooks/useMessagingSettings';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
@@ -65,11 +65,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [reactionBarMessageId, setReactionBarMessageId] = useState<string | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const [newMessagesCount, setNewMessagesCount] = useState(0);
-  const [isNearBottom, setIsNearBottom] = useState(true);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { settings: messagingSettings, updateSetting } = useMessagingSettings();
   const [showChatSettings, setShowChatSettings] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
@@ -100,45 +96,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     console.log('[MessagingCenter] actionSheetMessage changed:', actionSheetMessage?.id || 'null');
   }, [actionSheetMessage]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
-  };
-
-  // Detect if user is near bottom
+  // Sync messages to local state
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      setIsNearBottom(distanceFromBottom < 100);
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [selectedConversation]);
-
-  // Sync messages to local state and track new messages
-  useEffect(() => {
-    if (isNearBottom) {
-      setNewMessagesCount(0);
-    } else {
-      // Increment count when new message arrives and user is scrolled up
-      if (messages.length > localMessages.length) {
-        const diff = messages.length - localMessages.length;
-        setNewMessagesCount(prev => prev + diff);
-      }
-    }
     setLocalMessages(messages);
-  }, [messages, isNearBottom]);
-
-  useEffect(() => {
-    console.log('MessagingCenter: useEffect triggered - user:', user?.id, 'conversations:', conversations.length);
-    if (isNearBottom) {
-      scrollToBottom();
-    }
-  }, [localMessages, isNearBottom]);
+  }, [messages]);
 
   // Realtime subscription for new messages
   useEffect(() => {
@@ -528,8 +489,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     console.log('[MessagingCenter] Selecting new conversation:', conversation.id);
     // Instant UI update - conversation selection
     setSelectedConversation(conversation);
-    setNewMessagesCount(0);
-    setIsNearBottom(true);
     // Messages will be fetched by the useEffect that watches selectedConversation
   };
 
@@ -1094,7 +1053,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             </div>
 
             {/* Messages */}
-            <ScrollArea ref={scrollContainerRef} className="flex-1 p-4 relative">
+            <div className="flex-1 relative flex flex-col">
               {loadingMessages ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="flex flex-col items-center gap-2">
@@ -1106,70 +1065,46 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 <>
                   {/* Pinned Messages Banner */}
                   {pinnedMessages.length > 0 && (
-                    <MessagePinsBanner
-                      pinnedMessages={pinnedMessages}
-                      onJumpToMessage={handleJumpToMessage}
-                      onUnpin={handleUnpinMessage}
-                      currentUserId={user?.id || ''}
-                      conversationCreatorId={selectedConversation?.user1_id || ''}
-                    />
+                    <div className="px-4 pt-4">
+                      <MessagePinsBanner
+                        pinnedMessages={pinnedMessages}
+                        onJumpToMessage={handleJumpToMessage}
+                        onUnpin={handleUnpinMessage}
+                        currentUserId={user?.id || ''}
+                        conversationCreatorId={selectedConversation?.user1_id || ''}
+                      />
+                    </div>
                   )}
                   
-                  <div className="space-y-4">
-                    {isTyping && (
-                      <div className="flex justify-start">
-                        <div className="bg-muted rounded-lg p-3">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                          </div>
+                  {/* Typing Indicator */}
+                  {isTyping && (
+                    <div className="px-4 pt-2 flex justify-start">
+                      <div className="bg-muted rounded-lg p-3">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
                       </div>
-                    )}
-                    {localMessages.map((message) => {
-                      console.log('Message alignment check:', {
-                        messageId: message.id,
-                        senderId: message.sender_id,
-                        userId: user?.id,
-                        comparison: message.sender_id === user?.id
-                      });
-                      const isOwn = String(message.sender_id) === String(user?.id);
-                      const isTemp = message.id.startsWith('temp-');
-                      return (
-                        <div key={message.id} id={`message-${message.id}`}>
-                          <MessageBubble
-                            message={message}
-                            isOwn={isOwn}
-                            isTemp={isTemp}
-                            onImageClick={(url) => setViewerImage(url)}
-                            onLongPress={handleMessageLongPress}
-                            onReactionClick={(messageId) => {
-                              const msg = localMessages.find(m => m.id === messageId);
-                              if (msg) setReactionSheetMessage(msg);
-                            }}
-                            onPin={handlePinMessage}
-                            isPinned={pinnedMessages.some(p => p.id === message.id)}
-                            forceShowReactionBar={reactionBarMessageId === message.id}
-                            onReactionBarClose={() => setReactionBarMessageId(null)}
-                          />
-                        </div>
-                      );
-                    })}
-                    <div ref={messagesEndRef} />
-                  </div>
+                    </div>
+                  )}
                   
-                  {/* New Messages Pill */}
-                  <NewMessagesPill
-                    count={newMessagesCount}
-                    onClick={() => {
-                      scrollToBottom();
-                      setNewMessagesCount(0);
+                  <MessageList
+                    conversationId={selectedConversation?.id}
+                    messages={localMessages}
+                    currentUserId={user?.id || ''}
+                    onMessageLongPress={handleMessageLongPress}
+                    onImageClick={(url) => setViewerImage(url)}
+                    onProfileClick={handleProfileClick}
+                    onReactionClick={(messageId) => {
+                      const msg = localMessages.find(m => m.id === messageId);
+                      if (msg) setReactionSheetMessage(msg);
                     }}
+                    onReplyClick={(message) => setReplyToMessage(message)}
                   />
                 </>
               )}
-            </ScrollArea>
+            </div>
 
             {/* Message Input */}
             <div className="p-4 border-t">
